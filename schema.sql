@@ -463,12 +463,12 @@ CREATE TABLE relatorio (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     no_id        INT NOT NULL,
     nome         VARCHAR(120) NOT NULL,
-    descricao    TEXT NULL,
-    colunas      TEXT NOT NULL,
-    filtro       TEXT NULL,
-    ordenar      TEXT NULL,
+    descricao    LONGTEXT NULL,
+    colunas      LONGTEXT NOT NULL,
+    filtro       LONGTEXT NULL,
+    ordenar      LONGTEXT NULL,
     decrescente  TINYINT NOT NULL DEFAULT 0,
-    agrupar      TEXT NULL,
+    agrupar      LONGTEXT NULL,
     relogios     VARCHAR(20) NOT NULL DEFAULT 'colecao',
     limite       INT NULL,
     INDEX (no_id),
@@ -1460,4 +1460,21 @@ CREATE TABLE cron_execucao_colecao (
     FOREIGN KEY (execucao_id) REFERENCES cron_execucao(id) ON DELETE CASCADE,
     FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
     CONSTRAINT ck_cron_execucao_colecao_marcas CHECK (teve_erro IN (0, 1) AND teve_atividade IN (0, 1))
+) ENGINE=InnoDB;
+
+-- o registro do SQL pela API (recurso=sql, só o master): cada pedido, o recusado, o que deu erro e o que deu certo: quando,
+-- quem, o comando, o tipo, se deu certo, as linhas (as lidas ou as mudadas), o tempo e o erro
+CREATE TABLE sql_execucao (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    quando       DATETIME NOT NULL,
+    usuario_id   INT NULL,
+    comando      LONGTEXT NULL,
+    tipo         VARCHAR(10) NULL,
+    ok           TINYINT NOT NULL DEFAULT 0,
+    linhas       INT NULL,
+    duracao_ms   INT NOT NULL DEFAULT 0,
+    erro         LONGTEXT NULL,
+    INDEX (quando),
+    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE SET NULL,
+    CONSTRAINT ck_sql_execucao_marcas CHECK (ok IN (0, 1) AND duracao_ms >= 0 AND (tipo IS NULL OR tipo IN ('select','insert','update','delete','alter')))
 ) ENGINE=InnoDB;

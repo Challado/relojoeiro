@@ -146,6 +146,47 @@ function cartao(titulo, corpo, pe, explica) {
 }
 
 
+// O SQL pela API (só o master; recurso=sql): o comando, o limite de linhas e Executar (a escrita recurso=sql, acao=executar);
+// o resultado embaixo (a tabela do SELECT, ou as linhas mudadas) e o registro das últimas execuções
+function tabelaSql(r) {
+  if (!r) {
+    return "";
+  }
+  if (r.tipo === "select" && r.colunas) {
+    return el("p", {"class": "nota"}, t("{1} linha(s) lidas em {2} ms", {1: r.total, 2: r.duracao_ms}) + (r.cortado ? " · " + t("mostrando as {1} primeiras", {1: r.linhas.length}) : ""))
+      + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, r.colunas.map(function (c) { return el("th", {}, h(c)); }).join("")))
+        + el("tbody", {}, r.linhas.map(function (l) { return el("tr", {}, l.map(function (v) { return el("td", {}, v === null ? el("span", {"class": "nota"}, fixo("NULL")) : h(String(v))); }).join("")); }).join(""))));
+  }
+  return el("p", {"class": r.ok ? "nota" : "acao"}, r.ok ? (r.afetadas === null ? t("Executado em {1} ms.", {1: r.duracao_ms}) : t("{1} linha(s) mudadas em {2} ms.", {1: r.afetadas, 2: r.duracao_ms})) : h(r.erro || ""));
+}
+function quadroSql(s, resultado) {
+  return el("h2", {}, t("Banco de dados (SQL)"))
+    + el("p", {"class": "nota"}, t("Um comando por vez, no SQL do MySQL (o sistema traduz para o banco {1}). Valem SELECT, INSERT e ALTER TABLE … ADD COLUMN (um campo novo numa tabela); UPDATE e DELETE só com a aprovação ligada no quadro Sistema. Tudo fica no registro abaixo.", {1: el("code", {}, h(s.banco))}))
+    + el("form", {"data-recurso": "sql", "id": "form-sql", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "executar"})
+      + el("label", {"style": "grid-column: 1 / -1"}, t("Comando {1}", {1: el("textarea", {"name": "comando", "class": "formula", "rows": "4", "required": true, "placeholder": fixo("SELECT id, nome FROM relogio ORDER BY nome")}, "")}))
+      + el("label", {}, t("Linhas na resposta {1}", {1: el("input", {"type": "number", "name": "limite", "min": "1", "max": String(s.limite_maximo), "value": String(s.limite_padrao)})}))
+      + el("div", {"class": "botoes"}, el("button", {}, t("Executar"))))
+    + el("div", {"id": "sql-resultado", "aria-live": "polite"}, tabelaSql(resultado))
+    + el("details", {}, el("summary", {}, t("As últimas execuções")) + (s.execucoes.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma ainda."))
+      : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Quando"), t("Quem"), t("Comando"), t("Resultado")].map(function (x) { return el("th", {}, x); }).join("")))
+        + el("tbody", {}, s.execucoes.map(function (x) {
+          return el("tr", {}, el("td", {}, dataBr(x.quando) + " " + horaBr(x.quando)) + el("td", {}, h(x.usuario || "—")) + el("td", {}, el("code", {}, h(x.comando)))
+            // o erro fica como foi gravado, no idioma de quem rodou (um registro, como o do cron)
+            + el("td", {"class": x.ok ? "nota" : "acao"}, x.ok ? (x.linhas === null ? t("ok") : t("{1} linha(s)", {1: x.linhas})) : (x.erro ? el("samp", {}, h(x.erro)) : t("erro"))));
+        }).join(""))))));
+}
+function montarSql(resultado) {
+  var alvo = document.getElementById("sql");
+  if (!alvo) {
+    return Promise.resolve();
+  }
+  return api({recurso: "sql", limite: 20}).then(function (s) {
+    alvo.innerHTML = quadroSql(s, resultado);
+  }).catch(function (e) {
+    alvo.innerHTML = el("p", {"class": "acao"}, t("Não consegui ler o SQL: {1}", {1: h(e.message)}));
+  });
+}
+
 // lê e monta a página: primeiro confere as migrações (com alguma pendente, só o aviso)
 function recarregarConfig(aplicadas, manterPosicao) {
   return api({recurso: "migracoes"}).then(function (m) {
@@ -318,6 +359,17 @@ function recarregarConfig(aplicadas, manterPosicao) {
           }).join("")),
           el("p", {"class": "nota"}, h(sp.texto)),
           ex("senhas", t("Senhas"), t("Vale para toda senha nova: a conta criada, a troca em Minha conta, a senha nova pelo link do Esqueci a senha e a do master em Usuários; as que já existem continuam valendo. É do sistema inteiro: só o master muda.")));
+        // os parâmetros de operação do sistema inteiro (só o master): o que estava só no config.php; vazio volta ao config.php
+        var parametros = d.sistema.pode_mudar ? cartao(t("Sistema"), el("div", {"class": "campos"}, d.sistema.parametros.map(function (p) {
+          var de = p.origem === "sistema" ? "" : (p.config_valor !== null ? p.config_valor : p.padrao);
+          var origem = p.origem === "sistema" ? t("gravado aqui") : (p.origem === "config" ? t("do config.php ({1})", {1: p.config_php}) : t("o padrão"));
+          var campo = p.tipo === "sim_nao"
+            ? el("select", {"name": "parametros[" + p.chave + "]"}, el("option", {"value": "", "selected": p.origem !== "sistema"}, t("Como o config.php: {1}", {1: de === 1 ? t("sim") : t("não")}))
+              + el("option", {"value": "1", "selected": p.origem === "sistema" && p.valor === 1}, t("Sim")) + el("option", {"value": "0", "selected": p.origem === "sistema" && p.valor === 0}, t("Não")))
+            : el("input", {"type": "number", "name": "parametros[" + p.chave + "]", "min": String(p.minimo), "max": String(p.maximo), "value": p.origem === "sistema" ? String(p.valor) : "", "placeholder": String(de)});
+          // o rótulo com a descrição em cima e o campo embaixo (largo): a descrição não cabe ao lado do campo no celular
+          return parCampo(p.nome, campo, "largo", el("small", {"class": "nota", "style": "display:block; overflow-wrap: anywhere"}, h(p.descricao) + " · " + origem));
+        }).join("")), null, ex("parametros", t("Sistema"), t("Os parâmetros de operação do sistema inteiro, que antes só mudavam no config.php: o gravado aqui vale; vazio volta a valer a linha do config.php (ou o padrão). As credenciais, as chaves e as pastas continuam só no config.php. Só o master muda."))) : "";
         var quadroCron = cartao(t("Cron"), cron);
         // de onde vêm os números dos sorteios (a API diz o último lote e se os dois serviços estão fora)
         var al = d.aleatorio;
@@ -332,7 +384,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-          + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + quadroCron + sorteios + alertas)
+          + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + parametros + quadroCron + sorteios + alertas)
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
@@ -348,7 +400,10 @@ function recarregarConfig(aplicadas, manterPosicao) {
                   + el("input", {"type": "hidden", "name": "arquivo", "value": x.arquivo}) + el("button", {"class": "discreto"}, t("Restaurar")))));
             }).join("")), "largo")) : "")
           + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Fazer uma cópia agora")))) : ""));
+        // ---------- o SQL pela API (só o master): montado depois, pelo recurso=sql ----------
+        res += d.sistema.pode_mudar ? el("section", {"id": "sql", "class": "cartao-config"}, el("p", {"class": "nota"}, t("Lendo…"))) : "";
         document.getElementById("configuracao").innerHTML = res;
+        montarSql(null);
         if (!manterPosicao && !retornoConfig && window.location.hash) {
           var alvo = document.getElementById(window.location.hash.slice(1));
           if (alvo) {
@@ -367,6 +422,16 @@ aoGravar = function (form, res, dados) {
   var posicaoIdioma = posicaoAntesDoIdioma || posicaoConfig();
   posicaoAntesDoIdioma = null;
   form.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
+  // o SQL: o resultado embaixo do formulário (o comando continua escrito) e o registro de novo, sem remontar a página
+  if (dados.get("recurso") === "sql") {
+    return montarSql(res.resultado || null).then(function () {
+      var caixa = document.querySelector("#form-sql textarea[name=comando]");
+      if (caixa) {
+        caixa.value = dados.get("comando") || "";
+      }
+      avisoConfig(textoResposta(res), !res.ok);
+    });
+  }
   if (!res.ok) {
     avisoConfig(textoResposta(res), true);
     return posicaoSalvar ? restaurarPosicaoDaGravacao(posicaoSalvar) : null;

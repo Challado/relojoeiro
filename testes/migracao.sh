@@ -161,6 +161,12 @@ for b in "${BANCOS[@]}"; do
     [ -n "$RC" ] && [ "$(curl -s -H "$TOKEN" "$A?recurso=relatorios&tipo=$RC" | json secoes.0.linhas.0.0)" != "Relógio de antes" ] \
       && erros+=("o relatório gravado depois da v54 não trouxe o relógio de antes")
   fi
+  # a v55 aplicada agora: o SQL pela API lê o relógio de antes, e a execução fica no registro
+  if case ", $PEND," in *", v55,"*) true ;; *) false ;; esac; then
+    [ "$(curl -s -H "$TOKEN" -d recurso=sql -d acao=executar --data-urlencode "comando=SELECT nome FROM relogio WHERE id = $R" "$A" | json resultado.linhas.0.0)" != "Relógio de antes" ] \
+      && erros+=("o SQL pela API não leu o relógio de antes depois da v55")
+    [ "$(curl -s -H "$TOKEN" "$A?recurso=sql" | json execucoes.0.ok)" != "true" ] && erros+=("o registro do SQL não tem a execução depois da v55")
+  fi
   [ "$(echo "$FICHA" | json relogio.acessorios.0.nome)" != "Pulseira de antes" ] && erros+=("o acessório de antes sumiu")
   [ "$(curl -s -H "$TOKEN" "$A?recurso=historico&relogio=$R" | json total)" != "$LANC_ANTES" ] && erros+=("o histórico mudou de tamanho")
   # os serviços de antes continuam, cada um a volta de uma manutenção encerrada; quem fez virou a oficina (sem ele, a sua)

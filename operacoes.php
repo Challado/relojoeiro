@@ -840,6 +840,33 @@ function op_relatorios($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// O SQL pela API (recurso=sql, só o master). Ação: executar (comando: um comando SQL no dialeto do MySQL, conferido por
+// sql_classificar; limite: as linhas do SELECT na resposta, de 1 a 5000, padrão 200). A resposta traz o resultado: tipo,
+// colunas e linhas (no SELECT), total (as lidas), cortado (passou do limite), afetadas (as mudadas no INSERT, UPDATE e
+// DELETE), duracao_ms. Recusado ou com erro do banco, ok é false e os erros dizem o porquê; tudo fica no registro
+// ---------------------------------------------------------------------------------------------------------------------
+function op_sql($acao, $d)
+{
+    if (!usuario_master()) {
+        return resultado([t("O SQL pela API é só do master.")], "");
+    }
+    if ($acao !== "executar") {
+        return resultado([t("Ação desconhecida: use executar.")], "");
+    }
+    $lim = trim((string)($d["limite"] ?? ""));
+    if ($lim !== "" && (preg_match("/^\\d+\$/", $lim) !== 1 || (int)$lim < 1 || (int)$lim > SQL_LIMITE_MAXIMO)) {
+        return resultado([t("Limite: de 1 a {1} linhas.", [1 => SQL_LIMITE_MAXIMO])], "");
+    }
+    $r = sql_rodar((string)($d["comando"] ?? ""), $lim === "" ? SQL_LIMITE_PADRAO : (int)$lim);
+    if (!$r["ok"]) {
+        return resultado([$r["erro"]], "", ["resultado" => $r]);
+    }
+    $msg = $r["tipo"] === "select" ? t("{1} linha(s) lidas.", [1 => $r["total"]])
+        : ($r["tipo"] === "alter" ? t("Coluna criada.") : ($r["afetadas"] === null ? t("Comando executado.") : t("{1} linha(s) mudadas.", [1 => $r["afetadas"]])));
+    return resultado([], $msg, ["resultado" => $r]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Os calibres (a aba Calibres dos Cadastros; da árvore, presos à raiz dela). Ações: salvar (id: 0 cria; nome, fabricante,
 // link: o endereço do manual técnico, http:// ou https://; observacao: as recomendações; valores: {identificador: valor}
 // dos campos do cadastro que o calibre define, vazio tira; só muda o que vier), excluir (id: os relógios que apontam para
@@ -4749,7 +4776,7 @@ function op_modos($acao, $d)
 //           {link}); pulso_auto_inicio (1 ou 0: o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo
 //           Pôs); pulso_auto_fim (1 ou 0: sai sozinho no fim do horário de uso, o "fecha às" do tipo No pulso; 0: só pelo
 //           Tirou); encostado_ativo (1 ou 0: liga ou desliga o aviso Encostado do cadastro); max_sem_uso (0 a 365); previsao_limite (0 a 100); medicao_base (dias ou leituras: o gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo); gasto_motor (vazio: conforme o relógio e o grupo; horas, robusto, marcacao, cadastro ou formulas: como calcular o gasto da bateria, para toda a coleção); documentos_copia (vazio: conforme o relógio e o arquivo; todos ou nenhum: a cópia dos documentos no banco, para toda a coleção); medicao_janela_leituras (2 a 1000); medicao_janela_dias (1 a 3650: a média do gasto medido
-//           usa as medições inteiras destes últimos dias); medicao_meia_vida_dias (0 a 3650, padrão 0: sem peso por idade); url_sistema só o master (é do sistema inteiro). Só o que vier no pedido muda.
+//           usa as medições inteiras destes últimos dias); medicao_meia_vida_dias (0 a 3650, padrão 0: sem peso por idade); url_sistema só o master (é do sistema inteiro); parametros[<chave>] (só o master: os parâmetros de operação do sistema, PARAMETROS_SISTEMA, o que antes era só do config.php; vazio volta a valer o config.php). Só o que vier no pedido muda.
 //           As mensagens e as agendas saem pelos destinos e pelas agendas (op_destinos, op_agendas).
 //   evento_salvar (evento_id (ou id): 0 cria; nome, ativo, repeticao (uma, diaria, semanal, mensal, intervalo), hora (HH:MM),
 //           data_inicio (uma vez: a data; a cada N dias: desde quando, vazio: hoje), dias_semana (1 a 7, lista ou separados
@@ -4884,6 +4911,18 @@ function op_config($acao, $d)
                 $erros[] = t("cron_espera_rodadas: um número inteiro de 0 a 1440 (0: nunca mata; vazio: o padrão, 10).");
             }
         }
+        // os parâmetros de operação do sistema inteiro (parametros[<chave>]; vazio: volta a valer o config.php): só o master
+        $param_gravar = [];
+        if (array_key_exists("parametros", $d)) {
+            if (!usuario_master()) {
+                $erros[] = t("Os parâmetros do sistema são do sistema inteiro: só o master muda.");
+            } elseif (!is_array($d["parametros"])) {
+                $erros[] = t("parametros: os campos parametros[<chave>], um para cada parâmetro que muda.");
+            } else {
+                [$erros_p, $param_gravar] = parametros_sistema_conferir($d["parametros"]);
+                $erros = array_merge($erros, $erros_p);
+            }
+        }
         if ($mexe_senha && !usuario_master()) {
             $erros[] = t("A força da senha é do sistema inteiro: só o master muda.");
         } elseif ($mexe_senha && $sp["maiusculas"] + $sp["minusculas"] + $sp["numeros"] + $sp["simbolos"] > $sp["tamanho"]) {
@@ -4895,6 +4934,9 @@ function op_config($acao, $d)
             }
             if (array_key_exists("cron_espera_rodadas", $d) && usuario_master()) {
                 sis_set("cron_espera_rodadas", trim((string)$d["cron_espera_rodadas"]));
+            }
+            foreach ($param_gravar as $k_p => $v_p) {
+                sis_set("param_" . $k_p, $v_p);
             }
             // a força da senha é do sistema inteiro: só o master muda
             foreach (array_keys(SENHA_REGRAS) as $k) {

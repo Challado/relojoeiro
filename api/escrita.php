@@ -7,7 +7,7 @@ if (!defined("RELOJOEIRO_API")) {
     exit;
 }
 
-$ops = ["arvore" => "op_arvore", "campos" => "op_campos", "lancamento_tipos" => "op_lancamento_tipos", "formulas" => "op_formulas", "totais" => "op_totais", "calibres" => "op_calibres", "marcas" => "op_marcas", "relatorios" => "op_relatorios", "unidades" => "op_unidades", "secoes" => "op_secoes", "relogio" => "op_relogio",
+$ops = ["arvore" => "op_arvore", "campos" => "op_campos", "lancamento_tipos" => "op_lancamento_tipos", "formulas" => "op_formulas", "totais" => "op_totais", "calibres" => "op_calibres", "marcas" => "op_marcas", "relatorios" => "op_relatorios", "sql" => "op_sql", "unidades" => "op_unidades", "secoes" => "op_secoes", "relogio" => "op_relogio",
     "lancamento" => "op_lancamento", "avisos" => "op_avisos", "criterios" => "op_criterios",
     "rodizio" => "op_rodizio", "modos" => "op_modos", "config" => "op_config", "documentos" => "op_documentos", "documento_categorias" => "op_documento_categorias",
     "acessorios" => "op_acessorios", "winders" => "op_winders", "winder_posicoes" => "op_winder_posicoes", "movimentos" => "op_movimentos", "programas" => "op_programas", "servicos" => "op_servicos", "manutencao" => "op_manutencao", "oficinas" => "op_oficinas", "listas" => "op_listas", "reserva" => "op_reserva", "timegrapher" => "op_timegrapher", "destinos" => "op_destinos", "agendas" => "op_agendas", "conta" => "op_conta", "colecoes" => "op_colecoes", "acessos" => "op_acessos",

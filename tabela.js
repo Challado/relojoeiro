@@ -126,7 +126,8 @@
 
     // os totais do rodapé: a API calcula nos relógios à mostra (recurso=totais, parte=rodape, relogios=os ids) e a tela só
     // desenha, embaixo de cada coluna, os totais dela, cada um numa tabelinha com o nome em cima e o total no pé; as
-    // tabelinhas ganham linhas vazias em cima, sem borda, até a maior delas, para os totais ficarem todos na mesma altura
+    // tabelinhas ganham linhas vazias, sem borda, até a maior delas, metade em cima e metade embaixo das linhas com dado:
+    // a caixa dos dados fica no meio, e só os totais ficam todos embaixo, na mesma altura
     var pedidoTotais = 0;
     var esperaTotais = null;
     var linhaTotais = document.getElementById("totais-rodape");
@@ -135,8 +136,11 @@
       var corpoT = [];
       var pe = "";
       if (r.tipo === "tabela") {
+        // com vazias embaixo (a caixa dos dados no meio), a última linha com dado fecha a caixa por baixo
+        var faltamT = Math.max(0, linhas - r.linhas.length);
+        var comVaziasEmbaixo = faltamT - Math.floor(faltamT / 2) > 0;
         corpoT = r.linhas.map(function (l, i) {
-          return el("tr", {"class": (l.sem ? "sem " : "") + (i === 0 ? "primeira" : "")}, el("td", {"title": l.rotulo}, h(l.rotulo)) + el("td", {"class": "num"}, h(l.texto)));
+          return el("tr", {"class": (l.sem ? "sem " : "") + (i === 0 ? "primeira " : "") + (comVaziasEmbaixo && i === r.linhas.length - 1 ? "ultima" : "")}, el("td", {"title": l.rotulo}, h(l.rotulo)) + el("td", {"class": "num"}, h(l.texto)));
         });
         pe = el("tr", {}, el("td", {}, t("Total")) + el("td", {"class": "num"}, h(r.total_texto)));
       } else if (r.tipo === "relogio") {
@@ -146,12 +150,21 @@
       } else {
         pe = el("tr", {}, el("td", {"colspan": "2", "class": "num"}, h(r.texto)));
       }
-      // a última das vazias fecha a caixa por cima (a linha dela é a borda de cima da primeira linha com dado ou do total)
-      var vazias = [];
-      while (vazias.length + corpoT.length < linhas) {
-        vazias.push(el("tr", {"class": "vazia" + (vazias.length === 0 ? " fim" : ""), "aria-hidden": "true"}, el("td", {"colspan": "2"}, "\u00a0")));
+      // as vazias: metade em cima e metade embaixo dos dados (sem dado, todas em cima); a última de cima fecha a caixa por
+      // cima (a linha dela é a borda de cima da primeira linha com dado ou do total)
+      var faltam = Math.max(0, linhas - corpoT.length);
+      var acima = corpoT.length > 0 ? Math.floor(faltam / 2) : faltam;
+      var vazia = function (fim) { return el("tr", {"class": "vazia" + (fim ? " fim" : ""), "aria-hidden": "true"}, el("td", {"colspan": "2"}, "\u00a0")); };
+      var antes = [];
+      var depois = [];
+      for (var k = 0; k < faltam; k++) {
+        if (k < acima) {
+          antes.push(vazia(k === acima - 1));
+        } else {
+          depois.push(vazia(false));
+        }
       }
-      corpoT = vazias.reverse().concat(corpoT);
+      corpoT = antes.concat(corpoT, depois);
       return el("table", {"class": "mini-total"}, el("caption", {"title": x.nome}, h(x.nome)) + el("tbody", {}, corpoT.join("")) + el("tfoot", {}, pe));
     };
     var pedirTotais = function () {

@@ -1274,6 +1274,7 @@ $MIGRACOES = [
     "v52" => ["migracao_v52.sql", tk("o cadastro das marcas (Cadastros › Marcas: o nome, o país, o site e a observação), com a marca de cada relógio na ficha e na tabela da página Hoje; o texto da marca de cada relógio vira uma marca do cadastro"), "sistema.chave=migracao_v52", "migracao_v52_dados"],
     "v53" => ["migracao_v53.sql", tk("os totais na coluna Marca da tabela dos relógios, com o total pronto Por marca (quantos relógios de cada marca) no rodapé e na página de totais"), "sistema.chave=migracao_v53", "migracao_v53_dados"],
     "v54" => ["migracao_v54.sql", tk("os relatórios cadastrados: em Cadastros › Relatórios e pela API (recurso=relatorios), cada um com as colunas (uma expressão por relógio, o formato e a conta do rodapé), o filtro, a ordem, o agrupamento e quais relógios; eles aparecem no catálogo dos relatórios (Meus relatórios), com o CSV"), "relatorio"],
+    "v55" => ["migracao_v55.sql", tk("o SQL pela API (recurso=sql, só o master: SELECT, INSERT, ALTER TABLE ... ADD COLUMN e, com a aprovação na Configuração do sistema, UPDATE e DELETE), com o registro de cada execução; e os parâmetros de operação do config.php (o cadastro aberto, os dias da demonstração e do convite, o tamanho dos documentos, a espera das telas, o lote, a cópia de segurança) também na Configuração › Sistema e pela API"), "sql_execucao"],
 ];
 
 // A regra da coluna dos totais aceita a Marca (nos quatro bancos), e cada árvore que ainda não tem total na coluna Marca
@@ -6016,13 +6017,24 @@ function documentos_pasta_erro()
     return $erro;
 }
 
-// O maior documento aceito, em bytes: o DOCUMENTOS_LIMITE do config.php (sem ele, o MANUAL_LIMITE, o nome antigo; sem os
-// dois, 100 MB; 0 ou negativo, como o -1: sem limite do sistema), ou menos se o PHP do servidor aceitar menos num envio
+// O maior documento aceito pelo sistema, em bytes, antes do limite do PHP: o gravado na Configuração do sistema
+// (documentos_limite), senão o DOCUMENTOS_LIMITE do config.php (ou o MANUAL_LIMITE, o nome antigo), senão 100 MB; 0 ou
+// negativo: sem limite do sistema
+function documentos_limite_sistema()
+{
+    if (($g = parametro_gravado("documentos_limite")) !== null) {
+        return $g;
+    }
+    return defined("DOCUMENTOS_LIMITE") ? (int)DOCUMENTOS_LIMITE : (defined("MANUAL_LIMITE") ? (int)MANUAL_LIMITE : 100 * 1024 * 1024);
+}
+
+// O maior documento aceito, em bytes: o do sistema (documentos_limite_sistema; 0 ou negativo: sem limite do sistema),
+// ou menos se o PHP do servidor aceitar menos num envio
 // (upload_max_filesize e post_max_size do php.ini; o envio leva também o resto do formulário, daí a folga de 64 KB).
 // null: nenhum limite, nem do sistema nem do PHP
 function documentos_limite()
 {
-    $limite = defined("DOCUMENTOS_LIMITE") ? (int)DOCUMENTOS_LIMITE : (defined("MANUAL_LIMITE") ? (int)MANUAL_LIMITE : 100 * 1024 * 1024);
+    $limite = documentos_limite_sistema();
     $limite = $limite > 0 ? $limite : PHP_INT_MAX;
     $arquivo = ini_bytes(ini_get("upload_max_filesize"));
     $envio = ini_bytes(ini_get("post_max_size"));
@@ -10172,13 +10184,16 @@ function manual_html($md)
 // sem o quadro da Configuração (nem o aviso de que falta a pasta). Sem a linha: ligada
 function backup_ativo()
 {
+    if (($g = parametro_gravado("backup_ativo")) !== null) {
+        return $g === 1;
+    }
     return !defined("BACKUP_ATIVO") || BACKUP_ATIVO !== false;
 }
 
 function backup_pasta_erro()
 {
     if (!backup_ativo()) {
-        return t("a cópia de segurança está desligada no config.php (BACKUP_ATIVO = false)");
+        return t("a cópia de segurança está desligada (Configuração › Sistema, ou BACKUP_ATIVO = false no config.php)");
     }
     if (!defined("BACKUP_PASTA") || trim((string)BACKUP_PASTA) === "") {
         return t("sem BACKUP_PASTA no config.php: a cópia de segurança automática está desligada");
@@ -10208,11 +10223,17 @@ function backup_pasta()
 
 function backup_manter()
 {
+    if (($g = parametro_gravado("backup_manter")) !== null) {
+        return $g;
+    }
     return defined("BACKUP_MANTER") && (int)BACKUP_MANTER > 0 ? (int)BACKUP_MANTER : 7;
 }
 
 function backup_com_documentos()
 {
+    if (($g = parametro_gravado("backup_documentos")) !== null) {
+        return $g === 1;
+    }
     return defined("BACKUP_DOCUMENTOS") && BACKUP_DOCUMENTOS === true;
 }
 
@@ -10373,20 +10394,277 @@ function processo_matar($pid, $prazo = 10)
 // passou disso, a tela cancela o pedido e diz que o servidor não respondeu, em vez de ficar parada para sempre
 function api_espera_segundos()
 {
+    if (($g = parametro_gravado("api_espera")) !== null) {
+        return $g;
+    }
     return defined("API_ESPERA") && is_numeric(API_ESPERA) && (int)API_ESPERA >= 0 ? (int)API_ESPERA : 120;
 }
 
 // O lote (recurso=lote): no máximo quantas operações num POST (LOTE_MAXIMO do config.php; sem a linha, 100)
 function lote_maximo()
 {
+    if (($g = parametro_gravado("lote_maximo")) !== null) {
+        return $g;
+    }
     return defined("LOTE_MAXIMO") && is_numeric(LOTE_MAXIMO) && (int)LOTE_MAXIMO > 0 ? (int)LOTE_MAXIMO : 100;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Os parâmetros de operação do sistema inteiro: o master muda em Configuração › Sistema, ou pela API (recurso=config,
+// parametros[<chave>]=<valor>; vazio volta a valer o config.php). Cada um vale o gravado no sistema (a tabela sistema, a
+// chave param_<chave>); sem ele, a linha de mesmo nome do config.php; sem as duas, o padrão. O que é credencial, chave,
+// caminho ou endereço de servidor (o banco, o e-mail, a pasta das cópias, os segredos) e o TEXTOS_ESTRITO (lido antes do
+// banco, para quem traduz) ficam só no config.php. Cada um: [a linha do config.php (null: nenhuma), sim_nao ou inteiro, o
+// padrão, o menor e o maior (no inteiro)]
+// ---------------------------------------------------------------------------------------------------------------------
+const PARAMETROS_SISTEMA = [
+    "cadastro_aberto" => ["CADASTRO_ABERTO", "sim_nao", 1, 0, 1],
+    "demo_dias" => ["DEMO_DIAS", "inteiro", 30, 0, 3650],
+    "convite_dias" => ["CONVITE_DIAS", "inteiro", 7, 1, 365],
+    "documentos_limite" => ["DOCUMENTOS_LIMITE", "inteiro", 104857600, 0, 1099511627776],
+    "api_espera" => ["API_ESPERA", "inteiro", 120, 0, 86400],
+    "lote_maximo" => ["LOTE_MAXIMO", "inteiro", 100, 1, 10000],
+    "backup_ativo" => ["BACKUP_ATIVO", "sim_nao", 1, 0, 1],
+    "backup_manter" => ["BACKUP_MANTER", "inteiro", 7, 1, 3650],
+    "backup_documentos" => ["BACKUP_DOCUMENTOS", "sim_nao", 0, 0, 1],
+    "sql_alteracoes" => [null, "sim_nao", 0, 0, 1],
+];
+
+// O nome e o que faz cada parâmetro, no idioma do pedido
+function parametros_sistema_textos()
+{
+    return [
+        "cadastro_aberto" => [t("Cadastro aberto"), t("1: qualquer um cria a conta pela página de cadastro (com os dias de demonstração); 0: só entra quem o master cria ou quem tem um convite")],
+        "demo_dias" => [t("Dias da demonstração"), t("os dias da conta criada pelo cadastro aberto, até virar oficial (0: já nasce oficial)")],
+        "convite_dias" => [t("Dias do convite"), t("os dias que um convite ou um pedido de acesso espera; depois, o cron apaga")],
+        "documentos_limite" => [t("Tamanho máximo de um documento (bytes)"), t("o maior arquivo aceito nos documentos (0: sem limite do sistema; o PHP do servidor pode aceitar menos)")],
+        "api_espera" => [t("Espera das telas pela API (segundos)"), t("passou disso, a tela cancela o pedido e diz que o servidor não respondeu (0: sem limite)")],
+        "lote_maximo" => [t("Operações num lote"), t("no máximo quantas operações num POST do recurso=lote")],
+        "backup_ativo" => [t("Cópia de segurança ligada"), t("1: o cron faz a cópia do banco toda noite, na pasta do config.php (BACKUP_PASTA); 0: desligada")],
+        "backup_manter" => [t("Cópias guardadas"), t("quantas cópias de segurança, as mais novas, ficam na pasta")],
+        "backup_documentos" => [t("Documentos na cópia"), t("1: a cópia leva também o conteúdo dos documentos guardado no banco (pode ser grande); 0: não")],
+        "sql_alteracoes" => [t("SQL: UPDATE e DELETE aprovados"), t("1: o master pode rodar UPDATE e DELETE pelo recurso=sql; 0: só SELECT, INSERT e ALTER TABLE ... ADD COLUMN")],
+    ];
+}
+
+// O valor gravado no sistema de um parâmetro (null: nenhum; vale o config.php ou o padrão)
+function parametro_gravado($chave)
+{
+    $v = trim((string)sis("param_" . $chave));
+    return $v === "" || preg_match("/^-?\\d+\$/", $v) !== 1 ? null : (int)$v;
+}
+
+// Os parâmetros, cada um com o valor que vale, de onde ele vem (sistema, config ou padrao), o do config.php, o padrão, o
+// tipo e a faixa: a Configuração e a API mostram isto
+function parametros_sistema_lista()
+{
+    $valores = ["cadastro_aberto" => cadastro_aberto() ? 1 : 0, "demo_dias" => demo_dias(), "convite_dias" => convite_dias(),
+        "documentos_limite" => documentos_limite_sistema(), "api_espera" => api_espera_segundos(), "lote_maximo" => lote_maximo(),
+        "backup_ativo" => backup_ativo() ? 1 : 0, "backup_manter" => backup_manter(), "backup_documentos" => backup_com_documentos() ? 1 : 0,
+        "sql_alteracoes" => sql_alteracoes_aprovadas() ? 1 : 0];
+    $textos = parametros_sistema_textos();
+    $res = [];
+    foreach (PARAMETROS_SISTEMA as $k => [$linha, $tipo, $padrao, $min, $max]) {
+        $config = $linha !== null && defined($linha) ? constant($linha) : null;
+        $res[] = ["chave" => $k, "nome" => $textos[$k][0], "descricao" => $textos[$k][1], "tipo" => $tipo, "valor" => $valores[$k],
+            "origem" => parametro_gravado($k) !== null ? "sistema" : ($config !== null ? "config" : "padrao"),
+            "config_php" => $linha, "config_valor" => $config === null ? null : ($tipo === "sim_nao" ? ($config ? 1 : 0) : (int)$config),
+            "padrao" => $padrao, "minimo" => $min, "maximo" => $max];
+    }
+    return $res;
+}
+
+// Confere os parâmetros que vieram (parametros[<chave>]: um número na faixa, ou vazio: volta a valer o config.php).
+// Devolve [os erros, chave => o texto a gravar]
+function parametros_sistema_conferir($vindos)
+{
+    $erros = [];
+    $gravar = [];
+    $textos = parametros_sistema_textos();
+    foreach ((array)$vindos as $k => $v) {
+        if (!isset(PARAMETROS_SISTEMA[$k])) {
+            $erros[] = t("Parâmetro desconhecido: {1} (os que existem: {2}).", [1 => $k, 2 => implode(", ", array_keys(PARAMETROS_SISTEMA))]);
+            continue;
+        }
+        [, $tipo, , $min, $max] = PARAMETROS_SISTEMA[$k];
+        $v = is_array($v) ? "x" : trim((string)$v);
+        if ($v === "") {
+            $gravar[$k] = "";
+        } elseif (preg_match("/^-?\\d+\$/", $v) !== 1 || (int)$v < $min || (int)$v > $max) {
+            $erros[] = $tipo === "sim_nao" ? t("{1}: 1 ou 0, ou vazio (o do config.php).", [1 => $textos[$k][0]])
+                : t("{1}: um número inteiro de {2} a {3}, ou vazio (o do config.php).", [1 => $textos[$k][0], 2 => $min, 3 => $max]);
+        } else {
+            $gravar[$k] = (string)(int)$v;
+        }
+    }
+    return [$erros, $gravar];
+}
+
+// UPDATE e DELETE pelo recurso=sql: só com a aprovação ligada na Configuração do sistema (sql_alteracoes; sem ela, não)
+function sql_alteracoes_aprovadas()
+{
+    return parametro_gravado("sql_alteracoes") === 1;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// O SQL pelo recurso=sql (só o master; sem o escopo das coleções: o banco inteiro). Um comando por vez, no SQL do MySQL (o
+// mesmo das migrações: cada banco recebe a tradução dele). Valem: SELECT (as linhas, até o limite), INSERT, ALTER TABLE
+// <tabela> ADD [COLUMN] <coluna> <tipo> (um campo novo numa tabela) e, só com a aprovação ligada na Configuração do sistema
+// (sql_alteracoes), UPDATE e DELETE. O resto (DROP, TRUNCATE, CREATE, o ALTER que não é ADD COLUMN, o SELECT ... INTO, o
+// parâmetro ?, mais de um comando) é recusado antes de ir ao banco. Cada pedido, o recusado, o que deu erro e o que deu
+// certo, fica no registro (a tabela sql_execucao): quando, quem, o comando, o tipo, as linhas, o tempo e o erro. Sem nova
+// tentativa: o erro do banco volta como veio.
+// ---------------------------------------------------------------------------------------------------------------------
+const SQL_LIMITE_PADRAO = 200;
+const SQL_LIMITE_MAXIMO = 5000;
+const SQL_TIPOS = ["select", "insert", "update", "delete", "alter"];
+
+// O tipo de um comando e o erro, se ele não vale: [tipo (select, insert, update, delete ou alter; null: não deu para
+// saber), o comando sem o ; do fim, o erro ("" se vale)]
+function sql_classificar($comando)
+{
+    $p = sql_pedacos((string)$comando);
+    // o ; do fim (e os espaços) saem; outro ; é mais de um comando
+    while (count($p) > 0 && (end($p)[0] === "e" || end($p) === ["o", ";"])) {
+        array_pop($p);
+    }
+    $sem_espaco = array_values(array_filter($p, function ($x) { return $x[0] !== "e"; }));
+    if (count($sem_espaco) === 0) {
+        return [null, "", t("Escreva o comando SQL.")];
+    }
+    if (in_array(["o", ";"], $p, true)) {
+        return [null, "", t("Um comando por vez: há mais de um (separados por ;).")];
+    }
+    if (in_array(["p", "?"], $p, true)) {
+        return [null, "", t("O comando não leva parâmetros (?): escreva os valores nele.")];
+    }
+    $texto = rtrim((string)$comando);
+    while (substr($texto, -1) === ";") {
+        $texto = rtrim(substr($texto, 0, -1));
+    }
+    $palavras = array_map(function ($x) { return strtoupper($x[1]); }, array_values(array_filter($sem_espaco, function ($x) { return $x[0] === "w"; })));
+    $primeira = $sem_espaco[0][0] === "w" ? strtoupper($sem_espaco[0][1]) : "";
+    $proibidas = array_values(array_intersect($palavras, ["DROP", "TRUNCATE", "RENAME", "MODIFY", "CHANGE", "GRANT", "REVOKE", "OUTFILE", "DUMPFILE", "LOAD_FILE", "ATTACH", "DETACH", "PRAGMA", "VACUUM"]));
+    if ($primeira === "SELECT") {
+        if (in_array("INTO", $palavras, true) || count($proibidas) > 0) {
+            return ["select", $texto, t("O SELECT só lê: sem INTO nem {1}.", [1 => implode(", ", $proibidas !== [] ? $proibidas : ["OUTFILE"])])];
+        }
+        return ["select", $texto, ""];
+    }
+    if (in_array($primeira, ["INSERT", "UPDATE", "DELETE"], true)) {
+        if (count($proibidas) > 0) {
+            return [strtolower($primeira), $texto, t("Palavra não aceita no comando: {1}.", [1 => implode(", ", $proibidas)])];
+        }
+        if ($primeira !== "INSERT" && !sql_alteracoes_aprovadas()) {
+            return [strtolower($primeira), $texto, t("UPDATE e DELETE só rodam com a aprovação ligada na Configuração do sistema (SQL: UPDATE e DELETE aprovados).")];
+        }
+        return [strtolower($primeira), $texto, ""];
+    }
+    if ($primeira === "ALTER") {
+        // ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo...>: um campo novo, e só isso
+        $c = trim((string)preg_replace("/\\s+/", " ", $texto));
+        if (preg_match("/^ALTER TABLE [`\"]?(\\w+)[`\"]? ADD (COLUMN )?[`\"]?(\\w+)[`\"]? \\S/i", $c, $m) !== 1
+            || preg_match("/^(INDEX|KEY|UNIQUE|CONSTRAINT|FOREIGN|PRIMARY|CHECK|FULLTEXT|SPATIAL)\$/i", $m[3]) === 1
+            || count($proibidas) > 0 || in_array(",", array_column(array_filter($sem_espaco, function ($x) { return $x[0] === "o"; }), 1), true) && sql_virgula_fora($sem_espaco)) {
+            return ["alter", $texto, t("Do ALTER, só ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>: um campo novo por vez.")];
+        }
+        if (!banco_tem_tabela($m[1])) {
+            return ["alter", $texto, t("A tabela {1} não existe.", [1 => $m[1]])];
+        }
+        if (banco_tem_coluna($m[1], $m[3])) {
+            return ["alter", $texto, t("A tabela {1} já tem a coluna {2}.", [1 => $m[1], 2 => $m[3]])];
+        }
+        return ["alter", $texto, ""];
+    }
+    return [null, $texto, t("Comando não aceito: só SELECT, INSERT, UPDATE, DELETE e ALTER TABLE ... ADD COLUMN.")];
+}
+
+// Há vírgula fora de parênteses (o ADD de mais de uma coluna)?
+function sql_virgula_fora($pedacos)
+{
+    $nivel = 0;
+    foreach ($pedacos as $x) {
+        if ($x === ["o", "("]) {
+            $nivel++;
+        } elseif ($x === ["o", ")"]) {
+            $nivel--;
+        } elseif ($x === ["o", ","] && $nivel === 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Um valor de uma linha do SELECT para a resposta: o binário vira um aviso com o tamanho (a resposta é JSON em texto)
+function sql_valor_resposta($v)
+{
+    if (is_string($v) && banco_binario($v)) {
+        return t("(binário, {1} bytes)", [1 => strlen($v)]);
+    }
+    return $v;
+}
+
+// Roda um comando (já conferido) e registra. Devolve {ok, tipo, colunas, linhas, total, cortado, afetadas, duracao_ms,
+// erro}
+function sql_rodar($comando, $limite)
+{
+    [$tipo, $texto, $erro] = sql_classificar($comando);
+    $ini = microtime(true);
+    $res = ["ok" => false, "tipo" => $tipo, "colunas" => null, "linhas" => null, "total" => null, "cortado" => false, "afetadas" => null,
+        "duracao_ms" => 0, "erro" => $erro !== "" ? $erro : null];
+    if ($erro === "") {
+        try {
+            sem_escopo(function () use ($tipo, $texto, $limite, &$res) {
+                if ($tipo === "alter") {
+                    banco_script($texto);
+                } else {
+                    unset($GLOBALS["BANCO_AFETADAS"]);
+                    $r = banco_executar_cru($texto);
+                    if ($tipo === "select" && $r !== null) {
+                        $res["colunas"] = $r[0];
+                        $res["total"] = count($r[1]);
+                        $res["cortado"] = count($r[1]) > $limite;
+                        $res["linhas"] = array_map(function ($l) { return array_map("sql_valor_resposta", array_values($l)); }, array_slice($r[1], 0, $limite));
+                    } else {
+                        $res["afetadas"] = isset($GLOBALS["BANCO_AFETADAS"]) ? (int)$GLOBALS["BANCO_AFETADAS"] : null;
+                    }
+                }
+            });
+            $res["ok"] = true;
+        } catch (BancoErro $e) {
+            $res["erro"] = t("O banco recusou: {1}", [1 => $e->getMessage()]);
+        }
+    }
+    $res["duracao_ms"] = (int)round((microtime(true) - $ini) * 1000);
+    $u = usuario_atual();
+    sem_escopo(function () use ($comando, $res, $u) {
+        sql("INSERT INTO sql_execucao (quando, usuario_id, comando, tipo, ok, linhas, duracao_ms, erro) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [date("Y-m-d H:i:s"), $u !== null ? (int)$u["id"] : null, trim((string)$comando) === "" ? null : mb_substr((string)$comando, 0, 20000, "UTF-8"), $res["tipo"], $res["ok"] ? 1 : 0,
+                $res["tipo"] === "select" ? $res["total"] : $res["afetadas"], $res["duracao_ms"], $res["erro"]]);
+    });
+    return $res;
+}
+
+// As colunas de uma tabela, na ordem (o recurso=sql, tabela=<nome>: para escrever o comando)
+function sql_colunas_da_tabela($tabela)
+{
+    switch (banco_tipo()) {
+        case "mysql":
+            return array_column(linhas("SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? ORDER BY ordinal_position", [$tabela]), "c");
+        case "pgsql":
+            return array_column(linhas("SELECT column_name AS c FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? ORDER BY ordinal_position", [$tabela]), "c");
+        case "firebird":
+            return array_map("strtolower", array_column(linhas("SELECT TRIM(RDB\$FIELD_NAME) AS c FROM RDB\$RELATION_FIELDS WHERE RDB\$RELATION_NAME = ? ORDER BY RDB\$FIELD_POSITION", [strtoupper($tabela)]), "c"));
+        default:
+            return array_column(linhas("SELECT name AS c FROM pragma_table_info(?) ORDER BY cid", [$tabela]), "c");
+    }
 }
 
 // Os recursos que não entram num lote: os que fazem o que uma transação não desfaz (arquivos na pasta, e-mails, outros
 // serviços, contas e acessos) e os demorados
 function lote_recursos_fora()
 {
-    return array_merge(["lote", "documentos", "agendas", "destinos", "conta", "colecoes", "acessos", "convites", "pedidos", "usuarios", "cadastro"], recursos_demorados());
+    return array_merge(["lote", "sql", "documentos", "agendas", "destinos", "conta", "colecoes", "acessos", "convites", "pedidos", "usuarios", "cadastro"], recursos_demorados());
 }
 
 // As escritas que podem demorar (o histórico inteiro, o banco inteiro): sem limite de tempo no PHP nem na espera das telas

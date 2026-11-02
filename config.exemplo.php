@@ -31,6 +31,9 @@ define("MSG_TITULO", "Relógios");
 // define("MSG_ENDPOINT", "");
 // define("MSG_DESTINATARIO", "");
 
+// Os parâmetros de operação (CADASTRO_ABERTO, DEMO_DIAS, CONVITE_DIAS, DOCUMENTOS_LIMITE, API_ESPERA, LOTE_MAXIMO,
+// BACKUP_ATIVO, BACKUP_MANTER e BACKUP_DOCUMENTOS) o master muda também em Configuração › Sistema (ou pela API: recurso=config,
+// parametros[<chave>]): o gravado lá vale por cima da linha daqui, e esta linha vira o padrão.
 // as contas: o cadastro aberto (a página cadastro.php, sem login). false: fechado, só entra quem o master cria ou quem tem
 // um convite. Sem a linha: aberto
 // define("CADASTRO_ABERTO", true);

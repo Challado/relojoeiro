@@ -1482,6 +1482,45 @@ escrever(["recurso" => "relatorios", "acao" => "salvar", "id" => 999999, "nome" 
 escrever(["recurso" => "relatorios", "acao" => "excluir", "id" => $rc_2], false);
 escrever(["recurso" => "relatorios", "acao" => "excluir", "id" => $rc_2, "confirmar" => 1]);
 ler("2 relatorio excluido", ["recurso" => "relatorios", "tipo" => "r" . $rc_2]);
+// os parâmetros de operação do sistema (o que era só do config.php), pela Configuração: gravar, as recusas (fora da faixa,
+// o que não existe), ler de onde cada um vem, e voltar ao config.php (vazio)
+escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["convite_dias" => "10", "cadastro_aberto" => "0"]]);
+escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["lote_maximo" => "0"]], false);
+escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["nao_existe" => "1"]], false);
+escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["cadastro_aberto" => "2"]], false);
+$par_cfg = ler("2 config com os parametros", ["recurso" => "config"]);
+$par_v = array_column($par_cfg["sistema"]["parametros"] ?? [], null, "chave");
+if (($par_v["convite_dias"]["valor"] ?? null) !== 10 || ($par_v["convite_dias"]["origem"] ?? "") !== "sistema" || ($par_v["cadastro_aberto"]["valor"] ?? null) !== 0) {
+    $falhas[] = "parâmetros do sistema: o gravado não vale";
+}
+escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["convite_dias" => "", "cadastro_aberto" => ""]]);
+// o SQL pela API (só o master): o que ele aceita, as recusas antes do banco (vazio, mais de um comando, o ?, DROP, CREATE,
+// SELECT INTO, o ALTER que não é ADD COLUMN, a tabela que não existe, a coluna que já existe, UPDATE e DELETE sem a
+// aprovação), um SELECT (e o mesmo cortado no limite), um campo novo (ALTER TABLE ... ADD COLUMN), um INSERT, e com a
+// aprovação ligada, um UPDATE e um DELETE; por fim a aprovação desligada de novo e o registro
+ler("2 sql", ["recurso" => "sql"]);
+foreach (["", "SELECT nome FROM marca; SELECT nome FROM relogio", "SELECT nome FROM marca WHERE id = ?", "DROP TABLE marca", "CREATE TABLE teste_sql (id INT)",
+    "SELECT nome INTO teste_sql FROM marca", "ALTER TABLE marca DROP COLUMN pais", "ALTER TABLE nao_existe ADD COLUMN x INT NULL", "ALTER TABLE marca ADD COLUMN pais VARCHAR(10) NULL",
+    "UPDATE marca SET pais = 'Japão'", "DELETE FROM marca WHERE nome = 'nenhuma'", "TRUNCATE TABLE marca"] as $cmd_s) {
+    escrever(["recurso" => "sql", "acao" => "executar", "comando" => $cmd_s], false);
+}
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT nome FROM marca ORDER BY nome", "limite" => "0"], false);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT nome, pais FROM marca ORDER BY nome;"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT nome FROM marca ORDER BY nome", "limite" => "1"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "ALTER TABLE sql_execucao ADD COLUMN nota VARCHAR(80) NULL"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "INSERT INTO sql_execucao (quando, comando, ok) VALUES ('2026-01-01 00:00:00', 'manual', 1)"]);
+escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["sql_alteracoes" => "1"]]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "UPDATE sql_execucao SET nota = 'pelo teste' WHERE quando = '2026-01-01 00:00:00'"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT comando, nota FROM sql_execucao WHERE quando = '2026-01-01 00:00:00'"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "DELETE FROM sql_execucao WHERE quando = '2026-01-01 00:00:00'"]);
+escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["sql_alteracoes" => ""]]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "DELETE FROM sql_execucao WHERE quando = '2026-01-01 00:00:00'"], false);
+ler("2 sql colunas de uma tabela", ["recurso" => "sql", "tabela" => "marca"]);
+ler("2 sql tabela que nao existe", ["recurso" => "sql", "tabela" => "nao_existe"]);
+$sql_l = ler("2 sql depois", ["recurso" => "sql", "limite" => 30]);
+if (count($sql_l["execucoes"] ?? []) < 20) {
+    $falhas[] = "SQL: o registro não tem as execuções";
+}
 
 // (no fim, depois das leituras que contam o tempo das sessões abertas: estes passos não atrasam aquelas leituras no banco
 // mais lento.) O Orient fica com o NH35 durante as regras do valor

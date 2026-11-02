@@ -1,4 +1,4 @@
-<!-- origem: 8ce205a4bb6b8d6941f622d9e86f368beec4eeeb -->
+<!-- origem: c421b4e9e4d6df6611127ff8b185f6520df3b339 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1530,6 +1530,22 @@ nom, quand ils se déclenchent (une fois, tous les jours, certains jours de la s
 l'heure et, si vous voulez, une montre. Le tableau montre chacun avec **Va vers** (les destinations et les agendas qui le
 reçoivent) ; un nouvel événement va déjà vers toutes les destinations.
 
+### Système (seulement le master) {#sistema-só-o-master}
+
+Le cadre **Système** apporte ce qui concerne tout le système et ne changeait avant que dans le `config.php`. Chaque champ
+vide suit la ligne du `config.php` (ou la valeur par défaut), et l'étiquette dit d'où vient la valeur actuelle.
+
+| Option | Ce qu'elle fait | Par défaut |
+|---|---|---|
+| **Inscription ouverte** | n'importe qui crée un compte sur la page d'inscription ; fermée, seulement ceux que le master crée ou qui ont une invitation | oui |
+| **Jours de démonstration** | les jours du compte créé par l'inscription ouverte (0 : naît officiel) | 30 |
+| **Jours de l'invitation** | les jours qu'une invitation ou une demande d'accès attend | 7 |
+| **Taille maximale d'un document** | en octets (0 : sans limite du système ; le PHP du serveur peut accepter moins) | 104857600 (100 Mo) |
+| **Attente des écrans pour l'API** | en secondes (0 : sans limite) | 120 |
+| **Opérations dans un lot** | au plus combien dans un `recurso=lote` | 100 |
+| **Sauvegarde activée**, **Sauvegardes conservées**, **Documents dans la sauvegarde** | la sauvegarde de la nuit, combien restent et si elle prend le contenu des documents | oui, 7, non |
+| **SQL : UPDATE et DELETE approuvés** | autorise l'UPDATE et le DELETE dans [Le SQL par l'API](#o-sql-pela-api) | non |
+
 ### Ce que le système garde tout seul {#o-que-o-sistema-guarda-sozinho}
 
 Elles n'apparaissent pas comme options : le système les note pour lui-même, et l'API les montre. (Le mode de rotation en usage
@@ -1551,6 +1567,7 @@ Et de tout le système (la table `sistema`) :
 | `aleatorio_ultima`, `aleatorio_fora` | la source du dernier lot de nombres aléatoires et depuis quand les services extérieurs échouent. |
 | `url_sistema`, `idioma` | l'adresse du système et la langue de l'installation. |
 | `cron_espera_rodadas` | les passages du cron sautés d’affilée avant que le suivant tue celui bloqué. |
+| `param_<chave>` | les paramètres de fonctionnement enregistrés dans le cadre **Système** (vide : le `config.php` s'applique). |
 | `demo_avisos` | les avis d'expiration du compte de démonstration déjà envoyés (pour ne pas les envoyer deux fois). |
 | `migracao_v25` | la marque que la migration v25 (le passage à plusieurs personnes) a été appliquée. |
 
@@ -1685,7 +1702,7 @@ formule, le Vaut pour est sa version pour ce point de l'arbre. Un sous-écran fe
 | **Documents** (`documentos.php`) | Les documents d'une montre (ou de toutes), ouverts depuis la fiche : envoi de plusieurs fichiers, un onglet par catégorie, la galerie de photos en plein écran avec diaporama, les vidéos à la suite dans l'ordre choisi, le lecteur PDF, le résumé de la NF-e à partir du XML, et le téléchargement pour le reste. Voir [Les documents de la montre](#os-documentos-do-relógio). |
 | **Historique** (`historico.php`) | La chronologie d'une montre : en usage par la rotation, en usage hors du plan (au poignet sans être la montre du jour), sur le remontoir, au soleil, au repos, et chaque remontage, charge et changement de pile. Il montre combien de temps et quel pourcentage elle a passé dans chaque état, avec un filtre de période et d'état. |
 | **Alertes** (`avisos.php`) | Tout ce que le système rappelle, en un seul endroit : les **alertes des montres** (la définition : la formule de la date, l'avance, le texte, la saisie qui la résout, *immédiate*...), les **rappels** (les événements personnalisés, avec une heure et une répétition) et **Où elles vont** (les destinations des messages et les agendas, avec les liens vers leurs pages). Voir [Messages et agendas](#mensagens-e-agendas). |
-| **Configuration** (`configuracao.php`) | Les options de la collection (les horaires, les limites, les écrans, la langue), l'état du cron, le résumé des alertes, des rappels et des messages (avec le chemin vers la page **Alertes**), la **Sauvegarde** (seulement le master : les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une sauvegarde maintenant**) et le bouton qui applique les migrations de la base. Voir [La Configuration, option par option](#a-configuração-opção-por-opção). |
+| **Configuration** (`configuracao.php`) | Les options de la collection (les horaires, les limites, les écrans, la langue), l'état du cron, le résumé des alertes, des rappels et des messages (avec le chemin vers la page **Alertes**), la **Sauvegarde** (seulement le master : les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une sauvegarde maintenant**), le cadre **Système** (seulement le master : les paramètres de fonctionnement qui ne changeaient avant que dans le `config.php`, et l'approbation de l'UPDATE et du DELETE par le SQL), la **Base de données (SQL)** (seulement le master : une commande à la fois, avec le résultat et le journal ; voir [Le SQL par l'API](#o-sql-pela-api)) et le bouton qui applique les migrations de la base. Voir [La Configuration, option par option](#a-configuração-opção-por-opção). |
 | **Destinations** (`destinos.php`, ouverte depuis la page Alertes) | Où vont les messages de la collection : chaque webhook, e-mail ou Web Push, avec le message, la langue, ce qu'il reçoit, les tests et ce qui part aujourd'hui. Voir [Messages et agendas](#mensagens-e-agendas). |
 | **Agendas** (`agendas.php`, ouverte depuis la page Alertes) | Les agendas de la collection (Google, CalDAV, Outlook, lien ICS), avec le modèle de l'événement, ce qu'elle reçoit, la synchronisation, l'événement de test et ce qui doit y être maintenant. |
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#os-modos-de-rodízio). |

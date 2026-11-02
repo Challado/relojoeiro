@@ -1582,6 +1582,22 @@ nom, quand ils se déclenchent (une fois, tous les jours, certains jours de la s
 l'heure et, si vous voulez, une montre. Le tableau montre chacun avec **Va vers** (les destinations et les agendas qui le
 reçoivent) ; un nouvel événement va déjà vers toutes les destinations.
 
+### Système (seulement le master)
+
+Le cadre **Système** apporte ce qui concerne tout le système et ne changeait avant que dans le `config.php`. Chaque champ
+vide suit la ligne du `config.php` (ou la valeur par défaut), et l'étiquette dit d'où vient la valeur actuelle.
+
+| Option | Ce qu'elle fait | Par défaut |
+|---|---|---|
+| **Inscription ouverte** | n'importe qui crée un compte sur la page d'inscription ; fermée, seulement ceux que le master crée ou qui ont une invitation | oui |
+| **Jours de démonstration** | les jours du compte créé par l'inscription ouverte (0 : naît officiel) | 30 |
+| **Jours de l'invitation** | les jours qu'une invitation ou une demande d'accès attend | 7 |
+| **Taille maximale d'un document** | en octets (0 : sans limite du système ; le PHP du serveur peut accepter moins) | 104857600 (100 Mo) |
+| **Attente des écrans pour l'API** | en secondes (0 : sans limite) | 120 |
+| **Opérations dans un lot** | au plus combien dans un `recurso=lote` | 100 |
+| **Sauvegarde activée**, **Sauvegardes conservées**, **Documents dans la sauvegarde** | la sauvegarde de la nuit, combien restent et si elle prend le contenu des documents | oui, 7, non |
+| **SQL : UPDATE et DELETE approuvés** | autorise l'UPDATE et le DELETE dans [Le SQL par l'API](#le-sql-par-lapi) | non |
+
 ### Ce que le système garde tout seul
 
 Elles n'apparaissent pas comme options : le système les note pour lui-même, et l'API les montre. (Le mode de rotation en usage
@@ -1603,6 +1619,7 @@ Et de tout le système (la table `sistema`) :
 | `aleatorio_ultima`, `aleatorio_fora` | la source du dernier lot de nombres aléatoires et depuis quand les services extérieurs échouent. |
 | `url_sistema`, `idioma` | l'adresse du système et la langue de l'installation. |
 | `cron_espera_rodadas` | les passages du cron sautés d’affilée avant que le suivant tue celui bloqué. |
+| `param_<chave>` | les paramètres de fonctionnement enregistrés dans le cadre **Système** (vide : le `config.php` s'applique). |
 | `demo_avisos` | les avis d'expiration du compte de démonstration déjà envoyés (pour ne pas les envoyer deux fois). |
 | `migracao_v25` | la marque que la migration v25 (le passage à plusieurs personnes) a été appliquée. |
 
@@ -1773,7 +1790,7 @@ formule, le Vaut pour est sa version pour ce point de l'arbre. Un sous-écran fe
 | **Documents** (`documentos.php`) | Les documents d'une montre (ou de toutes), ouverts depuis la fiche : envoi de plusieurs fichiers, un onglet par catégorie, la galerie de photos en plein écran avec diaporama, les vidéos à la suite dans l'ordre choisi, le lecteur PDF, le résumé de la NF-e à partir du XML, et le téléchargement pour le reste. Voir [Les documents de la montre](#les-documents-de-la-montre). |
 | **Historique** (`historico.php`) | La chronologie d'une montre : en usage par la rotation, en usage hors du plan (au poignet sans être la montre du jour), sur le remontoir, au soleil, au repos, et chaque remontage, charge et changement de pile. Il montre combien de temps et quel pourcentage elle a passé dans chaque état, avec un filtre de période et d'état. |
 | **Alertes** (`avisos.php`) | Tout ce que le système rappelle, en un seul endroit : les **alertes des montres** (la définition : la formule de la date, l'avance, le texte, la saisie qui la résout, *immédiate*...), les **rappels** (les événements personnalisés, avec une heure et une répétition) et **Où elles vont** (les destinations des messages et les agendas, avec les liens vers leurs pages). Voir [Messages et agendas](#messages-et-agendas). |
-| **Configuration** (`configuracao.php`) | Les options de la collection (les horaires, les limites, les écrans, la langue), l'état du cron, le résumé des alertes, des rappels et des messages (avec le chemin vers la page **Alertes**), la **Sauvegarde** (seulement le master : les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une sauvegarde maintenant**) et le bouton qui applique les migrations de la base. Voir [La Configuration, option par option](#la-configuration-option-par-option). |
+| **Configuration** (`configuracao.php`) | Les options de la collection (les horaires, les limites, les écrans, la langue), l'état du cron, le résumé des alertes, des rappels et des messages (avec le chemin vers la page **Alertes**), la **Sauvegarde** (seulement le master : les sauvegardes du dossier, avec **Télécharger** et **Restaurer**, et **Faire une sauvegarde maintenant**), le cadre **Système** (seulement le master : les paramètres de fonctionnement qui ne changeaient avant que dans le `config.php`, et l'approbation de l'UPDATE et du DELETE par le SQL), la **Base de données (SQL)** (seulement le master : une commande à la fois, avec le résultat et le journal ; voir [Le SQL par l'API](#le-sql-par-lapi)) et le bouton qui applique les migrations de la base. Voir [La Configuration, option par option](#la-configuration-option-par-option). |
 | **Destinations** (`destinos.php`, ouverte depuis la page Alertes) | Où vont les messages de la collection : chaque webhook, e-mail ou Web Push, avec le message, la langue, ce qu'il reçoit, les tests et ce qui part aujourd'hui. Voir [Messages et agendas](#messages-et-agendas). |
 | **Agendas** (`agendas.php`, ouverte depuis la page Alertes) | Les agendas de la collection (Google, CalDAV, Outlook, lien ICS), avec le modèle de l'événement, ce qu'elle reçoit, la synchronisation, l'événement de test et ce qui doit y être maintenant. |
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#les-modes-de-rotation). |
@@ -2058,6 +2075,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `winders` | les remontoirs de la collection (la page **Remontoirs**) : chacun avec les données, l'observation, combien de documents et les positions, et chaque position avec le programme (les tours par jour, au total et dans chaque sens), si elle est allumée, la montre qui y est maintenant (la charge, ce que donne chaque heure, quand elle est pleine, la photo), la place fixe (à qui elle est et si elle est dehors) et les avertissements de limite du coussin ; les champs du remontoir et de la position, les montres qui peuvent aller sur un remontoir (avec la position où elles sont et si elles sont sur le remontoir sans position) et les programmes à choisir |
 | `programas` | les programmes des remontoirs (la page **Programmes**) : chacun avec le type de saisie, la vitesse du berceau (ou les tours par jour du manuel), s'il fonctionne toute la journée ou par blocs, la séquence, le calcul entier (chaque étape, le cycle, les fois par jour, le temps de rotation, les tours par jour dans chaque sens) et les positions qui l'utilisent ; les mouvements (la page **Mouvements**) avec les programmes qui utilisent chacun. `previa=1` avec les champs du programme : seulement le calcul, sans enregistrer |
 | `relatorios` | les rapports, par une seule porte : sans `tipo`, le catalogue (chaque rapport avec le groupe, le nom, la description et les paramètres, et les montres) ; avec `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron` ; les enregistrés, `r<id>` ; `avulso` : la définition dans la requête, sans enregistrer) et ses paramètres (`relogio`, `de`, `ate`, `posse`, `situacao`), le rapport prêt (titre, sous-titre, résumé, sections en tableau ou en paires, pied, déjà en texte) ; `csv=1` : le tableur. Le catalogue apporte aussi les enregistrés (`cadastro`) |
+| `sql` | seulement le master : la base, ce que le SQL par l'API accepte maintenant, les tables et le journal des dernières exécutions (`limite`) ; `tabela=` : ses colonnes |
 | `documento` | le fichier d'un document (`id=<id>`) : pour afficher (image, vidéo, audio, PDF, texte) ou pour télécharger (le reste, ou avec `baixar=1`) ; `mini=1` est la vignette de la photo. Il sert des morceaux (Range), pour que la vidéo avance |
 | `usuarios`, `migracoes` | le master : le panneau des comptes, chacun avec ce qu'il a et le hash du mot de passe (pour migrer avec le même mot de passe : voir [Les utilisateurs et les mots de passe](#les-utilisateurs-et-les-mots-de-passe)) ; les autres, seulement leur propre compte ; les migrations qui restent à appliquer |
 | `conta`, `colecoes`, `aprovacoes` | Mon compte (les collections, les arbres, les demandes, les jetons, les appareils mémorisés, les appareils du Web Push, le serveur d'e-mail personnel ; `parte=menu` : seulement ce qu'utilise le menu) ; les collections et les arbres ; la page Approbations |
@@ -2091,6 +2109,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `unidades` | `salvar` (le symbole, le nom, la base et le facteur, le zéro et l'afficher aussi en ; le nouveau symbole passe à qui l'utilise), `excluir` (seulement sans usage ; emporte celles qui se convertissent en elle) |
 | `marcas` | `salvar` (le nom, sans répéter une autre ; le pays, le site et l’observation), `juntar` (`em_id` : les montres passent à l’autre, et celle-ci part), `excluir` (les montres restent sans marque) |
 | `relatorios` | `salvar` (le nom, sans en répéter un autre ; la description ; les colonnes, en JSON : le titre, l'expression, le format et le calcul du pied ; le filtre, l'ordre, le décroissant, le regroupement, quelles montres et la limite), `excluir` |
+| `sql` | `executar` (seulement le master ; `comando` : une commande SQL dans le dialecte de MySQL, une à la fois ; `limite` : les lignes du SELECT). Voir [Le SQL par l'API](#le-sql-par-lapi) |
 | `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du soleil, du chargeur ; du remontoir, mettre se fait par la page Remontoirs, `winder_posicoes`, sauf si la montre a sa place libre : alors elle y retourne), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone ; sur le remontoir, n'ouvre que pour le retour à la place), `periodo` (une période déjà passée ; sur le remontoir, avec la position, `posicao_id` ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour Un `iniciar` qui commence au même instant où un tronçon du même type s’est terminé s’y raccorde (il redevient ouvert), et un `periodo` sans `fim` reste ouvert, du début jusqu’à maintenant. |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -2098,7 +2117,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (et `ordem` dans les champs ; le champ avec les règles de valeur : `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar`, `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (le master aussi `parametros[<chave>]` : les paramètres de fonctionnement du système), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, avec ce qu'elle reçoit), `testar` (`qual=` : texte, matin ou soir), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton, est le master) et, seulement le master : `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
@@ -2120,12 +2139,31 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `400` | écriture refusée par les validations (les erreurs disent pourquoi), ou une formule mal écrite dans le `calcular` |
 | `302` | `recurso=entrar` avec la bonne connexion et `volta=` : va à la page |
 | `401` | sans le jeton ni la connexion du site, ou avec eux erronés ; sans aucun utilisateur (ou avec la base vide), la réponse dit quoi faire (`sem_usuarios` et `como`) |
-| `403` | la sauvegarde et les migrations, par qui n'est pas le master |
+| `403` | la sauvegarde, les migrations et le SQL, par qui n'est pas le master |
 | `404` | ressource inconnue (la réponse apporte la liste des ressources), la collection que vous ne voyez pas, ou la montre, la photo, le document (ou son fichier) ou le `README.md` (dans `manual`) qui n'existe pas, ou un fichier qui ne sort pas par `codigo` (avec `o_que_ver` pour ce qui reste exclu exprès, comme le `config.php`) |
 | `409` | une suppression sans `confirmar=1` (avec `impacto` : ce qui partirait avec ; rien n'a été effacé) ; le compte sans aucune collection (`sem_colecao`) ; ou la base a refusé l'écriture : un enregistrement qu'un autre utilise encore, une valeur répétée, ou une valeur hors des règles de validation de la base (le nom de la règle vient avec) |
 | `413` | l'envoi a dépassé la limite du PHP du serveur (`post_max_size`) : un fichier trop grand |
 | `500` | système arrêté (l'`API_TOKEN` ou le `FUSO` du `config.php` invalide) ou une erreur interne |
 | `503` | base pas à jour (seul `recurso=migracoes` répond, et l'écriture `migracoes`/`aplicar` ; et le `manual` et le `codigo`, qui n'utilisent pas la base), base vide (avant l'installation seul `instalacao` répond, et le `manual` et le `codigo`) ou base hors service |
+
+### Le SQL par l'API
+
+Tout ce que font les écrans, l'API le fait ; et ce qu'aucun écran ne fait, le master le fait par le SQL (`recurso=sql`, ou
+le cadre **Base de données (SQL)** de la Configuration) : une commande à la fois, dans le SQL de MySQL (le système la traduit
+pour la base utilisée, comme dans les migrations), sans la portée des collections.
+
+| Commande | Quand elle est permise |
+|---|---|
+| `SELECT` | toujours (sans `INTO`) ; la réponse apporte jusqu'à `limite` lignes (par défaut 200, jusqu'à 5000) et dit si elle a coupé |
+| `INSERT` | toujours |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | toujours : un nouveau champ dans une table qui existe, un à la fois |
+| `UPDATE`, `DELETE` | seulement avec l'approbation activée dans le cadre **Système** de la Configuration (`parametros[sql_alteracoes]=1`) |
+| le reste (`DROP`, `TRUNCATE`, `CREATE`, un autre `ALTER`, plus d'une commande, le paramètre `?`) | jamais : refusé avant d'aller à la base |
+
+Chaque requête, la refusée, celle en erreur et celle qui a marché, reste dans le journal (la table `sql_execucao`, lue dans
+`recurso=sql`) : quand, qui, la commande, les lignes et l'erreur. L'erreur de la base revient telle quelle, sans nouvelle
+tentative. Une colonne créée ainsi reste hors du `schema.sql` : une sauvegarde avec elle ne revient que dans une base qui
+l'a aussi.
 
 ### Les utilisateurs et les mots de passe
 
@@ -2306,6 +2344,12 @@ votre part, ou le master crée le compte dans **Utilisateurs**.
 | `CRON_TRAVA` | facultatif : le fichier de verrou du cron, qui garantit un passage à la fois (voir l’installation du cron). Sans elle, un par installation dans le dossier temporaire du système |
 | `API_ESPERA` | facultatif : combien de secondes les écrans attendent la réponse de l’API avant d’annuler la requête et de dire que le serveur n’a pas répondu. Sans elle, 120 ; `0`, sans limite. Les écritures longues (importation, copie de sauvegarde, migrations et installation) n’ont pas de limite |
 | `LOTE_MAXIMO` | facultatif : combien d’opérations tiennent dans un lot (`recurso=lote`). Sans elle, 100 |
+
+Les paramètres de fonctionnement (`CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS`, `DOCUMENTOS_LIMITE`, `API_ESPERA`,
+`LOTE_MAXIMO`, `BACKUP_ATIVO`, `BACKUP_MANTER` et `BACKUP_DOCUMENTOS`), le master les modifie aussi dans le cadre **Système**
+de la Configuration (ou par l'API : `recurso=config`, `parametros[<chave>]`) : la valeur enregistrée là s'applique par-dessus
+la ligne du `config.php`, et vide revient à la ligne. Les identifiants, les clés, les dossiers et les adresses des serveurs
+restent seulement dans le `config.php`.
 
 Le système lit le `config.php` de son dossier. Une variable d'environnement du serveur, `RELOGIOS_CONFIG`, désigne un autre
 fichier à la place : c'est ce qu'utilise le test de parité (`testes/paridade.sh`, avec le

@@ -1,4 +1,4 @@
-<!-- origem: 792b13b74c42353ac8372c828b4208cd8982cd80 -->
+<!-- origem: 00872d7c177ca3cb70578bb6d0ba718de037a8bc -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -170,6 +170,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `winders` | the collection's winders (the **Winders** page): each one with the data, the note, how many documents and the positions, and each position with the program (the turns per day, in total and in each direction), whether it is on, the watch that is in it now (the charge, what each hour gives, when it fills up, the photo), the fixed place (whose it is and whether it is out) and the cushion limit warnings; the winder and position fields, the watches that can go on a winder (with the position they are in and whether they are on the winder without a position) and the programs to choose |
 | `programas` | the winders' programs (the **Programs** page): each one with the kind of record, the cradle speed (or the manual's turns per day), whether it runs all day or in blocks, the sequence, the whole calculation (each step, the cycle, the times per day, the time turning, the turns per day in each direction) and the positions that use it; the movements (the **Movements** page) with the programs that use each one. `previa=1` with the program's fields: only the calculation, without saving |
 | `relatorios` | the reports, through a single door: without `tipo`, the catalog (each report with the group, the name, the description and the parameters, and the watches); with `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`; the saved ones, `r<id>`; `avulso`: the definition in the request, without saving) and its parameters (`relogio`, `de`, `ate`, `posse`, `situacao`), the ready report (title, subtitle, summary, sections as table or pairs, footer, already in text); `csv=1`: the spreadsheet. The catalog also brings the saved ones (`cadastro`) |
+| `sql` | master only: the database, what SQL through the API accepts now, the tables and the log of the latest runs (`limite`); `tabela=`: its columns |
 | `documento` | a document's file (`id=<id>`): to show (image, video, audio, PDF, text) or to download (the rest, or with `baixar=1`); `mini=1` is the photo's thumbnail. It serves pieces (Range), so the video can skip ahead |
 | `usuarios`, `migracoes` | the master: the accounts panel, each with what it has and the password hash (to migrate with the same password: see [The users and the passwords](#os-usuários-e-as-senhas)); the others, only their own account; the migrations still to apply |
 | `conta`, `colecoes`, `aprovacoes` | My account (the collections, the trees, the requests, the tokens, the remembered devices, the Web Push devices, the own e-mail server; `parte=menu`: only the menu's part); the collections and the trees; the Approvals page |
@@ -203,6 +204,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `unidades` | `salvar` (the symbol, the name, the base and the factor, the zero and the also-show-in; the new symbol is carried to whatever uses it), `excluir` (only without use; takes along the units that convert into it) |
 | `marcas` | `salvar` (the name, not repeating another; the country, the website and the note), `juntar` (`em_id`: the watches move to the other, and this one goes away), `excluir` (the watches are left without a brand) |
 | `relatorios` | `salvar` (the name, not repeating another; the description; the columns, in JSON: the title, the expression, the format and the footer calculation; the filter, the order, the descending flag, the grouping, which watches and the limit), `excluir` |
+| `sql` | `executar` (master only; `comando`: one SQL command in MySQL's dialect, one at a time; `limite`: the SELECT rows). See [SQL through the API](#o-sql-pela-api) |
 | `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the sun, the charger; the winder, putting on is through the Winders page, `winder_posicoes`, unless the watch has its place free: then it goes back there), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone; on the winder, it only opens back to the place), `periodo` (a period that has passed; on the winder, with the position, `posicao_id`; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day An `iniciar` starting at the same instant a stretch of the same type ended joins it (it becomes open again), and a `periodo` without `fim` stays open, from the start until now. |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -210,7 +212,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (and `ordem` in the fields; the field with the value rules: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar`, `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (the master also `parametros[<chave>]`: the system's operating parameters), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, e-mail or Web Push, with what it receives), `testar` (`qual=`: text, morning or night), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook or ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (with the `senha`, or with another system's `senha_hash`; the first user, with the token, is the master) and, master only: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
@@ -232,12 +234,31 @@ per reason) in a refused write:
 | `400` | write refused by the validations (the errors say why), or a badly written formula in `calcular` |
 | `302` | `recurso=entrar` with the right login and `volta=`: it goes to the page |
 | `401` | without the token or the site login, or with them wrong; without any user (or with the database empty), the response says what to do (`sem_usuarios` and `como`) |
-| `403` | the backup and the migrations, by someone who isn't the master |
+| `403` | the backup, the migrations and SQL, by someone who isn't the master |
 | `404` | unknown resource (the response brings the list of resources), the collection you don't see, or the watch, the photo, the document (or its file) or the `README.md` (in `manual`) that doesn't exist, or a file that doesn't come out through `codigo` (with `o_que_ver` for what is left out on purpose, like `config.php`) |
 | `409` | a deletion without `confirmar=1` (with `impacto`: what would go along; nothing was deleted); the account with no collection at all (`sem_colecao`); or the database refused the write: a record another one still uses, a repeated value, or a value outside the database's validation rules (the rule's name comes along) |
 | `413` | the upload went beyond the server's PHP limit (`post_max_size`): a file too big |
 | `500` | system stopped (the `API_TOKEN` or the `FUSO` in `config.php` invalid) or an internal error |
 | `503` | database out of date (only `recurso=migracoes` answers, and the `migracoes`/`aplicar` write; and `manual` and `codigo`, which don't use the database), empty database (before the installation only `instalacao` answers, and `manual` and `codigo`) or database down |
+
+### SQL through the API {#o-sql-pela-api}
+
+Everything the screens do, the API does; and what no screen does, the master does through SQL (`recurso=sql`, or the
+**Database (SQL)** box in Settings): one command at a time, in MySQL's SQL (the system translates it for the database in use,
+as in the migrations), without the collections' scope.
+
+| Command | When it is allowed |
+|---|---|
+| `SELECT` | always (without `INTO`); the response brings up to `limite` rows (default 200, up to 5000) and says whether it cut |
+| `INSERT` | always |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | always: a new field in an existing table, one at a time |
+| `UPDATE`, `DELETE` | only with the approval turned on in the **System** box of Settings (`parametros[sql_alteracoes]=1`) |
+| the rest (`DROP`, `TRUNCATE`, `CREATE`, another `ALTER`, more than one command, the `?` parameter) | never: refused before reaching the database |
+
+Each request, the refused one, the one with an error and the one that worked, goes into the log (the `sql_execucao` table,
+read at `recurso=sql`): when, who, the command, the rows and the error. The database error comes back as it came, without a
+new attempt. A column created this way stays outside `schema.sql`: a backup with it only comes back in a database that also
+has it.
 
 ### The users and the passwords {#os-usuários-e-as-senhas}
 
@@ -414,6 +435,11 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `CRON_TRAVA` | optional: the cron lock file, which ensures one round at a time (see the cron installation). Without it, one per installation in the system temporary folder |
 | `API_ESPERA` | optional: how many seconds the screens wait for the API answer before cancelling the request and saying the server did not respond. Without it, 120; `0`, no limit. The slow writes (import, backup, migrations and installation) have no limit |
 | `LOTE_MAXIMO` | optional: how many operations fit in a batch (`recurso=lote`). Without it, 100 |
+
+The operating parameters (`CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS`, `DOCUMENTOS_LIMITE`, `API_ESPERA`, `LOTE_MAXIMO`,
+`BACKUP_ATIVO`, `BACKUP_MANTER` and `BACKUP_DOCUMENTOS`) the master also changes in the **System** box of Settings (or through
+the API: `recurso=config`, `parametros[<chave>]`): the value saved there applies over the `config.php` line, and empty goes
+back to the line. Credentials, keys, folders and server addresses stay only in `config.php`.
 
 The system reads the `config.php` in its folder. A server environment variable, `RELOGIOS_CONFIG`, points to another file
 instead: it is what the parity test uses (`testes/paridade.sh`, with [`testes/config.teste.php`](testes/config.teste.php)), to

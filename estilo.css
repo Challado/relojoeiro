@@ -506,7 +506,7 @@ form.calibre-campos select { max-width: 100%; }
 #tabela-relogios .mini-total tfoot td, .mini-total tfoot td { font-weight: 700; border-top: 2px solid var(--tinta); border-bottom: 0; background: #eef1f4; height: 1.55rem; }
 #tabela-relogios .mini-total td.erro, .mini-total td.erro { color: var(--ambar); font-weight: 500; white-space: normal; line-height: 1.25; height: auto; padding: .2rem .3rem; max-width: none; min-width: 0; }
 #tabela-relogios .mini-total td[colspan], .mini-total td[colspan] { max-width: none; min-width: 0; }
-/* a caixa é só das linhas com dado e do total: as vazias de cima (as que alinham os totais) ficam em branco, sem borda */
+/* a caixa é só das linhas com dado e do total: as vazias (em cima e embaixo dos dados, as que alinham os totais) ficam em branco, sem borda */
 #tabela-relogios .mini-total tr > td:first-child { border-left: 1px solid var(--aco-escuro); }
 #tabela-relogios .mini-total tr > td:last-child { border-right: 1px solid var(--aco-escuro); }
 #tabela-relogios .mini-total tbody tr.primeira > td { border-top: 1px solid var(--aco-escuro); }
@@ -514,6 +514,8 @@ form.calibre-campos select { max-width: 100%; }
 /* as vazias têm borda transparente da mesma largura (as alturas batem com as das linhas com dado) */
 #tabela-relogios .mini-total tbody tr.vazia > td { background: transparent; border: 1px solid transparent; }
 #tabela-relogios .mini-total tbody tr.vazia.fim > td { border-bottom-color: var(--aco-escuro); }
+/* com vazias embaixo (a caixa dos dados no meio), a última linha com dado fecha a caixa por baixo */
+#tabela-relogios .mini-total tbody tr.ultima > td { border-bottom-color: var(--aco-escuro); }
 /* as 13 colunas sempre (no computador, no tablet e no celular a mesma informação): a tabela ocupa a largura que tem, e o
    texto das células quebra linha só quando falta espaço; o que é um valor só (código, carga, estado, valor) não quebra */
 #tabela-relogios { width: 100%; min-width: 0; }

@@ -673,6 +673,8 @@ function banco_executar_banco($comando, $params = [])
                     $st->bind_param($tipos, ...$params);
                 }
                 $st->execute();
+                // as linhas que o comando mudou (o recurso=sql mostra)
+                $GLOBALS["BANCO_AFETADAS"] = (int)$st->affected_rows;
                 $res = $st->get_result();
             } catch (mysqli_sql_exception $e) {
                 throw banco_erro($e);
@@ -712,6 +714,7 @@ function banco_executar_banco($comando, $params = [])
                 throw new BancoErro(trim((string)pg_result_error($res)), (int)$estado_sql, null, strpos($estado_sql, "23") === 0);
             }
             if ($estado !== PGSQL_TUPLES_OK) {
+                $GLOBALS["BANCO_AFETADAS"] = (int)pg_affected_rows($res);
                 return null;
             }
             $n = pg_num_fields($res);
@@ -771,6 +774,7 @@ function banco_executar_banco($comando, $params = [])
                     }
                 }
                 $res = $st->execute();
+                $GLOBALS["BANCO_AFETADAS"] = (int)db()->changes();
                 $n = $res->numColumns();
                 if ($n === 0) {
                     $res->finalize();
@@ -924,6 +928,7 @@ function banco_fb_executar($comando, $params)
             }
         }
         $st->execute();
+        $GLOBALS["BANCO_AFETADAS"] = (int)$st->rowCount();
     } catch (PDOException $e) {
         $erro = banco_erro($e);
         if ($ignorar && $erro->integridade && in_array($erro->getCode(), [-803], true)) {
@@ -935,6 +940,8 @@ function banco_fb_executar($comando, $params)
         $l = $st->fetch(PDO::FETCH_NUM);
         $st->closeCursor();
         banco_fb_ultimo_id($l !== false ? (int)$l[0] : 0);
+        // o INSERT ... VALUES com o RETURNING é uma linha só (o rowCount dele não conta)
+        $GLOBALS["BANCO_AFETADAS"] = $l !== false ? 1 : 0;
         return null;
     }
     $n = $st->columnCount();

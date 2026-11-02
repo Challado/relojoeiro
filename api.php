@@ -194,6 +194,9 @@
  *                            Meus relatórios; tipo=avulso monta a definição que vem no pedido (colunas em JSON, filtro, ordenar,
  *                            decrescente, agrupar, relogios, limite), sem gravar.
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=relatorios&tipo=r3&csv=1"
+ *   recurso=sql              só o master: o banco, o que o SQL pela API aceita agora (UPDATE e DELETE só com a aprovação),
+ *                            as tabelas e o registro das últimas execuções (limite); tabela=<nome>: as colunas dela.
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=sql&tabela=relogio"
  *   recurso=roteiro          roteiro (o texto: as linhas "nome = expressão") ou modo (o id: o roteiro efetivo dele), [dia: AAAA-MM-DD, de
  *                            hoje até um ano à frente; padrão hoje]: testa o roteiro de um modo de rodízio nesse dia, sem gravar (o
  *                            "Testar em todos os relógios" dos Modos de rodízio): {"dia", "dia_semana", "linhas": [{"nome", "expressao"}],
@@ -494,6 +497,11 @@
  *                            Ex. salvar: curl -u lucas:senha -d recurso=marcas -d acao=salvar -d id=0 -d nome=Seiko -d "pais=Japão" http://servidor/relojoeiro/api.php
  *                            Ex. juntar: curl -u lucas:senha -d recurso=marcas -d acao=juntar -d id=7 -d em_id=2 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=marcas -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=sql               executar (só o master; comando: um comando SQL no dialeto do MySQL, traduzido para o banco em
+ *                             uso, um por vez; limite: as linhas do SELECT, 1 a 5000, padrão 200). Valem SELECT, INSERT e
+ *                             ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>; UPDATE e DELETE só com a aprovação na
+ *                             Configuração do sistema (parametros[sql_alteracoes]=1); o resto é recusado. Tudo fica no registro
+ *                            Ex. executar: curl -u lucas:senha -d recurso=sql -d acao=executar --data-urlencode "comando=SELECT nome FROM relogio" http://servidor/relojoeiro/api.php
  *   recurso=relatorios        salvar (id: 0 cria; nome (até 120, sem repetir na árvore, sem diferença de maiúsculas nem de
  *                             espaços), descricao, colunas (até 30: JSON [{"titulo", "expressao", "formato", "total"}] ou os
  *                             campos colunas[i][...]; a expressão é calculada em cada relógio, como uma fórmula, com as variáveis
@@ -651,7 +659,10 @@
  *                             medicao_meia_vida_dias (0 a 3650: metade do peso após N dias; padrão 0, desligado);
  *                             encostado_dias; trocar_hoje (1 ou 0: o relógio de hoje se troca no próprio dia, ou só a partir de
  *                             amanhã; vazio: 0); calibre_campos (movimento ou todos: os campos do formulário do calibre); url_sistema
- *                             (do sistema inteiro: só o master); só o que vier), evento_salvar (evento_id
+ *                             (do sistema inteiro: só o master); parametros[<chave>] (só o master: os parâmetros de operação
+ *                             do sistema, o que era só do config.php: cadastro_aberto, demo_dias, convite_dias,
+ *                             documentos_limite, api_espera, lote_maximo, backup_ativo, backup_manter, backup_documentos e
+ *                             sql_alteracoes; vazio volta ao config.php); só o que vier), evento_salvar (evento_id
  *                             ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio, dias_semana, dia_mes, intervalo_dias,
  *                             relogio_id; o evento novo já vai para todos os destinos), evento_excluir (evento_id ou id, confirmar=1)
  *                            sorteio_casas: de 0 a 8 casas decimais nos pesos dos sorteios; padrão 2. Se todos os pesos positivos
@@ -3959,6 +3970,21 @@
  *     sistema.cron_espera_rodadas    quantas rodadas do cron saem sem rodar, com a anterior travada, antes de a próxima matá-la (0 a 1440;
  *                                    0, nunca mata; padrão 10; só o master muda)
  *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)
+ *     sistema.parametros             só para o master (null para os outros): os parâmetros de operação do sistema inteiro, o que antes só
+ *                                    mudava no config.php; cada um vale o gravado aqui, senão a linha do config.php, senão o padrão
+ *     sistema.parametros[].chave     o nome do parâmetro no pedido (parametros[<chave>])
+ *     sistema.parametros[].nome      o nome
+ *     sistema.parametros[].descricao o que ele faz
+ *     sistema.parametros[].tipo      sim_nao (1 ou 0) ou inteiro (de minimo a maximo)
+ *     sistema.parametros[].valor     o valor que vale agora
+ *     sistema.parametros[].origem    de onde o valor vem: sistema (gravado aqui), config (a linha do config.php) ou padrao
+ *     sistema.parametros[].config_php
+ *                                    o nome da linha do config.php que ele substitui; null: nenhuma (só existe aqui)
+ *     sistema.parametros[].config_valor
+ *                                    o valor da linha do config.php; null: a linha não existe
+ *     sistema.parametros[].padrao    o valor sem o gravado e sem o config.php
+ *     sistema.parametros[].minimo    o menor valor aceito
+ *     sistema.parametros[].maximo    o maior valor aceito
  *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
  *     senha_politica.regras          o mínimo de cada regra (0: não exige)
  *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
@@ -5917,6 +5943,29 @@
  *     cadastro.quais[].nome          o nome dela
  *     cadastro.maximo_colunas        quantas colunas um relatório pode ter
  *     cadastro.maximo_limite         o maior limite de linhas
+ *   recurso=sql
+ *     banco                          o banco em uso: mysql, pgsql, sqlite ou firebird (o comando vai no dialeto do MySQL e o sistema
+ *                                    traduz)
+ *     aprovado_alterar               true: UPDATE e DELETE estão aprovados (a Configuração do sistema, sql_alteracoes)
+ *     aceitos                        os tipos de comando aceitos agora
+ *     aceitos[]                      um tipo: select, insert, alter, update ou delete
+ *     limite_padrao                  as linhas do SELECT na resposta, sem o limite
+ *     limite_maximo                  o maior limite de linhas
+ *     tabelas                        as tabelas do banco, em ordem alfabética
+ *     tabelas[]                      o nome de uma tabela
+ *     colunas                        com tabela: as colunas dela, na ordem
+ *     colunas[]                      o nome de uma coluna
+ *     execucoes                      o registro: as últimas execuções, da mais nova para a mais velha
+ *     execucoes[].id                 o número da execução
+ *     execucoes[].quando             quando foi pedida (AAAA-MM-DD HH:MM:SS)
+ *     execucoes[].usuario            o login de quem pediu; null: a conta saiu
+ *     execucoes[].comando            o comando, como veio
+ *     execucoes[].tipo               select, insert, update, delete ou alter; null: não deu para saber
+ *     execucoes[].ok                 true: rodou; false: recusado ou com erro do banco
+ *     execucoes[].linhas             as linhas lidas (SELECT) ou mudadas (o resto); null: não contou
+ *     execucoes[].duracao_ms         quanto tempo levou, em milissegundos
+ *     execucoes[].erro               o porquê da recusa ou o erro do banco; null: nenhum
+ *     erro                           o motivo (só o master; a tabela que não existe)
  *   recurso=reserva
  *     reserva.protocolos             os protocolos do teste, na ordem
  *     reserva.protocolos[]           um protocolo
@@ -7805,6 +7854,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/timegrapher.php";
 } elseif ($recurso === "relatorios") {
     require __DIR__ . "/api/relatorios.php";
+} elseif ($recurso === "sql") {
+    require __DIR__ . "/api/sql.php";
 } elseif ($recurso === "roteiro") {
     // o teste de um roteiro (ou do roteiro de um modo) num dia: cada relógio com as linhas calculadas, e quem sairia
     $texto = (string)($_REQUEST["roteiro"] ?? "");
@@ -7888,7 +7939,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

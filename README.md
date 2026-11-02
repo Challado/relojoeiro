@@ -1502,6 +1502,22 @@ tela. Como configurar cada serviço no servidor: veja [Destinos e agendas no ser
 disparam (uma vez, todo dia, em dias da semana, num dia do mês ou a cada N dias), a hora e, se quiser, um relógio. A tabela
 mostra cada um com **Vai para** (os destinos e as agendas que o recebem); um evento novo já vai para todos os destinos.
 
+### Sistema (só o master)
+
+O quadro **Sistema** traz o que é do sistema inteiro e antes só mudava no `config.php`. Cada campo vazio segue a linha do
+`config.php` (ou o padrão), e o rótulo diz de onde vem o valor de agora.
+
+| Opção | O que faz | Padrão |
+|---|---|---|
+| **Cadastro aberto** | qualquer um cria a conta pela página de cadastro; fechado, só quem o master cria ou quem tem um convite | sim |
+| **Dias da demonstração** | os dias da conta criada pelo cadastro aberto (0: já nasce oficial) | 30 |
+| **Dias do convite** | os dias que um convite ou um pedido de acesso espera | 7 |
+| **Tamanho máximo de um documento** | em bytes (0: sem limite do sistema; o PHP do servidor pode aceitar menos) | 104857600 (100 MB) |
+| **Espera das telas pela API** | em segundos (0: sem limite) | 120 |
+| **Operações num lote** | no máximo quantas num `recurso=lote` | 100 |
+| **Cópia de segurança ligada**, **Cópias guardadas**, **Documentos na cópia** | a cópia da noite, quantas ficam e se leva o conteúdo dos documentos | sim, 7, não |
+| **SQL: UPDATE e DELETE aprovados** | libera o UPDATE e o DELETE no [SQL pela API](#o-sql-pela-api) | não |
+
 ### O que o sistema guarda sozinho
 
 Estas não aparecem como opção: o sistema anota para ele mesmo, e a API mostra. (O modo de rodízio em uso não fica aqui: é a
@@ -1522,6 +1538,7 @@ E do sistema inteiro (a tabela `sistema`):
 | `aleatorio_ultima`, `aleatorio_fora` | a fonte do último lote de números aleatórios e desde quando os serviços de fora falharam. |
 | `url_sistema`, `idioma` | o endereço do sistema e o idioma da instalação. |
 | `cron_espera_rodadas` | as rodadas do cron puladas seguidas antes de a próxima matar a travada. |
+| `param_<chave>` | os parâmetros de operação gravados no quadro **Sistema** (vazio: vale o `config.php`). |
 | `demo_avisos` | os avisos de vencimento da conta de demonstração que já foram (para não mandar duas vezes). |
 | `migracao_v25` | a marca de que a migração v25 (a passagem para várias pessoas) foi aplicada. |
 
@@ -1683,7 +1700,7 @@ ponto da árvore. A subtela fechada também fica fechada naquele aparelho.
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, em uso fora do plano (no pulso sem ser o relógio do dia), no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
 | **Avisos** (`avisos.php`) | Tudo o que o sistema lembra, num lugar só: os **avisos dos relógios** (o cadastro: a fórmula da data, a antecedência, o texto, o lançamento que resolve, *na hora*...), os **lembretes** (os eventos personalizados, com hora e repetição) e **Para onde vão** (os destinos das mensagens e as agendas, com os links das páginas deles). Veja [Mensagens e agendas](#mensagens-e-agendas). |
-| **Configuração** (`configuracao.php`) | As opções da coleção (os horários, os limites, as telas, o idioma), a situação do cron, o resumo dos avisos, dos lembretes e das mensagens (com o caminho para a página **Avisos**), a **Cópia de segurança** (só o master: as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**) e o botão que aplica as migrações do banco. Veja [A Configuração, opção por opção](#a-configuração-opção-por-opção). |
+| **Configuração** (`configuracao.php`) | As opções da coleção (os horários, os limites, as telas, o idioma), a situação do cron, o resumo dos avisos, dos lembretes e das mensagens (com o caminho para a página **Avisos**), a **Cópia de segurança** (só o master: as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**), o quadro **Sistema** (só o master: os parâmetros de operação que antes só mudavam no `config.php`, e a aprovação do UPDATE e do DELETE pelo SQL), o **Banco de dados (SQL)** (só o master: um comando por vez, com o resultado e o registro; veja [O SQL pela API](#o-sql-pela-api)) e o botão que aplica as migrações do banco. Veja [A Configuração, opção por opção](#a-configuração-opção-por-opção). |
 | **Destinos** (`destinos.php`, aberta pela página Avisos) | Para onde vão as mensagens da coleção: cada webhook, e-mail ou Web Push, com a mensagem, o idioma, o que recebe, os testes e como sai hoje. Veja [Mensagens e agendas](#mensagens-e-agendas). |
 | **Agendas** (`agendas.php`, aberta pela página Avisos) | As agendas da coleção (Google, CalDAV, Outlook, link ICS), com o modelo do evento, o que recebe, a sincronização, o evento de teste e o que tem de estar nela agora. |
 | **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
@@ -1955,6 +1972,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `winders` | os winders da coleção (a página **Winders**): cada um com os dados, a observação, quantos documentos e as posições, e cada posição com o programa (as voltas por dia, no total e em cada sentido), se está ligada, o relógio que está nela agora (a carga, o que cada hora dá, quando enche, a foto), o lugar fixo (de quem é e se ele está fora) e os avisos de limite da almofada; os campos do winder e da posição, os relógios que podem ir para um winder (com a posição em que estão e se estão no winder sem posição) e os programas para escolher |
 | `programas` | os programas dos winders (a página **Programas**): cada um com o tipo de cadastro, a velocidade do berço (ou as voltas por dia do manual), se funciona o dia todo ou em blocos, a sequência, a conta inteira (cada passo, o ciclo, as vezes por dia, o tempo girando, as voltas por dia em cada sentido) e as posições que o usam; os movimentos (a página **Movimentos**) com os programas que usam cada um. `previa=1` com os campos do programa: só a conta, sem gravar |
 | `relatorios` | os relatórios, por uma porta só: sem `tipo`, o catálogo (cada relatório com o grupo, o nome, a descrição e os parâmetros, e os relógios); com `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`; os cadastrados, `r<id>`; `avulso`: a definição no pedido, sem gravar) e os parâmetros dele (`relogio`, `de`, `ate`, `posse`, `situacao`), o relatório pronto (título, subtítulo, resumo, seções em tabela ou em pares, rodapé, já em texto); `csv=1`: a planilha. O catálogo traz também os cadastrados (`cadastro`) |
+| `sql` | só o master: o banco, o que o SQL pela API aceita agora, as tabelas e o registro das últimas execuções (`limite`); `tabela=`: as colunas dela |
 | `documento` | o arquivo de um documento (`id=<id>`): para mostrar (imagem, vídeo, áudio, PDF, texto) ou para baixar (o resto, ou com `baixar=1`); `mini=1` é a miniatura da foto. Atende pedaços (Range), para o vídeo avançar |
 | `usuarios`, `migracoes` | o master: o painel das contas, cada uma com o que tem e o hash da senha (para migrar com a mesma senha: veja [Os usuários e as senhas](#os-usuários-e-as-senhas)); os outros, só a própria conta; as migrações que faltam aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Minha conta (as coleções, as árvores, os pedidos, os tokens, os aparelhos lembrados, os aparelhos do Web Push, o servidor de e-mail próprio; `parte=menu`: só o do menu); as coleções e as árvores; a página Aprovações |
@@ -1988,6 +2006,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `unidades` | `salvar` (o símbolo, o nome, a base e o fator, o zero e o mostrar também em; o símbolo novo vai junto para quem o usa), `excluir` (só sem uso; leva junto as que se convertem nela) |
 | `marcas` | `salvar` (o nome, sem repetir outra; o país, o site e a observação), `juntar` (`em_id`: os relógios passam para a outra, e esta sai), `excluir` (os relógios ficam sem marca) |
 | `relatorios` | `salvar` (o nome, sem repetir outro; a descrição; as colunas, em JSON: o título, a expressão, o formato e a conta do rodapé; o filtro, a ordem, o decrescente, o agrupamento, quais relógios e o limite), `excluir` |
+| `sql` | `executar` (só o master; `comando`: um comando SQL no dialeto do MySQL, um por vez; `limite`: as linhas do SELECT). Veja [O SQL pela API](#o-sql-pela-api) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do sol, do carregador; do winder, o pôr é pela página Winders, o `winder_posicoes`, a não ser que o relógio tenha o lugar dele livre: aí volta para lá), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular; no winder, abre só de volta ao lugar), `periodo` (um período que já passou; no winder, com a posição, `posicao_id`; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia O `iniciar` que começa no instante em que acabou um trecho do mesmo tipo emenda nele (ele volta a ficar aberto), e o `periodo` sem `fim` fica aberto, do início até agora. |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -1995,7 +2014,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos; o campo com as regras do valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar`, `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (o master também `parametros[<chave>]`: os parâmetros de operação do sistema), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, com o que recebe), `testar` (`qual=`: texto, manhã ou noite), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token, é o master) e, só o master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
@@ -2017,12 +2036,30 @@ por motivo) numa escrita recusada:
 | `400` | escrita recusada pelas validações (os erros dizem por quê), ou uma fórmula mal escrita no `calcular` |
 | `302` | `recurso=entrar` com o login certo e `volta=`: vai para a página |
 | `401` | sem o token nem o login do site, ou com eles errados; sem nenhum usuário (ou com o banco vazio), a resposta diz o que fazer (`sem_usuarios` e `como`) |
-| `403` | a cópia de segurança e as migrações, por quem não é o master |
+| `403` | a cópia de segurança, as migrações e o SQL, por quem não é o master |
 | `404` | recurso desconhecido (a resposta traz a lista dos recursos), a coleção que você não vê, ou o relógio, a foto, o documento (ou o arquivo dele) ou o `README.md` (no `manual`) que não existe, ou um arquivo que não sai pelo `codigo` (com `o_que_ver` no que fica de fora de propósito, como o `config.php`) |
 | `409` | uma exclusão sem `confirmar=1` (com `impacto`: o que sairia junto; nada foi apagado); a conta sem coleção nenhuma (`sem_colecao`); ou o banco recusou a gravação: um registro que outro ainda usa, um valor repetido, ou um valor fora das regras de validação do banco (vem o nome da regra) |
 | `413` | o envio passou do limite do PHP do servidor (`post_max_size`): um arquivo grande demais |
 | `500` | sistema parado (o `API_TOKEN` ou o `FUSO` do `config.php` inválido) ou um erro interno |
 | `503` | banco desatualizado (só `recurso=migracoes` responde, e a escrita `migracoes`/`aplicar`; e o `manual` e o `codigo`, que não usam o banco), banco vazio (antes da instalação só `instalacao` responde, e o `manual` e o `codigo`) ou banco fora do ar |
+
+### O SQL pela API
+
+Tudo o que as telas fazem, a API faz; e o que nenhuma tela faz, o master faz pelo SQL (`recurso=sql`, ou o quadro **Banco
+de dados (SQL)** da Configuração): um comando por vez, no SQL do MySQL (o sistema traduz para o banco em uso, como nas
+migrações), sem o escopo das coleções.
+
+| Comando | Quando vale |
+|---|---|
+| `SELECT` | sempre (sem `INTO`); a resposta traz até `limite` linhas (padrão 200, até 5000) e diz se cortou |
+| `INSERT` | sempre |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | sempre: um campo novo numa tabela que existe, um por vez |
+| `UPDATE`, `DELETE` | só com a aprovação ligada no quadro **Sistema** da Configuração (`parametros[sql_alteracoes]=1`) |
+| o resto (`DROP`, `TRUNCATE`, `CREATE`, outro `ALTER`, mais de um comando, o parâmetro `?`) | nunca: recusado antes de ir ao banco |
+
+Cada pedido, o recusado, o que deu erro e o que deu certo, fica no registro (a tabela `sql_execucao`, lida em
+`recurso=sql`): quando, quem, o comando, as linhas e o erro. O erro do banco volta como veio, sem nova tentativa. Uma
+coluna criada assim fica fora do `schema.sql`: uma cópia de segurança com ela só volta num banco que também a tenha.
 
 ### Os usuários e as senhas
 
@@ -2197,6 +2234,11 @@ pessoas entram pelo **Criar conta** (`cadastro.php`), por um convite seu, ou o m
 | `CRON_TRAVA` | opcional: o arquivo de trava do cron, que garante uma rodada por vez (veja a instalação do cron). Sem ela, um por instalação na pasta temporária do sistema |
 | `API_ESPERA` | opcional: quantos segundos as telas esperam a resposta da API antes de cancelar o pedido e dizer que o servidor não respondeu. Sem ela, 120; `0`, sem limite. As escritas demoradas (importação, cópia de segurança, migrações e instalação) não têm limite |
 | `LOTE_MAXIMO` | opcional: quantas operações cabem num lote (`recurso=lote`). Sem ela, 100 |
+
+Os parâmetros de operação (`CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS`, `DOCUMENTOS_LIMITE`, `API_ESPERA`, `LOTE_MAXIMO`,
+`BACKUP_ATIVO`, `BACKUP_MANTER` e `BACKUP_DOCUMENTOS`) o master muda também no quadro **Sistema** da Configuração (ou pela API:
+`recurso=config`, `parametros[<chave>]`): o gravado lá vale por cima da linha do `config.php`, e vazio volta a valer a linha.
+As credenciais, as chaves, as pastas e os endereços dos servidores ficam só no `config.php`.
 
 O sistema lê o `config.php` da pasta dele. Uma variável de ambiente do servidor, `RELOGIOS_CONFIG`, aponta outro arquivo no
 lugar: é o que o teste de paridade usa (`testes/paridade.sh`, com o [`testes/config.teste.php`](testes/config.teste.php)), para

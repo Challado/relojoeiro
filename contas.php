@@ -5,25 +5,34 @@
 // pode. A API (recurso=conta, colecoes, acessos, convites, pedidos, cadastro e usuarios) chama estas funções.
 
 // ---------------------------------------------------------------------------------------------------------------------
-// As regras do config.php (todas opcionais)
+// As regras do config.php (todas opcionais; o master as muda também em Configuração › Sistema: parametro_gravado)
 // ---------------------------------------------------------------------------------------------------------------------
 
 // O cadastro aberto (a página cadastro.php): CADASTRO_ABERTO (sem ela, aberto). Fechado, só entra quem o master cria ou quem
 // tem um convite
 function cadastro_aberto()
 {
+    if (($g = parametro_gravado("cadastro_aberto")) !== null) {
+        return $g === 1;
+    }
     return (bool)cfg_php("CADASTRO_ABERTO", true);
 }
 
 // Os dias da conta de demonstração (a criada pelo cadastro aberto): DEMO_DIAS (sem ela, 30; 0: a conta já nasce oficial)
 function demo_dias()
 {
+    if (($g = parametro_gravado("demo_dias")) !== null) {
+        return $g;
+    }
     return max(0, (int)cfg_php("DEMO_DIAS", 30));
 }
 
 // Os dias que um convite ou um pedido de acesso espera (depois, o cron apaga): CONVITE_DIAS (sem ela, 7)
 function convite_dias()
 {
+    if (($g = parametro_gravado("convite_dias")) !== null) {
+        return $g;
+    }
     $n = (int)cfg_php("CONVITE_DIAS", 7);
     return $n > 0 ? $n : 7;
 }

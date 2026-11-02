@@ -1,4 +1,4 @@
-<!-- origem: 8ce205a4bb6b8d6941f622d9e86f368beec4eeeb -->
+<!-- origem: c421b4e9e4d6df6611127ff8b185f6520df3b339 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1482,6 +1482,22 @@ cuándo se disparan (una vez, todos los días, en días de la semana, en un día
 reloj. La tabla muestra cada uno con **Va a** (los destinos y los calendarios que lo reciben); un evento nuevo ya va a todos
 los destinos.
 
+### Sistema (solo el master) {#sistema-só-o-master}
+
+El cuadro **Sistema** trae lo que es de todo el sistema y antes solo cambiaba en el `config.php`. Cada campo vacío sigue la
+línea del `config.php` (o el predeterminado), y la etiqueta dice de dónde viene el valor actual.
+
+| Opción | Qué hace | Predeterminado |
+|---|---|---|
+| **Registro abierto** | cualquiera crea la cuenta en la página de registro; cerrado, solo quien el master crea o quien tiene una invitación | sí |
+| **Días de la demostración** | los días de la cuenta creada por el registro abierto (0: nace oficial) | 30 |
+| **Días de la invitación** | los días que una invitación o una solicitud de acceso espera | 7 |
+| **Tamaño máximo de un documento** | en bytes (0: sin límite del sistema; el PHP del servidor puede aceptar menos) | 104857600 (100 MB) |
+| **Espera de las pantallas por la API** | en segundos (0: sin límite) | 120 |
+| **Operaciones en un lote** | como máximo cuántas en un `recurso=lote` | 100 |
+| **Copia de seguridad activada**, **Copias guardadas**, **Documentos en la copia** | la copia de la noche, cuántas quedan y si lleva el contenido de los documentos | sí, 7, no |
+| **SQL: UPDATE y DELETE aprobados** | habilita el UPDATE y el DELETE en [El SQL por la API](#o-sql-pela-api) | no |
+
 ### Lo que el sistema guarda solo {#o-que-o-sistema-guarda-sozinho}
 
 Estas no aparecen como opción: el sistema las anota para sí mismo, y la API las muestra. (El modo de rotación en uso no está
@@ -1502,6 +1518,7 @@ Y de todo el sistema (la tabla `sistema`):
 | `aleatorio_ultima`, `aleatorio_fora` | la fuente del último lote de números aleatorios y desde cuándo fallan los servicios de fuera. |
 | `url_sistema`, `idioma` | la dirección del sistema y el idioma de la instalación. |
 | `cron_espera_rodadas` | las vueltas del cron saltadas seguidas antes de que la siguiente mate la trabada. |
+| `param_<chave>` | los parámetros de operación guardados en el cuadro **Sistema** (vacío: vale el `config.php`). |
 | `demo_avisos` | los avisos de vencimiento de la cuenta de demostración que ya salieron (para no enviarlos dos veces). |
 | `migracao_v25` | la marca de que se aplicó la migración v25 (el paso a varias personas). |
 
@@ -1632,7 +1649,7 @@ para es su versión para ese punto del árbol. La subpantalla cerrada también q
 | **Documentos** (`documentos.php`) | Los documentos de un reloj (o de todos), abiertos desde la ficha: envío de varios archivos, una pestaña por categoría, la galería de fotos a pantalla completa con presentación, los videos en secuencia en el orden elegido, el visor de PDF, el resumen de la NF-e a partir del XML, y descarga para el resto. Vea [Los documentos del reloj](#os-documentos-do-relógio). |
 | **Historial** (`historico.php`) | La línea de tiempo de un reloj: en uso por la rotación, en uso fuera del plan (en la muñeca sin ser el reloj del día), en el winder, al sol, en reposo, y cada cuerda, carga y cambio de pila. Muestra cuánto tiempo y qué porcentaje pasó en cada estado, con filtro de período y de estado. |
 | **Avisos** (`avisos.php`) | Todo lo que el sistema recuerda, en un solo lugar: los **avisos de los relojes** (la definición: la fórmula de la fecha, la antelación, el texto, el registro que lo resuelve, *en el acto*...), los **recordatorios** (los eventos personalizados, con hora y repetición) y **Adónde van** (los destinos de los mensajes y los calendarios, con los enlaces a sus páginas). Vea [Mensajes y calendarios](#mensagens-e-agendas). |
-| **Configuración** (`configuracao.php`) | Las opciones de la colección (los horarios, los límites, las pantallas, el idioma), la situación del cron, el resumen de los avisos, los recordatorios y los mensajes (con el camino a la página **Avisos**), la **Copia de seguridad** (solo el master: las copias de la carpeta, con **Descargar** y **Restaurar**, y **Hacer una copia ahora**) y el botón que aplica las migraciones de la base de datos. Vea [La Configuración, opción por opción](#a-configuração-opção-por-opção). |
+| **Configuración** (`configuracao.php`) | Las opciones de la colección (los horarios, los límites, las pantallas, el idioma), la situación del cron, el resumen de los avisos, los recordatorios y los mensajes (con el camino a la página **Avisos**), la **Copia de seguridad** (solo el master: las copias de la carpeta, con **Descargar** y **Restaurar**, y **Hacer una copia ahora**), el cuadro **Sistema** (solo el master: los parámetros de operación que antes solo cambiaban en el `config.php`, y la aprobación del UPDATE y del DELETE por el SQL), la **Base de datos (SQL)** (solo el master: un comando a la vez, con el resultado y el registro; vea [El SQL por la API](#o-sql-pela-api)) y el botón que aplica las migraciones de la base de datos. Vea [La Configuración, opción por opción](#a-configuração-opção-por-opção). |
 | **Destinos** (`destinos.php`, abierta desde la página Avisos) | Adónde van los mensajes de la colección: cada webhook, correo o Web Push, con el mensaje, el idioma, lo que recibe, las pruebas y cómo sale hoy. Vea [Mensajes y calendarios](#mensagens-e-agendas). |
 | **Calendarios** (`agendas.php`, abierta desde la página Avisos) | Los calendarios de la colección (Google, CalDAV, Outlook, enlace ICS), con la plantilla del evento, lo que recibe, la sincronización, el evento de prueba y lo que tiene que estar en él ahora. |
 | **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, el tipo, el criterio, las semanas y de dónde elige) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo, con la pantalla de su tipo: el nombre y el tipo; de dónde elegir (por tramo o por día de la semana), el período de la escala o el guion escrito a mano con **Probar en todos los relojes**; las semanas adelante (con la lista de las semanas); el criterio de elección y el ciclo; y, en los tipos listos, el guion generado (solo lectura, con **copiar este guion** a un Personalizado). Vea [Los modos de rotación](#os-modos-de-rodízio). |

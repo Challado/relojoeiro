@@ -1,4 +1,4 @@
-<!-- origem: 792b13b74c42353ac8372c828b4208cd8982cd80 -->
+<!-- origem: 00872d7c177ca3cb70578bb6d0ba718de037a8bc -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -171,6 +171,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `winders` | los winders de la colección (la página **Winders**): cada uno con los datos, la observación, cuántos documentos y las posiciones, y cada posición con el programa (las vueltas por día, en total y en cada sentido), si está encendida, el reloj que está en ella ahora (la carga, cuánto da cada hora, cuándo se llena, la foto), el lugar fijo (de quién es y si está fuera) y los avisos de límite de la almohadilla; los campos del winder y de la posición, los relojes que pueden ir a un winder (con la posición en que están y si están en el winder sin posición) y los programas para elegir |
 | `programas` | los programas de los winders (la página **Programas**): cada uno con el tipo de registro, la velocidad de la cuna (o las vueltas por día del manual), si funciona todo el día o en bloques, la secuencia, el cálculo entero (cada paso, el ciclo, las veces por día, el tiempo girando, las vueltas por día en cada sentido) y las posiciones que lo usan; los movimientos (la página **Movimientos**) con los programas que usan cada uno. `previa=1` con los campos del programa: solo el cálculo, sin guardar |
 | `relatorios` | los informes, por una puerta sola: sin `tipo`, el catálogo (cada informe con el grupo, el nombre, la descripción y los parámetros, y los relojes); con `tipo` (`colecao`, `passaporte`, `custos`, `desejos`, `acessorios`, `documentos`, `historico`, `estatisticas`, `plano`, `avisos`, `criterios`, `servicos`, `precisao`, `timegrapher`, `reserva`, `calibres`, `totais`, `cron`; los guardados, `r<id>`; `avulso`: la definición en la petición, sin guardar) y sus parámetros (`relogio`, `de`, `ate`, `posse`, `situacao`), el informe listo (título, subtítulo, resumen, secciones en tabla o en pares, pie, ya en texto); `csv=1`: la planilla. El catálogo trae también los guardados (`cadastro`) |
+| `sql` | solo el master: la base, lo que el SQL por la API acepta ahora, las tablas y el registro de las últimas ejecuciones (`limite`); `tabela=`: sus columnas |
 | `documento` | el archivo de un documento (`id=<id>`): para mostrar (imagen, video, audio, PDF, texto) o para descargar (el resto, o con `baixar=1`); `mini=1` es la miniatura de la foto. Atiende trozos (Range), para que el video avance |
 | `usuarios`, `migracoes` | el master: el panel de las cuentas, cada una con lo que tiene y el hash de la contraseña (para migrar con la misma contraseña: vea [Los usuarios y las contraseñas](#os-usuários-e-as-senhas)); los demás, solo su propia cuenta; las migraciones que faltan aplicar |
 | `conta`, `colecoes`, `aprovacoes` | Mi cuenta (las colecciones, los árboles, las solicitudes, los tokens, los aparatos recordados, los aparatos del Web Push, el servidor de correo propio; `parte=menu`: solo lo del menú); las colecciones y los árboles; la página Aprobaciones |
@@ -204,6 +205,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `unidades` | `salvar` (el símbolo, el nombre, la base y el factor, el cero y el mostrar también en; el símbolo nuevo pasa a quien lo usa), `excluir` (solo sin uso; se lleva las que se convierten en ella) |
 | `marcas` | `salvar` (el nombre, sin repetir otra; el país, el sitio y la observación), `juntar` (`em_id`: los relojes pasan a la otra, y esta sale), `excluir` (los relojes quedan sin marca) |
 | `relatorios` | `salvar` (el nombre, sin repetir otro; la descripción; las columnas, en JSON: el título, la expresión, el formato y la cuenta del pie; el filtro, el orden, el descendente, la agrupación, qué relojes y el límite), `excluir` |
+| `sql` | `executar` (solo el master; `comando`: un comando SQL en el dialecto de MySQL, uno a la vez; `limite`: las filas del SELECT). Vea [El SQL por la API](#o-sql-pela-api) |
 | `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del sol, del cargador; del winder, poner es por la página Winders, `winder_posicoes`, salvo que el reloj tenga su lugar libre: entonces vuelve ahí), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil; en el winder, solo abre de vuelta al lugar), `periodo` (un período que ya pasó; en el winder, con la posición, `posicao_id`; en la muñeca del reloj del día es uso de la rotación, y los tramos del mismo tipo con los que se toca, como el Poner que quedó abierto, se vuelven uno), `alterar`, `excluir`, `medicao` (una medición del consumo entra o sale de la cuenta: `id`, `usada` 1 o 0). En todas, `relogio_id=hoje` es el reloj del día El `iniciar` que empieza en el mismo instante en que terminó un tramo del mismo tipo se une a él (vuelve a quedar abierto), y el `periodo` sin `fim` queda abierto, del inicio hasta ahora. |
 | `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
@@ -211,7 +213,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (y `ordem` en los campos; el campo con las reglas del valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar`, `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (el master también `parametros[<chave>]`: los parámetros de operación del sistema), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, correo o Web Push, con lo que recibe), `testar` (`qual=`: texto, mañana o noche), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook o ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (con la `senha`, o con el `senha_hash` de otro sistema; el primer usuario, con el token, es el master) y, solo el master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
@@ -233,12 +235,31 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `400` | escritura rechazada por las validaciones (los errores dicen por qué), o una fórmula mal escrita en el `calcular` |
 | `302` | `recurso=entrar` con el login correcto y `volta=`: va a la página |
 | `401` | sin el token ni el login del sitio, o con ellos equivocados; sin ningún usuario (o con la base vacía), la respuesta dice qué hacer (`sem_usuarios` y `como`) |
-| `403` | la copia de seguridad y las migraciones, por quien no es el master |
+| `403` | la copia de seguridad, las migraciones y el SQL, por quien no es el master |
 | `404` | recurso desconocido (la respuesta trae la lista de los recursos), la colección que usted no ve, o el reloj, la foto, el documento (o su archivo) o el `README.md` (en el `manual`) que no existe, o un archivo que no sale por el `codigo` (con `o_que_ver` en lo que queda fuera a propósito, como el `config.php`) |
 | `409` | una eliminación sin `confirmar=1` (con `impacto`: lo que saldría junto; no se borró nada); la cuenta sin ninguna colección (`sem_colecao`); o la base de datos rechazó la escritura: un registro que otro todavía usa, un valor repetido, o un valor fuera de las reglas de validación de la base (viene el nombre de la regla) |
 | `413` | el envío pasó del límite del PHP del servidor (`post_max_size`): un archivo demasiado grande |
 | `500` | sistema parado (el `API_TOKEN` o el `FUSO` del `config.php` inválido) o un error interno |
 | `503` | base desactualizada (solo responde `recurso=migracoes`, y la escritura `migracoes`/`aplicar`; y el `manual` y el `codigo`, que no usan la base), base vacía (antes de la instalación solo responde `instalacao`, y el `manual` y el `codigo`) o base caída |
+
+### El SQL por la API {#o-sql-pela-api}
+
+Todo lo que las pantallas hacen, la API lo hace; y lo que ninguna pantalla hace, el master lo hace por el SQL
+(`recurso=sql`, o el cuadro **Base de datos (SQL)** de la Configuración): un comando a la vez, en el SQL de MySQL (el sistema
+lo traduce para la base en uso, como en las migraciones), sin el alcance de las colecciones.
+
+| Comando | Cuándo vale |
+|---|---|
+| `SELECT` | siempre (sin `INTO`); la respuesta trae hasta `limite` filas (predeterminado 200, hasta 5000) y dice si cortó |
+| `INSERT` | siempre |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | siempre: un campo nuevo en una tabla que existe, uno a la vez |
+| `UPDATE`, `DELETE` | solo con la aprobación activada en el cuadro **Sistema** de la Configuración (`parametros[sql_alteracoes]=1`) |
+| el resto (`DROP`, `TRUNCATE`, `CREATE`, otro `ALTER`, más de un comando, el parámetro `?`) | nunca: rechazado antes de llegar a la base |
+
+Cada petición, la rechazada, la que dio error y la que funcionó, queda en el registro (la tabla `sql_execucao`, leída en
+`recurso=sql`): cuándo, quién, el comando, las filas y el error. El error de la base vuelve tal como vino, sin nuevo
+intento. Una columna creada así queda fuera del `schema.sql`: una copia de seguridad con ella solo vuelve en una base que
+también la tenga.
 
 ### Los usuarios y las contraseñas {#os-usuários-e-as-senhas}
 
@@ -416,6 +437,12 @@ entran por **Crear cuenta** (`cadastro.php`), por una invitación suya, o el mas
 | `CRON_TRAVA` | opcional: el archivo de bloqueo del cron, que garantiza una vuelta a la vez (vea la instalación del cron). Sin ella, uno por instalación en la carpeta temporal del sistema |
 | `API_ESPERA` | opcional: cuántos segundos esperan las pantallas la respuesta de la API antes de cancelar el pedido y decir que el servidor no respondió. Sin ella, 120; `0`, sin límite. Las escrituras lentas (importación, copia de seguridad, migraciones e instalación) no tienen límite |
 | `LOTE_MAXIMO` | opcional: cuántas operaciones caben en un lote (`recurso=lote`). Sin ella, 100 |
+
+Los parámetros de operación (`CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS`, `DOCUMENTOS_LIMITE`, `API_ESPERA`, `LOTE_MAXIMO`,
+`BACKUP_ATIVO`, `BACKUP_MANTER` y `BACKUP_DOCUMENTOS`) el master los cambia también en el cuadro **Sistema** de la
+Configuración (o por la API: `recurso=config`, `parametros[<chave>]`): lo guardado allí vale por encima de la línea del
+`config.php`, y vacío vuelve a valer la línea. Las credenciales, las claves, las carpetas y las direcciones de los servidores
+quedan solo en el `config.php`.
 
 El sistema lee el `config.php` de su carpeta. Una variable de entorno del servidor, `RELOGIOS_CONFIG`, apunta a otro archivo en
 su lugar: es lo que usa la prueba de paridad (`testes/paridade.sh`, con el [`testes/config.teste.php`](testes/config.teste.php)),

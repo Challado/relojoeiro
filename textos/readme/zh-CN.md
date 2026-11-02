@@ -1,4 +1,4 @@
-<!-- origem: 792b13b74c42353ac8372c828b4208cd8982cd80 -->
+<!-- origem: 00872d7c177ca3cb70578bb6d0ba718de037a8bc -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -141,6 +141,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `winders` | 收藏的上链盒（**上链盒**页面）：每个上链盒带有数据、备注、文档数量和位置，每个位置带有程序（每日圈数，总数和每个方向）、是否开启、现在在上面的手表（电量、每小时提供多少、何时充满、照片）、固定位置（归谁、它是否不在）以及表枕限制警告；上链盒和位置的字段、可以放上上链盒的手表（以及它们所在的位置、是否在上链盒上但没有位置）和可供选择的程序 |
 | `programas` | 上链盒的程序（**程序**页面）：每个程序带有录入方式、托座转速（或说明书的每日圈数）、全天还是分段运行、序列、完整计算（每一步、周期、每天次数、转动时间、每个方向的每日圈数）以及使用它的位置；动作（**动作**页面）以及使用每个动作的程序。带程序字段的 `previa=1`：只计算，不保存 |
 | `relatorios` | 报表的统一入口：不带 `tipo` 时为目录（每个报表的分组、名称、描述和参数，以及手表）；带 `tipo`（`colecao`、`passaporte`、`custos`、`desejos`、`acessorios`、`documentos`、`historico`、`estatisticas`、`plano`、`avisos`、`criterios`、`servicos`、`precisao`、`timegrapher`、`reserva`、`calibres`、`totais`、`cron`；已保存的，`r<id>`；`avulso`：请求中的定义，不保存）及其参数（`relogio`、`de`、`ate`、`posse`、`situacao`）时为生成好的报表（标题、副标题、摘要、表格或名值对形式的各部分、页脚，已是文字）；`csv=1`：表格。目录还带有已保存的报表（`cadastro`） |
+| `sql` | 仅限 master：数据库、通过 API 执行 SQL 当前接受的命令、表以及最近执行的日志（`limite`）；`tabela=`：该表的列 |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
 | `conta`、`colecoes`、`aprovacoes` | 我的账户（收藏、树、申请、令牌、已记住的设备、Web Push 设备、自己的邮件服务器；`parte=menu`：只返回菜单用的部分）；收藏和树；审批页面 |
@@ -174,6 +175,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `unidades` | `salvar`（符号、名称、基准和系数、零点以及同时显示为；新符号会同步到使用它的地方），`excluir`（仅在未使用时；换算成它的单位一起删除） |
 | `marcas` | `salvar`（名称，不与其他重复；国家、网站和备注）、`juntar`（`em_id`：手表转到另一个品牌，本品牌移除）、`excluir`（手表变为没有品牌） |
 | `relatorios` | `salvar`（名称，不与其他重复；描述；列，JSON 格式：标题、表达式、格式和页脚计算；筛选、排序、降序、分组、哪些手表和上限）、`excluir` |
+| `sql` | `executar`（仅限 master；`comando`：一条 MySQL 方言的 SQL 命令，每次一条；`limite`：SELECT 的行数）。见[通过 API 执行 SQL](#o-sql-pela-api) |
 | `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、晒太阳、充电器；上链盒要通过上链盒页面放上，即 `winder_posicoes`，除非手表的位置空闲：那时它会回到那里）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够；上链盒上只能在回到位置时打开）、`periodo`（已经过去的一段时间；上链盒上要带位置 `posicao_id`；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 在同类型的一段刚结束的同一时刻开始的 `iniciar` 会与其衔接（该段重新变为开放），没有 `fim` 的 `periodo` 保持开放，从开始一直到现在。 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
@@ -181,7 +183,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`；带取值规则的字段：`opcoes`、`minimo`、`maximo`、`multiplo`） |
 | `formulas` | `nova`、`alterar`、`excluir` |
 | `criterios` | `conjunto_criar`、`conjunto_excluir`、`param_novo`、`param_excluir`、`param_pesos`、`sub_novo`、`sub_excluir`、`sub_medida`、`sub_mover`、`sub_pesos`、`faixas`、`ordem`、`restaurar` |
-| `config` | `salvar`、`evento_salvar`、`evento_excluir` |
+| `config` | `salvar`（master 还可以用 `parametros[<chave>]`：系统的运行参数）、`evento_salvar`、`evento_excluir` |
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
@@ -202,12 +204,28 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `400` | 写入未通过校验（错误会说明原因），或 `calcular` 中的公式写错 |
 | `302` | `recurso=entrar` 登录正确且带 `volta=`：跳转到页面 |
 | `401` | 没有令牌或网站登录，或二者错误；没有任何用户（或数据库为空）时，响应会说明该怎么做（`sem_usuarios` 和 `como`） |
-| `403` | 不是 master 的人请求备份和迁移 |
+| `403` | 不是 master 的人请求备份、迁移和 SQL |
 | `404` | 未知资源（响应会带上资源列表）、你看不到的收藏，或不存在的手表、照片、文档（或其文件）或 `README.md`（在 `manual` 中），或不通过 `codigo` 输出的文件（对于故意排除的内容如 `config.php`，带 `o_que_ver`） |
 | `409` | 没有 `confirmar=1` 的删除（带 `impacto`：会一并删除的内容；什么都没删）；没有任何收藏的账户（`sem_colecao`）；或数据库拒绝了写入：另一条记录仍在使用的记录、重复的值，或违反数据库校验规则的值（会给出规则名） |
 | `413` | 上传超过服务器 PHP 的限制（`post_max_size`）：文件太大 |
 | `500` | 系统停止（`config.php` 中的 `API_TOKEN` 或 `FUSO` 无效）或内部错误 |
 | `503` | 数据库过期（只有 `recurso=migracoes` 和写入 `migracoes`/`aplicar` 会响应；还有不使用数据库的 `manual` 和 `codigo`）、数据库为空（安装前只有 `instalacao` 会响应，还有 `manual` 和 `codigo`）或数据库无法连接 |
+
+### 通过 API 执行 SQL {#o-sql-pela-api}
+
+界面能做的，API 都能做；没有界面做的，master 通过 SQL 来做（`recurso=sql`，或设置中的**数据库（SQL）**框）：每次一条命令，
+使用 MySQL 的 SQL（系统会像迁移时一样翻译成正在使用的数据库的写法），不受收藏范围的限制。
+
+| 命令 | 何时可用 |
+|---|---|
+| `SELECT` | 始终可用（不带 `INTO`）；响应最多返回 `limite` 行（默认 200，最多 5000），并说明是否截断 |
+| `INSERT` | 始终可用 |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | 始终可用：在已有的表中新增字段，每次一个 |
+| `UPDATE`、`DELETE` | 只有在设置的**系统**框中开启批准后（`parametros[sql_alteracoes]=1`） |
+| 其余（`DROP`、`TRUNCATE`、`CREATE`、其他 `ALTER`、多条命令、`?` 参数） | 从不：在到达数据库之前就被拒绝 |
+
+每次请求，无论被拒绝、出错还是成功，都记入日志（`sql_execucao` 表，在 `recurso=sql` 中读取）：时间、请求者、命令、行数和错误。
+数据库的错误原样返回，不会重试。这样创建的列不在 `schema.sql` 中：包含它的备份只能恢复到同样有这一列的数据库。
 
 ### 用户与密码 {#os-usuários-e-as-senhas}
 
@@ -346,6 +364,11 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | `CRON_TRAVA` | 可选：cron 的锁文件，确保每次只运行一轮（参见 cron 的安装）。没有它时，每个安装在系统临时文件夹中各有一个 |
 | `API_ESPERA` | 可选：界面等待 API 响应的秒数，超过后取消请求并提示服务器没有响应。没有它时为 120；`0` 表示不限。耗时的写入（导入、备份、迁移和安装）不受限制 |
 | `LOTE_MAXIMO` | 可选：一个批次（`recurso=lote`）最多包含多少个操作。没有它时为 100 |
+
+运行参数（`CADASTRO_ABERTO`、`DEMO_DIAS`、`CONVITE_DIAS`、`DOCUMENTOS_LIMITE`、`API_ESPERA`、`LOTE_MAXIMO`、`BACKUP_ATIVO`、
+`BACKUP_MANTER` 和 `BACKUP_DOCUMENTOS`）master 也可以在设置的**系统**框中修改（或通过 API：`recurso=config`、
+`parametros[<chave>]`）：在那里保存的值优先于 `config.php` 中的那一行，留空则恢复使用那一行。凭据、密钥、文件夹和服务器地址
+仍只在 `config.php` 中。
 
 系统读取它所在文件夹中的 `config.php`。服务器环境变量 `RELOGIOS_CONFIG` 可以指向另一个文件代替它：一致性测试就是这样用的（`testes/paridade.sh`，配合 [`testes/config.teste.php`](testes/config.teste.php)），以便在不碰真正的 `config.php` 的情况下运行。正常安装时不要设置它。
 

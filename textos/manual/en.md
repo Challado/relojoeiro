@@ -1,4 +1,4 @@
-<!-- origem: 8ce205a4bb6b8d6941f622d9e86f368beec4eeeb -->
+<!-- origem: c421b4e9e4d6df6611127ff8b185f6520df3b339 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1488,6 +1488,22 @@ server](#destinos-e-agendas-no-servidor).
 (once, every day, on weekdays, on a day of the month or every N days), the time and, if you want, a watch. The table shows
 each one with **Goes to** (the destinations and calendars that receive it); a new event already goes to all destinations.
 
+### System (master only) {#sistema-só-o-master}
+
+The **System** box holds what belongs to the whole system and used to change only in `config.php`. Each empty field follows
+the `config.php` line (or the default), and the label says where the current value comes from.
+
+| Option | What it does | Default |
+|---|---|---|
+| **Open sign-up** | anyone creates an account on the sign-up page; closed, only those the master creates or who have an invitation | yes |
+| **Demo days** | the days of an account created by open sign-up (0: born official) | 30 |
+| **Invitation days** | the days an invitation or an access request waits | 7 |
+| **Maximum document size** | in bytes (0: no system limit; the server's PHP may accept less) | 104857600 (100 MB) |
+| **Screen wait for the API** | in seconds (0: no limit) | 120 |
+| **Operations in a batch** | at most how many in one `recurso=lote` | 100 |
+| **Backup on**, **Backups kept**, **Documents in the backup** | the nightly backup, how many stay and whether it takes the documents' content | yes, 7, no |
+| **SQL: UPDATE and DELETE approved** | allows UPDATE and DELETE in [SQL through the API](#o-sql-pela-api) | no |
+
 ### What the system keeps by itself {#o-que-o-sistema-guarda-sozinho}
 
 These don't appear as options: the system notes them for itself, and the API shows them. (The rotation mode in use isn't
@@ -1509,6 +1525,7 @@ And of the whole system (the `sistema` table):
 | `aleatorio_ultima`, `aleatorio_fora` | the source of the last batch of random numbers and since when the outside services have failed. |
 | `url_sistema`, `idioma` | the system address and the installation language. |
 | `cron_espera_rodadas` | the cron rounds skipped in a row before the next one kills the stuck one. |
+| `param_<chave>` | the operating parameters saved in the **System** box (empty: `config.php` applies). |
 | `demo_avisos` | the demo account expiry notices already sent (so as not to send them twice). |
 | `migracao_v25` | the mark that migration v25 (the move to several people) was applied. |
 
@@ -1638,7 +1655,7 @@ of the tree. A closed sub-panel also stays closed on that device.
 | **Documents** (`documentos.php`) | The documents of a watch (or of all), opened from the watch page: uploading several files, one tab per category, the full-screen photo gallery with a slideshow, the videos in sequence in the chosen order, the PDF viewer, the summary of the NF-e from the XML, and download for the rest. See [The watch's documents](#os-documentos-do-relógio). |
 | **History** (`historico.php`) | A watch's timeline: in use by the rotation, in use outside the plan (on the wrist without being the watch of the day), on the winder, in the sun, at rest, and each winding, charge and battery change. It shows how much time and what percentage it spent in each state, with a period and state filter. |
 | **Alerts** (`avisos.php`) | Everything the system reminds you of, in one place: the **watch alerts** (the definition: the date formula, the lead time, the text, the entry that resolves it, *right away*...), the **reminders** (the custom events, with a time and a repetition) and **Where they go** (the message destinations and the calendars, with the links to their pages). See [Messages and calendars](#mensagens-e-agendas). |
-| **Settings** (`configuracao.php`) | The collection's options (the times, the limits, the screens, the language), the cron status, the summary of the alerts, the reminders and the messages (with the way to the **Alerts** page), the **Backup** (master only: the folder's backups, with **Download** and **Restore**, and **Make a backup now**) and the button that applies the database migrations. See [Settings, option by option](#a-configuração-opção-por-opção). |
+| **Settings** (`configuracao.php`) | The collection's options (the times, the limits, the screens, the language), the cron status, the summary of the alerts, the reminders and the messages (with the way to the **Alerts** page), the **Backup** (master only: the folder's backups, with **Download** and **Restore**, and **Make a backup now**), the **System** box (master only: the operating parameters that used to change only in `config.php`, and the approval of UPDATE and DELETE through SQL), the **Database (SQL)** (master only: one command at a time, with the result and the log; see [SQL through the API](#o-sql-pela-api)) and the button that applies the database migrations. See [Settings, option by option](#a-configuração-opção-por-opção). |
 | **Destinations** (`destinos.php`, opened from the Alerts page) | Where the collection's messages go: each webhook, e-mail or Web Push, with the message, the language, what it receives, the tests and how it goes out today. See [Messages and calendars](#mensagens-e-agendas). |
 | **Calendars** (`agendas.php`, opened from the Alerts page) | The collection's calendars (Google, CalDAV, Outlook, ICS link), with the event template, what it receives, the sync, the test event and what has to be in it now. |
 | **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#os-modos-de-rodízio). |
