@@ -160,16 +160,17 @@ function tabelaSql(r) {
   return el("p", {"class": r.ok ? "nota" : "acao"}, r.ok ? (r.afetadas === null ? t("Executado em {1} ms.", {1: r.duracao_ms}) : t("{1} linha(s) mudadas em {2} ms.", {1: r.afetadas, 2: r.duracao_ms})) : h(r.erro || ""));
 }
 function quadroSql(s, resultado) {
+  var execucoes = s.execucoes || [];
   return el("h2", {}, t("Banco de dados (SQL)"))
     + el("p", {"class": "nota"}, t("Um comando por vez, no SQL do MySQL (o sistema traduz para o banco {1}). Valem SELECT, INSERT e ALTER TABLE … ADD COLUMN (um campo novo numa tabela); UPDATE e DELETE só com a aprovação ligada no quadro Sistema. Tudo fica no registro abaixo.", {1: el("code", {}, h(s.banco))}))
     + el("form", {"data-recurso": "sql", "id": "form-sql", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "executar"})
       + el("label", {"style": "grid-column: 1 / -1"}, t("Comando {1}", {1: el("textarea", {"name": "comando", "class": "formula", "rows": "4", "required": true, "placeholder": fixo("SELECT id, nome FROM relogio ORDER BY nome")}, "")}))
-      + el("label", {}, t("Linhas na resposta {1}", {1: el("input", {"type": "number", "name": "limite", "min": "1", "max": String(s.limite_maximo), "value": String(s.limite_padrao)})}))
+      + el("label", {}, t("Linhas na resposta {1}", {1: el("input", {"type": "number", "name": "limite", "min": "1", "max": String(s.limite_maximo || 5000), "value": String(s.limite_padrao || 200)})}))
       + el("div", {"class": "botoes"}, el("button", {}, t("Executar"))))
     + el("div", {"id": "sql-resultado", "aria-live": "polite"}, tabelaSql(resultado))
-    + el("details", {}, el("summary", {}, t("As últimas execuções")) + (s.execucoes.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma ainda."))
+    + el("details", {}, el("summary", {}, t("As últimas execuções")) + (execucoes.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma ainda."))
       : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Quando"), t("Quem"), t("Comando"), t("Resultado")].map(function (x) { return el("th", {}, x); }).join("")))
-        + el("tbody", {}, s.execucoes.map(function (x) {
+        + el("tbody", {}, execucoes.map(function (x) {
           return el("tr", {}, el("td", {}, dataBr(x.quando) + " " + horaBr(x.quando)) + el("td", {}, h(x.usuario || "—")) + el("td", {}, el("code", {}, h(x.comando)))
             // o erro fica como foi gravado, no idioma de quem rodou (um registro, como o do cron)
             + el("td", {"class": x.ok ? "nota" : "acao"}, x.ok ? (x.linhas === null ? t("ok") : t("{1} linha(s)", {1: x.linhas})) : (x.erro ? el("samp", {}, h(x.erro)) : t("erro"))));
@@ -360,7 +361,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
           el("p", {"class": "nota"}, h(sp.texto)),
           ex("senhas", t("Senhas"), t("Vale para toda senha nova: a conta criada, a troca em Minha conta, a senha nova pelo link do Esqueci a senha e a do master em Usuários; as que já existem continuam valendo. É do sistema inteiro: só o master muda.")));
         // os parâmetros de operação do sistema inteiro (só o master): o que estava só no config.php; vazio volta ao config.php
-        var parametros = d.sistema.pode_mudar ? cartao(t("Sistema"), el("div", {"class": "campos"}, d.sistema.parametros.map(function (p) {
+        var parametros = d.sistema.pode_mudar && Array.isArray(d.sistema.parametros) ? cartao(t("Sistema"), el("div", {"class": "campos"}, d.sistema.parametros.map(function (p) {
           var de = p.origem === "sistema" ? "" : (p.config_valor !== null ? p.config_valor : p.padrao);
           var origem = p.origem === "sistema" ? t("gravado aqui") : (p.origem === "config" ? t("do config.php ({1})", {1: p.config_php}) : t("o padrão"));
           var campo = p.tipo === "sim_nao"

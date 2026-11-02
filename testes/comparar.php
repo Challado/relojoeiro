@@ -84,6 +84,10 @@ function comparar($x, $y, $caminho, $chave)
     if (in_array($chave, ["duracao_ms", "mais_lenta_ms"], true)) {
         return;
     }
+    // o banco em uso no SQL pela API (recurso=sql: mysql, pgsql, sqlite ou firebird): é cada um o seu, por definição
+    if ($chave === "banco" && preg_match("/^\\.leituras\\.[^.]*sql[^.]*\\.resposta\\.banco\$/", $caminho) === 1) {
+        return;
+    }
     // o hash da senha: cada cálculo usa um sal novo, então ele nunca sai igual; vale ser um hash do mesmo algoritmo
     if ($chave === "senha_hash" && is_string($x) && is_string($y)) {
         if (substr($x, 0, 4) !== substr($y, 0, 4)) {
