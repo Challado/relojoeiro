@@ -584,6 +584,44 @@ $RELATORIOS["cron"] = [$g_sistema, t("Execuções do cron"), t("As últimas exec
             }, $d["execucoes"]), t("Nenhuma execução."), null, $d["total"] > count($d["execucoes"]) ? t("As {1} mais recentes de {2}.", [1 => count($d["execucoes"]), 2 => $d["total"]]) : null)]];
     }];
 
+// os relatórios cadastrados (Cadastros › Relatórios, recurso=relatorios acao=salvar): cada um é o tipo r<id>, no grupo Meus
+// relatórios, sem parâmetros; e o avulso (tipo=avulso, fora do catálogo): a definição vem no pedido (nome, descricao,
+// colunas em JSON, filtro, ordenar, decrescente, agrupar, relogios, limite) e nada se grava (o Testar da aba). A
+// definição é conferida de novo a cada vez (um campo ou uma fórmula pode ter saído depois), e a tabela sai de
+// relatorio_montar: uma seção por grupo, com a conta de cada coluna no rodapé
+$g_meus = t("Meus relatórios");
+$montar_cadastrado = function ($d, $com_nome) use ($tabela) {
+    [$def, $erros] = relatorio_definicao($d, null, $com_nome);
+    if (count($erros) > 0) {
+        throw new RelatorioErro(t("o relatório tem erro: {1}", [1 => implode(" ", $erros)]), $com_nome ? 409 : 400);
+    }
+    $m = relatorio_montar($def);
+    $colunas = array_map(function ($c) { return [$c["titulo"], $c["numero"]]; }, $m["colunas"]);
+    $secoes = array_map(function ($s) use ($tabela, $colunas, $def) {
+        return $tabela($s["titulo"] ?? $def["nome"], $colunas, array_map(function ($l) { return $l["celulas"]; }, $s["linhas"]), t("Nenhum relógio passou no filtro."), $s["total"]);
+    }, $m["secoes"]);
+    return ["titulo" => $def["nome"], "subtitulo" => $def["descricao"], "secoes" => $secoes,
+        "resumo" => [[t("Relógios"), (string)$m["relogios"]], [t("Passaram no filtro"), $def["filtro"] === null ? null : (string)$m["passaram"]],
+            [t("Mostrados"), $m["mostrados"] < $m["passaram"] ? t("os {1} primeiros", [1 => $m["mostrados"]]) : null]]];
+};
+$cadastrados_r = relatorios_todos();
+foreach ($cadastrados_r as $x_r) {
+    $RELATORIOS[$x_r["tipo"]] = [$g_meus, $x_r["nome"], $x_r["descricao"] ?? t("Um relatório cadastrado (Cadastros › Relatórios)."), [],
+        function ($p) use ($x_r, $montar_cadastrado) {
+            return $montar_cadastrado(array_merge($x_r, ["decrescente" => $x_r["decrescente"] ? "1" : "0", "limite" => (string)($x_r["limite"] ?? "")]), true);
+        }];
+}
+$p_texto_r = function ($nome, $rotulo) {
+    return ["nome" => $nome, "rotulo" => $rotulo, "tipo" => "texto", "obrigatorio" => false, "padrao" => null, "opcoes" => null, "vazio" => null];
+};
+$avulso_r = [$g_meus, t("Relatório avulso"), t("Um relatório montado no pedido, sem gravar."),
+    [$p_texto_r("nome", t("Nome")), $p_texto_r("descricao", t("Descrição")), $p_texto_r("colunas", t("Colunas")), $p_texto_r("filtro", t("Filtro")),
+        $p_texto_r("ordenar", t("Ordem")), $p_texto_r("decrescente", t("Decrescente")), $p_texto_r("agrupar", t("Agrupar por")), $p_texto_r("relogios", t("Relógios")),
+        $p_texto_r("limite", t("Limite"))],
+    function ($p) use ($montar_cadastrado) {
+        return $montar_cadastrado($p, false);
+    }];
+
 // ---------- a resposta ----------
 $tipo_r = trim((string)($_REQUEST["tipo"] ?? ""));
 if ($tipo_r === "") {
@@ -591,8 +629,17 @@ if ($tipo_r === "") {
     $saida = ["relatorios" => array_map(function ($k, $x) {
         return ["tipo" => $k, "grupo" => $x[0], "nome" => $x[1], "descricao" => $x[2], "parametros" => $x[3]];
     }, array_keys($RELATORIOS), array_values($RELATORIOS)),
-        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => (string)$r["posse"], "posse_comportamento" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome"))];
+        "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => (string)$r["posse"], "posse_comportamento" => posse_de($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome")),
+        // o cadastro dos relatórios (a aba Relatórios dos Cadastros): os cadastrados, com a definição, e as opções de cada parte
+        "cadastro" => ["relatorios" => $cadastrados_r,
+            "formatos" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(relatorio_formatos_nomes()), array_values(relatorio_formatos_nomes())),
+            "contas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(relatorio_contas_nomes()), array_values(relatorio_contas_nomes())),
+            "quais" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(relatorio_relogios_nomes()), array_values(relatorio_relogios_nomes())),
+            "maximo_colunas" => RELATORIO_COLUNAS_MAXIMO, "maximo_limite" => RELATORIO_LIMITE_MAXIMO]];
     return;
+}
+if ($tipo_r === "avulso") {
+    $RELATORIOS["avulso"] = $avulso_r;
 }
 if (!isset($RELATORIOS[$tipo_r])) {
     $codigo = 404;
@@ -603,7 +650,9 @@ $def_r = $RELATORIOS[$tipo_r];
 // os parâmetros do relatório que vieram (os outros do pedido não entram nem no link do CSV)
 $usados_r = [];
 foreach ($def_r[3] as $par) {
-    $v = trim((string)($_REQUEST[$par["nome"]] ?? ""));
+    $v = $_REQUEST[$par["nome"]] ?? "";
+    // as colunas do avulso podem vir como campos (colunas[0][titulo]...): viram o JSON delas
+    $v = is_array($v) ? (string)json_encode($v, JSON_UNESCAPED_UNICODE) : trim((string)$v);
     if ($v !== "") {
         $usados_r[$par["nome"]] = $v;
     } elseif ($par["padrao"] !== null) {
@@ -618,7 +667,7 @@ try {
     return;
 }
 $agora_r = time();
-$saida = ["tipo" => $tipo_r, "grupo" => $def_r[0], "titulo" => $def_r[1], "subtitulo" => $m_r["subtitulo"] ?? null, "parametros" => (object)$usados_r,
+$saida = ["tipo" => $tipo_r, "grupo" => $def_r[0], "titulo" => $m_r["titulo"] ?? $def_r[1], "subtitulo" => $m_r["subtitulo"] ?? null, "parametros" => (object)$usados_r,
     "foto" => $m_r["foto"] ?? null,
     "resumo" => array_values(array_map(function ($x) { return ["nome" => (string)$x[0], "valor" => (string)$x[1]]; }, array_filter($m_r["resumo"], function ($x) { return $x[1] !== null && $x[1] !== ""; }))),
     "secoes" => $m_r["secoes"], "gerado_em" => date("Y-m-d H:i:s", $agora_r),

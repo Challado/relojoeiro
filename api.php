@@ -188,6 +188,12 @@
  *                            "site", "observacao", "relogios": [{"id", "nome"}]}]}. O relógio aponta para uma (marca_id na gravação),
  *                            e o nome dela aparece na coluna Marca da página Hoje, na ficha, na galeria e nas fórmulas (marca).
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=marcas"
+ *   recurso=relatorios       sem tipo, o catálogo dos relatórios (o grupo, o nome, a descrição e os parâmetros de cada um), os
+ *                            relógios e o cadastro (os relatórios cadastrados, com a definição, e as opções); com tipo, o relatório
+ *                            pronto (o título, o resumo, as seções; csv=1: a planilha). Os cadastrados são o tipo r<id>, no grupo
+ *                            Meus relatórios; tipo=avulso monta a definição que vem no pedido (colunas em JSON, filtro, ordenar,
+ *                            decrescente, agrupar, relogios, limite), sem gravar.
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=relatorios&tipo=r3&csv=1"
  *   recurso=roteiro          roteiro (o texto: as linhas "nome = expressão") ou modo (o id: o roteiro efetivo dele), [dia: AAAA-MM-DD, de
  *                            hoje até um ano à frente; padrão hoje]: testa o roteiro de um modo de rodízio nesse dia, sem gravar (o
  *                            "Testar em todos os relógios" dos Modos de rodízio): {"dia", "dia_semana", "linhas": [{"nome", "expressao"}],
@@ -488,6 +494,15 @@
  *                            Ex. salvar: curl -u lucas:senha -d recurso=marcas -d acao=salvar -d id=0 -d nome=Seiko -d "pais=Japão" http://servidor/relojoeiro/api.php
  *                            Ex. juntar: curl -u lucas:senha -d recurso=marcas -d acao=juntar -d id=7 -d em_id=2 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=marcas -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=relatorios        salvar (id: 0 cria; nome (até 120, sem repetir na árvore, sem diferença de maiúsculas nem de
+ *                             espaços), descricao, colunas (até 30: JSON [{"titulo", "expressao", "formato", "total"}] ou os
+ *                             campos colunas[i][...]; a expressão é calculada em cada relógio, como uma fórmula, com as variáveis
+ *                             da tabela; formato: texto, numero, inteiro, decimal, moeda, porcentagem, data ou dias; total: soma,
+ *                             media, menor, maior, conta ou vazio), filtro, ordenar, decrescente (1 ou 0), agrupar, relogios
+ *                             (colecao, desejados ou todos), limite (1 a 100000; vazio: todas); só muda o que vier; a resposta
+ *                             traz o tipo r<id>), excluir (id)
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=relatorios -d acao=salvar -d id=0 -d "nome=Valor por marca" --data-urlencode 'colunas=[{"titulo":"Relógio","expressao":"nome"},{"titulo":"Valor","expressao":"valor_compra","formato":"moeda","total":"soma"}]' -d agrupar=marca http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=relatorios -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=relogio           salvar (id: 0 ou ausente cria; nome, no_id, disponivel, copia_banco (1: a cópia no banco de todos os
  *                             documentos dele; o cron copia ou tira aos poucos), calibre_id (o calibre dele; 0 ou vazio tira),
  *                             marca_id (a marca dele, do cadastro das marcas; 0 ou vazio tira) ou marca (o nome de uma marca
@@ -5868,6 +5883,40 @@
  *     erro                           o motivo, quando o relatório não sai (o tipo desconhecido, o relógio que falta ou não existe, a data
  *                                    errada)
  *     tipos[]                        com o tipo desconhecido: os tipos que existem
+ *     cadastro                       no catálogo: o cadastro dos relatórios (a aba Relatórios dos Cadastros)
+ *     cadastro.relatorios            os relatórios cadastrados, pelo nome
+ *     cadastro.relatorios[].id       o número
+ *     cadastro.relatorios[].tipo     o tipo dele no catálogo (r<id>)
+ *     cadastro.relatorios[].nome     o nome
+ *     cadastro.relatorios[].descricao
+ *                                    a descrição (o subtítulo do relatório); null: nenhuma
+ *     cadastro.relatorios[].colunas  as colunas, na ordem
+ *     cadastro.relatorios[].colunas[].titulo
+ *                                    o título da coluna
+ *     cadastro.relatorios[].colunas[].expressao
+ *                                    a expressão, calculada em cada relógio
+ *     cadastro.relatorios[].colunas[].formato
+ *                                    como o valor sai: texto, numero, inteiro, decimal, moeda, porcentagem, data ou dias
+ *     cadastro.relatorios[].colunas[].total
+ *                                    a conta do rodapé: soma, media, menor, maior ou conta; null: nenhuma
+ *     cadastro.relatorios[].filtro   a expressão do filtro; null: todos
+ *     cadastro.relatorios[].ordenar  a expressão da ordem; null: o nome
+ *     cadastro.relatorios[].decrescente
+ *                                    true: do maior para o menor
+ *     cadastro.relatorios[].agrupar  a expressão do agrupamento; null: nenhum
+ *     cadastro.relatorios[].relogios quais relógios: colecao, desejados ou todos
+ *     cadastro.relatorios[].limite   as primeiras N linhas; null: todas
+ *     cadastro.formatos              os formatos de uma coluna
+ *     cadastro.formatos[].chave      o valor do formato
+ *     cadastro.formatos[].nome       o nome dele
+ *     cadastro.contas                as contas do rodapé de uma coluna
+ *     cadastro.contas[].chave        o valor da conta
+ *     cadastro.contas[].nome         o nome dela
+ *     cadastro.quais                 as opções de quais relógios entram
+ *     cadastro.quais[].chave         o valor da opção
+ *     cadastro.quais[].nome          o nome dela
+ *     cadastro.maximo_colunas        quantas colunas um relatório pode ter
+ *     cadastro.maximo_limite         o maior limite de linhas
  *   recurso=reserva
  *     reserva.protocolos             os protocolos do teste, na ordem
  *     reserva.protocolos[]           um protocolo

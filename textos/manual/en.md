@@ -1,4 +1,4 @@
-<!-- origem: 461f5acecd8a8b9474bf05b466a83c635867e5c3 -->
+<!-- origem: 8ce205a4bb6b8d6941f622d9e86f368beec4eeeb -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -56,6 +56,7 @@ flowchart LR
 | **Units** | What goes after the number, registered by you: the symbol, the name and the conversion (the inch in millimetres). Fields, entry types and formulas pick the unit from the list, and the value can also appear in another unit. | `47 mm (1.85 pol)` |
 | **Calibers** | The watch's movement, with what belongs to it: the manufacturer, the technical manual, the recommendations and the field values. A watch with a caliber uses its own value, otherwise the caliber's, otherwise the field's default. | `NH35`: 41 h power reserve, rate from −20 to +40 s/day |
 | **Brands** | Who made the watch, in a registry: the name, the country and the website. Each watch points to one, and its name appears in the table, the record, the reports and the formulas. | `Seiko`, `Casio` |
+| **Reports** | Tables of watches built by you: the columns (each one a calculation made on each watch, like a formula), the filter, the order, the grouping and the footer calculation of each column. They come out on the **Reports** page, with printing and the spreadsheet, and through the API. | *Value by brand*, *Unused for 30 days* |
 | **Entry types** | What happens to a watch. It can be **instant** (winding, battery change), **with a value** (charge reading: 68%) or a **session** with start and end (on the wrist, on the winder, in the sun). | `sol`: a session that closes by itself at 6 pm if you forget |
 | **Formulas** | Calculations over the fields and the entries. The same formula can have **one version per group**, and the one of the group closest to the watch applies. | `energia` is the battery on the smartwatch, the reserve on the mechanical, the light on the solar and the battery life on the quartz |
 | **Alerts** | An expected date by formula, a lead time, a text and the entry that resolves the alert. | *"Wind the Orient: the reserve runs out at 3 pm"*, and the **Winding** button resolves it |
@@ -1643,7 +1644,7 @@ of the tree. A closed sub-panel also stays closed on that device.
 | **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#os-modos-de-rodízio). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
-| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)), the brands (the **Brands** tab: see [Brands](#as-marcas)), the record sections (the **Sections** tab: see [Record sections](#as-divisórias-da-ficha)), the units (the **Units** tab: see [Units](#as-unidades)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
+| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)), the brands (the **Brands** tab: see [Brands](#as-marcas)), the saved reports (the **Reports** tab: see [Saved reports](#os-relatórios-cadastrados)), the record sections (the **Sections** tab: see [Record sections](#as-divisórias-da-ficha)), the units (the **Units** tab: see [Units](#as-unidades)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
 | **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the interface mode, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push), the **sending of your e-mails** (through the system's server or your own: Gmail, Outlook) and deleting the account. See [Several people](#várias-pessoas-contas-coleções-e-acesso) and [The app on the phone](#o-aplicativo-no-celular). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
@@ -1684,6 +1685,7 @@ services, precision and timegrapher panels of the watch panel).
 | Maintenance and precision | **Calibers** | the calibers, the manufacturer, the watches and the documents of each one |
 | System | **Totals** | the totals of the totals page, each one with the result |
 | System | **Cron runs** | the latest runs: when, how long it took and what it did |
+| My reports | the ones you saved | the table you built: the columns, the filter, the order, the grouping parts and the footer (see [Saved reports](#os-relatórios-cadastrados)) |
 
 The API builds them (`recurso=relatorios`): without `tipo`, the catalog (each report with the group, the name, the
 description and the parameters, and the watches); with `tipo` and its parameters, the ready report, in a single format for all
@@ -1691,6 +1693,25 @@ description and the parameters, and the watches); with `tipo` and its parameters
 asks; `csv=1` returns the spreadsheet. Each report is built on what the API itself answers to the screen (the same resource,
 with the same access rules): it never says something different from the screen, and whoever does not see a watch does not see
 it in the report.
+
+### Saved reports {#os-relatórios-cadastrados}
+
+When no ready report brings what you want, build your own on the **Reports** tab of the **Definitions** page. Each report
+is a table of watches:
+
+| Part | What it is | Example |
+|---|---|---|
+| **Columns** | up to 30; each with the title, the expression (calculated on each watch, like a formula: the fields, the formulas, the table variables, `SE`, `DIAS_DESDE`...), the format (text, number, integer, 2 decimals, money, percentage, date or days) and the footer calculation (sum, average, smallest, largest or how many have a value) | `nome`; `valor_compra` as money, with the sum |
+| **Which watches** | the collection's (in the collection and lent), the wanted ones or all | the collection's |
+| **Filter** | the expression that lets the watch in (a result other than 0); empty: all | `DIAS_DESDE(ultimo_uso) > 30` |
+| **Order** | the order expression, from smallest to largest or the other way round; empty: the name | `valor_compra`, from largest to smallest |
+| **Group by** | the expression that splits the table into parts, one per value, each with its own footer | `marca` |
+| **Limit** | only the first rows, after the order; empty: all | `10` |
+
+**Test** shows the report below the form, without saving. Once saved, it appears on the **Reports** page, in the **My
+reports** group, with printing and the spreadsheet, like the others. The total functions (`SOMA`, `CONTA`...) are not
+allowed in a column: the footer calculation does that. Through the API: `recurso=relatorios`, `acao=salvar` (the columns in
+JSON) saves; `tipo=r<id>` generates; `tipo=avulso` generates a definition that comes in the request, without saving.
 
 ### Basic and advanced mode {#o-modo-básico-e-o-avançado}
 

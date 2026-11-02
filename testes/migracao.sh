@@ -153,6 +153,14 @@ for b in "${BANCOS[@]}"; do
     [ "$(curl -s -H "$TOKEN" --data-urlencode recurso=totais --data-urlencode acao=salvar -d id=0 -d coluna=marca --data-urlencode "nome=Marcas distintas" --data-urlencode "expressao=DISTINTOS(marca)" -d rodape=1 -d pagina=0 "$A" | json ok)" != "true" ] \
       && erros+=("a regra da coluna dos totais não aceita a Marca depois da v53")
   fi
+  # a v54 aplicada agora: a tabela dos relatórios cadastrados existe; um relatório grava e sai com o relógio de antes
+  if case ", $PEND," in *", v54,"*) true ;; *) false ;; esac; then
+    RC=$(curl -s -H "$TOKEN" -d recurso=relatorios -d acao=salvar -d id=0 --data-urlencode "nome=Depois da v54" \
+      --data-urlencode 'colunas=[{"titulo":"Relógio","expressao":"nome","total":"conta"},{"titulo":"Valor","expressao":"valor_compra","formato":"moeda","total":"soma"}]' "$A" | json tipo)
+    [ -z "$RC" ] && erros+=("a v54 não deixou gravar um relatório")
+    [ -n "$RC" ] && [ "$(curl -s -H "$TOKEN" "$A?recurso=relatorios&tipo=$RC" | json secoes.0.linhas.0.0)" != "Relógio de antes" ] \
+      && erros+=("o relatório gravado depois da v54 não trouxe o relógio de antes")
+  fi
   [ "$(echo "$FICHA" | json relogio.acessorios.0.nome)" != "Pulseira de antes" ] && erros+=("o acessório de antes sumiu")
   [ "$(curl -s -H "$TOKEN" "$A?recurso=historico&relogio=$R" | json total)" != "$LANC_ANTES" ] && erros+=("o histórico mudou de tamanho")
   # os serviços de antes continuam, cada um a volta de uma manutenção encerrada; quem fez virou a oficina (sem ele, a sua)

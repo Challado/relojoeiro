@@ -39,7 +39,7 @@ module.exports = [
   // os relatórios: o menu sozinho e cada relatório gerado (o relógio 4, o vendido, tem o timegrapher e a reserva medida)
   { nome: 'relatorios', url: 'relatorios.php' },
   ...['colecao', 'custos', 'desejos', 'acessorios', 'documentos', 'historico', 'estatisticas', 'plano', 'avisos', 'criterios', 'servicos', 'precisao', 'timegrapher',
-    'reserva', 'calibres', 'totais', 'cron'].map((t) => ({ nome: 'relatorio-' + t, url: 'relatorios.php?tipo=' + t })),
+    'reserva', 'calibres', 'totais', 'cron', 'r1'].map((t) => ({ nome: 'relatorio-' + t, url: 'relatorios.php?tipo=' + t })),
   { nome: 'relatorio-passaporte-4', url: 'relatorios.php?tipo=passaporte&relogio=4' },
   { nome: 'relatorio-timegrapher-4', url: 'relatorios.php?tipo=timegrapher&relogio=4' },
   { nome: 'acessorios-editar', url: 'acessorios.php?relogio=3&editar=2' },
@@ -54,6 +54,8 @@ module.exports = [
   { nome: 'cadastros-secoes-editar', url: 'cadastros.php?aba=secoes&editar=3' },
   { nome: 'cadastros-unidades', url: 'cadastros.php?aba=unidades' },
   { nome: 'cadastros-unidades-editar', url: 'cadastros.php?aba=unidades&editar=21' },
+  { nome: 'cadastros-relatorios', url: 'cadastros.php?aba=relatorios' },
+  { nome: 'cadastros-relatorios-editar', url: 'cadastros.php?aba=relatorios&editar=1' },
   { nome: 'modos', url: 'modos.php' },
   { nome: 'modos-editar', url: 'modos.php?editar=2' },
   { nome: 'configuracao', url: 'configuracao.php' },

@@ -1,8 +1,8 @@
 // Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais; a aba Calibres, recurso=calibres; a aba
-// Marcas, recurso=marcas; a aba Unidades, recurso=unidades), uma aba por vez (cadastros.php?aba=campos&editar=3), com as
-// gravações pela API (recurso=campos, secoes, lancamento_tipos, formulas, totais, calibres, marcas, unidades e documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
-var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), marcas: t("Marcas"), documentos: t("Categorias de documentos"), listas: t("Listas")};
-var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", marcas: "marcas", documentos: "documento_categorias", listas: "listas"};
+// Marcas, recurso=marcas; a aba Unidades, recurso=unidades; a aba Relatórios, recurso=relatorios), uma aba por vez (cadastros.php?aba=campos&editar=3), com as
+// gravações pela API (recurso=campos, secoes, lancamento_tipos, formulas, totais, relatorios, calibres, marcas, unidades e documento_categorias), o testar das fórmulas (recurso=calcular), o dos totais (recurso=totais, expressao=) e o dos relatórios (recurso=relatorios, tipo=avulso). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
+var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), relatorios: t("Relatórios"), calibres: t("Calibres"), marcas: t("Marcas"), documentos: t("Categorias de documentos"), listas: t("Listas")};
+var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", relatorios: "relatorios", calibres: "calibres", marcas: "marcas", documentos: "documento_categorias", listas: "listas"};
 var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
@@ -74,6 +74,9 @@ function cabecaCadastros() {
       [t("As somas da coleção inteira"), cad("totais")]],
     totais: [[t("A conta de um total"), t("aqui")], [t("Onde os totais aparecem"), t("o rodapé da tabela de {1} e a página {2}", {1: lugar("index.php", t("Hoje")), 2: lugar("totais.php", t("Coleção › Totais"))})],
       [t("As fórmulas de cada relógio, que os totais somam"), cad("formulas")]],
+    relatorios: [[t("As colunas, o filtro, a ordem e o agrupamento de um relatório"), t("aqui: Editar, na linha do relatório")],
+      [t("Gerar, imprimir e baixar a planilha"), lugar("relatorios.php", t("Relatórios"))], [t("As fórmulas que as colunas usam"), cad("formulas")],
+      [t("As somas da coleção inteira"), cad("totais")]],
     calibres: [[t("Os dados de um calibre"), t("aqui: Editar, na linha do calibre")], [t("Qual calibre um relógio usa"), t("{1} › Calibre", {1: ed})],
       [t("Os campos que aparecem no calibre"), t("{1}: a caixa \"do movimento\" do campo", {1: cad("campos")})]],
     marcas: [[t("Os dados de uma marca (o nome, o país, o site)"), t("aqui: Editar, na linha da marca")], [t("Qual marca um relógio tem"), t("{1} › Marca", {1: ed})],
@@ -113,6 +116,9 @@ function subtelas(itens, grupoDe, tabela, contar) {
 function recarregarCadastros() {
   if (aba === "totais") {
     return recarregarTotais();
+  }
+  if (aba === "relatorios") {
+    return recarregarRelatorios();
   }
   if (aba === "calibres") {
     return recarregarCalibres();
@@ -535,6 +541,76 @@ function recarregarMarcas() {
   });
 }
 
+// a aba Relatórios (recurso=relatorios: o catálogo traz os cadastrados e as opções; as variáveis da tabela vêm do
+// recurso=totais): a lista, com o link que abre cada um na página Relatórios, e o formulário: o nome, a descrição, quais
+// relógios, o filtro, a ordem, o agrupamento, o limite e as colunas (o título, a expressão, o formato e a conta do rodapé;
+// as linhas vazias ficam de fora), com o Testar (o relatório avulso, montado pela API sem gravar)
+function linhaColunaRelatorio(d, i, c) {
+  var n = "colunas[" + i + "]";
+  return el("tr", {}, el("td", {}, el("input", {"name": n + "[titulo]", "value": vazio(c.titulo), "maxlength": "80", "aria-label": t("Título da coluna")}))
+    + el("td", {}, el("input", {"name": n + "[expressao]", "class": "formula", "value": vazio(c.expressao), "aria-label": t("Expressão da coluna")}))
+    + el("td", {}, el("select", {"name": n + "[formato]", "aria-label": t("Formato da coluna")}, d.formatos.map(function (o) {
+      return el("option", {"value": o.chave, "selected": (c.formato || "texto") === o.chave}, h(o.nome)); }).join("")))
+    + el("td", {}, el("select", {"name": n + "[total]", "aria-label": t("Conta do rodapé")}, el("option", {"value": ""}, t("— nenhuma")) + d.contas.map(function (o) {
+      return el("option", {"value": o.chave, "selected": c.total === o.chave}, h(o.nome)); }).join(""))));
+}
+function recarregarRelatorios() {
+  return Promise.all([api({recurso: "relatorios"}), api({recurso: "totais"})]).then(function (rs) {
+    var d = rs[0].cadastro;
+    var variaveis = rs[1].variaveis;
+    var e = null;
+    d.relatorios.forEach(function (x) { if (x.id === editar) { e = x; } });
+    var f = e || {colunas: [{titulo: t("Relógio"), expressao: "nome", formato: "texto", total: "conta"}], relogios: "colecao", decrescente: false};
+    var res = cabecaCadastros();
+    if (recado !== "") {
+      res += recado;
+      recado = "";
+    }
+    var linhas = f.colunas.slice();
+    for (var k = 0; k < 3; k++) {
+      linhas.push({});
+    }
+    var sec = el("h2", {}, t("Relatórios"))
+      + ajudaNota("relatorios", t("Os relatórios cadastrados"), t("Cada relatório é uma tabela de relógios que você monta: as colunas (cada uma, uma expressão calculada em cada relógio, como uma fórmula), o filtro (quem entra), a ordem, o agrupamento (uma parte por valor) e a conta do rodapé de cada coluna. Ele aparece na {1}, em Meus relatórios, com a impressão e a planilha, e na API (recurso=relatorios, tipo=r e o número dele).", {1: el("a", {"href": "relatorios.php"}, t("página Relatórios"))}))
+      + (d.relatorios.length === 0 ? el("p", {"class": "nota"}, t("Nenhum relatório cadastrado."))
+        : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relatório")) + el("th", {}, t("Colunas")) + el("th", {}, "")))
+          + el("tbody", {}, d.relatorios.map(function (x) {
+            return el("tr", {}, el("td", {}, el("a", {"href": "relatorios.php?tipo=" + x.tipo}, h(x.nome)) + (x.descricao ? el("small", {"class": "nota", "style": "display:block"}, h(x.descricao)) : ""))
+              + el("td", {"class": "nota"}, x.colunas.map(function (c) { return h(c.titulo); }).join(", "))
+              + el("td", {"class": "acoes-linha"}, linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"))));
+          }).join("")))))
+      + el("h3", {"id": "form"}, e ? t("Alterar o relatório {1}", {1: h(e.nome)}) : t("Novo relatório"))
+      + el("form", {"data-recurso": "relatorios", "class": "form-grade", "id": "form-relatorio-cadastro"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
+        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "120", "placeholder": t("ex.: Valor por marca")})}))
+        + el("label", {}, t("Quais relógios {1}", {1: el("select", {"name": "relogios"}, d.quais.map(function (o) { return el("option", {"value": o.chave, "selected": f.relogios === o.chave}, h(o.nome)); }).join(""))}))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Descrição {1}", {1: el("textarea", {"name": "descricao", "rows": "2", "maxlength": "4000"}, h(vazio(f.descricao)))}))
+        + el("div", {"class": "rolagem", "style": "grid-column: 1 / -1"}, el("table", {"class": "compacta", "id": "colunas-relatorio"}, el("thead", {}, el("tr", {}, el("th", {}, t("Título")) + el("th", {}, t("Expressão (em cada relógio)"))
+          + el("th", {}, t("Formato")) + el("th", {}, t("Rodapé"))))
+          + el("tbody", {}, linhas.map(function (c, i) { return linhaColunaRelatorio(d, i, c); }).join(""))))
+        + el("div", {"style": "grid-column: 1 / -1"}, el("button", {"type": "button", "class": "leve", "id": "mais-colunas"}, t("Mais colunas"))
+          + " " + el("span", {"class": "nota"}, t("Até {1} colunas; as linhas vazias ficam de fora.", {1: d.maximo_colunas})))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Filtro (entra o relógio em que dá diferente de 0; vazio: todos) {1}", {1: el("input", {"name": "filtro", "class": "formula", "value": vazio(f.filtro), "placeholder": t("ex.: disponivel = 1")})}))
+        + el("label", {}, t("Ordem (vazio: o nome) {1}", {1: el("input", {"name": "ordenar", "class": "formula", "value": vazio(f.ordenar), "placeholder": t("ex.: valor_compra")})}))
+        + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "decrescente", "value": "0"}) + el("input", {"type": "checkbox", "name": "decrescente", "value": "1", "checked": f.decrescente}) + " " + t("Do maior para o menor"))
+        + el("label", {}, t("Agrupar por (uma parte por valor; vazio: nenhum) {1}", {1: el("input", {"name": "agrupar", "class": "formula", "value": vazio(f.agrupar), "placeholder": t("ex.: marca")})}))
+        + el("label", {}, t("Limite de linhas (vazio: todas) {1}", {1: el("input", {"type": "number", "name": "limite", "min": "1", "max": String(d.maximo_limite), "value": f.limite === null || f.limite === undefined ? "" : f.limite})}))
+        + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + " " + el("button", {"type": "button", "class": "leve", "id": "testar-relatorio"}, t("Testar"))
+          + (e ? " " + el("a", {"href": "relatorios.php?tipo=" + e.tipo}, t("abrir")) + " " + el("a", {"href": "cadastros.php?aba=relatorios"}, t("cancelar")) : "")))
+      + el("div", {"id": "teste-relatorio", "aria-live": "polite"}, "")
+      + el("details", {}, el("summary", {}, t("O que vale numa expressão")) + el("p", {"class": "nota"}, t("Tudo o que vale numa fórmula ({1}): os campos, as fórmulas, SE, DIAS_DESDE, MES_ANO... As funções de total (SOMA, CONTA...) não valem: a conta do rodapé faz isso.", {1: el("a", {"href": "cadastros.php?aba=formulas"}, t("Cadastros › Fórmulas"))}))
+        + el("ul", {"class": "nota"}, variaveis.map(function (x) { return el("li", {}, el("strong", {"class": "ident"}, h(x.nome)) + ": " + h(x.descricao)); }).join("")));
+    res += el("section", {"class": "cartao-config"}, sec);
+    document.getElementById("cadastros").innerHTML = res;
+    document.getElementById("mais-colunas").onclick = function () {
+      var corpo = document.querySelector("#colunas-relatorio tbody");
+      var n = corpo.querySelectorAll("tr").length;
+      for (var j = 0; j < 3 && n + j < d.maximo_colunas; j++) {
+        corpo.insertAdjacentHTML("beforeend", linhaColunaRelatorio(d, n + j, {}));
+      }
+    };
+  });
+}
+
 // a aba Unidades (recurso=unidades): a tabela, por grandeza (cada base seguida das que se convertem nela), com a conversão
 // e quem usa cada uma; e o formulário: o símbolo, o nome, a base e o fator (1 desta = fator da base), o zero (só o °F tem)
 // e a unidade em que o valor também aparece
@@ -580,6 +656,30 @@ function recarregarUnidades() {
     document.getElementById("cadastros").innerHTML = res;
   });
 }
+
+// o Testar dos relatórios: o formulário vira o relatório avulso (as colunas preenchidas, em JSON), montado pela API sem
+// gravar, e aparece embaixo, como na página Relatórios
+document.addEventListener("click", function (ev) {
+  if (ev.target.id === "testar-relatorio") {
+    var form = ev.target.form;
+    var caixa = document.getElementById("teste-relatorio");
+    var p = {recurso: "relatorios", tipo: "avulso", nome: form.nome.value, descricao: form.descricao.value, relogios: form.relogios.value, filtro: form.filtro.value,
+      ordenar: form.ordenar.value, agrupar: form.agrupar.value, limite: form.limite.value, decrescente: form.querySelector("input[type=checkbox][name=decrescente]").checked ? "1" : "0"};
+    var colunas = [];
+    form.querySelectorAll("#colunas-relatorio tbody tr").forEach(function (tr) {
+      var c = {};
+      tr.querySelectorAll("input, select").forEach(function (x) { c[x.name.replace(/^colunas\[\d+\]\[|\]$/g, "")] = x.value; });
+      colunas.push(c);
+    });
+    p.colunas = JSON.stringify(colunas);
+    caixa.innerHTML = el("p", {"class": "nota"}, t("Gerando…"));
+    api(p).then(function (r) {
+      caixa.innerHTML = el("div", {"class": "relatorio"}, relatorioHtml(r));
+    }).catch(function (e) {
+      caixa.innerHTML = el("p", {"class": "acao"}, h(e.message));
+    });
+  }
+});
 
 // o Testar dos totais: a expressão do formulário calculada em todos os relógios pela API, sem gravar
 document.addEventListener("click", function (ev) {

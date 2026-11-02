@@ -789,6 +789,57 @@ function op_totais($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Os relatórios cadastrados (a aba Relatórios dos Cadastros; da árvore, presos à raiz dela). Ações: salvar (id: 0 ou
+// ausente cria; nome, até 120, sem repetir outro sem diferença de maiúsculas nem de espaços; descricao, até 4000; colunas: um JSON [{titulo, expressao, formato, total}] ou os campos
+// colunas[i][titulo], colunas[i][expressao], colunas[i][formato] e colunas[i][total]; filtro, ordenar e agrupar: as
+// expressões, vazio tira; decrescente: 1 ou 0; relogios: colecao, desejados ou todos; limite: as primeiras N linhas, vazio
+// tira; só muda o que vier; cada expressão é conferida por relatorio_expressao_validar), excluir (id). O relatório pronto
+// sai em recurso=relatorios, tipo=r<id> (e o avulso, sem gravar, em tipo=avulso)
+// ---------------------------------------------------------------------------------------------------------------------
+function op_relatorios($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM relatorio WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Relatório não encontrado.");
+    } elseif ($acao === "excluir" && !$atual) {
+        $erros[] = t("Relatório não encontrado.");
+    } elseif ($acao === "salvar") {
+        [$def, $erros] = relatorio_definicao($d, $atual, true);
+        // o nome não se repete na árvore, sem diferença de maiúsculas nem de espaços (a comparação aqui, igual em todo banco)
+        $chave = function ($n) { return mb_strtolower(trim((string)preg_replace("/\\s+/u", " ", (string)$n)), "UTF-8"); };
+        foreach (linhas("SELECT id, nome FROM relatorio WHERE id <> ?", [$id]) as $outro) {
+            if (count($erros) === 0 && $chave($outro["nome"]) === $chave($def["nome"])) {
+                $erros[] = t("Já existe o relatório {1}.", [1 => $outro["nome"]]);
+            }
+        }
+        if (count($erros) === 0) {
+            $par = [$def["nome"], $def["descricao"], json_encode($def["colunas"], JSON_UNESCAPED_UNICODE), $def["filtro"], $def["ordenar"], $def["decrescente"] ? 1 : 0,
+                $def["agrupar"], $def["relogios"], $def["limite"]];
+            if ($atual) {
+                sql("UPDATE relatorio SET nome = ?, descricao = ?, colunas = ?, filtro = ?, ordenar = ?, decrescente = ?, agrupar = ?, relogios = ?, limite = ? WHERE id = ?",
+                    array_merge($par, [$id]));
+                $msg = t("Relatório {1} salvo.", [1 => $def["nome"]]);
+            } else {
+                sql("INSERT INTO relatorio (no_id, nome, descricao, colunas, filtro, ordenar, decrescente, agrupar, relogios, limite) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    array_merge([no_raiz()], $par));
+                $id = ultimo_id();
+                $msg = t("Relatório {1} criado.", [1 => $def["nome"]]);
+            }
+        }
+    } elseif ($acao === "excluir") {
+        sql("DELETE FROM relatorio WHERE id = ?", [$id]);
+        $msg = t("Relatório {1} excluído.", [1 => $atual["nome"]]);
+        $id = 0;
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id, "tipo" => $id > 0 ? "r" . $id : null]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Os calibres (a aba Calibres dos Cadastros; da árvore, presos à raiz dela). Ações: salvar (id: 0 cria; nome, fabricante,
 // link: o endereço do manual técnico, http:// ou https://; observacao: as recomendações; valores: {identificador: valor}
 // dos campos do cadastro que o calibre define, vazio tira; só muda o que vier), excluir (id: os relógios que apontam para

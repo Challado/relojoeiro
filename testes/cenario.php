@@ -1439,6 +1439,49 @@ foreach ([["tipo" => "nao_existe"], ["tipo" => "passaporte"], ["tipo" => "passap
         $falhas[] = "relatório recusado: " . json_encode($par_r) . " passou";
     }
 }
+// os relatórios cadastrados: criar (as colunas em JSON e como campos; a linha vazia fica de fora), as recusas (sem nome, sem
+// coluna, o JSON errado, a expressão com erro de escrita, a variável que não existe, a função de total, o formato e a conta
+// que não existem, o limite errado, o nome repetido sem diferença de maiúsculas), o catálogo com eles (Meus relatórios),
+// montar pelo tipo r<id> (o agrupamento, a ordem decrescente, o filtro, o limite e o rodapé), a planilha, o avulso (o
+// Testar, sem gravar) e o avulso recusado, alterar só o que vem e excluir com a pergunta
+$col_rc = [["titulo" => "Relógio", "expressao" => "nome", "total" => "conta"], ["titulo" => "Tipo", "expressao" => "tipo"],
+    ["titulo" => "Valor", "expressao" => "valor_compra", "formato" => "moeda", "total" => "soma"], ["titulo" => "Código", "expressao" => "codigo", "formato" => "inteiro", "total" => "maior"]];
+$rc_1 = escrever(["recurso" => "relatorios", "acao" => "salvar", "id" => 0, "nome" => "Relógios por marca", "descricao" => "O valor de cada um, por marca.",
+    "colunas" => json_encode($col_rc), "agrupar" => "marca", "ordenar" => "valor_compra", "decrescente" => 1]);
+$rc_2 = escrever(["recurso" => "relatorios", "acao" => "salvar", "id" => 0, "nome" => "Os dois primeiros disponíveis",
+    "colunas" => [["titulo" => "Relógio", "expressao" => "nome"], ["titulo" => "Código", "expressao" => "codigo", "formato" => "inteiro", "total" => "media"], ["titulo" => "", "expressao" => ""]],
+    "filtro" => "disponivel = 1", "ordenar" => "codigo", "limite" => 2, "relogios" => "todos"]);
+foreach ([["nome" => " ", "colunas" => json_encode($col_rc)], ["nome" => "Sem coluna", "colunas" => "[]"], ["nome" => "JSON errado", "colunas" => "{x"],
+    ["nome" => "Escrita", "colunas" => json_encode([["titulo" => "X", "expressao" => "codigo +"]])],
+    ["nome" => "Variável", "colunas" => json_encode([["titulo" => "X", "expressao" => "nao_existe * 2"]])],
+    ["nome" => "Total", "colunas" => json_encode([["titulo" => "X", "expressao" => "SOMA(codigo)"]])],
+    ["nome" => "Formato", "colunas" => json_encode([["titulo" => "X", "expressao" => "codigo", "formato" => "romano", "total" => "produto"]])],
+    ["nome" => "Limite", "colunas" => json_encode($col_rc), "limite" => "0", "relogios" => "vendidos", "decrescente" => "talvez", "filtro" => "MEDIA(codigo)"],
+    ["nome" => "relógios  POR marca", "colunas" => json_encode($col_rc)]] as $par_rc) {
+    escrever(array_merge(["recurso" => "relatorios", "acao" => "salvar", "id" => 0], $par_rc), false);
+}
+$cat_rc = ler("2 relatorios com os cadastrados", ["recurso" => "relatorios"]);
+if (count(array_filter($cat_rc["relatorios"] ?? [], function ($x) use ($rc_1, $rc_2) { return in_array($x["tipo"], ["r" . $rc_1, "r" . $rc_2], true); })) !== 2 || count($cat_rc["cadastro"]["relatorios"] ?? []) !== 2) {
+    $falhas[] = "relatórios cadastrados: o catálogo não tem os dois";
+}
+$rr_1 = ler("2 relatorio cadastrado por marca", ["recurso" => "relatorios", "tipo" => "r" . $rc_1]);
+$rr_2 = ler("2 relatorio cadastrado com limite", ["recurso" => "relatorios", "tipo" => "r" . $rc_2]);
+if (($rr_1["titulo"] ?? "") !== "Relógios por marca" || count($rr_1["secoes"] ?? []) < 2 || ($rr_1["secoes"][0]["total"] ?? null) === null
+    || count($rr_2["secoes"][0]["linhas"] ?? []) !== 2) {
+    $falhas[] = "relatórios cadastrados: a montagem saiu errada";
+}
+ler("2 relatorio cadastrado em csv", ["recurso" => "relatorios", "tipo" => "r" . $rc_1, "csv" => 1]);
+ler("2 relatorio avulso", ["recurso" => "relatorios", "tipo" => "avulso", "colunas" => json_encode([["titulo" => "Relógio", "expressao" => "nome"], ["titulo" => "Marca", "expressao" => "marca"]]),
+    "agrupar" => "tipo", "relogios" => "desejados"]);
+$rr_a = ler("2 relatorio avulso recusado", ["recurso" => "relatorios", "tipo" => "avulso", "colunas" => json_encode([["titulo" => "X", "expressao" => "nao_existe"]])]);
+if (!isset($rr_a["erro"])) {
+    $falhas[] = "relatório avulso recusado: passou";
+}
+escrever(["recurso" => "relatorios", "acao" => "salvar", "id" => $rc_2, "limite" => ""]);
+escrever(["recurso" => "relatorios", "acao" => "salvar", "id" => 999999, "nome" => "Não existe"], false);
+escrever(["recurso" => "relatorios", "acao" => "excluir", "id" => $rc_2], false);
+escrever(["recurso" => "relatorios", "acao" => "excluir", "id" => $rc_2, "confirmar" => 1]);
+ler("2 relatorio excluido", ["recurso" => "relatorios", "tipo" => "r" . $rc_2]);
 
 // (no fim, depois das leituras que contam o tempo das sessões abertas: estes passos não atrasam aquelas leituras no banco
 // mais lento.) O Orient fica com o NH35 durante as regras do valor

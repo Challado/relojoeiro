@@ -1,4 +1,4 @@
-<!-- origem: 461f5acecd8a8b9474bf05b466a83c635867e5c3 -->
+<!-- origem: 8ce205a4bb6b8d6941f622d9e86f368beec4eeeb -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -58,6 +58,7 @@ flowchart LR
 | **Unités** | Ce qui vient après le nombre, enregistré par vous : le symbole, le nom et la conversion (le pouce en millimètres). Les champs, les types de saisie et les formules choisissent l'unité dans la liste, et la valeur peut aussi apparaître dans une autre unité. | `47 mm (1,85 pol)` |
 | **Calibres** | Le mouvement de la montre, avec ce qui lui appartient : le fabricant, le manuel technique, les recommandations et les valeurs des champs. La montre avec un calibre utilise sa propre valeur, sinon celle du calibre, sinon la valeur par défaut du champ. | `NH35` : réserve de 41 h, marche de −20 à +40 s/jour |
 | **Marques** | Qui a fait la montre, dans un registre : le nom, le pays et le site. Chaque montre pointe vers une marque, et son nom apparaît dans le tableau, la fiche, les rapports et les formules. | `Seiko`, `Casio` |
+| **Rapports** | Des tableaux de montres composés par vous : les colonnes (chacune, un calcul fait sur chaque montre, comme une formule), le filtre, l'ordre, le regroupement et le calcul du pied de chaque colonne. Ils sortent sur la page **Rapports**, avec l'impression et le tableur, et par l'API. | *Valeur par marque*, *Les inutilisées depuis 30 jours* |
 | **Types de saisie** | Ce qui arrive à une montre. Cela peut être **instantané** (remontage, changement de pile), **avec une valeur** (relevé de charge : 68 %) ou une **session** avec début et fin (au poignet, sur le remontoir, au soleil). | `sol` : une session qui se ferme seule à 18 h si vous oubliez |
 | **Formules** | Des calculs sur les champs et les saisies. Une même formule peut avoir **une version par groupe**, et c'est celle du groupe le plus proche de la montre qui s'applique. | `energia` est la batterie sur la smartwatch, la réserve sur la mécanique, la lumière sur la solaire et la durée de vie de la pile sur la quartz |
 | **Alertes** | Une date prévue par formule, une avance, un texte et la saisie qui résout l'alerte. | *« Remonter l'Orient : la réserve s'épuise à 15 h »*, et le bouton **Remontage** la résout |
@@ -1690,7 +1691,7 @@ formule, le Vaut pour est sa version pour ce point de l'arbre. Un sous-écran fe
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#os-modos-de-rodízio). |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
-| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)), les calibres (l'onglet **Calibres** : voir [Les calibres](#os-calibres)), les marques (l’onglet **Marques** : voir [Les marques](#as-marcas)), les sections de la fiche (l'onglet **Sections** : voir [Les sections de la fiche](#as-divisórias-da-ficha)), les unités (l'onglet **Unités** : voir [Les unités](#as-unidades)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
+| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#os-totais)), les calibres (l'onglet **Calibres** : voir [Les calibres](#os-calibres)), les marques (l’onglet **Marques** : voir [Les marques](#as-marcas)), les rapports enregistrés (l’onglet **Rapports** : voir [Les rapports enregistrés](#os-relatórios-cadastrados)), les sections de la fiche (l'onglet **Sections** : voir [Les sections de la fiche](#as-divisórias-da-ficha)), les unités (l'onglet **Unités** : voir [Les unités](#as-unidades)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
 | **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mode de l'interface, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push), l'**envoi de vos e-mails** (par le serveur du système ou par le vôtre : Gmail, Outlook) et supprimer le compte. Voir [Plusieurs personnes](#várias-pessoas-contas-coleções-e-acesso) et [L'application sur le téléphone](#o-aplicativo-no-celular). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
@@ -1731,6 +1732,7 @@ cadres services, précision et timegrapher du panneau).
 | Entretien et précision | **Calibres** | les calibres, le fabricant, les montres et les documents de chacun |
 | Système | **Totaux** | les totaux de la page des totaux, chacun avec le résultat |
 | Système | **Exécutions du cron** | les dernières exécutions : quand, combien de temps et ce qu'elles ont fait |
+| Mes rapports | ceux que vous avez enregistrés | le tableau que vous avez composé : les colonnes, le filtre, l'ordre, les parties du regroupement et le pied (voir [Les rapports enregistrés](#os-relatórios-cadastrados)) |
 
 C'est l'API qui les construit (`recurso=relatorios`) : sans `tipo`, le catalogue (chaque rapport avec le groupe, le nom, la
 description et les paramètres, et les montres) ; avec `tipo` et ses paramètres, le rapport prêt, dans un format unique pour
@@ -1738,6 +1740,26 @@ tous (le titre, le sous-titre, le résumé, les sections en tableau ou en paires
 demande ; `csv=1` renvoie le tableur. Chaque rapport est construit sur ce que l'API elle-même répond à l'écran (la même
 ressource, avec les mêmes règles d'accès) : il ne dit jamais autre chose que l'écran, et qui ne voit pas une montre ne la voit
 pas dans le rapport.
+
+### Les rapports enregistrés {#os-relatórios-cadastrados}
+
+Quand aucun rapport prêt n'apporte ce que vous voulez, composez le vôtre dans l'onglet **Rapports** de la page
+**Définitions**. Chaque rapport est un tableau de montres :
+
+| Partie | Ce que c'est | Exemple |
+|---|---|---|
+| **Colonnes** | jusqu'à 30 ; chacune avec le titre, l'expression (calculée sur chaque montre, comme une formule : les champs, les formules, les variables du tableau, `SE`, `DIAS_DESDE`...), le format (texte, nombre, entier, 2 décimales, argent, pourcentage, date ou jours) et le calcul du pied (somme, moyenne, plus petit, plus grand ou combien ont une valeur) | `nome` ; `valor_compra` en argent, avec la somme |
+| **Quelles montres** | celles de la collection (dans la collection et prêtées), les souhaitées ou toutes | celles de la collection |
+| **Filtre** | l'expression qui laisse entrer la montre (un résultat autre que 0) ; vide : toutes | `DIAS_DESDE(ultimo_uso) > 30` |
+| **Ordre** | l'expression de l'ordre, du plus petit au plus grand ou l'inverse ; vide : le nom | `valor_compra`, du plus grand au plus petit |
+| **Regrouper par** | l'expression qui divise le tableau en parties, une par valeur, chacune avec son pied | `marca` |
+| **Limite** | seulement les premières lignes, après l'ordre ; vide : toutes | `10` |
+
+**Tester** montre le rapport sous le formulaire, sans enregistrer. Une fois enregistré, il apparaît sur la page
+**Rapports**, dans le groupe **Mes rapports**, avec l'impression et le tableur, comme les autres. Les fonctions de total
+(`SOMA`, `CONTA`...) ne sont pas permises dans une colonne : le calcul du pied s'en charge. Par l'API :
+`recurso=relatorios`, `acao=salvar` (les colonnes en JSON) enregistre ; `tipo=r<id>` génère ; `tipo=avulso` génère une
+définition qui vient dans la requête, sans enregistrer.
 
 ### Le mode simple et le mode avancé {#o-modo-básico-e-o-avançado}
 

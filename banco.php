@@ -228,6 +228,7 @@ const ESCOPO_CONDICOES = [
     "calibre_valor_item" => "calibre_id IN (SELECT id FROM calibre WHERE no_id IN ({NR}))",
     "relogio_calibre" => "relogio_id IN ({RC})",
     "marca" => "no_id IN ({NR})",
+    "relatorio" => "no_id IN ({NR})",
     "relogio_marca" => "relogio_id IN ({RC})",
     "aviso" => "no_id IN ({NR})",
     "documento_categoria" => "no_id IN ({NR})",

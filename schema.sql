@@ -456,6 +456,27 @@ CREATE TABLE campo_valor_item (
     CONSTRAINT ck_campo_valor_item CHECK (TRIM(valor) <> '')
 ) ENGINE=InnoDB;
 
+-- os relatórios cadastrados (Cadastros › Relatórios), da árvore como os totais: o nome, a descrição, as colunas (JSON: o
+-- título, a expressão de cada relógio, o formato e a conta do rodapé), o filtro, a ordem, o agrupamento, quais relógios e o
+-- limite de linhas
+CREATE TABLE relatorio (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    no_id        INT NOT NULL,
+    nome         VARCHAR(120) NOT NULL,
+    descricao    TEXT NULL,
+    colunas      TEXT NOT NULL,
+    filtro       TEXT NULL,
+    ordenar      TEXT NULL,
+    decrescente  TINYINT NOT NULL DEFAULT 0,
+    agrupar      TEXT NULL,
+    relogios     VARCHAR(20) NOT NULL DEFAULT 'colecao',
+    limite       INT NULL,
+    INDEX (no_id),
+    FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
+    CONSTRAINT ck_relatorio_nome CHECK (TRIM(nome) <> ''),
+    CONSTRAINT ck_relatorio_opcoes CHECK (decrescente IN (0, 1) AND relogios IN ('colecao','todos','desejados') AND (limite IS NULL OR limite > 0))
+) ENGINE=InnoDB;
+
 -- as marcas (Casio, Seiko, Orient...), da árvore como o cadastro: o nome, o país, o site e a observação; o relógio aponta
 -- para uma (relogio_marca), que some sozinha quando um dos dois sai
 CREATE TABLE marca (

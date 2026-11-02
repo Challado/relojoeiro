@@ -1,4 +1,4 @@
-<!-- origem: 461f5acecd8a8b9474bf05b466a83c635867e5c3 -->
+<!-- origem: 8ce205a4bb6b8d6941f622d9e86f368beec4eeeb -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -56,6 +56,7 @@ flowchart LR
 | **Unidades** | Lo que va después del número, registrado por usted: el símbolo, el nombre y la conversión (la pulgada en milímetros). Los campos, los tipos de registro y las fórmulas eligen la unidad de la lista, y el valor puede aparecer también en otra unidad. | `47 mm (1,85 pol)` |
 | **Calibres** | El movimiento del reloj, con lo que es suyo: el fabricante, el manual técnico, las recomendaciones y los valores de los campos. El reloj con un calibre usa su propio valor, si no el del calibre, si no el predeterminado del campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/día |
 | **Marcas** | Quién hizo el reloj, en un registro: el nombre, el país y el sitio. Cada reloj apunta a una, y su nombre aparece en la tabla, la ficha, los informes y las fórmulas. | `Seiko`, `Casio` |
+| **Informes** | Tablas de relojes armadas por usted: las columnas (cada una, una cuenta hecha en cada reloj, como una fórmula), el filtro, el orden, la agrupación y la cuenta del pie de cada columna. Salen en la página **Informes**, con la impresión y la hoja de cálculo, y por la API. | *Valor por marca*, *Los sin uso hace 30 días* |
 | **Tipos de registro** | Lo que le pasa a un reloj. Puede ser **instantáneo** (cuerda, cambio de pila), **con valor** (lectura de carga: 68%) o una **sesión** con inicio y fin (en la muñeca, en el winder, al sol). | `sol`: una sesión que se cierra sola a las 18 h si usted se olvida |
 | **Fórmulas** | Cálculos sobre los campos y los registros. La misma fórmula puede tener **una versión por grupo**, y vale la del grupo más cercano al reloj. | `energia` es la batería en el smartwatch, la reserva en el mecánico, la luz en el solar y la vida de la pila en el cuarzo |
 | **Avisos** | Una fecha prevista por fórmula, una antelación, un texto y el registro que resuelve el aviso. | *"Dar cuerda al Orient: la reserva se acaba a las 15 h"*, y el botón **Cuerda** lo resuelve |
@@ -1637,7 +1638,7 @@ para es su versión para ese punto del árbol. La subpantalla cerrada también q
 | **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, el tipo, el criterio, las semanas y de dónde elige) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo, con la pantalla de su tipo: el nombre y el tipo; de dónde elegir (por tramo o por día de la semana), el período de la escala o el guion escrito a mano con **Probar en todos los relojes**; las semanas adelante (con la lista de las semanas); el criterio de elección y el ciclo; y, en los tipos listos, el guion generado (solo lectura, con **copiar este guion** a un Personalizado). Vea [Los modos de rotación](#os-modos-de-rodízio). |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
-| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)), las marcas (la pestaña **Marcas**: vea [Las marcas](#as-marcas)), las secciones de la ficha (la pestaña **Secciones**: vea [Las secciones de la ficha](#as-divisórias-da-ficha)), las unidades (la pestaña **Unidades**: vea [Las unidades](#as-unidades)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
+| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)), las marcas (la pestaña **Marcas**: vea [Las marcas](#as-marcas)), los informes guardados (la pestaña **Informes**: vea [Los informes guardados](#os-relatórios-cadastrados)), las secciones de la ficha (la pestaña **Secciones**: vea [Las secciones de la ficha](#as-divisórias-da-ficha)), las unidades (la pestaña **Unidades**: vea [Las unidades](#as-unidades)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
 | **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, el modo de la interfaz, la contraseña), la **aplicación en el celular** (recordar este aparato, instalar, los aparatos recordados), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push), el **envío de sus correos** (por el servidor del sistema o por el suyo: Gmail, Outlook) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso) y [La aplicación en el celular](#o-aplicativo-no-celular). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |
@@ -1678,12 +1679,32 @@ los cuadros de servicios, precisión y timegrapher del panel).
 | Mantenimiento y precisión | **Calibres** | los calibres, el fabricante, los relojes y los documentos de cada uno |
 | Sistema | **Totales** | los totales de la página de totales, cada uno con el resultado |
 | Sistema | **Ejecuciones del cron** | las últimas ejecuciones: cuándo, cuánto tardó y qué hizo |
+| Mis informes | los que usted guardó | la tabla que usted armó: las columnas, el filtro, el orden, las partes de la agrupación y el pie (vea [Los informes guardados](#os-relatórios-cadastrados)) |
 
 Quien los arma es la API (`recurso=relatorios`): sin `tipo`, el catálogo (cada informe con el grupo, el nombre, la
 descripción y los parámetros, y los relojes); con `tipo` y sus parámetros, el informe listo, en un formato único para todos (el
 título, el subtítulo, el resumen, las secciones en tabla o en pares, el pie), ya en texto, en el idioma de quien pide; `csv=1`
 devuelve la planilla. Cada informe se arma sobre lo que la propia API responde a la pantalla (el mismo recurso, con las mismas
 reglas de acceso): nunca dice otra cosa que la pantalla, y quien no ve un reloj no lo ve en el informe.
+
+### Los informes guardados {#os-relatórios-cadastrados}
+
+Cuando ningún informe listo trae lo que usted quiere, arme el suyo en la pestaña **Informes** de la página
+**Definiciones**. Cada informe es una tabla de relojes:
+
+| Parte | Qué es | Ejemplo |
+|---|---|---|
+| **Columnas** | hasta 30; cada una con el título, la expresión (calculada en cada reloj, como una fórmula: los campos, las fórmulas, las variables de la tabla, `SE`, `DIAS_DESDE`...), el formato (texto, número, entero, con 2 decimales, dinero, porcentaje, fecha o días) y la cuenta del pie (suma, promedio, menor, mayor o cuántos tienen valor) | `nome`; `valor_compra` en dinero, con la suma |
+| **Qué relojes** | los de la colección (en la colección y prestados), los deseados o todos | los de la colección |
+| **Filtro** | la expresión que deja entrar al reloj (el resultado distinto de 0); vacío: todos | `DIAS_DESDE(ultimo_uso) > 30` |
+| **Orden** | la expresión del orden, de menor a mayor o al revés; vacío: el nombre | `valor_compra`, de mayor a menor |
+| **Agrupar por** | la expresión que divide la tabla en partes, una por valor, cada una con su pie | `marca` |
+| **Límite** | solo las primeras filas, después del orden; vacío: todas | `10` |
+
+**Probar** muestra el informe debajo del formulario, sin guardar. Guardado, aparece en la página **Informes**, en el
+grupo **Mis informes**, con la impresión y la hoja de cálculo, como los otros. Las funciones de total (`SOMA`,
+`CONTA`...) no valen en una columna: la cuenta del pie hace eso. Por la API: `recurso=relatorios`, `acao=salvar` (las
+columnas en JSON) guarda; `tipo=r<id>` genera; `tipo=avulso` genera una definición que viene en la petición, sin guardar.
 
 ### El modo básico y el avanzado {#o-modo-básico-e-o-avançado}
 

@@ -1273,6 +1273,7 @@ $MIGRACOES = [
     "v51" => ["migracao_v51.sql", tk("as medições reconstruídas após correções, o aprendizado com leituras frequentes e a validade dos dados do gasto da bateria"), "sistema.chave=migracao_v51", "migracao_v51_dados"],
     "v52" => ["migracao_v52.sql", tk("o cadastro das marcas (Cadastros › Marcas: o nome, o país, o site e a observação), com a marca de cada relógio na ficha e na tabela da página Hoje; o texto da marca de cada relógio vira uma marca do cadastro"), "sistema.chave=migracao_v52", "migracao_v52_dados"],
     "v53" => ["migracao_v53.sql", tk("os totais na coluna Marca da tabela dos relógios, com o total pronto Por marca (quantos relógios de cada marca) no rodapé e na página de totais"), "sistema.chave=migracao_v53", "migracao_v53_dados"],
+    "v54" => ["migracao_v54.sql", tk("os relatórios cadastrados: em Cadastros › Relatórios e pela API (recurso=relatorios), cada um com as colunas (uma expressão por relógio, o formato e a conta do rodapé), o filtro, a ordem, o agrupamento e quais relógios; eles aparecem no catálogo dos relatórios (Meus relatórios), com o CSV"), "relatorio"],
 ];
 
 // A regra da coluna dos totais aceita a Marca (nos quatro bancos), e cada árvore que ainda não tem total na coluna Marca
@@ -4062,6 +4063,290 @@ function totais_todos()
             "nome" => $x["nome"], "expressao" => $x["expressao"], "rodape" => (int)$x["rodape"] === 1, "pagina" => (int)$x["pagina"] === 1,
             "largura" => $x["largura"], "formato" => $x["formato"], "ordem" => (int)$x["ordem"]];
     }, linhas("SELECT * FROM total ORDER BY ordem, id"));
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Os relatórios cadastrados (a tabela relatorio, da árvore como os totais; Cadastros › Relatórios, recurso=relatorios e
+// o catálogo dos relatórios, em Meus relatórios): cada um é uma tabela de relógios montada por quem usa. As colunas:
+// cada uma com o título, a expressão (calculada em cada relógio como uma fórmula: os campos, as fórmulas, as variáveis
+// da tabela, SE, DIAS_DESDE...), o formato (os dos totais, ou texto: o padrão, o valor como está) e a conta do rodapé
+// (soma, media, menor, maior ou conta; vazio: nenhuma). O filtro: uma expressão que, diferente de 0, deixa o relógio
+// entrar (vazio: todos). A ordem: uma expressão (vazio: o nome), crescente ou decrescente. O agrupamento: uma
+// expressão, uma seção por valor dela (vazio: uma seção só). Quais relógios: colecao (os da coleção: na coleção e
+// emprestados), desejados (a lista de desejos) ou todos. O limite: as primeiras N linhas, depois da ordem (vazio:
+// todas).
+// ---------------------------------------------------------------------------------------------------------------------
+const RELATORIO_CONTAS = ["soma", "media", "menor", "maior", "conta"];
+const RELATORIO_RELOGIOS = ["colecao", "desejados", "todos"];
+const RELATORIO_COLUNAS_MAXIMO = 30;
+const RELATORIO_LIMITE_MAXIMO = 100000;
+
+// Os nomes das contas do rodapé, de quais relógios e dos formatos de uma coluna, no idioma do pedido
+function relatorio_contas_nomes()
+{
+    return ["soma" => t("Soma"), "media" => t("Média"), "menor" => t("Menor"), "maior" => t("Maior"), "conta" => t("Quantos têm valor")];
+}
+
+function relatorio_relogios_nomes()
+{
+    return ["colecao" => t("Os da coleção (na coleção e emprestados)"), "desejados" => t("Os desejados (a lista de desejos)"), "todos" => t("Todos (também os que saíram da coleção)")];
+}
+
+function relatorio_formatos_nomes()
+{
+    return total_formatos_nomes() + ["texto" => t("Texto (como está)")];
+}
+
+// Confere uma expressão de um relatório (uma coluna, o filtro, a ordem ou o agrupamento): a escrita, as variáveis (campos,
+// fórmulas, as da tabela e as do motor) e os tipos de lançamento. As funções de total não valem: a conta é de um relógio.
+// Devolve a lista de erros
+function relatorio_expressao_validar($expressao)
+{
+    global $VARIAVEIS_TABELA, $VARIAVEIS_MOTOR;
+    try {
+        $refs = formula_referencias(formula_ler($expressao));
+    } catch (ErroFormula $e) {
+        return [t("erro de escrita: {1}", [1 => $e->getMessage()])];
+    }
+    $erros = [];
+    $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), array_keys($VARIAVEIS_TABELA), array_keys($VARIAVEIS_MOTOR));
+    foreach ($refs["variaveis"] as $v) {
+        if (!in_array($v, $conhecidas, true)) {
+            $erros[] = t("variável desconhecida: {1} (não é campo, fórmula nem coluna da tabela)", [1 => $v]);
+        }
+    }
+    foreach ($refs["lancamentos"] as $tl) {
+        if (!isset(lancamento_tipos()[$tl])) {
+            $erros[] = t("tipo de lançamento desconhecido: \"{1}\"", [1 => $tl]);
+        }
+    }
+    return array_values(array_unique($erros));
+}
+
+// A definição de um relatório a partir do pedido ($d), por cima da gravada ($atual, uma linha da tabela relatorio; só muda
+// o que vier): nome, descricao, colunas (um JSON [{titulo, expressao, formato, total}], ou os campos colunas[i][titulo],
+// colunas[i][expressao]...; a linha sem título nem expressão fica de fora), filtro, ordenar, decrescente, agrupar,
+// relogios e limite. $com_nome: o nome é obrigatório (para gravar). Devolve [a definição, os erros]
+function relatorio_definicao($d, $atual = null, $com_nome = true)
+{
+    $erros = [];
+    $pega = function ($k, $padrao) use ($d, $atual) {
+        return array_key_exists($k, $d) ? $d[$k] : ($atual !== null && array_key_exists($k, $atual) ? $atual[$k] : $padrao);
+    };
+    $texto = function ($v) {
+        $v = trim((string)$v);
+        return $v === "" ? null : $v;
+    };
+    $nome = $texto(is_array($pega("nome", "")) ? "" : $pega("nome", ""));
+    if ($nome === null && !$com_nome) {
+        $nome = t("Relatório avulso");
+    }
+    if ($nome === null || mb_strlen($nome, "UTF-8") > 120) {
+        $erros[] = t("Dê um nome ao relatório (até 120 caracteres).");
+    }
+    $descricao = $texto(is_array($pega("descricao", "")) ? "" : $pega("descricao", ""));
+    if ($descricao !== null && mb_strlen($descricao, "UTF-8") > 4000) {
+        $erros[] = t("Descrição: até 4000 caracteres.");
+    }
+    $bruto = $pega("colunas", "");
+    if (is_string($bruto)) {
+        $bruto = trim($bruto) === "" ? [] : json_decode($bruto, true);
+    }
+    $colunas = [];
+    if (!is_array($bruto)) {
+        $erros[] = t("Colunas: uma lista em JSON, como [{\"titulo\": \"Relógio\", \"expressao\": \"nome\", \"formato\": \"texto\"}].");
+        $bruto = [];
+    }
+    ksort($bruto);
+    $formatos = relatorio_formatos_nomes();
+    foreach (array_values($bruto) as $i => $c) {
+        $c = is_array($c) ? $c : [];
+        $titulo = $texto(is_array($c["titulo"] ?? "") ? "" : ($c["titulo"] ?? ""));
+        $expr = $texto(is_array($c["expressao"] ?? "") ? "" : ($c["expressao"] ?? ""));
+        if ($titulo === null && $expr === null) {
+            continue;
+        }
+        $n = count($colunas) + 1;
+        $formato = (string)($c["formato"] ?? "") === "" ? "texto" : (string)$c["formato"];
+        $conta = (string)($c["total"] ?? "") === "" ? null : (string)$c["total"];
+        if ($expr === null) {
+            $erros[] = t("Coluna {1}: escreva a expressão.", [1 => $n]);
+        } else {
+            foreach (relatorio_expressao_validar($expr) as $e) {
+                $erros[] = t("Coluna {1}: {2}.", [1 => $n, 2 => $e]);
+            }
+        }
+        if ($titulo !== null && mb_strlen($titulo, "UTF-8") > 80) {
+            $erros[] = t("Coluna {1}: o título, até 80 caracteres.", [1 => $n]);
+        }
+        if (!isset($formatos[$formato])) {
+            $erros[] = t("Coluna {1}: o formato é {2}.", [1 => $n, 2 => implode(", ", array_keys($formatos))]);
+        }
+        if ($conta !== null && !in_array($conta, RELATORIO_CONTAS, true)) {
+            $erros[] = t("Coluna {1}: a conta do rodapé é {2}, ou vazio.", [1 => $n, 2 => implode(", ", RELATORIO_CONTAS)]);
+        }
+        $colunas[] = ["titulo" => $titulo ?? (string)$expr, "expressao" => (string)$expr, "formato" => $formato, "total" => $conta];
+    }
+    if (count($colunas) === 0) {
+        $erros[] = t("Ponha pelo menos uma coluna no relatório (o título e a expressão).");
+    } elseif (count($colunas) > RELATORIO_COLUNAS_MAXIMO) {
+        $erros[] = t("Até {1} colunas num relatório.", [1 => RELATORIO_COLUNAS_MAXIMO]);
+    }
+    $def = ["nome" => (string)$nome, "descricao" => $descricao, "colunas" => $colunas];
+    foreach (["filtro" => t("Filtro"), "ordenar" => t("Ordem"), "agrupar" => t("Agrupar por")] as $k => $rotulo) {
+        $v = $pega($k, null);
+        $def[$k] = is_array($v) ? null : $texto($v);
+        if ($def[$k] !== null) {
+            foreach (relatorio_expressao_validar($def[$k]) as $e) {
+                $erros[] = t("{1}: {2}.", [1 => $rotulo, 2 => $e]);
+            }
+        }
+    }
+    $dec = (string)$pega("decrescente", "0");
+    if (!in_array($dec, ["0", "1"], true)) {
+        $erros[] = t("Decrescente: 1 ou 0.");
+    }
+    $def["decrescente"] = $dec === "1";
+    $def["relogios"] = (string)$pega("relogios", "colecao");
+    if (!in_array($def["relogios"], RELATORIO_RELOGIOS, true)) {
+        $erros[] = t("Relógios: {1}.", [1 => implode(", ", RELATORIO_RELOGIOS)]);
+    }
+    $lim = trim((string)(is_array($pega("limite", "")) ? "x" : $pega("limite", "")));
+    $def["limite"] = null;
+    if ($lim !== "") {
+        if (preg_match("/^[0-9]+$/", $lim) !== 1 || (int)$lim < 1 || (int)$lim > RELATORIO_LIMITE_MAXIMO) {
+            $erros[] = t("Limite: de 1 a {1} linhas, ou vazio (todas).", [1 => RELATORIO_LIMITE_MAXIMO]);
+        } else {
+            $def["limite"] = (int)$lim;
+        }
+    }
+    return [$def, $erros];
+}
+
+// Os relatórios cadastrados da árvore da coleção, por nome, cada um com a definição (as colunas já lidas do JSON)
+function relatorios_todos()
+{
+    return array_map(function ($x) {
+        $col = json_decode((string)$x["colunas"], true);
+        return ["id" => (int)$x["id"], "tipo" => "r" . (int)$x["id"], "nome" => $x["nome"], "descricao" => $x["descricao"], "colunas" => is_array($col) ? $col : [],
+            "filtro" => $x["filtro"], "ordenar" => $x["ordenar"], "decrescente" => (int)$x["decrescente"] === 1, "agrupar" => $x["agrupar"],
+            "relogios" => $x["relogios"], "limite" => $x["limite"] === null ? null : (int)$x["limite"]];
+    }, linhas("SELECT * FROM relatorio ORDER BY nome, id"));
+}
+
+// Os relógios de um relatório, cada um com o contexto da conta (como os dos totais): os da coleção (os mesmos dos totais),
+// os desejados ou todos
+function relatorio_relogios($quais)
+{
+    if ($quais === "colecao") {
+        return totais_relogios(null);
+    }
+    $agora = time();
+    $extra = ["nos" => nos_todos(), "hoje" => hoje_da_colecao(), "dia" => null];
+    $res = [];
+    foreach (linhas("SELECT * FROM relogio ORDER BY nome, id") as $r) {
+        if ($quais === "desejados" && posse_de($r) !== "desejado") {
+            continue;
+        }
+        $linha = tabela_linha($r, $agora, $extra);
+        $res[] = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"]),
+            "tabela" => tabela_variaveis($linha, $r, $agora)];
+    }
+    return $res;
+}
+
+// Um valor de uma coluna em texto: no formato dela (o texto sai como está; o número, como no formato numero)
+function relatorio_texto($v, $formato)
+{
+    return total_texto($v, $formato === "texto" ? "numero" : $formato);
+}
+
+// A ordem de dois valores: os vazios por último; dois números, como números; o resto, como texto (a ordem natural)
+function relatorio_comparar($a, $b, $decrescente)
+{
+    $va = $a === null || $a === "";
+    $vb = $b === null || $b === "";
+    if ($va || $vb) {
+        return $va && $vb ? 0 : ($va ? 1 : -1);
+    }
+    $c = is_numeric($a) && is_numeric($b) ? ((float)$a <=> (float)$b) : strnatcasecmp((string)$a, (string)$b);
+    return $decrescente ? -$c : $c;
+}
+
+// O relatório montado a partir da definição (relatorio_definicao): as colunas ({titulo, numero}), as seções (uma por grupo:
+// o título do grupo, ou null sem agrupamento; as linhas, com o id do relógio e as células em texto; o total, com a conta de
+// cada coluna que tem conta, ou null), quantos relógios passaram no filtro e quantos aparecem (o limite)
+function relatorio_montar($def)
+{
+    $conj = relatorio_relogios($def["relogios"]);
+    $ler = function ($e) { return $e === null ? null : formula_ler($e); };
+    $filtro = $ler($def["filtro"]);
+    $ordem = $ler($def["ordenar"]);
+    $grupo = $ler($def["agrupar"]);
+    $arvores = array_map(function ($c) { return formula_ler($c["expressao"]); }, $def["colunas"]);
+    $itens = [];
+    foreach ($conj as $k => $c) {
+        if ($filtro !== null) {
+            $f = formula_calcular($filtro, $c);
+            if (!is_numeric($f) || (float)$f == 0) {
+                continue;
+            }
+        }
+        $valores = [];
+        foreach ($arvores as $a) {
+            $valores[] = formula_calcular($a, $c);
+        }
+        $itens[] = ["k" => $k, "id" => (int)$c["r"]["id"], "valores" => $valores,
+            "ordem" => $ordem === null ? (string)$c["r"]["nome"] : formula_calcular($ordem, $c),
+            "grupo" => $grupo === null ? null : formula_calcular($grupo, $c)];
+    }
+    $passaram = count($itens);
+    $dec = $def["decrescente"];
+    usort($itens, function ($a, $b) use ($dec) {
+        $c = relatorio_comparar($a["ordem"], $b["ordem"], $dec);
+        return $c !== 0 ? $c : $a["k"] <=> $b["k"];
+    });
+    if ($def["limite"] !== null) {
+        $itens = array_slice($itens, 0, $def["limite"]);
+    }
+    // os grupos, na ordem dos valores (o vazio por último); sem agrupamento, um só
+    $grupos = [];
+    foreach ($itens as $it) {
+        $chave = $it["grupo"] === null || $it["grupo"] === "" ? "" : (is_numeric($it["grupo"]) ? "n" . (float)$it["grupo"] : "t" . $it["grupo"]);
+        if (!isset($grupos[$chave])) {
+            $grupos[$chave] = ["valor" => $it["grupo"], "itens" => []];
+        }
+        $grupos[$chave]["itens"][] = $it;
+    }
+    uasort($grupos, function ($a, $b) { return relatorio_comparar($a["valor"], $b["valor"], false); });
+    if (count($grupos) === 0) {
+        $grupos[""] = ["valor" => null, "itens" => []];
+    }
+    $tem_conta = count(array_filter($def["colunas"], function ($c) { return $c["total"] !== null; })) > 0;
+    $secoes = [];
+    foreach ($grupos as $g) {
+        $total = null;
+        if ($tem_conta) {
+            $total = [];
+            foreach ($def["colunas"] as $i => $col) {
+                $cheios = array_values(array_filter(array_map(function ($it) use ($i) { return $it["valores"][$i]; }, $g["itens"]), function ($v) { return $v !== null && $v !== ""; }));
+                $nums = array_map("floatval", array_values(array_filter($cheios, "is_numeric")));
+                $v = null;
+                if ($col["total"] === "conta") {
+                    $v = count($cheios);
+                } elseif ($col["total"] !== null && count($nums) > 0) {
+                    $v = ["soma" => array_sum($nums), "media" => array_sum($nums) / max(1, count($nums)), "menor" => min($nums), "maior" => max($nums)][$col["total"]];
+                }
+                $total[] = $col["total"] === null ? "" : ($col["total"] === "conta" ? total_texto($v, "inteiro") : relatorio_texto($v, $col["formato"]));
+            }
+        }
+        $secoes[] = ["titulo" => $grupo === null ? null : ($g["valor"] === null || $g["valor"] === "" ? t("Sem valor") : total_rotulo((string)$g["valor"])),
+            "linhas" => array_map(function ($it) use ($def) {
+                return ["id" => $it["id"], "celulas" => array_map(function ($v, $col) { return relatorio_texto($v, $col["formato"]); }, $it["valores"], $def["colunas"])];
+            }, $g["itens"]), "total" => $total];
+    }
+    return ["colunas" => array_map(function ($c) { return ["titulo" => $c["titulo"], "numero" => $c["formato"] !== "texto"]; }, $def["colunas"]),
+        "secoes" => $secoes, "relogios" => count($conj), "passaram" => $passaram, "mostrados" => count($itens)];
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
