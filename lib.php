@@ -1272,7 +1272,36 @@ $MIGRACOES = [
     "v50" => ["migracao_v50.sql", tk("a previsão de descarga com o gasto medido fixo durante a projeção; o aviso Carregar usa a mesma conta da ficha; os períodos que precisam de recarga no meio e a confiança das estimativas"), "sistema.chave=migracao_v50", "migracao_v50_dados"],
     "v51" => ["migracao_v51.sql", tk("as medições reconstruídas após correções, o aprendizado com leituras frequentes e a validade dos dados do gasto da bateria"), "sistema.chave=migracao_v51", "migracao_v51_dados"],
     "v52" => ["migracao_v52.sql", tk("o cadastro das marcas (Cadastros › Marcas: o nome, o país, o site e a observação), com a marca de cada relógio na ficha e na tabela da página Hoje; o texto da marca de cada relógio vira uma marca do cadastro"), "sistema.chave=migracao_v52", "migracao_v52_dados"],
+    "v53" => ["migracao_v53.sql", tk("os totais na coluna Marca da tabela dos relógios, com o total pronto Por marca (quantos relógios de cada marca) no rodapé e na página de totais"), "sistema.chave=migracao_v53", "migracao_v53_dados"],
 ];
+
+// A regra da coluna dos totais aceita a Marca (nos quatro bancos), e cada árvore que ainda não tem total na coluna Marca
+// ganha o "Por marca" do modelo.json, no idioma da coleção, no fim da ordem. Uma instalação nova já tem os dois (o
+// schema.sql e o modelo)
+function migracao_v53_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            banco_regra("total", "ck_total_coluna", "coluna IS NULL OR coluna IN ('codigo','nome','marca','tipo','estado','carga','ultimo','manut','em','fazer','encostado','compra','valor')");
+            $modelo = array_values(array_filter(modelo_ler()["totais"] ?? [], function ($x) { return ($x["coluna"] ?? null) === "marca"; }));
+            foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+                $rid = (int)$raiz["id"];
+                if ((int)valor("SELECT COUNT(*) FROM total WHERE no_id = ?", [$rid]) === 0 || (int)valor("SELECT COUNT(*) FROM total WHERE no_id = ? AND coluna = 'marca'", [$rid]) > 0) {
+                    continue;
+                }
+                $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [$rid])) ?? "pt-BR";
+                $tr = modelo_tradutor($lingua);
+                $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) FROM total WHERE no_id = ?", [$rid]);
+                foreach ($modelo as $x) {
+                    $ordem++;
+                    sql("INSERT INTO total (no_id, coluna, nome, expressao, rodape, pagina, largura, formato, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        [$rid, $x["coluna"], $tr($x["nome"]), $x["expressao"], (int)$x["rodape"], (int)$x["pagina"], $x["largura"], $x["formato"], $ordem]);
+                }
+            }
+        });
+    }
+    sis_set("migracao_v53", "1");
+}
 
 // O texto do campo marca de cada relógio vira uma marca do cadastro da árvore do campo (a mesma grafia, sem diferença de
 // maiúsculas nem de espaços, vira uma marca só, com a grafia do primeiro relógio), o relógio passa a apontar para ela e o

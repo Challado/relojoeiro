@@ -1,4 +1,4 @@
-<!-- origem: 0c85f2ac6f7d7984b1b1c97963ae162e52b2ec75 -->
+<!-- origem: 461f5acecd8a8b9474bf05b466a83c635867e5c3 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -149,6 +149,7 @@ fórmulas. Ejemplos:
 | Total | Expresión |
 |---|---|
 | Disponibles y no disponibles | `AGRUPADO(SE(disponivel; "disponíveis"; "indisponíveis"))` |
+| Por marca | `AGRUPADO(marca)` |
 | Por tipo | `AGRUPADO(tipo)` |
 | Rangos de carga | `FAIXAS(carga; 25; 50; 75; 100)` |
 | Parado hace | `FAIXAS(DIAS_DESDE(ultimo_uso); 7; 30)` |

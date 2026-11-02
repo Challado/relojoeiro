@@ -146,6 +146,13 @@ for b in "${BANCOS[@]}"; do
     [ "$(echo "$FICHA" | json relogio.marca.nome)" != "Seiko" ] && erros+=("a marca de antes não virou a marca do cadastro: $(echo "$FICHA" | json relogio.marca)")
     [ "$(curl -s -H "$TOKEN" "$A?recurso=marcas" | json marcas.0.relogios.0.nome)" != "Relógio de antes" ] && erros+=("a marca Seiko não tem o relógio de antes")
   fi
+  # a v53 aplicada agora: a regra da coluna aceita a Marca, e a árvore ganhou o total Por marca nela
+  if case ", $PEND," in *", v53,"*) true ;; *) false ;; esac; then
+    [ "$(curl -s -H "$TOKEN" "$A?recurso=totais" | php -r '$j = json_decode(stream_get_contents(STDIN), true); echo count(array_filter($j["totais"] ?? [], function ($x) { return ($x["coluna"] ?? null) === "marca"; }));')" != "1" ] \
+      && erros+=("a v53 não pôs o total Por marca na coluna Marca")
+    [ "$(curl -s -H "$TOKEN" --data-urlencode recurso=totais --data-urlencode acao=salvar -d id=0 -d coluna=marca --data-urlencode "nome=Marcas distintas" --data-urlencode "expressao=DISTINTOS(marca)" -d rodape=1 -d pagina=0 "$A" | json ok)" != "true" ] \
+      && erros+=("a regra da coluna dos totais não aceita a Marca depois da v53")
+  fi
   [ "$(echo "$FICHA" | json relogio.acessorios.0.nome)" != "Pulseira de antes" ] && erros+=("o acessório de antes sumiu")
   [ "$(curl -s -H "$TOKEN" "$A?recurso=historico&relogio=$R" | json total)" != "$LANC_ANTES" ] && erros+=("o histórico mudou de tamanho")
   # os serviços de antes continuam, cada um a volta de uma manutenção encerrada; quem fez virou a oficina (sem ele, a sua)

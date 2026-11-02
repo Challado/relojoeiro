@@ -3481,6 +3481,15 @@
             "formato": "inteiro"
         },
         {
+            "coluna": "marca",
+            "nome": "Por marca",
+            "expressao": "AGRUPADO(marca)",
+            "rodape": 1,
+            "pagina": 1,
+            "largura": "estreito",
+            "formato": "inteiro"
+        },
+        {
             "coluna": "tipo",
             "nome": "Por tipo",
             "expressao": "AGRUPADO(tipo)",

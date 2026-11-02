@@ -1,4 +1,4 @@
-<!-- origem: 0c85f2ac6f7d7984b1b1c97963ae162e52b2ec75 -->
+<!-- origem: 461f5acecd8a8b9474bf05b466a83c635867e5c3 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -149,6 +149,7 @@ Examples:
 | Total | Expression |
 |---|---|
 | Available and unavailable | `AGRUPADO(SE(disponivel; "disponíveis"; "indisponíveis"))` |
+| By brand | `AGRUPADO(marca)` |
 | By type | `AGRUPADO(tipo)` |
 | Charge ranges | `FAIXAS(carga; 25; 50; 75; 100)` |
 | Idle for | `FAIXAS(DIAS_DESDE(ultimo_uso); 7; 30)` |

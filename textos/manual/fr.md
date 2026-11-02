@@ -1,4 +1,4 @@
-<!-- origem: 0c85f2ac6f7d7984b1b1c97963ae162e52b2ec75 -->
+<!-- origem: 461f5acecd8a8b9474bf05b466a83c635867e5c3 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -152,6 +152,7 @@ par mois et par année, et marchent aussi dans les formules. Exemples :
 | Total | Expression |
 |---|---|
 | Disponibles et indisponibles | `AGRUPADO(SE(disponivel; "disponíveis"; "indisponíveis"))` |
+| Par marque | `AGRUPADO(marca)` |
 | Par type | `AGRUPADO(tipo)` |
 | Tranches de charge | `FAIXAS(carga; 25; 50; 75; 100)` |
 | À l'arrêt depuis | `FAIXAS(DIAS_DESDE(ultimo_uso); 7; 30)` |

@@ -3289,11 +3289,13 @@ function op_lancamento($acao, $d)
             }
         } elseif ($acao === "iniciar") {
             $q = $momento($d["quando"] ?? "");
-            // o trecho do mesmo tipo que acabou no mesmo minuto (o período que termina quando esta começa, o encerrar e o iniciar
-            // de novo no mesmo minuto): o iniciar emenda nele, que volta a ficar aberto, como o período faz com o que encosta
+            // o trecho do mesmo tipo que acabou no instante em que esta começa (o período que termina às 10:00 e o iniciar das
+            // 10:00; o encerrar e o iniciar com o mesmo quando): o iniciar emenda nele, que volta a ficar aberto, como o período
+            // faz com o que encosta. O instante exato (e não o minuto): o fechar e o reabrir de agora, segundos depois, ficam
+            // dois trechos, num banco rápido ou lento
             $emenda = $t && $t["formato"] === "sessao" && $q !== false
-                ? linha("SELECT id, inicio, fim, origem FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND fim IS NOT NULL AND fim >= ? AND fim < ? AND inicio < ? ORDER BY fim DESC, id DESC LIMIT 1",
-                    [$rid, (int)$t["id"], date("Y-m-d H:i:00", $q), date("Y-m-d H:i:00", $q + 60), date("Y-m-d H:i:00", $q)]) : null;
+                ? linha("SELECT id, inicio, fim, origem FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND fim = ? AND inicio < fim ORDER BY id DESC LIMIT 1",
+                    [$rid, (int)$t["id"], date("Y-m-d H:i:s", $q)]) : null;
             if ($t["formato"] !== "sessao") {
                 $erros[] = t("{1} não é uma sessão: use lancar.", [1 => $t["nome"]]);
             } elseif ($q === false) {

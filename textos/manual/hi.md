@@ -1,4 +1,4 @@
-<!-- origem: 0c85f2ac6f7d7984b1b1c97963ae162e52b2ec75 -->
+<!-- origem: 461f5acecd8a8b9474bf05b466a83c635867e5c3 -->
 
 ## मूल विचार: सिस्टम घड़ियों के बारे में कुछ नहीं जानता {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -136,6 +136,7 @@ flowchart LR
 | योग | व्यंजक |
 |---|---|
 | उपलब्ध और अनुपलब्ध | `AGRUPADO(SE(disponivel; "disponíveis"; "indisponíveis"))` |
+| ब्रांड के अनुसार | `AGRUPADO(marca)` |
 | प्रकार के अनुसार | `AGRUPADO(tipo)` |
 | चार्ज की श्रेणियाँ | `FAIXAS(carga; 25; 50; 75; 100)` |
 | कब से रुकी | `FAIXAS(DIAS_DESDE(ultimo_uso); 7; 30)` |

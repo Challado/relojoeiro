@@ -518,7 +518,7 @@
  *   recurso=lancamento        lancar (relogio_id, tipo, valor, quando: AAAA-MM-DD HH:MM, vazio = agora; medir: 1 (padrão) ou 0,
  *                             num tipo que mede o gasto: com 1 a medição entra na média, com 0 fica só no histórico — a caixa
  *                             "Atualizar o gasto com esta medição"; a mensagem traz a conta), iniciar (relogio_id,
- *                             tipo, quando: abre a sessão; exclusiva fecha a outra exclusiva aberta; começando no mesmo minuto em
+ *                             tipo, quando: abre a sessão; exclusiva fecha a outra exclusiva aberta; começando no instante em
  *                             que acabou um trecho do mesmo tipo, emenda nele, que volta a ficar aberto), encerrar (relogio_id, tipo,
  *                             quando), periodo (relogio_id, tipo, inicio (quando também vale), fim: uma sessão que já passou; sem
  *                             o fim, fica aberta, do início até agora),
@@ -4573,8 +4573,8 @@
  *     todos                          quantos relógios a tabela tem ao todo (sem o filtro)
  *     totais[]                       os totais, na ordem do cadastro
  *     totais[].id                    o número do total
- *     totais[].coluna                a chave da coluna da tabela dos relógios onde ele vai no rodapé (codigo, nome, tipo, estado, carga,
- *                                    ultimo, manut, em, fazer, encostado, compra, valor); null: nenhuma
+ *     totais[].coluna                a chave da coluna da tabela dos relógios onde ele vai no rodapé (codigo, nome, marca, tipo, estado,
+ *                                    carga, ultimo, manut, em, fazer, encostado, compra, valor); null: nenhuma
  *     totais[].coluna_nome           o nome da coluna, no idioma do pedido; null: nenhuma
  *     totais[].nome                  o nome do total (o título da tabelinha e do quadro)
  *     totais[].expressao             a expressão de total
