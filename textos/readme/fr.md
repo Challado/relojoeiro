@@ -1,4 +1,4 @@
-<!-- origem: cae268bd26c3d12a0264f0c34681a52da1c5730a -->
+<!-- origem: 8edeffb8897bcc893a04c9cf1c0dda2e362d00b9 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -162,6 +162,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `config`, `cron` | la configuration de la collection (avec le résumé des destinations et des agendas et l'état du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (100 par défaut, 1000 au maximum) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
 | `arvore`, `cadastros` | les groupes ; tout ce que montre la page Définitions |
 | `unidades` | les unités de l'arbre (l'onglet **Unités** des Définitions), dans l'ordre des grandeurs, chacune avec la conversion en texte et combien de champs, de types et de formules l'utilisent |
+| `marcas` | les marques de l’arbre (l’onglet **Marques** des Définitions), chacune avec le pays, le site, l’observation et ses montres |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
@@ -192,7 +193,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 
 | Ressource | Actions |
 |---|---|
-| `relogio` | `salvar` (créer ou modifier), `excluir` (avec les documents), `foto`, `remover_foto` |
+| `relogio` | `salvar` (créer ou modifier), `excluir` (avec les documents), `foto`, `remover_foto` ; la marque, par `marca_id` ou par le nom dans `marca` |
 | `documentos` | `enviar` (un ou plusieurs fichiers, avec la catégorie, le titre, la date, la description et, pour une photo, la vignette), `alterar`, `excluir` |
 | `servicos` | `salvar` (la date, le type, l'entretien ou l'atelier, la main-d'œuvre, les pièces, l'étanchéité, la marche avant et après, la garantie et les documents ; le type qui marque une saisie devient aussi la saisie), `excluir` |
 | `manutencao` | `salvar` (enregistrer envoie la montre à l'atelier), `situacao` (celui qui clôt devient un service), `excluir` |
@@ -205,6 +206,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
 | `secoes` | les sections de la fiche : `salvar` (le nom ; `id=0` crée à la fin), `ordem` (`direcao=sobe` ou `desce`), `excluir` (ses champs restent sans section, à la fin) |
 | `unidades` | `salvar` (le symbole, le nom, la base et le facteur, le zéro et l'afficher aussi en ; le nouveau symbole passe à qui l'utilise), `excluir` (seulement sans usage ; emporte celles qui se convertissent en elle) |
+| `marcas` | `salvar` (le nom, sans répéter une autre ; le pays, le site et l’observation), `juntar` (`em_id` : les montres passent à l’autre, et celle-ci part), `excluir` (les montres restent sans marque) |
 | `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du soleil, du chargeur ; du remontoir, mettre se fait par la page Remontoirs, `winder_posicoes`, sauf si la montre a sa place libre : alors elle y retourne), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone ; sur le remontoir, n'ouvre que pour le retour à la place), `periodo` (une période déjà passée ; sur le remontoir, avec la position, `posicao_id` ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour Un `iniciar` qui commence à la même minute où un tronçon du même type s’est terminé s’y raccorde (il redevient ouvert), et un `periodo` sans `fim` reste ouvert, du début jusqu’à maintenant. |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |

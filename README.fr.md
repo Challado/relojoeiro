@@ -109,6 +109,7 @@ flowchart LR
 | **Sections** | Les sections de la fiche, créées par vous : chaque champ se trouve dans l'une d'elles, et la fiche, le tableau de bord, le passeport et les rapports montrent les champs regroupés, dans leur ordre. | *Identification*, *Achat*, *Construction*, *Énergie* |
 | **Unités** | Ce qui vient après le nombre, enregistré par vous : le symbole, le nom et la conversion (le pouce en millimètres). Les champs, les types de saisie et les formules choisissent l'unité dans la liste, et la valeur peut aussi apparaître dans une autre unité. | `47 mm (1,85 pol)` |
 | **Calibres** | Le mouvement de la montre, avec ce qui lui appartient : le fabricant, le manuel technique, les recommandations et les valeurs des champs. La montre avec un calibre utilise sa propre valeur, sinon celle du calibre, sinon la valeur par défaut du champ. | `NH35` : réserve de 41 h, marche de −20 à +40 s/jour |
+| **Marques** | Qui a fait la montre, dans un registre : le nom, le pays et le site. Chaque montre pointe vers une marque, et son nom apparaît dans le tableau, la fiche, les rapports et les formules. | `Seiko`, `Casio` |
 | **Types de saisie** | Ce qui arrive à une montre. Cela peut être **instantané** (remontage, changement de pile), **avec une valeur** (relevé de charge : 68 %) ou une **session** avec début et fin (au poignet, sur le remontoir, au soleil). | `sol` : une session qui se ferme seule à 18 h si vous oubliez |
 | **Formules** | Des calculs sur les champs et les saisies. Une même formule peut avoir **une version par groupe**, et c'est celle du groupe le plus proche de la montre qui s'applique. | `energia` est la batterie sur la smartwatch, la réserve sur la mécanique, la lumière sur la solaire et la durée de vie de la pile sur la quartz |
 | **Alertes** | Une date prévue par formule, une avance, un texte et la saisie qui résout l'alerte. | *« Remonter l'Orient : la réserve s'épuise à 15 h »*, et le bouton **Remontage** la résout |
@@ -166,6 +167,8 @@ Et celles de la rotation (le scénario des modes ; en dehors, le jour est celui 
 
 Et la variable `nota_criterios` : la note de la montre selon les critères, à l'instant du calcul.
 
+Et la variable `marca` : la marque de la montre, le nom dans le registre des marques (vide sans marque).
+
 Sur la page **Définitions**, chaque formule a le bouton **Tester sur toutes les montres**, qui montre le résultat sur chaque
 montre avant d'enregistrer.
 
@@ -192,7 +195,7 @@ avant d'enregistrer.
 | `FAIXAS(x; 25; 50; 75; 100)` | un petit tableau par tranches ("jusqu'à 25", "26 à 50"...), celles sans `x` dans "sans valeur", et le total |
 
 À l'intérieur, tout ce qui marche dans une formule marche (les champs, les formules, `SE`, `DIAS_DESDE`...), calculé sur
-chaque montre, ainsi que ce que montre chaque colonne du tableau : `codigo`, `nome`, `tipo`, `estado`, `disponivel`,
+chaque montre, ainsi que ce que montre chaque colonne du tableau : `codigo`, `nome`, `marca`, `tipo`, `estado`, `disponivel`,
 `em_uso`, `carga`, `ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (combien d'alertes elle a)
 et `posse`. À l'extérieur, seulement des nombres, des textes et les fonctions qui n'ont pas besoin d'une montre (`SE`,
 `MIN`, `ARREDONDA`, les calculs). Les nouvelles fonctions `MES(data)`, `ANO(data)` et `MES_ANO(data)` servent à regrouper
@@ -703,6 +706,21 @@ révision et la durée de la pile arrivent cochés. Un champ que le calibre déf
 l'enlever. Par l'API : `recurso=documentos` avec `calibre=` (et `calibre_id` dans `enviar`), `recurso=config` avec
 `calibre_campos` et `recurso=campos` avec `calibre`.
 
+### Les marques
+
+La **marque** est celle qui a fait la montre : Casio, Seiko, Orient. C’est un registre, comme le calibre : dans l’onglet
+**Marques** de la page **Définitions**, chaque marque a le nom, le pays, le site et une observation, et montre les montres qui
+pointent vers elle. Dans la fiche de la montre, choisissez la **Marque**. Son nom apparaît dans la colonne **Marque** du
+tableau de la page **Aujourd’hui** (avec le tri et le filtre par marque), dans les **Données de la montre**, dans la galerie,
+dans le passeport, dans les statistiques, dans les rapports, et dans les formules et les totaux par la variable `marca`.
+
+Le nom ne se répète pas : *Casio* et *CASIO* sont la même marque. Deux graphies qui existent déjà deviennent une seule avec
+**Fusionner dans**, dans le formulaire de la marque qui part : ses montres passent à l’autre. Supprimer une marque laisse ses
+montres sans marque (la suppression dit combien). Jusqu’à la v52, la marque était un champ texte de chaque montre ; la v52 a
+transformé chaque texte en une marque du registre, en fusionnant les graphies égales. Par l’API : `recurso=marcas` (la liste,
+avec les montres de chacune), `recurso=marcas` avec `acao=salvar`, `juntar` ou `excluir`, et `recurso=relogio`,
+`acao=salvar`, avec `marca_id` (ou `marca`, par le nom).
+
 ### Les unités
 
 Chaque arbre a son **registre d'unités**, dans l'onglet **Unités** de la page **Définitions** : le **symbole** (ce qui vient
@@ -1090,13 +1108,13 @@ des documents quittent le disque aussitôt. Par l'API, toute suppression demande
 
 ## La fiche de chaque montre, champ par champ
 
-Chaque montre a un **nom**, un **groupe**, une **situation dans la collection**, **disponible** et une **photo**. Le reste, ce sont des **champs**, et les champs
+Chaque montre a un **nom**, une **marque**, un **groupe**, une **situation dans la collection**, **disponible** et une **photo**. Le reste, ce sont des **champs**, et les champs
 qu'une montre possède dépendent de son **groupe** : tout ce qui est enregistré dans un groupe vaut pour lui et pour tous les
 groupes en dessous. C'est pourquoi « être automatique » n'est pas une case à part : c'est être dans le groupe
 **Automatique** (ou dans un de ses sous-groupes), et hériter ainsi des champs du poignet et du remontoir.
 
 ```text
-(toutes les montres)      Observation, Votre note, Achat, Garantie, Seuil de charge, Marque, Référence, Lien
+(toutes les montres)      Observation, Votre note, Achat, Garantie, Seuil de charge, Référence, Lien
                           (seulement pour les désirées : Prix cible, Priorité de l'envie)
 ├── Smartwatch            Autonomie en usage réel, Consommation en usage, Consommation au repos, Sur le chargeur : heures pour remplir
 └── Traditionnelle        Dernière révision, Révision tous les
@@ -1228,7 +1246,6 @@ tout seul dans le dossier la minute suivante, grâce au cron (le même qui récu
 | **Prix payé** (R$) `valor_compra` | | Aussi dans le critère *Nouveauté et valeur* (*rentabiliser l'investissement*) : la plus chère monte un peu (jusqu'à 300 R$ : note 30 ; au-dessus de 1 500 R$ : 90). |
 | **Lieu d'achat** `loja` | | Texte, affiché dans le cadre Achat. N'entre dans aucun calcul. |
 | **Garantie jusqu'au** `garantia_ate` | | Date. L'alerte *« Garantie qui expire »* part 30 jours avant. |
-| **Marque** `marca` | | Texte. N'entre dans aucun calcul ; apparaît dans la liste d'envies. |
 | **Référence (le modèle)** `referencia` | | Texte : le modèle, la référence du fabricant. Apparaît dans la liste d'envies. |
 | **Lien (la page de la montre)** `link` | | L'adresse de la page de la montre (la boutique, le fabricant). Dans la liste d'envies, il devient le lien **ouvrir la page** (seulement ceux qui commencent par `http://` ou `https://`). |
 | **Alerter quand la charge atteint** (%) `carga_minima` | le général | Le **seuil de charge** de cette montre : le point où part l'alerte pour charger (smartwatch), mettre au soleil (solaire) ou remonter/mettre sur le remontoir (mécanique). Vide, c'est le général du type qui s'applique : sur la smartwatch, celui de la Configuration (*« Charger quand la charge estimée atteint »*, 20 %) ; sur la solaire, celui de la solaire dans la Configuration (70 %) ; sur la mécanique, 0 % (la réserve qui s'épuise). Voir [Les alertes de charge](#les-alertes-de-charge). |
@@ -1680,7 +1697,7 @@ temps et le pourcentage dans chaque état.</sub>
 ![Sur le téléphone : la page Aujourd'hui, la liste des montres en cartes et le panneau d'une montre en plein écran](docs/telas/celular.png)
 
 <sub>Sur le téléphone : le menu se replie dans une barre, les tableaux deviennent des cartes et des fiches, chaque donnée dans une case avec son nom, rien en vrac (rien ne dépasse la largeur de
-l'écran, et aucun champ ne disparaît : chaque carte de montre reprend les 12 colonnes du tableau) et le panneau de la montre
+l'écran, et aucun champ ne disparaît : chaque carte de montre reprend les 13 colonnes du tableau) et le panneau de la montre
 s'ouvre en plein écran ; le « retour » de l'appareil ferme le panneau.</sub>
 
 **Téléphone, tablette et ordinateur**, avec le même aspect :
@@ -1691,8 +1708,8 @@ s'ouvre en plein écran ; le « retour » de l'appareil ferme le panneau.</sub>
 | de 901 à 1199 px (tablette en paysage, petit portable) | le menu dans la barre ; la montre ouverte « à côté de la liste » glisse depuis la droite, avec le fond assombri, au lieu de comprimer la liste |
 | 1200 px ou plus (ordinateur) | le panneau à côté de la liste (ou la fenêtre flottante, selon la Configuration) |
 
-**Les mêmes informations partout.** Le tableau des montres a toujours les 12 colonnes (code, montre, type, état, charge,
-dernier port, prochain entretien, dans, quoi faire, délaissée, achetée le et valeur), les 11 filtres et le tri par n'importe quelle
+**Les mêmes informations partout.** Le tableau des montres a toujours les 13 colonnes (code, montre, marque, type, état, charge,
+dernier port, prochain entretien, dans, quoi faire, délaissée, achetée le et valeur), les 12 filtres et le tri par n'importe quelle
 colonne, sur l'ordinateur, la tablette et le téléphone ; rien n'est caché faute de place (la seule exception est voulue : avec
 la case **Alerter quand une montre est délaissée** décochée dans la Configuration, la colonne Délaissée et son filtre
 disparaissent à toutes les tailles). Quand tout le tableau tient dans la
@@ -1760,7 +1777,7 @@ formule, le Vaut pour est sa version pour ce point de l'arbre. Un sous-écran fe
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#les-modes-de-rotation). |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
-| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#les-totaux)), les calibres (l'onglet **Calibres** : voir [Les calibres](#les-calibres)), les sections de la fiche (l'onglet **Sections** : voir [Les sections de la fiche](#les-sections-de-la-fiche)), les unités (l'onglet **Unités** : voir [Les unités](#les-unités)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
+| **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#les-totaux)), les calibres (l'onglet **Calibres** : voir [Les calibres](#les-calibres)), les marques (l’onglet **Marques** : voir [Les marques](#les-marques)), les sections de la fiche (l'onglet **Sections** : voir [Les sections de la fiche](#les-sections-de-la-fiche)), les unités (l'onglet **Unités** : voir [Les unités](#les-unités)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
 | **Exécutions du cron** (`execucoes.php`) | Ce que le cron a fait à chaque passage, combien de temps il a pris et les erreurs, avec des filtres. |
 | **Mon compte** (`conta.php`, menu **Compte › Mon compte**) | Les collections que vous voyez (ouvrir, créer, renommer, supprimer, quitter), vos arbres de groupes (copier, renommer, supprimer), demander l'accès à la collection de quelqu'un (par le code donné par le propriétaire), vos données (votre code, l'e-mail, la langue, le mode de l'interface, le mot de passe), l'**application sur le téléphone** (mémoriser cet appareil, installer, les appareils mémorisés), les **jetons d'API** (pour vos scripts), les **notifications sur cet appareil** (le Web Push), l'**envoi de vos e-mails** (par le serveur du système ou par le vôtre : Gmail, Outlook) et supprimer le compte. Voir [Plusieurs personnes](#plusieurs-personnes--comptes-collections-et-accès) et [L'application sur le téléphone](#lapplication-sur-le-téléphone). |
 | **Approbations** (`aprovacoes.php`) | Les demandes d'accès à vos collections (approuver, refuser), les invitations que des membres ont faites et qui vous attendent, **Inviter** (par e-mail), les invitations que vous avez faites et qui voit vos collections (retirer l'accès). Le menu affiche **Approbations (N)** quand quelque chose attend. |
@@ -2005,6 +2022,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `config`, `cron` | la configuration de la collection (avec le résumé des destinations et des agendas et l'état du cron : jamais exécuté, arrêté ou en marche) ; les exécutions du cron, avec le résumé de la période. Dans `cron` : `de=` et `ate=` (date, ou date et heure), `situacao=` (`atividade`, par défaut ; `erro`, `nada` ou `todas`), `busca=` (texte dans le journal), `limite=` (100 par défaut, 1000 au maximum) et `pagina=` ; chacun vaut aussi avec `cron_` devant (`cron_de`...) |
 | `arvore`, `cadastros` | les groupes ; tout ce que montre la page Définitions |
 | `unidades` | les unités de l'arbre (l'onglet **Unités** des Définitions), dans l'ordre des grandeurs, chacune avec la conversion en texte et combien de champs, de types et de formules l'utilisent |
+| `marcas` | les marques de l’arbre (l’onglet **Marques** des Définitions), chacune avec le pays, le site, l’observation et ses montres |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
@@ -2035,7 +2053,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 
 | Ressource | Actions |
 |---|---|
-| `relogio` | `salvar` (créer ou modifier), `excluir` (avec les documents), `foto`, `remover_foto` |
+| `relogio` | `salvar` (créer ou modifier), `excluir` (avec les documents), `foto`, `remover_foto` ; la marque, par `marca_id` ou par le nom dans `marca` |
 | `documentos` | `enviar` (un ou plusieurs fichiers, avec la catégorie, le titre, la date, la description et, pour une photo, la vignette), `alterar`, `excluir` |
 | `servicos` | `salvar` (la date, le type, l'entretien ou l'atelier, la main-d'œuvre, les pièces, l'étanchéité, la marche avant et après, la garantie et les documents ; le type qui marque une saisie devient aussi la saisie), `excluir` |
 | `manutencao` | `salvar` (enregistrer envoie la montre à l'atelier), `situacao` (celui qui clôt devient un service), `excluir` |
@@ -2048,6 +2066,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `documento_categorias` | `nova`, `alterar`, `excluir` (seulement sans documents) |
 | `secoes` | les sections de la fiche : `salvar` (le nom ; `id=0` crée à la fin), `ordem` (`direcao=sobe` ou `desce`), `excluir` (ses champs restent sans section, à la fin) |
 | `unidades` | `salvar` (le symbole, le nom, la base et le facteur, le zéro et l'afficher aussi en ; le nouveau symbole passe à qui l'utilise), `excluir` (seulement sans usage ; emporte celles qui se convertissent en elle) |
+| `marcas` | `salvar` (le nom, sans répéter une autre ; le pays, le site et l’observation), `juntar` (`em_id` : les montres passent à l’autre, et celle-ci part), `excluir` (les montres restent sans marque) |
 | `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du soleil, du chargeur ; du remontoir, mettre se fait par la page Remontoirs, `winder_posicoes`, sauf si la montre a sa place libre : alors elle y retourne), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone ; sur le remontoir, n'ouvre que pour le retour à la place), `periodo` (une période déjà passée ; sur le remontoir, avec la position, `posicao_id` ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour Un `iniciar` qui commence à la même minute où un tronçon du même type s’est terminé s’y raccorde (il redevient ouvert), et un `periodo` sans `fim` reste ouvert, du début jusqu’à maintenant. |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |

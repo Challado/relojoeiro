@@ -39,6 +39,10 @@
       if (f.tipo && tr.dataset.tipo !== f.tipo) {
         ok = false;
       }
+      // a marca: a escolhida, ou os sem marca
+      if (f.marca && (f.marca === t("(sem marca)") ? tr.dataset.marca !== "" : tr.dataset.marca !== f.marca)) {
+        ok = false;
+      }
       // duas sessões abertas juntas vêm como "No sol · No winder": vale cada uma
       if (f.estado && tr.dataset.estadoTxt.split(" · ").indexOf(f.estado) < 0) {
         ok = false;
@@ -302,7 +306,7 @@
 
     // linhas montadas com os dados da API (ao abrir e depois de cada lançamento, sem recarregar a página): troca as
     // linhas e reaplica a ordem e os filtros que estavam escolhidos (as opções dos filtros podem ter chegado agora)
-    // As 12 colunas sempre, em qualquer tela: quando a tabela inteira não cabe na largura que tem (celular, tablet, o
+    // As 13 colunas sempre, em qualquer tela: quando a tabela inteira não cabe na largura que tem (celular, tablet, o
     // painel aberto ao lado), cada relógio vira um cartão com todos os campos (estilo.css, .em-cartoes). A conta é com
     // todos os relógios à mostra, para um filtro não trocar a forma da lista; tudo no mesmo quadro, sem piscar
     var rolagem = document.getElementById("rolagem-relogios");

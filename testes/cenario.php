@@ -797,7 +797,8 @@ $sec_ids = [];
 foreach ($cad_s["secoes"] ?? [] as $x) {
     $sec_ids[$x["nome"]] = $x["id"];
 }
-$marca_s = array_values(array_filter($cad_s["campos"] ?? [], function ($c) { return $c["identificador"] === "marca"; }))[0] ?? [];
+// a referência (o modelo) fica na divisória Identificação do modelo (a marca, até a v52 um campo dela, é o cadastro das marcas)
+$marca_s = array_values(array_filter($cad_s["campos"] ?? [], function ($c) { return $c["identificador"] === "referencia"; }))[0] ?? [];
 if (count($sec_ids) < 7 || ($marca_s["secao_id"] ?? null) !== ($sec_ids["Identificação"] ?? -1)) {
     $falhas[] = "divisórias: as do modelo não vieram (" . implode(", ", array_keys($sec_ids)) . ")";
 }
@@ -1191,6 +1192,30 @@ escrever(["recurso" => "rodizio", "acao" => "periodo", "de" => substr(dia(3, "00
 escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => "hoje", "tipo" => "pulso", "inicio" => dia(20, "08:00"), "fim" => dia(20, "09:00")]);
 // um aviso que sai na hora
 escrever(["recurso" => "avisos", "acao" => "alterar", "id" => (int)(array_values(array_filter($cad["avisos"] ?? [], function ($a) { return $a["identificador"] === "leitura"; }))[0]["id"] ?? 0), "na_hora" => 1]);
+// o cadastro das marcas: criar (o nome sem repetir outra, sem diferença de maiúsculas nem de espaços; o site com http),
+// juntar duas grafias, excluir com a pergunta; o relógio aponta para uma pelo id ou pelo nome (um nome fora do cadastro é
+// recusado); a variável marca das fórmulas lê o cadastro; um campo não pode se chamar marca
+$m_gs = escrever(["recurso" => "marcas", "acao" => "salvar", "id" => 0, "nome" => "Grand Seiko", "pais" => "Japão", "site" => "https://www.grand-seiko.com"]);
+$m_casio = escrever(["recurso" => "marcas", "acao" => "salvar", "id" => 0, "nome" => "Casio", "pais" => "Japão"]);
+$m_orient = escrever(["recurso" => "marcas", "acao" => "salvar", "id" => 0, "nome" => "Orient", "observacao" => "Do grupo Epson."]);
+escrever(["recurso" => "marcas", "acao" => "salvar", "id" => 0, "nome" => "  CASIO "], false);
+escrever(["recurso" => "marcas", "acao" => "salvar", "id" => 0, "nome" => " "], false);
+escrever(["recurso" => "marcas", "acao" => "salvar", "id" => 0, "nome" => "Seiko", "site" => "seiko.com"], false);
+$m_dupla = escrever(["recurso" => "marcas", "acao" => "salvar", "id" => 0, "nome" => "Casio Computer"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "marca_id" => $m_dupla]);
+escrever(["recurso" => "marcas", "acao" => "juntar", "id" => $m_dupla, "em_id" => $m_dupla], false);
+escrever(["recurso" => "marcas", "acao" => "juntar", "id" => $m_dupla, "em_id" => $m_casio]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "marca" => "Marca que não existe"], false);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "marca_id" => 999999], false);
+$m_sai = escrever(["recurso" => "marcas", "acao" => "salvar", "id" => 0, "nome" => "Marca de teste"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "marca" => "marca de TESTE"]);
+escrever(["recurso" => "marcas", "acao" => "excluir", "id" => $m_sai], false);
+escrever(["recurso" => "marcas", "acao" => "excluir", "id" => $m_sai, "confirmar" => 1]);
+escrever(["recurso" => "marcas", "acao" => "salvar", "id" => $m_orient, "pais" => "Japão"]);
+escrever(["recurso" => "campos", "acao" => "novo", "identificador" => "marca", "nome" => "Marca", "tipo" => "texto"], false);
+ler("marcas", ["recurso" => "marcas"]);
+ler("a marca nas fórmulas", ["recurso" => "calcular", "relogio" => $rel["pilha"], "expressao" => "marca"]);
+ler("ficha com a marca", ["recurso" => "ficha", "relogio" => $rel["pilha"]]);
 // a situação na coleção e a lista de desejos: dois desejados (o disponível pedido é ignorado, com a nota), um campo só nos
 // desejados, o preço-alvo recusado num relógio da coleção, uma situação que não existe; emprestar, vender (os dias dele no
 // plano de amanhã em diante são sorteados de novo), comprar o desejado e trazer o emprestado de volta

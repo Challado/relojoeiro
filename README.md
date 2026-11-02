@@ -102,6 +102,7 @@ flowchart LR
 | **Divisórias** | As seções da ficha, criadas por você: cada campo fica numa delas, e a ficha, o painel, o passaporte e os relatórios mostram os campos agrupados, na ordem delas. | *Identificação*, *Compra*, *Construção*, *Energia* |
 | **Unidades** | O que vai depois do número, cadastrado por você: o símbolo, o nome e a conversão (a polegada em milímetros). Os campos, os tipos de lançamento e as fórmulas escolhem a unidade da lista, e o valor pode aparecer também em outra unidade. | `47 mm (1,85 pol)` |
 | **Calibres** | O movimento do relógio, com o que é dele: o fabricante, o manual técnico, as recomendações e os valores dos campos. O relógio com um calibre usa o valor dele mesmo, senão o do calibre, senão o padrão do campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/dia |
+| **Marcas** | Quem fez o relógio, num cadastro: o nome, o país e o site. Cada relógio aponta para uma, e o nome dela aparece na tabela, na ficha, nos relatórios e nas fórmulas. | `Seiko`, `Casio` |
 | **Tipos de lançamento** | O que acontece com um relógio. Pode ser **instantâneo** (corda, troca de pilha), **com valor** (leitura de carga: 68%) ou uma **sessão** com início e fim (no pulso, no winder, no sol). | `sol`: sessão que fecha sozinha às 18h se você esquecer |
 | **Fórmulas** | Contas sobre os campos e os lançamentos. A mesma fórmula pode ter **uma versão por grupo**, e vale a do grupo mais perto do relógio. | `energia` é a bateria no smartwatch, a reserva no mecânico, a luz no solar e a vida da pilha no quartzo |
 | **Avisos** | Uma data prevista por fórmula, uma antecedência, um texto e o lançamento que resolve o aviso. | *"Dar corda no Orient: a reserva acaba às 15h"*, e o botão **Corda** resolve |
@@ -159,6 +160,8 @@ E as do rodízio (o roteiro dos modos; fora dele, o dia é o do instante da cont
 
 E a variável `nota_criterios`: a nota do relógio pelos critérios, no instante da conta.
 
+E a variável `marca`: a marca do relógio, o nome no cadastro das marcas (vazio sem marca).
+
 Na página **Cadastros** toda fórmula tem o botão **Testar em todos os relógios**, que mostra o resultado em cada relógio antes
 de gravar.
 
@@ -184,7 +187,7 @@ relógios** mostra o resultado antes de gravar.
 | `FAIXAS(x; 25; 50; 75; 100)` | uma tabelinha por faixas ("até 25", "26 a 50"...), os sem `x` em "sem valor", e o total |
 
 Dentro delas vale tudo o que vale numa fórmula (os campos, as fórmulas, `SE`, `DIAS_DESDE`...), calculado em cada relógio, e
-também o que cada coluna da tabela mostra: `codigo`, `nome`, `tipo`, `estado`, `disponivel`, `em_uso`, `carga`, `ultimo_uso`,
+também o que cada coluna da tabela mostra: `codigo`, `nome`, `marca`, `tipo`, `estado`, `disponivel`, `em_uso`, `carga`, `ultimo_uso`,
 `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (quantos avisos ele tem) e `posse`. Fora delas, só números,
 textos e as funções que não precisam de um relógio (`SE`, `MIN`, `ARREDONDA`, as contas). As funções novas `MES(data)`,
 `ANO(data)` e `MES_ANO(data)` servem para agrupar por mês e por ano, e valem também nas fórmulas. Exemplos:
@@ -675,6 +678,20 @@ esperada, o limite do desvio, a corda pela coroa, a autonomia, os decaimentos, a
 calibre já define aparece sempre, para poder tirar. Pela API: `recurso=documentos` com `calibre=` (e `calibre_id` no
 `enviar`), `recurso=config` com `calibre_campos` e `recurso=campos` com `calibre`.
 
+### As marcas
+
+A **marca** é quem fez o relógio: Casio, Seiko, Orient. Ela é um cadastro, como o calibre: na aba **Marcas** da página
+**Cadastros**, cada marca tem o nome, o país, o site e uma observação, e mostra os relógios que apontam para ela. No cadastro
+do relógio, escolha a **Marca**. O nome dela aparece na coluna **Marca** da tabela da página **Hoje** (com a ordem e o filtro
+por marca), nos **Dados do relógio**, na galeria, no passaporte, nas estatísticas, nos relatórios, e nas fórmulas e nos
+totais pela variável `marca`.
+
+O nome não se repete: *Casio* e *CASIO* são a mesma marca. Duas grafias que já existem viram uma pelo **Juntar em**, no
+formulário da marca que sai: os relógios dela passam para a outra. Excluir uma marca deixa os relógios dela sem marca (a
+exclusão diz quantos). Até a v52, a marca era um campo de texto de cada relógio; a v52 transformou cada texto numa marca do
+cadastro, juntando as grafias iguais. Pela API: `recurso=marcas` (a lista, com os relógios de cada uma), `recurso=marcas`
+com `acao=salvar`, `juntar` ou `excluir`, e `recurso=relogio`, `acao=salvar`, com `marca_id` (ou `marca`, pelo nome).
+
 ### As unidades
 
 Cada árvore tem o seu **cadastro de unidades**, na aba **Unidades** da página **Cadastros**: o **símbolo** (o que vai depois
@@ -1027,13 +1044,13 @@ disco na hora. Pela API, toda exclusão pede `confirmar=1`.
 
 ## O cadastro de cada relógio, campo por campo
 
-Todo relógio tem **nome**, **grupo**, **situação na coleção**, **disponível** e **foto**. O resto são **campos**, e quais campos um relógio tem depende
+Todo relógio tem **nome**, **marca**, **grupo**, **situação na coleção**, **disponível** e **foto**. O resto são **campos**, e quais campos um relógio tem depende
 do **grupo** dele: tudo o que é cadastrado num grupo vale para ele e para todos os grupos abaixo. É por isso que "ser
 automático" não é uma marcação à parte: é estar no grupo **Automático** (ou num subgrupo dele), e com isso herdar os campos de
 pulso e de winder.
 
 ```text
-(todos os relógios)       Observação, Sua nota, Compra, Garantia, Limite de carga, Marca, Referência, Link
+(todos os relógios)       Observação, Sua nota, Compra, Garantia, Limite de carga, Referência, Link
                           (só nos desejados: Preço-alvo, Prioridade do desejo)
 ├── Smartwatch            Autonomia em uso real, Decaimento em uso, Decaimento guardado, No carregador: horas para encher
 └── Tradicional           Última revisão, Revisão a cada
@@ -1160,7 +1177,6 @@ no minuto seguinte, pelo cron (o mesmo que recupera um arquivo sumido).
 | **Valor pago** (R$) `valor_compra` | | Também no critério *Novidade e valor* (*aproveitar o investimento*): o mais caro sobe um pouco (até R$ 300: nota 30; acima de R$ 1.500: 90). |
 | **Onde comprou** `loja` | | Texto, mostrado no quadro Compra. Não entra em conta. |
 | **Garantia até** `garantia_ate` | | Data. O aviso *"Garantia vencendo"* sai 30 dias antes. |
-| **Marca** `marca` | | Texto. Não entra em conta; aparece na lista de desejos. |
 | **Referência (o modelo)** `referencia` | | Texto: o modelo, a referência do fabricante. Aparece na lista de desejos. |
 | **Link (a página do relógio)** `link` | | O endereço da página do relógio (a loja, o fabricante). Na lista de desejos vira o link **abrir a página** (só os que começam com `http://` ou `https://`). |
 | **Avisar quando a carga chegar a** (%) `carga_minima` | o geral | O **limite de carga** deste relógio: o ponto em que sai o aviso de carregar (smartwatch), de pôr no sol (solar) ou de dar corda/pôr no winder (mecânico). Vazio, vale o geral do tipo: no smartwatch, o da Configuração (*"Carregar quando a carga estimada chegar a"*, 20%); no solar, o do solar na Configuração (70%); no mecânico, 0% (a reserva acabando). Veja [Os avisos de carga](#os-avisos-de-carga). |
@@ -1597,7 +1613,7 @@ porcentagem em cada estado.</sub>
 ![No celular: a página Hoje, a lista dos relógios em cartões e o painel de um relógio em tela cheia](docs/telas/celular.png)
 
 <sub>No celular: o menu fica recolhido numa barra, as tabelas viram cartões e fichas, cada dado numa casinha com o nome dele, sem nada solto (nada passa da largura da tela, e nenhum campo
-some: cada cartão de relógio traz as 12 colunas da tabela) e o painel do relógio abre em tela cheia; o "voltar" do aparelho fecha
+some: cada cartão de relógio traz as 13 colunas da tabela) e o painel do relógio abre em tela cheia; o "voltar" do aparelho fecha
 o painel.</sub>
 
 **Celular, tablet e computador**, com o mesmo visual:
@@ -1608,8 +1624,8 @@ o painel.</sub>
 | de 901 a 1199 px (tablet deitado, notebook pequeno) | o menu na barra; o relógio aberto "ao lado da lista" desliza por cima, pela direita, com o fundo escurecido, em vez de espremer a lista |
 | 1200 px ou mais (computador) | o painel ao lado da lista (ou a janela flutuante, conforme a Configuração) |
 
-**A mesma informação em todos.** A tabela dos relógios tem sempre as 12 colunas (código, relógio, tipo, estado, carga, última
-vez usado, próxima manutenção, em, o que fazer, encostado, comprado em e valor), os 11 filtros e a ordem por qualquer coluna, no
+**A mesma informação em todos.** A tabela dos relógios tem sempre as 13 colunas (código, relógio, marca, tipo, estado, carga, última
+vez usado, próxima manutenção, em, o que fazer, encostado, comprado em e valor), os 12 filtros e a ordem por qualquer coluna, no
 computador, no tablet e no celular; nada é escondido por falta de espaço (a única exceção é de propósito: com a caixa **Avisar
 quando um relógio fica encostado** desmarcada na Configuração, a coluna Encostado e o filtro dela somem em todos os tamanhos). Quando a tabela inteira cabe na largura que ela tem de
 verdade (com ou sem o painel aberto ao lado), ela aparece como tabela, e o texto de uma célula quebra linha só se precisar.
@@ -1671,7 +1687,7 @@ ponto da árvore. A subtela fechada também fica fechada naquele aparelho.
 | **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
-| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as divisórias da ficha (a aba **Divisórias**: veja [As divisórias da ficha](#as-divisórias-da-ficha)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
+| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as marcas (a aba **Marcas**: veja [As marcas](#as-marcas)), as divisórias da ficha (a aba **Divisórias**: veja [As divisórias da ficha](#as-divisórias-da-ficha)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, o modo da interface, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push), o **envio dos seus e-mails** (pelo servidor do sistema ou pelo seu: o Gmail, o Outlook) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
@@ -1904,6 +1920,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `config`, `cron` | a configuração da coleção (com o resumo dos destinos e das agendas e a situação do cron: nunca rodou, parado ou rodando); as execuções do cron, com o resumo do período. No `cron`: `de=` e `ate=` (data, ou data e hora), `situacao=` (`atividade`, o padrão; `erro`, `nada` ou `todas`), `busca=` (texto no registro), `limite=` (padrão 100, máximo 1000) e `pagina=`; cada um também vale com `cron_` na frente (`cron_de`...) |
 | `arvore`, `cadastros` | os grupos; tudo o que a página Cadastros mostra |
 | `unidades` | as unidades da árvore (a aba **Unidades** dos Cadastros), na ordem das grandezas, cada uma com a conversão em texto e quantos campos, tipos e fórmulas a usam |
+| `marcas` | as marcas da árvore (a aba **Marcas** dos Cadastros), cada uma com o país, o site, a observação e os relógios dela |
 | `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios (`relogio=` um id ou vários; sem ele, todos), sem gravar, com as partes da conta; fórmula mal escrita: 400 com os erros |
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
@@ -1934,7 +1951,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 
 | Recurso | Ações |
 |---|---|
-| `relogio` | `salvar` (criar ou alterar), `excluir` (com os documentos), `foto`, `remover_foto` |
+| `relogio` | `salvar` (criar ou alterar), `excluir` (com os documentos), `foto`, `remover_foto`; a marca, por `marca_id` ou pelo nome em `marca` |
 | `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
 | `servicos` | `salvar` (a data, o tipo, a manutenção ou a oficina, a mão de obra, as peças, a estanqueidade, a marcha antes e depois, a garantia e os documentos; o tipo que marca um lançamento vira também a marcação), `excluir` |
 | `manutencao` | `salvar` (cadastrar manda o relógio para a oficina), `situacao` (a que encerra vira serviço), `excluir` |
@@ -1947,6 +1964,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `documento_categorias` | `nova`, `alterar`, `excluir` (só sem documentos) |
 | `secoes` | as divisórias da ficha: `salvar` (o nome; `id=0` cria no fim), `ordem` (`direcao=sobe` ou `desce`), `excluir` (os campos dela ficam sem divisória, no fim) |
 | `unidades` | `salvar` (o símbolo, o nome, a base e o fator, o zero e o mostrar também em; o símbolo novo vai junto para quem o usa), `excluir` (só sem uso; leva junto as que se convertem nela) |
+| `marcas` | `salvar` (o nome, sem repetir outra; o país, o site e a observação), `juntar` (`em_id`: os relógios passam para a outra, e esta sai), `excluir` (os relógios ficam sem marca) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do sol, do carregador; do winder, o pôr é pela página Winders, o `winder_posicoes`, a não ser que o relógio tenha o lugar dele livre: aí volta para lá), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular; no winder, abre só de volta ao lugar), `periodo` (um período que já passou; no winder, com a posição, `posicao_id`; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia O `iniciar` que começa no mesmo minuto em que acabou um trecho do mesmo tipo emenda nele (ele volta a ficar aberto), e o `periodo` sem `fim` fica aberto, do início até agora. |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |

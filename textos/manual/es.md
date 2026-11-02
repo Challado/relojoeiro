@@ -1,4 +1,4 @@
-<!-- origem: 809d49f5a1d6e55a4b4c64ad1023e218737db127 -->
+<!-- origem: 0c85f2ac6f7d7984b1b1c97963ae162e52b2ec75 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -55,6 +55,7 @@ flowchart LR
 | **Secciones** | Las secciones de la ficha, creadas por usted: cada campo queda en una de ellas, y la ficha, el panel, el pasaporte y los informes muestran los campos agrupados, en su orden. | *Identificación*, *Compra*, *Construcción*, *Energía* |
 | **Unidades** | Lo que va después del número, registrado por usted: el símbolo, el nombre y la conversión (la pulgada en milímetros). Los campos, los tipos de registro y las fórmulas eligen la unidad de la lista, y el valor puede aparecer también en otra unidad. | `47 mm (1,85 pol)` |
 | **Calibres** | El movimiento del reloj, con lo que es suyo: el fabricante, el manual técnico, las recomendaciones y los valores de los campos. El reloj con un calibre usa su propio valor, si no el del calibre, si no el predeterminado del campo. | `NH35`: reserva de 41 h, marcha de −20 a +40 s/día |
+| **Marcas** | Quién hizo el reloj, en un registro: el nombre, el país y el sitio. Cada reloj apunta a una, y su nombre aparece en la tabla, la ficha, los informes y las fórmulas. | `Seiko`, `Casio` |
 | **Tipos de registro** | Lo que le pasa a un reloj. Puede ser **instantáneo** (cuerda, cambio de pila), **con valor** (lectura de carga: 68%) o una **sesión** con inicio y fin (en la muñeca, en el winder, al sol). | `sol`: una sesión que se cierra sola a las 18 h si usted se olvida |
 | **Fórmulas** | Cálculos sobre los campos y los registros. La misma fórmula puede tener **una versión por grupo**, y vale la del grupo más cercano al reloj. | `energia` es la batería en el smartwatch, la reserva en el mecánico, la luz en el solar y la vida de la pila en el cuarzo |
 | **Avisos** | Una fecha prevista por fórmula, una antelación, un texto y el registro que resuelve el aviso. | *"Dar cuerda al Orient: la reserva se acaba a las 15 h"*, y el botón **Cuerda** lo resuelve |
@@ -112,6 +113,8 @@ Y las de la rotación (el guion de los modos; fuera de él, el día es el del in
 
 Y la variable `nota_criterios`: la nota del reloj por los criterios, en el instante del cálculo.
 
+Y la variable `marca`: la marca del reloj, el nombre en el registro de marcas (vacío sin marca).
+
 En la página **Definiciones** cada fórmula tiene el botón **Probar en todos los relojes**, que muestra el resultado en cada
 reloj antes de guardar.
 
@@ -137,7 +140,7 @@ tabla, que lleva el mismo filtro). Varios totales en la misma columna van uno de
 | `FAIXAS(x; 25; 50; 75; 100)` | una tablita por rangos ("hasta 25", "26 a 50"...), los sin `x` en "sin valor", y el total |
 
 Dentro de ellas vale todo lo que vale en una fórmula (los campos, las fórmulas, `SE`, `DIAS_DESDE`...), calculado en cada
-reloj, y también lo que muestra cada columna de la tabla: `codigo`, `nome`, `tipo`, `estado`, `disponivel`, `em_uso`,
+reloj, y también lo que muestra cada columna de la tabla: `codigo`, `nome`, `marca`, `tipo`, `estado`, `disponivel`, `em_uso`,
 `carga`, `ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (cuántos avisos tiene) y `posse`.
 Fuera de ellas, solo números, textos y las funciones que no necesitan un reloj (`SE`, `MIN`, `ARREDONDA`, las cuentas). Las
 funciones nuevas `MES(data)`, `ANO(data)` y `MES_ANO(data)` sirven para agrupar por mes y por año, y valen también en las
@@ -633,6 +636,21 @@ revisión y la vida de la pila. Un campo que el calibre ya define aparece siempr
 `recurso=documentos` con `calibre=` (y `calibre_id` en `enviar`), `recurso=config` con `calibre_campos` y `recurso=campos`
 con `calibre`.
 
+### Las marcas {#as-marcas}
+
+La **marca** es quien hizo el reloj: Casio, Seiko, Orient. Es un registro, como el calibre: en la pestaña **Marcas** de la
+página **Definiciones**, cada marca tiene el nombre, el país, el sitio y una observación, y muestra los relojes que apuntan
+a ella. En el registro del reloj, elija la **Marca**. Su nombre aparece en la columna **Marca** de la tabla de la página
+**Hoy** (con el orden y el filtro por marca), en los **Datos del reloj**, en la galería, en el pasaporte, en las
+estadísticas, en los informes, y en las fórmulas y los totales por la variable `marca`.
+
+El nombre no se repite: *Casio* y *CASIO* son la misma marca. Dos grafías que ya existen se vuelven una con **Unir en**, en
+el formulario de la marca que sale: sus relojes pasan a la otra. Eliminar una marca deja sus relojes sin marca (la
+eliminación dice cuántos). Hasta la v52, la marca era un campo de texto de cada reloj; la v52 transformó cada texto en una
+marca del registro, uniendo las grafías iguales. Por la API: `recurso=marcas` (la lista, con los relojes de cada una),
+`recurso=marcas` con `acao=salvar`, `juntar` o `excluir`, y `recurso=relogio`, `acao=salvar`, con `marca_id` (o `marca`,
+por el nombre).
+
 ### Las unidades {#as-unidades}
 
 Cada árbol tiene su **registro de unidades**, en la pestaña **Unidades** de la página **Definiciones**: el **símbolo** (lo
@@ -1002,13 +1020,13 @@ los documentos salen del disco en el momento. Por la API, toda eliminación pide
 
 ## La ficha de cada reloj, campo por campo {#o-cadastro-de-cada-relógio-campo-por-campo}
 
-Todo reloj tiene **nombre**, **grupo**, **situación en la colección**, **disponible** y **foto**. El resto son **campos**, y qué campos tiene
+Todo reloj tiene **nombre**, **marca**, **grupo**, **situación en la colección**, **disponible** y **foto**. El resto son **campos**, y qué campos tiene
 un reloj depende de su **grupo**: todo lo registrado en un grupo vale para él y para todos los grupos de debajo. Por eso "ser
 automático" no es una marca aparte: es estar en el grupo **Automático** (o en un subgrupo suyo), y con eso heredar los campos
 de muñeca y de winder.
 
 ```text
-(todos los relojes)       Observación, Su nota, Compra, Garantía, Límite de carga, Marca, Referencia, Enlace
+(todos los relojes)       Observación, Su nota, Compra, Garantía, Límite de carga, Referencia, Enlace
                           (solo en los deseados: Precio objetivo, Prioridad del deseo)
 ├── Smartwatch            Autonomía en uso real, Consumo en uso, Consumo guardado, En el cargador: horas para llenar
 └── Tradicional           Última revisión, Revisión cada
@@ -1135,7 +1153,6 @@ en el minuto siguiente, por el cron (el mismo que recupera un archivo que falta)
 | **Valor pagado** (R$) `valor_compra` | | También en el criterio *Novedad y valor* (*aprovechar la inversión*): el más caro sube un poco (hasta R$ 300: nota 30; por encima de R$ 1.500: 90). |
 | **Dónde lo compró** `loja` | | Texto, mostrado en el cuadro Compra. No entra en ningún cálculo. |
 | **Garantía hasta** `garantia_ate` | | Fecha. El aviso *"Garantía venciendo"* sale 30 días antes. |
-| **Marca** `marca` | | Texto. No entra en ningún cálculo; aparece en la lista de deseos. |
 | **Referencia (el modelo)** `referencia` | | Texto: el modelo, la referencia del fabricante. Aparece en la lista de deseos. |
 | **Enlace (la página del reloj)** `link` | | La dirección de la página del reloj (la tienda, el fabricante). En la lista de deseos se convierte en el enlace **abrir la página** (solo los que empiezan por `http://` o `https://`). |
 | **Avisar cuando la carga llegue a** (%) `carga_minima` | el general | El **límite de carga** de este reloj: el punto en que sale el aviso de cargar (smartwatch), poner al sol (solar) o dar cuerda/poner en el winder (mecánico). Vacío, vale el general del tipo: en el smartwatch, el de la Configuración (*"Cargar cuando la carga estimada llegue a"*, 20%); en el solar, el del solar en la Configuración (70%); en el mecánico, 0% (la reserva acabándose). Vea [Los avisos de carga](#os-avisos-de-carga). |
@@ -1540,7 +1557,7 @@ porcentaje en cada estado.</sub>
 ![En el móvil: la página Hoy, la lista de relojes en tarjetas y el panel de un reloj a pantalla completa](docs/telas/celular.png)
 
 <sub>En el móvil: el menú se pliega en una barra, las tablas se vuelven tarjetas y fichas, cada dato en una casilla con su nombre, sin nada suelto (nada pasa del ancho de la pantalla, y
-ningún campo desaparece: cada tarjeta de reloj trae las 12 columnas de la tabla) y el panel del reloj se abre a pantalla
+ningún campo desaparece: cada tarjeta de reloj trae las 13 columnas de la tabla) y el panel del reloj se abre a pantalla
 completa; el "atrás" del aparato cierra el panel.</sub>
 
 **Móvil, tableta y ordenador**, con el mismo aspecto:
@@ -1551,8 +1568,8 @@ completa; el "atrás" del aparato cierra el panel.</sub>
 | de 901 a 1199 px (tableta en horizontal, portátil pequeño) | el menú en la barra; el reloj abierto "al lado de la lista" se desliza desde la derecha, con el fondo oscurecido, en lugar de apretar la lista |
 | 1200 px o más (ordenador) | el panel al lado de la lista (o la ventana flotante, según la Configuración) |
 
-**La misma información en todos.** La tabla de relojes siempre tiene las 12 columnas (código, reloj, tipo, estado, carga,
-último uso, próximo mantenimiento, en, qué hacer, arrinconado, comprado el y valor), los 11 filtros y la ordenación por cualquier columna, en
+**La misma información en todos.** La tabla de relojes siempre tiene las 13 columnas (código, reloj, marca, tipo, estado, carga,
+último uso, próximo mantenimiento, en, qué hacer, arrinconado, comprado el y valor), los 12 filtros y la ordenación por cualquier columna, en
 el ordenador, la tableta y el móvil; nada se esconde por falta de espacio (la única excepción es a propósito: con la casilla
 **Avisar cuando un reloj queda arrinconado** desmarcada en la Configuración, la columna Arrinconado y su filtro desaparecen en
 todos los tamaños). Cuando la tabla entera cabe en el ancho que
@@ -1619,7 +1636,7 @@ para es su versión para ese punto del árbol. La subpantalla cerrada también q
 | **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, el tipo, el criterio, las semanas y de dónde elige) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo, con la pantalla de su tipo: el nombre y el tipo; de dónde elegir (por tramo o por día de la semana), el período de la escala o el guion escrito a mano con **Probar en todos los relojes**; las semanas adelante (con la lista de las semanas); el criterio de elección y el ciclo; y, en los tipos listos, el guion generado (solo lectura, con **copiar este guion** a un Personalizado). Vea [Los modos de rotación](#os-modos-de-rodízio). |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
-| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)), las secciones de la ficha (la pestaña **Secciones**: vea [Las secciones de la ficha](#as-divisórias-da-ficha)), las unidades (la pestaña **Unidades**: vea [Las unidades](#as-unidades)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
+| **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#os-totais)), los calibres (la pestaña **Calibres**: vea [Los calibres](#os-calibres)), las marcas (la pestaña **Marcas**: vea [Las marcas](#as-marcas)), las secciones de la ficha (la pestaña **Secciones**: vea [Las secciones de la ficha](#as-divisórias-da-ficha)), las unidades (la pestaña **Unidades**: vea [Las unidades](#as-unidades)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
 | **Ejecuciones del cron** (`execucoes.php`) | Qué hizo el cron en cada vuelta, cuánto tardó y los errores, con filtros. |
 | **Mi cuenta** (`conta.php`, menú **Cuenta › Mi cuenta**) | Las colecciones que ve (abrir, crear, renombrar, eliminar, salir), sus árboles de grupos (copiar, renombrar, eliminar), pedir acceso a la colección de alguien (por el código que pasó el dueño), sus datos (su código, el correo, el idioma, el modo de la interfaz, la contraseña), la **aplicación en el celular** (recordar este aparato, instalar, los aparatos recordados), los **tokens de API** (para sus scripts), las **notificaciones en este aparato** (el Web Push), el **envío de sus correos** (por el servidor del sistema o por el suyo: Gmail, Outlook) y eliminar la cuenta. Vea [Varias personas](#várias-pessoas-contas-coleções-e-acesso) y [La aplicación en el celular](#o-aplicativo-no-celular). |
 | **Aprobaciones** (`aprovacoes.php`) | Las solicitudes de acceso a sus colecciones (aprobar, rechazar), las invitaciones que hicieron los miembros y le esperan, **Invitar** (por correo), las invitaciones que hizo y quién ve sus colecciones (quitar el acceso). El menú muestra **Aprobaciones (N)** cuando hay algo esperando. |

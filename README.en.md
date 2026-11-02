@@ -103,6 +103,7 @@ flowchart LR
 | **Sections** | The record sections, created by you: each field sits in one of them, and the record, the dashboard, the passport and the reports show the fields grouped, in their order. | *Identification*, *Purchase*, *Construction*, *Energy* |
 | **Units** | What goes after the number, registered by you: the symbol, the name and the conversion (the inch in millimetres). Fields, entry types and formulas pick the unit from the list, and the value can also appear in another unit. | `47 mm (1.85 pol)` |
 | **Calibers** | The watch's movement, with what belongs to it: the manufacturer, the technical manual, the recommendations and the field values. A watch with a caliber uses its own value, otherwise the caliber's, otherwise the field's default. | `NH35`: 41 h power reserve, rate from −20 to +40 s/day |
+| **Brands** | Who made the watch, in a registry: the name, the country and the website. Each watch points to one, and its name appears in the table, the record, the reports and the formulas. | `Seiko`, `Casio` |
 | **Entry types** | What happens to a watch. It can be **instant** (winding, battery change), **with a value** (charge reading: 68%) or a **session** with start and end (on the wrist, on the winder, in the sun). | `sol`: a session that closes by itself at 6 pm if you forget |
 | **Formulas** | Calculations over the fields and the entries. The same formula can have **one version per group**, and the one of the group closest to the watch applies. | `energia` is the battery on the smartwatch, the reserve on the mechanical, the light on the solar and the battery life on the quartz |
 | **Alerts** | An expected date by formula, a lead time, a text and the entry that resolves the alert. | *"Wind the Orient: the reserve runs out at 3 pm"*, and the **Winding** button resolves it |
@@ -160,6 +161,8 @@ And the rotation ones (the modes' script; outside it, the day is the one of the 
 
 And the variable `nota_criterios`: the watch's score by the criteria, at the moment of the calculation.
 
+And the variable `marca`: the watch's brand, the name in the brand registry (empty without a brand).
+
 On the **Definitions** page every formula has the **Test on all watches** button, which shows the result on each watch before
 saving.
 
@@ -185,7 +188,7 @@ which takes the same filter). Several totals in the same column go one under the
 | `FAIXAS(x; 25; 50; 75; 100)` | a small table by ranges ("up to 25", "26 to 50"...), the ones without `x` in "no value", and the total |
 
 Inside them works everything that works in a formula (the fields, the formulas, `SE`, `DIAS_DESDE`...), calculated on each
-watch, and also what each column of the table shows: `codigo`, `nome`, `tipo`, `estado`, `disponivel`, `em_uso`, `carga`,
+watch, and also what each column of the table shows: `codigo`, `nome`, `marca`, `tipo`, `estado`, `disponivel`, `em_uso`, `carga`,
 `ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (how many alerts it has) and `posse`. Outside
 them, only numbers, texts and the functions that don't need a watch (`SE`, `MIN`, `ARREDONDA`, the arithmetic). The new
 functions `MES(data)`, `ANO(data)` and `MES_ANO(data)` serve to group by month and by year, and also work in formulas.
@@ -688,6 +691,21 @@ autonomy, the decay rates, the service and the battery life come checked. A fiel
 so it can be removed. Through the API: `recurso=documentos` with `calibre=` (and `calibre_id` in `enviar`),
 `recurso=config` with `calibre_campos` and `recurso=campos` with `calibre`.
 
+### Brands
+
+The **brand** is who made the watch: Casio, Seiko, Orient. It is a registry, like the caliber: in the **Brands** tab of the
+**Definitions** page, each brand has the name, the country, the website and a note, and shows the watches that point to it.
+In the watch's record, choose the **Brand**. Its name appears in the **Brand** column of the **Today** page table (with sorting
+and a filter by brand), in the **Watch data**, in the gallery, in the passport, in the statistics, in the reports, and in the
+formulas and totals through the `marca` variable.
+
+The name does not repeat: *Casio* and *CASIO* are the same brand. Two spellings that already exist become one with **Join
+into**, in the form of the brand that goes away: its watches move to the other one. Deleting a brand leaves its watches
+without a brand (the deletion says how many). Until v52, the brand was a text field of each watch; v52 turned each text into
+a registry brand, joining the equal spellings. Through the API: `recurso=marcas` (the list, with each one's watches),
+`recurso=marcas` with `acao=salvar`, `juntar` or `excluir`, and `recurso=relogio`, `acao=salvar`, with `marca_id` (or `marca`,
+by name).
+
 ### Units
 
 Each tree has its own **unit register**, in the **Units** tab of the **Definitions** page: the **symbol** (what goes after
@@ -1056,13 +1074,13 @@ Through the API, every deletion asks for `confirmar=1`.
 
 ## Each watch's record, field by field
 
-Every watch has a **name**, a **group**, a **status in the collection**, **available** and a **photo**. The rest are **fields**, and which fields a watch has
+Every watch has a **name**, a **brand**, a **group**, a **status in the collection**, **available** and a **photo**. The rest are **fields**, and which fields a watch has
 depends on its **group**: everything registered in a group applies to it and to all the groups below. That's why "being
 automatic" is not a separate flag: it is being in the **Automatic** group (or in a subgroup of it), and thereby inheriting the
 wrist and winder fields.
 
 ```text
-(all watches)             Note, Your score, Purchase, Warranty, Charge limit, Brand, Reference, Link
+(all watches)             Note, Your score, Purchase, Warranty, Charge limit, Reference, Link
                           (only for wished ones: Target price, Wish priority)
 ├── Smartwatch            Real-use autonomy, Drain in use, Drain when stored, On the charger: hours to fill
 └── Traditional           Last service, Service every
@@ -1189,7 +1207,6 @@ by itself the next minute, through the cron (the same one that recovers a missin
 | **Price paid** (R$) `valor_compra` | | Also in the *Novelty and value* criterion (*make the most of the investment*): the more expensive one goes up a little (up to R$ 300: score 30; above R$ 1,500: 90). |
 | **Where bought** `loja` | | Text, shown in the Purchase box. It doesn't enter any calculation. |
 | **Warranty until** `garantia_ate` | | Date. The *"Warranty expiring"* alert goes out 30 days before. |
-| **Brand** `marca` | | Text. It doesn't enter any calculation; it appears in the wishlist. |
 | **Reference (the model)** `referencia` | | Text: the model, the manufacturer's reference. It appears in the wishlist. |
 | **Link (the watch's page)** `link` | | The address of the watch's page (the store, the manufacturer). In the wishlist it becomes the **open the page** link (only those starting with `http://` or `https://`). |
 | **Alert when the charge reaches** (%) `carga_minima` | the general one | This watch's **charge limit**: the point at which the alert to charge (smartwatch), put in the sun (solar) or wind/put on the winder (mechanical) goes out. Empty, the type's general one applies: on the smartwatch, the one in Settings (*"Charge when the estimated charge reaches"*, 20%); on the solar, the solar one in Settings (70%); on the mechanical, 0% (the reserve running out). See [The charge alerts](#the-charge-alerts). |
@@ -1630,7 +1647,7 @@ percentage in each state.</sub>
 ![On the phone: the Today page, the list of watches as cards and a watch's panel full screen](docs/telas/celular.png)
 
 <sub>On the phone: the menu is folded into a bar, the tables become cards and sheets, each value in a small box with its name, nothing loose (nothing goes beyond the width of the screen, and no
-field disappears: each watch card brings the table's 12 columns) and the watch's panel opens full screen; the device's "back"
+field disappears: each watch card brings the table's 13 columns) and the watch's panel opens full screen; the device's "back"
 closes the panel.</sub>
 
 **Phone, tablet and computer**, with the same look:
@@ -1641,8 +1658,8 @@ closes the panel.</sub>
 | from 901 to 1199 px (tablet lying down, small notebook) | the menu in the bar; the watch opened "next to the list" slides over from the right, with the background darkened, instead of squeezing the list |
 | 1200 px or more (computer) | the panel next to the list (or the floating window, according to Settings) |
 
-**The same information on all of them.** The watch table always has the 12 columns (code, watch, type, state, charge, last
-worn, next service, in, what to do, idle, bought on and value), the 11 filters and sorting by any column, on the computer, the tablet
+**The same information on all of them.** The watch table always has the 13 columns (code, watch, brand, type, state, charge, last
+worn, next service, in, what to do, idle, bought on and value), the 12 filters and sorting by any column, on the computer, the tablet
 and the phone; nothing is hidden for lack of space (the only exception is on purpose: with the **Warn when a watch becomes
 idle** box unchecked in Settings, the Idle column and its filter disappear at every size). When the whole table fits the width it really has (with or without the
 panel open next to it), it appears as a table, and a cell's text wraps only if it needs to. When it doesn't fit, each watch
@@ -1707,7 +1724,7 @@ of the tree. A closed sub-panel also stays closed on that device.
 | **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#the-rotation-modes). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
-| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#totals)), the calibers (the **Calibers** tab: see [Calibers](#calibers)), the record sections (the **Sections** tab: see [Record sections](#record-sections)), the units (the **Units** tab: see [Units](#units)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
+| **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#totals)), the calibers (the **Calibers** tab: see [Calibers](#calibers)), the brands (the **Brands** tab: see [Brands](#brands)), the record sections (the **Sections** tab: see [Record sections](#record-sections)), the units (the **Units** tab: see [Units](#units)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
 | **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the interface mode, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push), the **sending of your e-mails** (through the system's server or your own: Gmail, Outlook) and deleting the account. See [Several people](#several-people-accounts-collections-and-access) and [The app on the phone](#the-app-on-the-phone). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
@@ -1947,6 +1964,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `config`, `cron` | the collection's settings (with the summary of the destinations and calendars and the cron status: never ran, stopped or running); the cron runs, with the period's summary. In `cron`: `de=` and `ate=` (date, or date and time), `situacao=` (`atividade`, the default; `erro`, `nada` or `todas`), `busca=` (text in the log), `limite=` (default 100, maximum 1000) and `pagina=`; each also works with `cron_` in front (`cron_de`...) |
 | `arvore`, `cadastros` | the groups; everything the Definitions page shows |
 | `unidades` | the tree's units (the **Units** tab of Definitions), in the order of the quantities, each one with the conversion as text and how many fields, types and formulas use it |
+| `marcas` | the tree's brands (the **Brands** tab of Definitions), each with the country, the website, the note and its watches |
 | `calcular` | the result of a formula (`expressao=`) on the watches (`relogio=` one id or several; without it, all), without saving, with the parts of the calculation; a badly written formula: 400 with the errors |
 | `foto` | a watch's photo (`relogio=<id>`): the image, not JSON |
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
@@ -1977,7 +1995,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 
 | Resource | Actions |
 |---|---|
-| `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto` |
+| `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto`; the brand, by `marca_id` or by name in `marca` |
 | `documentos` | `enviar` (one or several files, with the category, the title, the date, the description and, for a photo, the thumbnail), `alterar`, `excluir` |
 | `servicos` | `salvar` (the date, the type, the maintenance or the workshop, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; the type that marks an entry also becomes the entry), `excluir` |
 | `manutencao` | `salvar` (registering sends the watch to the workshop), `situacao` (the one that closes becomes a service), `excluir` |
@@ -1990,6 +2008,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
 | `secoes` | the record sections: `salvar` (the name; `id=0` creates at the end), `ordem` (`direcao=sobe` or `desce`), `excluir` (its fields are left without a section, at the end) |
 | `unidades` | `salvar` (the symbol, the name, the base and the factor, the zero and the also-show-in; the new symbol is carried to whatever uses it), `excluir` (only without use; takes along the units that convert into it) |
+| `marcas` | `salvar` (the name, not repeating another; the country, the website and the note), `juntar` (`em_id`: the watches move to the other, and this one goes away), `excluir` (the watches are left without a brand) |
 | `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the sun, the charger; the winder, putting on is through the Winders page, `winder_posicoes`, unless the watch has its place free: then it goes back there), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone; on the winder, it only opens back to the place), `periodo` (a period that has passed; on the winder, with the position, `posicao_id`; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day An `iniciar` starting in the same minute a stretch of the same type ended joins it (it becomes open again), and a `periodo` without `fim` stays open, from the start until now. |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |

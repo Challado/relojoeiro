@@ -114,6 +114,8 @@ for b in "${BANCOS[@]}"; do
   R=$(curl -s -H "$TOKEN" -d recurso=relogio -d acao=salvar -d id=0 -d "nome=Relógio de antes" -d no_id=0 -d disponivel=1 \
     -d "valores[valor_compra]=1500.50" -d "valores[observacao]=Gravado pela versão anterior" "$A" | json id)
   [ -z "$R" ] && erros+=("não gravou o relógio na versão anterior")
+  # a marca em texto (o campo marca, até a v52): numa versão que já tem o cadastro das marcas, é recusada, e nada muda
+  curl -s -H "$TOKEN" -d recurso=relogio -d acao=salvar -d id="$R" -d "valores[marca]=  Seiko " "$A" > /dev/null
   curl -s -H "$TOKEN" -d recurso=lancamento -d acao=lancar -d relogio_id="$R" -d tipo=carga -d valor=90 -d "quando=$(date -d '-2 days' '+%Y-%m-%d %H:%M')" "$A" > /dev/null
   curl -s -H "$TOKEN" -d recurso=lancamento -d acao=lancar -d relogio_id="$R" -d tipo=carga -d valor=70 "$A" > /dev/null
   curl -s -H "$TOKEN" -d recurso=lancamento -d acao=periodo -d relogio_id="$R" -d tipo=pulso -d "inicio=$(date -d '-1 day' '+%Y-%m-%d') 09:00" -d "fim=$(date -d '-1 day' '+%Y-%m-%d') 18:00" "$A" > /dev/null
@@ -139,6 +141,11 @@ for b in "${BANCOS[@]}"; do
   FICHA=$(curl -s -H "$TOKEN" "$A?recurso=ficha&relogio=$R")
   [ "$(echo "$FICHA" | json relogio.nome)" != "Relógio de antes" ] && erros+=("a ficha não traz o relógio de antes: $(echo "$FICHA" | head -c 200)")
   [ "$(echo "$FICHA" | json relogio.documentos.total)" != "1" ] && erros+=("o documento de antes sumiu")
+  # a v52 aplicada agora: o texto da marca virou a marca Seiko do cadastro, e o relógio aponta para ela
+  if case ", $PEND," in *", v52,"*) true ;; *) false ;; esac; then
+    [ "$(echo "$FICHA" | json relogio.marca.nome)" != "Seiko" ] && erros+=("a marca de antes não virou a marca do cadastro: $(echo "$FICHA" | json relogio.marca)")
+    [ "$(curl -s -H "$TOKEN" "$A?recurso=marcas" | json marcas.0.relogios.0.nome)" != "Relógio de antes" ] && erros+=("a marca Seiko não tem o relógio de antes")
+  fi
   [ "$(echo "$FICHA" | json relogio.acessorios.0.nome)" != "Pulseira de antes" ] && erros+=("o acessório de antes sumiu")
   [ "$(curl -s -H "$TOKEN" "$A?recurso=historico&relogio=$R" | json total)" != "$LANC_ANTES" ] && erros+=("o histórico mudou de tamanho")
   # os serviços de antes continuam, cada um a volta de uma manutenção encerrada; quem fez virou a oficina (sem ele, a sua)

@@ -721,6 +721,11 @@ function abrirNoPainel(id) {
     cad += el("label", {}, t("Situação na coleção {1} {2}", {1: el("select", {"name": "posse", "class": "campo-posse"}, d.posses.map(function (p) {
       return el("option", {"value": p.valor, "data-comportamento": p.comportamento, "selected": p.valor === posseForm}, h(p.nome));
     }).join("")), 2: el("small", {}, t("fora da coleção, ele sai do rodízio e dos avisos; a ficha e o histórico ficam"))}));
+    // a marca (a aba Marcas dos Cadastros)
+    var marcaForm = novo || !r.marca ? 0 : r.marca.id;
+    cad += el("label", {}, t("Marca {1} {2}", {1: el("select", {"name": "marca_id"}, el("option", {"value": "0"}, t("— sem marca")) + d.marcas.map(function (m) {
+      return el("option", {"value": m.id, "selected": m.id === marcaForm}, h(m.nome) + (m.pais ? " · " + h(m.pais) : ""));
+    }).join("")), 2: el("small", {}, t("a marca do relógio, do cadastro ({1})", {1: el("a", {"href": "cadastros.php?aba=marcas"}, t("cadastrar marcas"))}))}));
     // o calibre (o movimento): o relógio herda dele os valores que não tem (a aba Calibres dos Cadastros)
     var calForm = novo || !r.calibre ? 0 : r.calibre.id;
     cad += el("label", {}, t("Calibre {1} {2}", {1: el("select", {"name": "calibre_id"}, el("option", {"value": "0"}, t("— sem calibre")) + d.calibres.map(function (c) {
@@ -997,6 +1002,10 @@ function abrirNoPainel(id) {
         }).join("");
       };
       // duas tabelas lado a lado: o cadastro (o valor e de onde ele vem) e o resultado de cada fórmula agora (com a versão)
+      // a marca, em cima: o nome, o país, o site e a observação (do cadastro das marcas)
+      var marcaLinha = r.marca ? el("p", {"class": "calibre-linha"}, t("Marca: {1}", {1: el("strong", {}, h(r.marca.nome))}) + (r.marca.pais ? " · " + h(r.marca.pais) : "")
+        + (r.marca.site ? " · " + el("a", {"href": r.marca.site, "target": "_blank", "rel": "noopener"}, t("site ↗")) : "")
+        + (r.marca.observacao ? el("small", {}, h(r.marca.observacao)) : "")) : "";
       // o calibre (o movimento), em cima: o nome, o fabricante, o link do manual técnico e as recomendações
       var calLinha = r.calibre ? el("p", {"class": "calibre-linha"}, t("Calibre: {1}", {1: el("strong", {}, h(r.calibre.nome))}) + (r.calibre.fabricante ? " · " + h(r.calibre.fabricante) : "")
         + (r.calibre.link ? " · " + el("a", {"href": r.calibre.link, "target": "_blank", "rel": "noopener"}, t("manual técnico ↗")) : "")
@@ -1005,7 +1014,7 @@ function abrirNoPainel(id) {
         + el("span", {"class": "calibre-docs"}, r.calibre.documentos.map(function (x) {
           return el("a", {"href": x.url, "target": "_blank", "rel": "noopener"}, h(x.titulo)) + " " + el("span", {"class": "nota"}, "(" + h(x.categoria) + ")");
         }).join(" · ") + (r.calibre.documentos.length > 0 ? " · " : "") + el("a", {"href": "documentos.php?calibre=" + r.calibre.id}, t("documentos do calibre")))) : "";
-      secoes.cadastro += quadro(t("Dados do relógio"), calLinha + el("div", {"class": "dados-grade"},
+      secoes.cadastro += quadro(t("Dados do relógio"), marcaLinha + calLinha + el("div", {"class": "dados-grade"},
         el("div", {}, el("h3", {}, t("Cadastro")) + el("table", {"class": "tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Campo"))
             + el("th", {}, t("Valor")))) + el("tbody", {}, r.dados.map(function (c, i) {
               // o texto livre (a observação, uma lista) quebra a linha; número, data e sim/não ficam numa linha só

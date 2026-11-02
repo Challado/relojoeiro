@@ -293,6 +293,9 @@ function op_campos($acao, $d)
             $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome nas fórmulas).");
         } elseif ((int)valor("SELECT COUNT(*) FROM campo WHERE identificador = ? AND id <> ?", [$c["identificador"], $id]) > 0 || isset(formulas_todas()[$c["identificador"]])) {
             $erros[] = t("Já existe um campo ou uma fórmula com o identificador {1}.", [1 => $c["identificador"]]);
+        } elseif (isset($GLOBALS["VARIAVEIS_MOTOR"][$c["identificador"]])) {
+            // a marca e a nota dos critérios são do motor: um campo com o mesmo nome as esconderia nas fórmulas
+            $erros[] = t("O identificador {1} é do sistema (variável do motor das fórmulas): use outro.", [1 => $c["identificador"]]);
         }
         if ($atual && $c["identificador"] !== $atual["identificador"] && count(formulas_que_usam($atual["identificador"], "variaveis")) > 0) {
             $erros[] = t("Não dá para renomear {1}: estas fórmulas usam: {2}.", [1 => $atual["identificador"], 2 => implode(", ", formulas_que_usam($atual["identificador"], "variaveis"))]);
@@ -867,6 +870,83 @@ function op_calibres($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// As marcas (Cadastros › Marcas), da árvore como os calibres. Ações: salvar (id: 0 ou ausente cria; nome, até 80, sem
+// repetir outra marca sem diferença de maiúsculas nem de espaços; pais, até 80; site, um endereço http:// ou https://;
+// observacao, até 4000; só muda o que vier), juntar (id, em_id: os relógios da marca id passam para a em_id, e a id sai;
+// para duas grafias da mesma marca), excluir (id: os relógios dela ficam sem marca)
+// ---------------------------------------------------------------------------------------------------------------------
+function op_marcas($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 ? linha("SELECT * FROM marca WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Marca não encontrada.");
+    } elseif (($acao === "excluir" || $acao === "juntar") && !$atual) {
+        $erros[] = t("Marca não encontrada.");
+    } elseif ($acao === "salvar") {
+        $texto = function ($k, $max) use ($d, $atual) {
+            $v = array_key_exists($k, $d) ? trim((string)preg_replace("/[ \\t]+/u", " ", (string)$d[$k])) : (string)($atual[$k] ?? "");
+            return [$v === "" ? null : $v, mb_strlen($v, "UTF-8") <= $max];
+        };
+        [$nome, $nome_ok] = $texto("nome", 80);
+        [$pais, $pais_ok] = $texto("pais", 80);
+        [$site, $site_ok] = $texto("site", 500);
+        [$obs, $obs_ok] = $texto("observacao", 4000);
+        if ($nome === null || !$nome_ok) {
+            $erros[] = t("Dê um nome à marca (até 80 caracteres).");
+        } elseif (($outra = marca_pelo_nome($nome)) !== null && (int)$outra["id"] !== $id) {
+            $erros[] = t("Já existe a marca {1}.", [1 => $outra["nome"]]);
+        }
+        if (!$pais_ok) {
+            $erros[] = t("País: até 80 caracteres.");
+        }
+        if (!$site_ok || ($site !== null && preg_match("~^https?://\\S+$~i", $site) !== 1)) {
+            $erros[] = t("Site: um endereço http:// ou https:// (até 500 caracteres), ou vazio.");
+        }
+        if (!$obs_ok) {
+            $erros[] = t("Observação: até 4000 caracteres.");
+        }
+        if (count($erros) === 0) {
+            if ($atual) {
+                sql("UPDATE marca SET nome = ?, pais = ?, site = ?, observacao = ? WHERE id = ?", [$nome, $pais, $site, $obs, $id]);
+                $msg = t("Marca {1} salva.", [1 => $nome]);
+            } else {
+                sql("INSERT INTO marca (no_id, nome, pais, site, observacao) VALUES (?, ?, ?, ?, ?)", [no_raiz(), $nome, $pais, $site, $obs]);
+                $id = ultimo_id();
+                $msg = t("Marca {1} criada.", [1 => $nome]);
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        }
+    } elseif ($acao === "juntar") {
+        $em = (int)($d["em_id"] ?? 0);
+        $destino = $em > 0 ? linha("SELECT * FROM marca WHERE id = ?", [$em]) : null;
+        if (!$destino) {
+            $erros[] = t("Juntar em qual marca? em_id: uma marca do cadastro.");
+        } elseif ($em === $id) {
+            $erros[] = t("A marca não se junta com ela mesma.");
+        } else {
+            $n = (int)valor("SELECT COUNT(*) FROM relogio_marca WHERE marca_id = ?", [$id]);
+            sql("UPDATE relogio_marca SET marca_id = ? WHERE marca_id = ?", [$em, $id]);
+            sql("DELETE FROM marca WHERE id = ?", [$id]);
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            $msg = t("Marca {1} juntada em {2}: {3} relógio(s) passaram para {2}.", [1 => $atual["nome"], 2 => $destino["nome"], 3 => $n]);
+            $id = $em;
+        }
+    } elseif ($acao === "excluir") {
+        $n = (int)valor("SELECT COUNT(*) FROM relogio_marca WHERE marca_id = ?", [$id]);
+        sql("DELETE FROM marca WHERE id = ?", [$id]);
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Marca {1} excluída.", [1 => $atual["nome"]]) . ($n > 0 ? " " . ($n === 1 ? t("O relógio que tinha essa marca ficou sem.") : t("Os {1} relógios que tinham essa marca ficaram sem.", [1 => $n])) : "");
+        $id = 0;
+    } else {
+        $erros[] = t("Ação desconhecida: use salvar, juntar ou excluir.");
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Fórmulas. Ações: nova (identificador, nome, expressao, unidade, no_id: uma fórmula nova, ou mais uma versão de uma que
 // já existe, em outro ponto da árvore), alterar (id; nome, expressao, unidade, no_id), excluir (id: não se exclui a
 // última versão de uma fórmula que outra usa). A expressão é conferida antes de gravar (formula_validar).
@@ -892,6 +972,8 @@ function op_formulas($acao, $d)
             $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40 (é o nome da fórmula nas outras fórmulas).");
         } elseif (isset(campos_todos()[$ident])) {
             $erros[] = t("Já existe um campo com o identificador {1}.", [1 => $ident]);
+        } elseif (!$atual && isset($GLOBALS["VARIAVEIS_MOTOR"][$ident])) {
+            $erros[] = t("O identificador {1} é do sistema (variável do motor das fórmulas): use outro.", [1 => $ident]);
         }
         if ($nome === "" || strlen($nome) > 120) {
             $erros[] = t("Dê um nome à fórmula (até 120 caracteres).");
@@ -937,7 +1019,9 @@ function op_formulas($acao, $d)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), copia_banco (1 ou 0: a cópia no banco
-// de todos os documentos dele), calibre_id (o calibre dele; 0 ou vazio tira), valores[identificador]: só muda o que vier no
+// de todos os documentos dele), calibre_id (o calibre dele; 0 ou vazio tira), marca_id (a marca dele, do cadastro das marcas;
+// 0 ou vazio tira) ou marca (o nome de uma marca do cadastro; vazio tira; também em valores[marca], como antes da v52),
+// valores[identificador]: só muda o que vier no
 // pedido; valor vazio apaga; valor inválido fica o que estava, e a mensagem diz quais), excluir (id), foto
 // (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id). Os documentos do relógio: op_documentos.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -985,6 +1069,23 @@ function op_relogio($acao, $d)
         if ($calibre !== null && $calibre > 0 && valor("SELECT id FROM calibre WHERE id = ?", [$calibre]) === null) {
             $erros[] = t("O calibre não existe.");
         }
+        // a marca: marca_id (uma do cadastro; 0 ou vazio tira) ou o nome dela em marca (ou em valores[marca], como antes da v52);
+        // um nome que não está no cadastro é recusado: a marca nova entra por Cadastros › Marcas (recurso=marcas)
+        $marca = null;
+        $marca_nome = array_key_exists("marca", $d) ? $d["marca"] : (is_array($d["valores"] ?? null) && array_key_exists("marca", $d["valores"]) ? $d["valores"]["marca"] : null);
+        if (array_key_exists("marca_id", $d)) {
+            $marca = (int)$d["marca_id"];
+            if ($marca > 0 && valor("SELECT id FROM marca WHERE id = ?", [$marca]) === null) {
+                $erros[] = t("A marca não existe.");
+            }
+        } elseif ($marca_nome !== null) {
+            $m_nome = trim((string)$marca_nome);
+            $m_achada = $m_nome === "" ? null : marca_pelo_nome($m_nome);
+            if ($m_nome !== "" && $m_achada === null) {
+                $erros[] = t("A marca {1} não está no cadastro: cadastre em Cadastros › Marcas (recurso=marcas) ou escolha uma de lá.", [1 => $m_nome]);
+            }
+            $marca = $m_achada !== null ? (int)$m_achada["id"] : 0;
+        }
         // em manutenção, ele fica indisponível até ela encerrar: a disponibilidade pedida é a da volta
         $em_manut = $atual ? manutencao_aberta($id) : null;
         if ($em_manut !== null && count($erros) === 0) {
@@ -1013,6 +1114,10 @@ function op_relogio($acao, $d)
             $campos = campos_do_relogio(["no_id" => $no, "posse" => $posse]);
             $ignorados = [];
             foreach ((array)($d["valores"] ?? []) as $ident => $v) {
+                if ($ident === "marca" && !isset($campos[$ident])) {
+                    // a marca do cadastro (logo abaixo)
+                    continue;
+                }
                 if (!isset($campos[$ident])) {
                     $ignorados[] = $ident . (isset(campos_do_relogio(["no_id" => $no, "posse" => "desejado"])[$ident]) ? t(" (só nos desejados)") : t(" (não é campo de {1})", [1 => no_caminho($no)]));
                 } else {
@@ -1028,6 +1133,12 @@ function op_relogio($acao, $d)
                 sql("DELETE FROM relogio_calibre WHERE relogio_id = ?", [$id]);
                 if ($calibre > 0) {
                     sql("INSERT INTO relogio_calibre (relogio_id, calibre_id) VALUES (?, ?)", [$id, $calibre]);
+                }
+            }
+            if ($marca !== null) {
+                sql("DELETE FROM relogio_marca WHERE relogio_id = ?", [$id]);
+                if ($marca > 0) {
+                    sql("INSERT INTO relogio_marca (relogio_id, marca_id) VALUES (?, ?)", [$id, $marca]);
                 }
             }
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;

@@ -1,4 +1,4 @@
-<!-- origem: cae268bd26c3d12a0264f0c34681a52da1c5730a -->
+<!-- origem: 8edeffb8897bcc893a04c9cf1c0dda2e362d00b9 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -157,6 +157,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `config`, `cron` | the collection's settings (with the summary of the destinations and calendars and the cron status: never ran, stopped or running); the cron runs, with the period's summary. In `cron`: `de=` and `ate=` (date, or date and time), `situacao=` (`atividade`, the default; `erro`, `nada` or `todas`), `busca=` (text in the log), `limite=` (default 100, maximum 1000) and `pagina=`; each also works with `cron_` in front (`cron_de`...) |
 | `arvore`, `cadastros` | the groups; everything the Definitions page shows |
 | `unidades` | the tree's units (the **Units** tab of Definitions), in the order of the quantities, each one with the conversion as text and how many fields, types and formulas use it |
+| `marcas` | the tree's brands (the **Brands** tab of Definitions), each with the country, the website, the note and its watches |
 | `calcular` | the result of a formula (`expressao=`) on the watches (`relogio=` one id or several; without it, all), without saving, with the parts of the calculation; a badly written formula: 400 with the errors |
 | `foto` | a watch's photo (`relogio=<id>`): the image, not JSON |
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
@@ -187,7 +188,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 
 | Resource | Actions |
 |---|---|
-| `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto` |
+| `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto`; the brand, by `marca_id` or by name in `marca` |
 | `documentos` | `enviar` (one or several files, with the category, the title, the date, the description and, for a photo, the thumbnail), `alterar`, `excluir` |
 | `servicos` | `salvar` (the date, the type, the maintenance or the workshop, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; the type that marks an entry also becomes the entry), `excluir` |
 | `manutencao` | `salvar` (registering sends the watch to the workshop), `situacao` (the one that closes becomes a service), `excluir` |
@@ -200,6 +201,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `documento_categorias` | `nova`, `alterar`, `excluir` (only without documents) |
 | `secoes` | the record sections: `salvar` (the name; `id=0` creates at the end), `ordem` (`direcao=sobe` or `desce`), `excluir` (its fields are left without a section, at the end) |
 | `unidades` | `salvar` (the symbol, the name, the base and the factor, the zero and the also-show-in; the new symbol is carried to whatever uses it), `excluir` (only without use; takes along the units that convert into it) |
+| `marcas` | `salvar` (the name, not repeating another; the country, the website and the note), `juntar` (`em_id`: the watches move to the other, and this one goes away), `excluir` (the watches are left without a brand) |
 | `lancamento` | `lancar` (winding, charge, battery...), `iniciar` and `encerrar` (put on and take off the wrist, the sun, the charger; the winder, putting on is through the Winders page, `winder_posicoes`, unless the watch has its place free: then it goes back there), `alternar` (closes the session if it is open, opens it if it is closed: a single button on the phone; on the winder, it only opens back to the place), `periodo` (a period that has passed; on the winder, with the position, `posicao_id`; on the wrist of the watch of the day it is rotation use, and the stretches of the same type it touches, like a Put on left open, become one), `alterar`, `excluir`, `medicao` (a consumption measurement goes into or out of the calculation: `id`, `usada` 1 or 0). In all of them, `relogio_id=hoje` is the watch of the day An `iniciar` starting in the same minute a stretch of the same type ended joins it (it becomes open again), and a `periodo` without `fim` stays open, from the start until now. |
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |

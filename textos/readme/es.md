@@ -1,4 +1,4 @@
-<!-- origem: cae268bd26c3d12a0264f0c34681a52da1c5730a -->
+<!-- origem: 8edeffb8897bcc893a04c9cf1c0dda2e362d00b9 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -158,6 +158,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `config`, `cron` | la configuración de la colección (con el resumen de los destinos y de los calendarios y la situación del cron: nunca se ejecutó, detenido o funcionando); las ejecuciones del cron, con el resumen del período. En `cron`: `de=` y `ate=` (fecha, o fecha y hora), `situacao=` (`atividade`, por defecto; `erro`, `nada` o `todas`), `busca=` (texto en el registro), `limite=` (por defecto 100, máximo 1000) y `pagina=`; cada uno vale también con `cron_` delante (`cron_de`...) |
 | `arvore`, `cadastros` | los grupos; todo lo que muestra la página Definiciones |
 | `unidades` | las unidades del árbol (la pestaña **Unidades** de Definiciones), en el orden de las magnitudes, cada una con la conversión en texto y cuántos campos, tipos y fórmulas la usan |
+| `marcas` | las marcas del árbol (la pestaña **Marcas** de Definiciones), cada una con el país, el sitio, la observación y sus relojes |
 | `calcular` | el resultado de una fórmula (`expressao=`) en los relojes (`relogio=` un id o varios; sin él, todos), sin guardar, con las partes de la cuenta; fórmula mal escrita: 400 con los errores |
 | `foto` | la foto de un reloj (`relogio=<id>`): la imagen, no JSON |
 | `documentos` | los documentos de un reloj (`relogio=<id>`; sin él, de todos), con las categorías, el resumen de la NF-e de cada XML, la carpeta y el límite |
@@ -188,7 +189,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 
 | Recurso | Acciones |
 |---|---|
-| `relogio` | `salvar` (crear o cambiar), `excluir` (con los documentos), `foto`, `remover_foto` |
+| `relogio` | `salvar` (crear o cambiar), `excluir` (con los documentos), `foto`, `remover_foto`; la marca, por `marca_id` o por el nombre en `marca` |
 | `documentos` | `enviar` (uno o varios archivos, con la categoría, el título, la fecha, la descripción y, en una foto, la miniatura), `alterar`, `excluir` |
 | `servicos` | `salvar` (la fecha, el tipo, el mantenimiento o el taller, la mano de obra, las piezas, la estanqueidad, la marcha antes y después, la garantía y los documentos; el tipo que marca un registro se convierte también en el registro), `excluir` |
 | `manutencao` | `salvar` (registrar manda el reloj al taller), `situacao` (la que cierra se convierte en servicio), `excluir` |
@@ -201,6 +202,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `documento_categorias` | `nova`, `alterar`, `excluir` (solo sin documentos) |
 | `secoes` | las secciones de la ficha: `salvar` (el nombre; `id=0` crea al final), `ordem` (`direcao=sobe` o `desce`), `excluir` (sus campos quedan sin sección, al final) |
 | `unidades` | `salvar` (el símbolo, el nombre, la base y el factor, el cero y el mostrar también en; el símbolo nuevo pasa a quien lo usa), `excluir` (solo sin uso; se lleva las que se convierten en ella) |
+| `marcas` | `salvar` (el nombre, sin repetir otra; el país, el sitio y la observación), `juntar` (`em_id`: los relojes pasan a la otra, y esta sale), `excluir` (los relojes quedan sin marca) |
 | `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del sol, del cargador; del winder, poner es por la página Winders, `winder_posicoes`, salvo que el reloj tenga su lugar libre: entonces vuelve ahí), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil; en el winder, solo abre de vuelta al lugar), `periodo` (un período que ya pasó; en el winder, con la posición, `posicao_id`; en la muñeca del reloj del día es uso de la rotación, y los tramos del mismo tipo con los que se toca, como el Poner que quedó abierto, se vuelven uno), `alterar`, `excluir`, `medicao` (una medición del consumo entra o sale de la cuenta: `id`, `usada` 1 o 0). En todas, `relogio_id=hoje` es el reloj del día El `iniciar` que empieza en el mismo minuto en que terminó un tramo del mismo tipo se une a él (vuelve a quedar abierto), y el `periodo` sin `fim` queda abierto, del inicio hasta ahora. |
 | `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |

@@ -514,7 +514,7 @@ form.calibre-campos select { max-width: 100%; }
 /* as vazias têm borda transparente da mesma largura (as alturas batem com as das linhas com dado) */
 #tabela-relogios .mini-total tbody tr.vazia > td { background: transparent; border: 1px solid transparent; }
 #tabela-relogios .mini-total tbody tr.vazia.fim > td { border-bottom-color: var(--aco-escuro); }
-/* as 12 colunas sempre (no computador, no tablet e no celular a mesma informação): a tabela ocupa a largura que tem, e o
+/* as 13 colunas sempre (no computador, no tablet e no celular a mesma informação): a tabela ocupa a largura que tem, e o
    texto das células quebra linha só quando falta espaço; o que é um valor só (código, carga, estado, valor) não quebra */
 #tabela-relogios { width: 100%; min-width: 0; }
 #tabela-relogios td, #tabela-relogios th { white-space: normal; padding-top: .32rem; padding-bottom: .32rem; }
@@ -1476,7 +1476,7 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
   .painel:not(.modo-flutuante) .fechar-painel { position: sticky; top: 0; z-index: 3; box-shadow: 0 1px 4px rgba(0, 0, 0, .15); background: var(--papel); }
 }
 
-/* ---------- a tabela dos relógios quando as 12 colunas não cabem (celular, tablet, o painel aberto ao lado): cada relógio
+/* ---------- a tabela dos relógios quando as 13 colunas não cabem (celular, tablet, o painel aberto ao lado): cada relógio
    vira um cartão com TODOS os campos da tabela, cada um com o nome da coluna em cima, na mesma ordem; os títulos viram os
    botões de ordenar e os filtros ficam todos, com o nome em cima. Nada some: a mesma informação do computador. Quem decide
    é o tabela.js (a classe em-cartoes), medindo se a tabela inteira cabe na largura que ela tem de verdade ---------- */

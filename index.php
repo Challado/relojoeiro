@@ -36,6 +36,7 @@ topo("Relógio de hoje", "index.php");
           <tr>
             <th class="col-codigo"><button type="button" data-ordena="codigo" data-tipo-ordem="num"><?= t("Código") ?> <span></span></button></th>
             <th><button type="button" data-ordena="nome"><?= t("Relógio") ?> <span></span></button></th>
+            <th class="col-marca"><button type="button" data-ordena="marca"><?= t("Marca") ?> <span></span></button></th>
             <th><button type="button" data-ordena="tipo"><?= t("Tipo") ?> <span></span></button></th>
             <th><button type="button" data-ordena="estado" data-tipo-ordem="num"><?= t("Estado") ?> <span></span></button></th>
             <th><button type="button" data-ordena="carga" data-tipo-ordem="num"><?= t("Carga") ?> <span></span></button></th>
@@ -50,6 +51,7 @@ topo("Relógio de hoje", "index.php");
           <tr class="filtros">
             <td data-rotulo="<?= te("Código") ?>"><input data-filtro="codigo" aria-label="<?= te("Filtrar por código") ?>" placeholder="<?= te("nº") ?>" class="curto"></td>
             <td data-rotulo="<?= te("Relógio") ?>"><input data-filtro="nome" aria-label="<?= te("Filtrar por nome") ?>" placeholder="<?= te("buscar") ?>"></td>
+            <td class="col-marca" data-rotulo="<?= te("Marca") ?>"><select data-filtro="marca" aria-label="<?= te("Filtrar por marca") ?>"><option value=""><?= t("Todas") ?></option></select></td>
             <td data-rotulo="<?= te("Tipo") ?>"><select data-filtro="tipo" aria-label="<?= te("Filtrar por tipo") ?>"><option value=""><?= t("Todos") ?></option></select></td>
             <td data-rotulo="<?= te("Estado") ?>"><select data-filtro="estado" aria-label="<?= te("Filtrar por estado") ?>"><option value=""><?= t("Todos") ?></option></select></td>
             <td data-rotulo="<?= te("Carga") ?>"><select data-filtro="carga" aria-label="<?= te("Filtrar por carga") ?>"><option value=""><?= t("Todas") ?></option><option value="20">≤ 20%</option><option value="50">≤ 50%</option></select></td>
@@ -69,6 +71,7 @@ topo("Relógio de hoje", "index.php");
           <tr class="totais-rodape" id="totais-rodape" hidden>
             <td class="col-codigo" data-coluna="codigo" data-rotulo="<?= te("Código") ?>"></td>
             <td data-coluna="nome" data-rotulo="<?= te("Relógio") ?>"></td>
+            <td class="col-marca" data-coluna="marca" data-rotulo="<?= te("Marca") ?>"></td>
             <td data-coluna="tipo" data-rotulo="<?= te("Tipo") ?>"></td>
             <td data-coluna="estado" data-rotulo="<?= te("Estado") ?>"></td>
             <td data-coluna="carga" data-rotulo="<?= te("Carga") ?>"></td>
@@ -80,7 +83,7 @@ topo("Relógio de hoje", "index.php");
             <td data-coluna="compra" data-rotulo="<?= te("Comprado em") ?>"></td>
             <td class="col-valor" data-coluna="valor" data-rotulo="<?= te("Valor") ?>"></td>
           </tr>
-          <tr class="totais-mais"><td colspan="12"><a href="totais.php" class="botao leve" id="ver-totais"><?= t("Ver todos os totais") ?></a> <a href="cadastros.php?aba=totais" class="nota"><?= t("montar os totais") ?></a> <span class="nota" id="totais-recado"></span></td></tr>
+          <tr class="totais-mais"><td colspan="13"><a href="totais.php" class="botao leve" id="ver-totais"><?= t("Ver todos os totais") ?></a> <a href="cadastros.php?aba=totais" class="nota"><?= t("montar os totais") ?></a> <span class="nota" id="totais-recado"></span></td></tr>
         </tfoot>
       </table>
       </div>

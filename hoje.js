@@ -51,11 +51,11 @@ document.addEventListener("click", function (ev) {
 });
 
 // as opções de um filtro da tabela ("Todos" e as que existem), com o que estava escolhido continuando escolhido (a página se
-// remonta depois de cada gravação e sozinha, a cada minuto)
-function opcoesDoFiltro(nome, itens) {
+// remonta depois de cada gravação e sozinha, a cada minuto). todos: o texto do "Todos" (padrão "Todos"; a marca, "Todas")
+function opcoesDoFiltro(nome, itens, todos) {
   var sel = document.querySelector("[data-filtro=" + nome + "]");
   var antes = sel.value;
-  sel.innerHTML = el("option", {"value": ""}, t("Todos")) + itens.map(function (item) { return el("option", {}, h(item)); }).join("");
+  sel.innerHTML = el("option", {"value": ""}, todos || t("Todos")) + itens.map(function (item) { return el("option", {}, h(item)); }).join("");
   if (antes !== "" && itens.indexOf(antes) >= 0) {
     sel.value = antes;
   }
@@ -288,6 +288,15 @@ function recarregarHoje() {
     });
     tipos.sort();
     opcoesDoFiltro("tipo", tipos);
+    // o filtro da marca: as marcas que os relógios têm (e "sem marca", quando algum não tem)
+    var marcas = [];
+    lista.forEach(function (x) {
+      if (x.marca !== null && marcas.indexOf(x.marca) < 0) {
+        marcas.push(x.marca);
+      }
+    });
+    marcas.sort(function (a, b) { return a.localeCompare(b); });
+    opcoesDoFiltro("marca", marcas.concat(lista.some(function (x) { return x.marca === null; }) ? [t("(sem marca)")] : []), t("Todas"));
     opcoesDoFiltro("estado", d.estados);
     // o Encostado desligado na Configuração: a coluna e o filtro somem (estilo.css, .sem-encostado; tabela.js ignora o filtro)
     document.getElementById("tabela-relogios").classList.toggle("sem-encostado", !d.encostado_ativo);
@@ -298,7 +307,7 @@ function recarregarHoje() {
       var e = x.encostado;
       var atrasado = m && m.momento > 0 && m.momento * 1000 <= Date.now();
       var encAtrasado = e && e.estado !== "ok";
-      return el("tr", {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
+      return el("tr", {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-marca": x.marca === null ? "" : x.marca, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
         "data-carga": x.carga === null ? "" : x.carga, "data-ultimo": x.ultimo, "data-manut": m ? m.data : "", "data-em": m && m.momento > 0 ? m.momento : "", "data-fazer": m ? m.nome : "",
         "data-encostado": e && e.momento > 0 ? e.momento : "", "data-encostado-estado": !e ? "" : (e.estado === "ok" ? "prazo" : "sim"),
         "data-compra": x.compra.data || "", "data-valor": x.compra.valor === null ? "" : x.compra.valor,
@@ -306,6 +315,7 @@ function recarregarHoje() {
         el("td", {"class": "col-codigo", "data-rotulo": t("Código")}, String(x.id))
         + el("td", {"class": "col-nome"}, el("div", {"class": "nome-rel"}, (x.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + x.id + "&v=" + x.foto, "alt": ""}) : el("span", {"class": "sem-mini"}, ""))
           + el("a", {"href": "index.php?r=" + x.id, "title": x.nome}, h(x.nome))))
+        + el("td", {"class": "col-marca", "data-rotulo": t("Marca")}, x.marca !== null ? h(x.marca) : "—")
         + el("td", {"data-rotulo": t("Tipo")}, h(x.tipo))
         + el("td", {"data-rotulo": t("Estado")}, el("span", {"class": "estado estado-" + (x.estado)}, h(x.estado_texto)))
         + el("td", {"data-rotulo": t("Carga")}, x.carga !== null
@@ -327,7 +337,7 @@ function recarregarHoje() {
       desejos.textContent = [d.totais.desejados > 0 ? t("Desejos ({1})", {1: d.totais.desejados}) : "", d.totais.fora > d.totais.desejados ? t("Fora da coleção ({1})", {1: d.totais.fora - d.totais.desejados}) : ""]
         .filter(function (item) { return item !== ""; }).join(" · ");
     }
-    window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "12"}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""));
+    window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "13"}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""));
   });
 }
 

@@ -1,8 +1,8 @@
 // Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais; a aba Calibres, recurso=calibres; a aba
-// Unidades, recurso=unidades), uma aba por vez (cadastros.php?aba=campos&editar=3), com as gravações pela API (recurso=campos,
-// secoes, lancamento_tipos, formulas, totais, calibres, unidades e documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
-var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), documentos: t("Categorias de documentos"), listas: t("Listas")};
-var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", documentos: "documento_categorias", listas: "listas"};
+// Marcas, recurso=marcas; a aba Unidades, recurso=unidades), uma aba por vez (cadastros.php?aba=campos&editar=3), com as
+// gravações pela API (recurso=campos, secoes, lancamento_tipos, formulas, totais, calibres, marcas, unidades e documento_categorias), o testar das fórmulas (recurso=calcular) e o dos totais (recurso=totais, expressao=). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
+var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), calibres: t("Calibres"), marcas: t("Marcas"), documentos: t("Categorias de documentos"), listas: t("Listas")};
+var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", calibres: "calibres", marcas: "marcas", documentos: "documento_categorias", listas: "listas"};
 var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
@@ -76,6 +76,8 @@ function cabecaCadastros() {
       [t("As fórmulas de cada relógio, que os totais somam"), cad("formulas")]],
     calibres: [[t("Os dados de um calibre"), t("aqui: Editar, na linha do calibre")], [t("Qual calibre um relógio usa"), t("{1} › Calibre", {1: ed})],
       [t("Os campos que aparecem no calibre"), t("{1}: a caixa \"do movimento\" do campo", {1: cad("campos")})]],
+    marcas: [[t("Os dados de uma marca (o nome, o país, o site)"), t("aqui: Editar, na linha da marca")], [t("Qual marca um relógio tem"), t("{1} › Marca", {1: ed})],
+      [t("Duas grafias da mesma marca"), t("aqui: Editar, na linha da que sai › Juntar em")], [t("A marca na tabela dos relógios"), lugar("index.php", t("Hoje"))]],
     documentos: [[t("O nome e os tipos de arquivo de uma categoria"), t("aqui")], [t("Os documentos de um relógio"), t("{1}: o relógio › Documentos", {1: lugar("ficha.php", t("Ficha"))})]],
     listas: [[t("Os itens de uma lista (o nome, a ordem, o que faz)"), t("aqui")], [t("As listas da manutenção (situações, tipos de serviço, estanqueidade, oficinas, contatos)"), lugar("manutencao.php?aba=listas", t("Coleção › Manutenção › Listas"))],
       [t("A situação de um relógio"), ed], [t("O tipo de um acessório"), lugar("acessorios.php", t("Coleção › Acessórios"))]]
@@ -114,6 +116,9 @@ function recarregarCadastros() {
   }
   if (aba === "calibres") {
     return recarregarCalibres();
+  }
+  if (aba === "marcas") {
+    return recarregarMarcas();
   }
   if (aba === "unidades") {
     return recarregarUnidades();
@@ -482,6 +487,49 @@ function recarregarCalibres() {
             return entradaDoCalibre(c, f.valores[c.identificador] === undefined ? null : f.valores[c.identificador]);
           }).join(""))
         + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=calibres"}, t("cancelar")) : "")));
+    res += el("section", {"class": "cartao-config"}, sec);
+    document.getElementById("cadastros").innerHTML = res;
+  });
+}
+
+// a aba Marcas (recurso=marcas): a lista (a marca, o país, o site e os relógios dele) e o formulário (o nome, o país, o
+// site e a observação); editando, o Juntar em leva os relógios desta marca para outra e tira esta (duas grafias da mesma)
+function recarregarMarcas() {
+  return api({recurso: "marcas"}).then(function (d) {
+    var e = null;
+    d.marcas.forEach(function (x) { if (x.id === editar) { e = x; } });
+    var f = e || {};
+    var res = cabecaCadastros();
+    if (recado !== "") {
+      res += recado;
+      recado = "";
+    }
+    var sec = el("h2", {}, t("Marcas"))
+      + ajudaNota("marcas", t("A marca"), t("A marca é quem fez o relógio (Casio, Seiko, Orient...). Ela é um cadastro, como o calibre: cada relógio aponta para uma (no cadastro do relógio, o menu Marca), e o nome dela aparece na tabela da página Hoje, na ficha, na galeria, no passaporte, nas estatísticas e nas fórmulas (a variável marca). Duas grafias da mesma marca viram uma pelo Juntar em, e excluir uma marca deixa os relógios dela sem marca."))
+      + (d.marcas.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma marca cadastrada."))
+        : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Marca")) + el("th", {}, t("País")) + el("th", {}, t("Relógios"))
+          + el("th", {}, "")))
+          + el("tbody", {}, d.marcas.map(function (x) {
+            return el("tr", {}, el("td", {}, h(x.nome) + (x.site ? " " + el("a", {"href": x.site, "target": "_blank", "rel": "noopener", "title": t("site")}, "↗") : "")
+              + (x.observacao ? el("small", {"class": "nota", "style": "display:block"}, h(x.observacao)) : ""))
+              + el("td", {}, h(vazio(x.pais)))
+              + el("td", {"class": "nota"}, x.relogios.length === 0 ? t("nenhum") : x.relogios.map(function (r) { return el("a", {"href": "index.php?r=" + r.id}, h(r.nome)); }).join(", "))
+              + el("td", {"class": "acoes-linha"}, linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"))));
+          }).join("")))))
+      + el("h3", {"id": "form"}, e ? t("Alterar a marca {1}", {1: h(e.nome)}) : t("Nova marca"))
+      + el("form", {"data-recurso": "marcas", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
+        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(f.nome), "required": true, "maxlength": "80", "placeholder": t("ex.: Seiko")})}))
+        + el("label", {}, t("País {1}", {1: el("input", {"name": "pais", "value": vazio(f.pais), "maxlength": "80", "placeholder": t("ex.: Japão")})}))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Site {1}", {1: el("input", {"type": "url", "name": "site", "value": vazio(f.site), "maxlength": "500", "placeholder": fixo("https://")})}))
+        + el("label", {"style": "grid-column: 1 / -1"}, t("Observação {1}", {1: el("textarea", {"name": "observacao", "rows": "3", "maxlength": "4000"}, h(vazio(f.observacao)))}))
+        + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=marcas"}, t("cancelar")) : "")))
+      // juntar: só editando, e com outra marca para onde ir
+      + (e && d.marcas.length > 1 ? el("form", {"data-recurso": "marcas", "class": "linha"}, el("input", {"type": "hidden", "name": "acao", "value": "juntar"}) + el("input", {"type": "hidden", "name": "id", "value": e.id})
+        + el("label", {}, t("Juntar em {1}", {1: el("select", {"name": "em_id"}, d.marcas.filter(function (x) { return x.id !== e.id; }).map(function (x) {
+          return el("option", {"value": x.id}, h(x.nome));
+        }).join(""))}))
+        + el("button", {"class": "leve"}, t("Juntar"))
+        + el("span", {"class": "nota"}, t("Os relógios de {1} passam para a marca escolhida, e {1} sai do cadastro.", {1: h(e.nome)}))) : "");
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
   });

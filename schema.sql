@@ -456,6 +456,28 @@ CREATE TABLE campo_valor_item (
     CONSTRAINT ck_campo_valor_item CHECK (TRIM(valor) <> '')
 ) ENGINE=InnoDB;
 
+-- as marcas (Casio, Seiko, Orient...), da árvore como o cadastro: o nome, o país, o site e a observação; o relógio aponta
+-- para uma (relogio_marca), que some sozinha quando um dos dois sai
+CREATE TABLE marca (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    no_id       INT NOT NULL,
+    nome        VARCHAR(80) NOT NULL,
+    pais        VARCHAR(80) NULL,
+    site        VARCHAR(500) NULL,
+    observacao  TEXT NULL,
+    INDEX (no_id),
+    FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
+    CONSTRAINT ck_marca_nome CHECK (TRIM(nome) <> '')
+) ENGINE=InnoDB;
+
+CREATE TABLE relogio_marca (
+    relogio_id  INT NOT NULL PRIMARY KEY,
+    marca_id    INT NOT NULL,
+    INDEX (marca_id),
+    FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
+    FOREIGN KEY (marca_id) REFERENCES marca(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- os calibres (o movimento), da árvore como o cadastro: nome, fabricante, o link do manual técnico, as recomendações e os
 -- valores dos campos que ele define; o relógio aponta para um (relogio_calibre) e herda dele o que não tem
 CREATE TABLE calibre (

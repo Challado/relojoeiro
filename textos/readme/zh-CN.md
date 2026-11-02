@@ -1,4 +1,4 @@
-<!-- origem: cae268bd26c3d12a0264f0c34681a52da1c5730a -->
+<!-- origem: 8edeffb8897bcc893a04c9cf1c0dda2e362d00b9 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -128,6 +128,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `config`、`cron` | 收藏的设置（含推送目标和日历的摘要以及 cron 状态：从未运行、已停止或运行中）；cron 的执行记录，含时段摘要。在 `cron` 中：`de=` 和 `ate=`（日期，或日期和时间）、`situacao=`（`atividade`，默认；`erro`、`nada` 或 `todas`）、`busca=`（日志中的文本）、`limite=`（默认 100，最多 1000）和 `pagina=`；每个参数也可以加 `cron_` 前缀（`cron_de`……） |
 | `arvore`、`cadastros` | 分组；定义页面显示的一切 |
 | `unidades` | 树的单位（定义里的**单位**标签），按物理量排序，每个单位附换算的文字说明，以及有多少字段、类型和公式在用它 |
+| `marcas` | 树的品牌（定义的**品牌**标签），每个都带国家、网站、备注和它的手表 |
 | `calcular` | 一个公式（`expressao=`）在手表上的结果（`relogio=` 一个或多个 id；没有时为全部），不保存，并给出计算的各部分；公式写错：返回 400 和错误 |
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
@@ -158,7 +159,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 
 | 资源 | 操作 |
 |---|---|
-| `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto` |
+| `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto`；品牌，用 `marca_id` 或在 `marca` 中按名称 |
 | `documentos` | `enviar`（一个或多个文件，带类别、标题、日期、描述，照片还带缩略图）、`alterar`、`excluir` |
 | `servicos` | `salvar`（日期、类型、保养或维修店、工时费、零件、防水、前后走时、保修和文档；会标记记录的类型也会生成记录），`excluir` |
 | `manutencao` | `salvar`（登记即把表送到维修店）、`situacao`（结束类状态会变成服务）、`excluir` |
@@ -171,6 +172,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `documento_categorias` | `nova`、`alterar`、`excluir`（仅在没有文档时） |
 | `secoes` | 档案分区：`salvar`（名称；`id=0` 在末尾新建）、`ordem`（`direcao=sobe` 或 `desce`）、`excluir`（其中的字段不再属于任何分区，排在末尾） |
 | `unidades` | `salvar`（符号、名称、基准和系数、零点以及同时显示为；新符号会同步到使用它的地方），`excluir`（仅在未使用时；换算成它的单位一起删除） |
+| `marcas` | `salvar`（名称，不与其他重复；国家、网站和备注）、`juntar`（`em_id`：手表转到另一个品牌，本品牌移除）、`excluir`（手表变为没有品牌） |
 | `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、晒太阳、充电器；上链盒要通过上链盒页面放上，即 `winder_posicoes`，除非手表的位置空闲：那时它会回到那里）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够；上链盒上只能在回到位置时打开）、`periodo`（已经过去的一段时间；上链盒上要带位置 `posicao_id`；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 在同类型的一段刚结束的同一分钟开始的 `iniciar` 会与其衔接（该段重新变为开放），没有 `fim` 的 `periodo` 保持开放，从开始一直到现在。 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |

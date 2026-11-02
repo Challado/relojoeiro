@@ -466,7 +466,7 @@ function arvore_copiar($raiz, $dono_id, $nome)
         foreach (linhas("SELECT * FROM campo_secao WHERE no_id IN (" . $nos . ") ORDER BY id") as $x) {
             $m["campo_secao"][(int)$x["id"]] = linha_copiar("campo_secao", $x, ["no_id" => $m["no"][(int)$x["no_id"]]]);
         }
-        foreach (["campo", "lancamento_tipo", "formula", "documento_categoria", "total", "calibre"] as $t) {
+        foreach (["campo", "lancamento_tipo", "formula", "documento_categoria", "total", "calibre", "marca"] as $t) {
             $m[$t] = [];
             foreach (linhas("SELECT * FROM " . $t . " WHERE no_id IN (" . $nos . ") ORDER BY id") as $x) {
                 $troca = ["no_id" => $m["no"][(int)$x["no_id"]]];
@@ -609,7 +609,7 @@ function colecao_transferir($cid, $novo_dono)
             $trocas = [["relogio", "no_id", "no", "colecao_id = " . $cid], ["campo_valor", "campo_id", "campo", "relogio_id IN (" . $rel . ")"], ["campo_valor_item", "campo_id", "campo", "relogio_id IN (" . $rel . ")"],
                 ["acessorio_valor", "campo_id", "campo", "acessorio_id IN (SELECT id FROM acessorio WHERE colecao_id = " . $cid . ")"],
                 ["acessorio_valor_item", "campo_id", "campo", "acessorio_id IN (SELECT id FROM acessorio WHERE colecao_id = " . $cid . ")"],
-                ["lancamento", "tipo_id", "lancamento_tipo", "relogio_id IN (" . $rel . ")"], ["documento", "categoria_id", "documento_categoria", "relogio_id IN (" . $rel . ")"], ["relogio_calibre", "calibre_id", "calibre", "relogio_id IN (" . $rel . ")"],
+                ["lancamento", "tipo_id", "lancamento_tipo", "relogio_id IN (" . $rel . ")"], ["documento", "categoria_id", "documento_categoria", "relogio_id IN (" . $rel . ")"], ["relogio_calibre", "calibre_id", "calibre", "relogio_id IN (" . $rel . ")"], ["relogio_marca", "marca_id", "marca", "relogio_id IN (" . $rel . ")"],
                 ["modo_bloco", "no_id", "no", "modo_id IN (SELECT id FROM modo WHERE colecao_id = " . $cid . ")"]];
             foreach ($trocas as [$t, $col, $mapa, $onde]) {
                 // de um em um, pelos ids antigos que a coleção usa (os novos são maiores que todos os antigos: não se cruzam)

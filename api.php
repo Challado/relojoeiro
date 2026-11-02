@@ -184,6 +184,10 @@
  *                            "nome", "tipo", "unidade", "padrao", "opcoes", "grupo"}]}. O relógio com um calibre usa o valor dele
  *                            mesmo, senão o do calibre, senão o padrão do campo (a origem "calibre" nos dados da ficha e na previsão).
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=calibres"
+ *   recurso=marcas           as marcas (Casio, Seiko, Orient...), da árvore como os calibres: {"marcas": [{"id", "nome", "pais",
+ *                            "site", "observacao", "relogios": [{"id", "nome"}]}]}. O relógio aponta para uma (marca_id na gravação),
+ *                            e o nome dela aparece na coluna Marca da página Hoje, na ficha, na galeria e nas fórmulas (marca).
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=marcas"
  *   recurso=roteiro          roteiro (o texto: as linhas "nome = expressão") ou modo (o id: o roteiro efetivo dele), [dia: AAAA-MM-DD, de
  *                            hoje até um ano à frente; padrão hoje]: testa o roteiro de um modo de rodízio nesse dia, sem gravar (o
  *                            "Testar em todos os relógios" dos Modos de rodízio): {"dia", "dia_semana", "linhas": [{"nome", "expressao"}],
@@ -478,8 +482,16 @@
  *                             calibre define, vazio tira), excluir (id: os relógios dele ficam sem calibre)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=calibres -d acao=salvar -d id=0 -d nome=NH35 -d fabricante=Seiko -d "valores[reserva_horas]=41" http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=calibres -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=marcas            salvar (id: 0 cria; nome (até 80, sem repetir outra da árvore, sem diferença de maiúsculas nem de
+ *                             espaços), pais, site (http:// ou https://), observacao), juntar (id, em_id: os relógios da id passam
+ *                             para a em_id, e a id sai: duas grafias da mesma marca), excluir (id: os relógios dela ficam sem marca)
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=marcas -d acao=salvar -d id=0 -d nome=Seiko -d "pais=Japão" http://servidor/relojoeiro/api.php
+ *                            Ex. juntar: curl -u lucas:senha -d recurso=marcas -d acao=juntar -d id=7 -d em_id=2 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=marcas -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=relogio           salvar (id: 0 ou ausente cria; nome, no_id, disponivel, copia_banco (1: a cópia no banco de todos os
  *                             documentos dele; o cron copia ou tira aos poucos), calibre_id (o calibre dele; 0 ou vazio tira),
+ *                             marca_id (a marca dele, do cadastro das marcas; 0 ou vazio tira) ou marca (o nome de uma marca
+ *                             do cadastro; vazio tira; também em valores[marca]; um nome fora do cadastro é recusado),
  *                             valores[identificador]: só muda o que vier; valor vazio apaga; inválido fica o que estava e a
  *                             mensagem diz), excluir (id),
  *                             foto (id, foto_base64), remover_foto (id)
@@ -2390,6 +2402,7 @@
  *     relogios[].nome                o nome
  *     relogios[].situacao[]          as frases de situação: as sessões abertas que o estado não mostra e a autonomia restante ("Autonomia
  *                                    restante 1d 23min")
+ *     relogios[].marca               a marca do relógio (o nome no cadastro das marcas: a coluna Marca); null: sem marca
  *     relogios[].tipo                o grupo do relógio (o nome)
  *     relogios[].ultimo              a última vez no pulso (número inteiro: instante Unix (segundos desde 01/01/1970 UTC); 0: nunca)
  *     relogios[].ultimo_txt          a mesma por extenso ("agora · 14:32", "25/09 21:53", "nunca")
@@ -2402,6 +2415,18 @@
  *     totais.relogios                quantos relógios há
  *     totais.valor                   a soma do valor pago (valor_compra) de todos, em R$ (os sem valor contam 0)
  *     uso_inicio                     a hora em que o relógio do dia vai para o pulso (HH:MM)
+ *   recurso=marcas
+ *     marcas                         as marcas da árvore, pelo nome
+ *     marcas[]                       uma marca
+ *     marcas[].id                    o número da marca (o marca_id da gravação do relógio)
+ *     marcas[].nome                  o nome (Casio, Seiko...)
+ *     marcas[].pais                  o país; null: não informado
+ *     marcas[].site                  o site; null: sem
+ *     marcas[].observacao            a observação; null: sem
+ *     marcas[].relogios              os relógios da coleção que apontam para ela, por nome
+ *     marcas[].relogios[]            um relógio
+ *     marcas[].relogios[].id         o número do relógio
+ *     marcas[].relogios[].nome       o nome do relógio
  *   recurso=ficha
  *     posses                         os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
  *     posses[]                       as situações na coleção, na ordem (o menu "Situação na coleção" do cadastro)
@@ -2705,6 +2730,11 @@
  *                                    do_calibre com um por linha)
  *     campos[].regra                 o mínimo e o máximo do número em texto, para mostrar embaixo da entrada ("de 20 a 60 mm"); null: sem
  *                                    limite
+ *     marcas                         as marcas da árvore, pelo nome (o menu Marca do cadastro)
+ *     marcas[]                       uma marca
+ *     marcas[].id                    o número da marca (o marca_id da gravação do relógio)
+ *     marcas[].nome                  o nome (Casio, Seiko...)
+ *     marcas[].pais                  o país; null: não informado
  *     calibres                       os calibres da árvore, pelo nome (o menu Calibre do cadastro)
  *     calibres[]                     um calibre
  *     calibres[].id                  o número do calibre (o calibre_id da gravação)
@@ -2803,6 +2833,12 @@
  *     relogio.disponivel             verdadeiro ou falso: entra no rodízio
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
+ *     relogio.marca                  a marca do relógio (Cadastros › Marcas); null: sem marca
+ *     relogio.marca.id               o número da marca
+ *     relogio.marca.nome             o nome da marca
+ *     relogio.marca.pais             o país; null: não informado
+ *     relogio.marca.site             o site; null: sem
+ *     relogio.marca.observacao       a observação; null: sem
  *     relogio.calibre                o calibre (o movimento) do relógio; null: sem calibre
  *     relogio.calibre.id             o número do calibre
  *     relogio.calibre.nome           o nome do calibre
@@ -7704,6 +7740,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/precisao.php";
 } elseif ($recurso === "calibres") {
     require __DIR__ . "/api/calibres.php";
+} elseif ($recurso === "marcas") {
+    require __DIR__ . "/api/marcas.php";
 } elseif ($recurso === "unidades") {
     require __DIR__ . "/api/unidades.php";
 } elseif ($recurso === "servicos") {
@@ -7801,7 +7839,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

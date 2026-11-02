@@ -28,6 +28,8 @@ $saida = ["hoje" => $hoje->format("Y-m-d"), "trocar_hoje" => trocar_hoje_permiti
     // as situações na coleção, na ordem, para o menu do cadastro
     "posses" => lista_opcoes("relogio_situacao"),
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem()),
+    // as marcas da árvore, para o menu do cadastro
+    "marcas" => array_map(function ($m) { return ["id" => (int)$m["id"], "nome" => $m["nome"], "pais" => $m["pais"]]; }, linhas("SELECT id, nome, pais FROM marca ORDER BY nome, id")),
     // os calibres da árvore, para o menu do cadastro
     "calibres" => array_map(function ($c) { return ["id" => (int)$c["id"], "nome" => $c["nome"], "fabricante" => $c["fabricante"]]; }, linhas("SELECT id, nome, fabricante FROM calibre ORDER BY nome, id"))];
 if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
@@ -90,6 +92,9 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         // a reserva medida (o quadro Reserva): os testes do mecânico e as observações da energia; null sem reserva no cadastro
         "reserva" => ($rs_f = reserva_do_relogio($r, $agora)),
         "copia_banco" => (int)$r["copia_banco"] === 1,
+        // a marca (Cadastros › Marcas): o nome, o país, o site e a observação; null sem
+        "marca" => ($mar_f = marca_do_relogio($id)) ? ["id" => (int)$mar_f["id"], "nome" => $mar_f["nome"], "pais" => $mar_f["pais"], "site" => $mar_f["site"],
+            "observacao" => $mar_f["observacao"]] : null,
         // o calibre (o movimento): o cadastro dele, com o link do manual técnico e as recomendações; null sem
         "calibre" => ($cal_f = calibre_do_relogio($id)) ? ["id" => (int)$cal_f["id"], "nome" => $cal_f["nome"], "fabricante" => $cal_f["fabricante"], "link" => $cal_f["link"],
             "observacao" => $cal_f["observacao"],

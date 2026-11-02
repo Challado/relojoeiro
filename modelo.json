@@ -709,18 +709,6 @@
             "calibre": 1
         },
         {
-            "identificador": "marca",
-            "nome": "Marca",
-            "tipo": "texto",
-            "unidade": "",
-            "padrao": null,
-            "grupo": "raiz",
-            "secao": "Identificação",
-            "ordem": 7,
-            "so_desejado": 0,
-            "calibre": 0
-        },
-        {
             "identificador": "referencia",
             "nome": "Referência (o modelo)",
             "tipo": "texto",

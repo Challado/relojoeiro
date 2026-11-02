@@ -576,7 +576,61 @@ function valores_proprios($id)
 // dois tem fica com o padrão do campo (o do grupo), como sempre
 function valores_do_relogio($id)
 {
-    return array_merge(valores_do_calibre_do_relogio($id), valores_proprios($id));
+    // a marca vem do cadastro (marca_do_relogio), com a chave de antes (o campo de texto marca, até a v52): as telas e as
+    // fórmulas que a liam continuam lendo
+    $marca = marca_do_relogio($id);
+    return array_merge(valores_do_calibre_do_relogio($id), valores_proprios($id), $marca !== null ? ["marca" => $marca["nome"]] : []);
+}
+
+// As marcas dos relógios da coleção, lidas uma vez por requisição (e de novo depois de uma gravação: FORMULAS_VERSAO):
+// [relogio_id => a linha da marca]
+function marcas_dos_relogios()
+{
+    static $cache = [];
+    $k = (int)colecao_atual() . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$k])) {
+        $res = [];
+        if (banco_tem_tabela("relogio_marca")) {
+            foreach (linhas("SELECT rm.relogio_id, m.* FROM relogio_marca rm JOIN marca m ON m.id = rm.marca_id") as $x) {
+                $rid = (int)$x["relogio_id"];
+                unset($x["relogio_id"]);
+                $res[$rid] = $x;
+            }
+        }
+        $cache = [$k => $res];
+    }
+    return $cache[$k];
+}
+
+// A marca de um relógio (a linha do cadastro: id, nome, pais, site, observacao), ou null
+function marca_do_relogio($id)
+{
+    return marcas_dos_relogios()[(int)$id] ?? null;
+}
+
+// As marcas da árvore (Cadastros › Marcas), pelo nome, cada uma com os relógios que apontam para ela
+function marcas_todas()
+{
+    $rels = [];
+    foreach (linhas("SELECT rm.marca_id, r.id, r.nome FROM relogio_marca rm JOIN relogio r ON r.id = rm.relogio_id ORDER BY r.nome, r.id") as $x) {
+        $rels[(int)$x["marca_id"]][] = ["id" => (int)$x["id"], "nome" => $x["nome"]];
+    }
+    return array_map(function ($m) use ($rels) {
+        return ["id" => (int)$m["id"], "nome" => $m["nome"], "pais" => $m["pais"], "site" => $m["site"], "observacao" => $m["observacao"],
+            "relogios" => $rels[(int)$m["id"]] ?? []];
+    }, linhas("SELECT * FROM marca ORDER BY nome, id"));
+}
+
+// A marca da árvore com esse nome (sem diferença de maiúsculas nem de espaços), ou null
+function marca_pelo_nome($nome)
+{
+    $nome = trim((string)preg_replace("/\\s+/u", " ", (string)$nome));
+    foreach (linhas("SELECT * FROM marca ORDER BY id") as $m) {
+        if (mesmo_nome($m["nome"], $nome)) {
+            return $m;
+        }
+    }
+    return null;
 }
 
 // Os calibres dos relógios da coleção, lidos uma vez por requisição (e de novo depois de uma gravação: FORMULAS_VERSAO):
@@ -1217,7 +1271,56 @@ $MIGRACOES = [
     "v49" => ["migracao_v49.sql", tk("o aviso Carregar: converter corretamente as horas no pulso para dias, sem prever séculos de bateria guardada; a precisão dos pesos dos sorteios passa a ser configurável"), "sistema.chave=migracao_v49", "migracao_v49_dados"],
     "v50" => ["migracao_v50.sql", tk("a previsão de descarga com o gasto medido fixo durante a projeção; o aviso Carregar usa a mesma conta da ficha; os períodos que precisam de recarga no meio e a confiança das estimativas"), "sistema.chave=migracao_v50", "migracao_v50_dados"],
     "v51" => ["migracao_v51.sql", tk("as medições reconstruídas após correções, o aprendizado com leituras frequentes e a validade dos dados do gasto da bateria"), "sistema.chave=migracao_v51", "migracao_v51_dados"],
+    "v52" => ["migracao_v52.sql", tk("o cadastro das marcas (Cadastros › Marcas: o nome, o país, o site e a observação), com a marca de cada relógio na ficha e na tabela da página Hoje; o texto da marca de cada relógio vira uma marca do cadastro"), "sistema.chave=migracao_v52", "migracao_v52_dados"],
 ];
+
+// O texto do campo marca de cada relógio vira uma marca do cadastro da árvore do campo (a mesma grafia, sem diferença de
+// maiúsculas nem de espaços, vira uma marca só, com a grafia do primeiro relógio), o relógio passa a apontar para ela e o
+// campo sai (os valores saem junto). Uma instalação nova não tem o campo: só a marca
+function migracao_v52_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            foreach (linhas("SELECT id, no_id FROM campo WHERE identificador = 'marca' AND (alvo IS NULL OR alvo = 'relogio') ORDER BY id") as $c) {
+                // a raiz da árvore do campo: o cadastro das marcas é da árvore inteira
+                $raiz = (int)$c["no_id"];
+                for ($voltas = 0; $voltas < 1000; $voltas++) {
+                    $pai = valor("SELECT pai_id FROM no WHERE id = ?", [$raiz]);
+                    if ($pai === null) {
+                        break;
+                    }
+                    $raiz = (int)$pai;
+                }
+                $marcas = [];
+                foreach (linhas("SELECT id, nome FROM marca WHERE no_id = ?", [$raiz]) as $m) {
+                    $marcas[(int)$m["id"]] = $m["nome"];
+                }
+                foreach (linhas("SELECT relogio_id, valor FROM campo_valor WHERE campo_id = ? ORDER BY relogio_id", [(int)$c["id"]]) as $v) {
+                    // os espaços repetidos viram um, e o nome cabe em 80 letras (sem depender do mbstring)
+                    $nome = (string)preg_replace("/^(.{80}).*\$/us", "\$1", trim((string)preg_replace("/\\s+/u", " ", (string)$v["valor"])));
+                    if ($nome === "" || valor("SELECT relogio_id FROM relogio_marca WHERE relogio_id = ?", [(int)$v["relogio_id"]]) !== null) {
+                        continue;
+                    }
+                    $mid = null;
+                    foreach ($marcas as $id_m => $nome_m) {
+                        if (mesmo_nome($nome_m, $nome)) {
+                            $mid = $id_m;
+                            break;
+                        }
+                    }
+                    if ($mid === null) {
+                        sql("INSERT INTO marca (no_id, nome) VALUES (?, ?)", [$raiz, $nome]);
+                        $mid = ultimo_id();
+                        $marcas[$mid] = $nome;
+                    }
+                    sql("INSERT INTO relogio_marca (relogio_id, marca_id) VALUES (?, ?)", [(int)$v["relogio_id"], $mid]);
+                }
+                sql("DELETE FROM campo WHERE id = ?", [(int)$c["id"]]);
+            }
+        });
+    }
+    sis_set("migracao_v52", "1");
+}
 
 function migracao_v51_dados($nova = false)
 {
@@ -2139,6 +2242,7 @@ $FUNCOES = [
 // As variáveis do motor, que não são campos nem fórmulas do cadastro: o nome => o que devolve
 $VARIAVEIS_MOTOR = [
     "nota_criterios" => tk("a nota do relógio pelos critérios (a página Critérios), no instante da conta"),
+    "marca" => tk("a marca do relógio, como texto: o nome no cadastro das marcas (Cadastros › Marcas); vazio sem marca"),
 ];
 
 class ErroFormula extends Exception
@@ -3248,6 +3352,9 @@ function variavel_valor($ident, &$ctx)
             $res = nota_do_relogio($ctx["r"], $ctx["momento"])["nota"];
             unset($ctx["pilha"]["nota_criterios"]);
         }
+    } elseif ($ident === "marca" && !isset($campos[$ident])) {
+        // a marca do cadastro (antes da v52, um campo de texto com este identificador)
+        $res = marca_do_relogio((int)$ctx["r"]["id"])["nome"] ?? null;
     } elseif (isset($campos[$ident])) {
         $bruto = $ctx["valores"][$ident] ?? null;
         $res = campo_para_conta($campos[$ident], $bruto === null || $bruto === "" ? $campos[$ident]["padrao"] : $bruto);
@@ -3360,7 +3467,8 @@ function formula_validar($ident, $expressao)
     $erros = [];
     try {
         $refs = formula_referencias(formula_ler($expressao));
-        $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), [$ident]);
+        // a marca (o cadastro das marcas) vale nas fórmulas como uma variável do relógio
+        $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), [$ident, "marca"]);
         foreach ($refs["variaveis"] as $v) {
             if (!in_array($v, $conhecidas, true)) {
                 $erros[] = t("variável desconhecida: {1} (não é campo nem fórmula)", [1 => $v]);
@@ -3423,7 +3531,7 @@ function tabela_linha($r, $agora, $extra = [])
     $val = valores_do_relogio((int)$r["id"]);
     $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
             AND t.marcha IS NULL ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
-    return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
+    return ["id" => (int)$r["id"], "nome" => $r["nome"], "marca" => marca_do_relogio((int)$r["id"])["nome"] ?? null, "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
         "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
         "em_manutencao" => ($mn_h = manutencao_aberta((int)$r["id"])) !== null ? $mn_h["oficina"] : null,
         "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? ($mn_h !== null ? t("Em manutenção") : (posse_de($r) === "emprestado" ? posse_texto($r) : t("Indisponível"))) : $v["estado_texto"],
@@ -3475,6 +3583,7 @@ const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "WINDER_POSICAO", 
 $VARIAVEIS_TABELA = [
     "codigo" => [tk("o código do relógio (a coluna Código)"), ""],
     "nome" => [tk("o nome do relógio"), ""],
+    "marca" => [tk("a marca do relógio (o cadastro das marcas: a coluna Marca; vazio: sem marca)"), ""],
     "tipo" => [tk("o tipo (o grupo da árvore onde ele está: a coluna Tipo)"), ""],
     "estado" => [tk("o estado agora, por extenso (Em uso, Em repouso, No winder, Indisponível...)"), ""],
     "disponivel" => [tk("1 se o relógio está disponível para o rodízio, 0 se não"), ""],
@@ -3491,7 +3600,7 @@ $VARIAVEIS_TABELA = [
 ];
 
 // As colunas da tabela dos relógios onde um total pode ir (a chave é a do cabeçalho da página Hoje), na ordem dela
-const TOTAL_COLUNAS = ["codigo" => "Código", "nome" => "Relógio", "tipo" => "Tipo", "estado" => "Estado", "carga" => "Carga", "ultimo" => "Última vez usado",
+const TOTAL_COLUNAS = ["codigo" => "Código", "nome" => "Relógio", "marca" => "Marca", "tipo" => "Tipo", "estado" => "Estado", "carga" => "Carga", "ultimo" => "Última vez usado",
     "manut" => "Próxima manutenção", "em" => "Em", "fazer" => "O que fazer", "encostado" => "Encostado", "compra" => "Comprado em", "valor" => "Valor"];
 // Como os números de um total saem: número (inteiro quando é, senão até 2 casas), inteiro, decimal (2 casas), moeda (R$),
 // porcentagem, data e dias
@@ -3501,7 +3610,7 @@ const TOTAL_FORMATOS = ["numero" => "Número", "inteiro" => "Inteiro", "decimal"
 // Os nomes das colunas e dos formatos, no idioma do pedido
 function total_colunas_nomes()
 {
-    return ["codigo" => t("Código"), "nome" => t("Relógio"), "tipo" => t("Tipo"), "estado" => t("Estado"), "carga" => t("Carga"), "ultimo" => t("Última vez usado"),
+    return ["codigo" => t("Código"), "nome" => t("Relógio"), "marca" => t("Marca"), "tipo" => t("Tipo"), "estado" => t("Estado"), "carga" => t("Carga"), "ultimo" => t("Última vez usado"),
         "manut" => t("Próxima manutenção"), "em" => t("Em"), "fazer" => t("O que fazer"), "encostado" => t("Encostado"), "compra" => t("Comprado em"), "valor" => t("Valor")];
 }
 
@@ -3592,7 +3701,7 @@ function total_validar($expressao)
 function tabela_variaveis($linha, $r, $agora)
 {
     $em_dias = function ($data) { return $data === null || $data === "" ? null : dias_de(strtotime(substr((string)$data, 0, 10) . " 00:00:00")); };
-    return ["codigo" => (int)$linha["id"], "nome" => $linha["nome"], "tipo" => $linha["tipo"], "estado" => $linha["estado_texto"], "disponivel" => $linha["disponivel"] ? 1 : 0,
+    return ["codigo" => (int)$linha["id"], "nome" => $linha["nome"], "marca" => $linha["marca"], "tipo" => $linha["tipo"], "estado" => $linha["estado_texto"], "disponivel" => $linha["disponivel"] ? 1 : 0,
         "em_uso" => $linha["em_uso"] ? 1 : 0, "carga" => $linha["carga"] === null ? null : (float)$linha["carga"],
         "ultimo_uso" => $linha["em_uso"] ? dias_de($agora) : ((int)$linha["ultimo"] > 0 ? dias_de((int)$linha["ultimo"]) : null),
         "manutencao_data" => $linha["manutencao"] ? $em_dias($linha["manutencao"]["data"]) : null, "manutencao_nome" => $linha["manutencao"]["nome"] ?? null,
