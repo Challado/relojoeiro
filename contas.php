@@ -272,6 +272,7 @@ function usuario_publico($u)
     $exp = $u["expira_em"] ?? null;
     return ["id" => (int)$u["id"], "login" => $u["login"], "email" => $u["email"] ?? null, "papel" => $u["papel"], "idioma" => $u["idioma"] ?? null, "fuso" => $u["fuso"] ?? null,
         "nivel" => ($u["nivel"] ?? "avancado") === "basico" ? "basico" : "avancado",
+        "rodizio_ativo" => ($u["rodizio_ativo"] ?? null) === null ? null : (int)$u["rodizio_ativo"] === 1,
         "criado" => $u["criado"], "ultimo_acesso" => $u["ultimo_acesso"] ?? null, "expira_em" => $exp, "demo" => $exp !== null,
         "dias_restantes" => $exp !== null ? max(0, (int)ceil((strtotime((string)$exp) - time()) / 86400)) : null, "bloqueado" => (int)($u["bloqueado"] ?? 0) === 1];
 }
@@ -653,7 +654,7 @@ function conta_consulta()
         $real = $GLOBALS["USUARIO_REAL"] ?? null;
         return ["usuario" => usuario_publico($u), "vendo_como" => $real !== null ? ["login" => $u["login"], "master" => $real["login"]] : null,
             "colecoes" => colecoes_visiveis($u), "colecao" => colecao_atual(), "papel" => papel_na_colecao(),
-            "arvores" => arvores_do_dono($uid),
+            "arvores" => arvores_do_dono($uid), "rodizio_sistema" => parametro_gravado("rodizio_ativo") !== 0,
             "pedidos" => array_map(function ($p) { return ["id" => (int)$p["id"], "colecao_id" => $p["colecao_id"] !== null ? (int)$p["colecao_id"] : null,
                 "dono_id" => $p["dono_id"] !== null ? (int)$p["dono_id"] : null, "alvo" => alvo_codigo($p["colecao_id"], $p["dono_id"]), "criado" => $p["criado"], "expira" => $p["expira"]]; },
                 linhas("SELECT * FROM pedido WHERE usuario_id = ? ORDER BY criado", [$uid])),
@@ -945,6 +946,21 @@ function op_conta($acao, $d)
     $extra = [];
     if ($acao === "alterar") {
         $campos = [];
+        if (array_key_exists("rodizio_ativo", $d)) {
+            if (is_array($d["rodizio_ativo"]) || !in_array((string)$d["rodizio_ativo"], ["", "0", "1"], true)) {
+                $erros[] = t("Rodízio: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
+            } else {
+                $campos["rodizio_ativo"] = (string)$d["rodizio_ativo"] === "" ? null : (int)$d["rodizio_ativo"];
+                $geral = parametro_gravado("rodizio_ativo") !== 0;
+                $antes = ($u["rodizio_ativo"] ?? null) === null ? $geral : (int)$u["rodizio_ativo"] === 1;
+                $depois = $campos["rodizio_ativo"] === null ? $geral : $campos["rodizio_ativo"] === 1;
+                if ($depois) {
+                    $retomada = max((int)strtotime((string)($u["rodizio_retomado_em"] ?? "")),
+                        ($u["rodizio_ativo"] ?? null) === null ? (int)sis("rodizio_retomado_em") : 0);
+                    $campos["rodizio_retomado_em"] = $antes && $retomada === 0 ? null : date("Y-m-d H:i:s", $antes ? $retomada : time());
+                }
+            }
+        }
         if (array_key_exists("email", $d)) {
             $email = trim((string)$d["email"]);
             if ($email !== "" && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
@@ -991,12 +1007,15 @@ function op_conta($acao, $d)
                     sql("DELETE FROM usuario_aparelho WHERE usuario_id = ?", [$uid]);
                 }
             });
+            usuario_definir(array_merge($u, $campos));
+            $GLOBALS["RODIZIO_USUARIO_VERSAO"] = ($GLOBALS["RODIZIO_USUARIO_VERSAO"] ?? 0) + 1;
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             if (isset($campos["senha_hash"]) && aparelho_atual() !== null) {
                 aparelho_cookie("", true);
             }
             $msg = isset($campos["senha_hash"]) ? t("Conta atualizada. Os aparelhos lembrados foram esquecidos: entre de novo com a senha nova.") : t("Conta atualizada.");
         } elseif (count($erros) === 0) {
-            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel ou senha (com senha_atual).");
+            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel, rodizio_ativo ou senha (com senha_atual).");
         }
     } elseif ($acao === "excluir") {
         if ($u["papel"] === "master" && (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario WHERE papel = 'master'"); }) <= 1) {

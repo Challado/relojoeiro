@@ -38,6 +38,8 @@ CREATE TABLE usuario (
     idioma         VARCHAR(10) NULL,                    -- vazio: o da coleção
     fuso           VARCHAR(60) NULL,                    -- o fuso horário da pessoa ("America/Sao_Paulo"); vazio: o da coleção, senão o do sistema
     nivel          VARCHAR(10) NOT NULL DEFAULT 'avancado', -- o modo da interface: basico (o dia a dia) ou avancado (também as fórmulas, os roteiros...)
+    rodizio_ativo  TINYINT NULL,                       -- vazio: herda o sistema; vale nas coleções deste dono que não escolheram outro valor
+    rodizio_retomado_em DATETIME NULL,                 -- a retomada não registra uso automático nas horas pausadas
     expira_em      DATETIME NULL,
     bloqueado      TINYINT NOT NULL DEFAULT 0,
     criado         DATETIME NOT NULL,
@@ -46,6 +48,7 @@ CREATE TABLE usuario (
     CONSTRAINT ck_usuario_email CHECK (email IS NULL OR email LIKE '%_@_%'),
     CONSTRAINT ck_usuario_bloqueado CHECK (bloqueado IN (0, 1)),
     CONSTRAINT ck_usuario_nivel CHECK (nivel IN ('basico', 'avancado')),
+    CONSTRAINT ck_usuario_rodizio CHECK (rodizio_ativo IS NULL OR rodizio_ativo IN (0, 1)),
     CONSTRAINT ck_usuario_aparados CHECK (login = TRIM(login) AND (email IS NULL OR email = TRIM(email)))
 ) ENGINE=InnoDB;
 

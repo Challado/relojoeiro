@@ -13,8 +13,9 @@ pela API, do jeito que uma pessoa usa o sistema:
 
 ## Como rodar
 
-`php testes/rodizio.php` confere, em uma base SQLite descartável, o padrão geral, a substituição por coleção, as permissões,
-a pausa sem apagar programação ou histórico, as marcações manuais, as previsões e a retomada sem uso automático retroativo.
+`php testes/rodizio.php` confere, em uma base SQLite descartável, a hierarquia sistema → usuário → coleção, as permissões,
+a herança nas coleções do mesmo dono (também para membros e cron), a pausa sem apagar programação ou histórico, as
+marcações manuais, as previsões e a retomada sem uso automático retroativo.
 Também roda no job de arquitetura do CI.
 
 Com os bancos no ar (MySQL/MariaDB, PostgreSQL e Firebird; o SQLite não precisa de servidor), um comando faz tudo:

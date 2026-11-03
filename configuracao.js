@@ -239,14 +239,14 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var marca = function (nome, ligado) {
           return el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1", "checked": ligado});
         };
-        var rodizio = d.rodizio || {ativo: true, sistema: true, colecao: null, origem: "padrao"};
+        var rodizio = d.rodizio || {ativo: true, sistema: true, colecao: null, usuario: null, origem: "padrao"};
         var rotina = cartao(t("Rotina do dia"), el("div", {"class": "campos"},
           parCampo(t("Rodízio da coleção"), el("select", {"name": "rodizio_ativo"},
-            el("option", {"value": "", "selected": cfg("rodizio_ativo") === ""}, t("Herdar do sistema ({1})", {1: rodizio.sistema ? t("ligado") : t("desligado")}))
+            el("option", {"value": "", "selected": cfg("rodizio_ativo") === ""}, t("Herdar do usuário ({1})", {1: (rodizio.usuario === null || rodizio.usuario === undefined ? rodizio.sistema : rodizio.usuario) ? t("ligado") : t("desligado")}))
             + el("option", {"value": "1", "selected": cfg("rodizio_ativo") === "1"}, t("Ligado"))
             + el("option", {"value": "0", "selected": cfg("rodizio_ativo") === "0"}, t("Desligado"))), null,
             ex("rodizio-ativo", t("Rodízio da coleção"), t("Desligado, o rodízio pausa os sorteios, o uso automático e os lembretes do plano. O plano e o histórico ficam guardados; cadastro, avisos e marcações manuais continuam disponíveis.")))
-          + parCampo(t("Rodízio efetivo"), h(rodizio.ativo ? t("Ligado") : t("Desligado")) + " · " + h(rodizio.colecao === null ? t("herdado do sistema") : t("definido na coleção")))
+          + parCampo(t("Rodízio efetivo"), h(rodizio.ativo ? t("Ligado") : t("Desligado")) + " · " + h(rodizio.colecao !== null ? t("definido na coleção") : (rodizio.origem === "usuario" ? t("herdado do usuário") : t("herdado do sistema"))))
           + parCampo(t("Manhã: relógio do dia e avisos"), hora("horario_manha", cfg("horario_manha")))
           + parCampo(t("Noite: preparar o de amanhã"), hora("horario_noite", cfg("horario_noite")))
           + parCampo(t("No pulso a partir de"), hora("uso_inicio", cfg("uso_inicio")))

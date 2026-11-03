@@ -1119,7 +1119,8 @@
  *     config.escala_inicio           de onde a escala inteligente conta os dias do modo: amanha ou vazio (o padrão): hoje, ou amanhã quando
  *                                    o dia de hoje já começou no pulso; hoje: sempre hoje (o de hoje que já começou é o 1º dia: a escala de
  *                                    7 dias vai até daqui a 6)
- *     config.rodizio_ativo           1 ligado, 0 desligado, vazio ou ausente herda o padrão do sistema; padrão geral ligado
+ *     config.rodizio_ativo           1 ligado, 0 desligado, vazio ou ausente herda o dono da coleção e depois o sistema; padrão geral
+ *                                    ligado
  *     config.rodizio_retomado_em     instante Unix da retomada da coleção: evita registrar uso automático durante a pausa
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
@@ -2244,9 +2245,11 @@
  *   recurso=hoje
  *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
  *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
- *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o sistema
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
+ *     rodizio.usuario                a escolha do dono da coleção: true ligado, false desligado, null herda o sistema; é a mesma para
+ *                                    membros e cron
  *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
- *     rodizio.origem                 de onde vem a escolha efetiva: colecao, sistema ou padrao
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, usuario, sistema ou padrao
  *     fora_da_colecao[].posse_comportamento
  *                                    o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
  *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
@@ -2463,9 +2466,11 @@
  *   recurso=ficha
  *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
  *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
- *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o sistema
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
+ *     rodizio.usuario                a escolha do dono da coleção: true ligado, false desligado, null herda o sistema; é a mesma para
+ *                                    membros e cron
  *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
- *     rodizio.origem                 de onde vem a escolha efetiva: colecao, sistema ou padrao
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, usuario, sistema ou padrao
  *     posses                         os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
  *     posses[]                       as situações na coleção, na ordem (o menu "Situação na coleção" do cadastro)
  *     posses[].valor                 o identificador da situação, o que vai na gravação (posse)
@@ -3830,9 +3835,11 @@
  *   recurso=config
  *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
  *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
- *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o sistema
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
+ *     rodizio.usuario                a escolha do dono da coleção: true ligado, false desligado, null herda o sistema; é a mesma para
+ *                                    membros e cron
  *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
- *     rodizio.origem                 de onde vem a escolha efetiva: colecao, sistema ou padrao
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, usuario, sistema ou padrao
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     atualizar_segundos             o intervalo de atualização das páginas, já com o padrão (a Configuração, atualizar_segundos: 1 a
  *                                    86400; 0, não se atualizam sozinhas; padrão 60)
@@ -3915,7 +3922,8 @@
  *     config.escala_inicio           de onde a escala inteligente conta os dias do modo: amanha ou vazio (o padrão): hoje, ou amanhã quando
  *                                    o dia de hoje já começou no pulso; hoje: sempre hoje (o de hoje que já começou é o 1º dia: a escala de
  *                                    7 dias vai até daqui a 6)
- *     config.rodizio_ativo           1 ligado, 0 desligado, vazio ou ausente herda o padrão do sistema; padrão geral ligado
+ *     config.rodizio_ativo           1 ligado, 0 desligado, vazio ou ausente herda o dono da coleção e depois o sistema; padrão geral
+ *                                    ligado
  *     config.rodizio_retomado_em     instante Unix da retomada da coleção: evita registrar uso automático durante a pausa
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
@@ -4518,9 +4526,11 @@
  *   recurso=plano
  *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
  *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
- *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o sistema
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
+ *     rodizio.usuario                a escolha do dono da coleção: true ligado, false desligado, null herda o sistema; é a mesma para
+ *                                    membros e cron
  *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
- *     rodizio.origem                 de onde vem a escolha efetiva: colecao, sistema ou padrao
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, usuario, sistema ou padrao
  *     escala_fim                     até que dia vai a escala (null fora da escala)
  *     modo                           o nome do modo em uso
  *     plano[]                        o plano gravado: o relógio de cada dia
@@ -6758,6 +6768,8 @@
  *     usuario.idioma                 o idioma; null: o da coleção
  *     usuario.fuso                   o fuso horário da pessoa ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão
  *                                    o do sistema
+ *     rodizio_sistema                o padrão geral do rodízio, para a opção Herdar do sistema em Minha conta
+ *     usuario.rodizio_ativo          o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
  *     usuario.nivel                  o modo da interface: basico (o dia a dia: as telas deixam de fora as páginas e as partes do avançado)
  *                                    ou avancado (tudo); o motor é o mesmo
  *     niveis[]                       os modos da interface, para a escolha em Minha conta
@@ -7032,6 +7044,7 @@
  *     usuarios[].email               o e-mail (para recuperar a senha, os convites e os avisos)
  *     usuarios[].papel               master (cuida do sistema inteiro) ou comum
  *     usuarios[].idioma              o idioma dele; null: o da coleção
+ *     usuarios[].rodizio_ativo       o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
  *     usuarios[].nivel               o modo da interface dele: basico ou avancado
  *     usuarios[].fuso                o fuso horário dele ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão o do
  *                                    sistema

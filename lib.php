@@ -1275,7 +1275,13 @@ $MIGRACOES = [
     "v53" => ["migracao_v53.sql", tk("os totais na coluna Marca da tabela dos relógios, com o total pronto Por marca (quantos relógios de cada marca) no rodapé e na página de totais"), "sistema.chave=migracao_v53", "migracao_v53_dados"],
     "v54" => ["migracao_v54.sql", tk("os relatórios cadastrados: em Cadastros › Relatórios e pela API (recurso=relatorios), cada um com as colunas (uma expressão por relógio, o formato e a conta do rodapé), o filtro, a ordem, o agrupamento e quais relógios; eles aparecem no catálogo dos relatórios (Meus relatórios), com o CSV"), "relatorio"],
     "v55" => ["migracao_v55.sql", tk("o SQL pela API (recurso=sql, só o master: SELECT, INSERT, ALTER TABLE ... ADD COLUMN e, com a aprovação na Configuração do sistema, UPDATE e DELETE), com o registro de cada execução; e os parâmetros de operação do config.php (o cadastro aberto, os dias da demonstração e do convite, o tamanho dos documentos, a espera das telas, o lote, a cópia de segurança) também na Configuração › Sistema e pela API"), "sql_execucao"],
+    "v56" => ["migracao_v56.sql", tk("o rodízio em três níveis: padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração"), "sistema.chave=migracao_v56", "migracao_v56_dados"],
 ];
+
+function migracao_v56_dados($nova = false)
+{
+    sis_set("migracao_v56", "1");
+}
 
 // A regra da coluna dos totais aceita a Marca (nos quatro bancos), e cada árvore que ainda não tem total na coluna Marca
 // ganha o "Por marca" do modelo.json, no idioma da coleção, no fim da ordem. Uma instalação nova já tem os dois (o
@@ -4530,15 +4536,30 @@ function cfg_set($chave, $valor)
     cfg($chave, (string)$valor);
 }
 
-// O rodízio: a coleção pode substituir o padrão do sistema. Sem escolha nos dois níveis, continua ligado.
-// A pausa preserva o plano e as sessões registradas; apenas o plano em execução deixa de valer.
+// O padrão é do sistema; o dono pode substituí-lo para suas coleções, e cada coleção pode substituir o dono.
+// Lê o dono da coleção, mesmo quando o pedido é de um membro ou do cron. Uma consulta por coleção a cada alteração.
+function rodizio_dono()
+{
+    static $cache = [];
+    $c = colecao_atual();
+    $k = (int)$c . ":" . ($GLOBALS["RODIZIO_USUARIO_VERSAO"] ?? 0);
+    if (!array_key_exists($k, $cache)) {
+        $cache[$k] = $c === null ? null : sem_escopo(function () use ($c) {
+            return linha("SELECT u.id, u.rodizio_ativo, u.rodizio_retomado_em FROM usuario u JOIN colecao c ON c.dono_id = u.id WHERE c.id = ?", [$c]);
+        });
+    }
+    return $cache[$k];
+}
+
 function rodizio_configuracao()
 {
     $escolha = cfg("rodizio_ativo");
     $geral = parametro_gravado("rodizio_ativo");
+    $dono = rodizio_dono();
+    $usuario = ($dono["rodizio_ativo"] ?? null) === null ? null : (int)$dono["rodizio_ativo"] === 1;
     $colecao = in_array($escolha, ["0", "1"], true) ? $escolha === "1" : null;
-    return ["ativo" => $colecao ?? ($geral !== 0), "colecao" => $colecao, "sistema" => $geral !== 0,
-        "origem" => $colecao !== null ? "colecao" : ($geral !== null ? "sistema" : "padrao")];
+    return ["ativo" => $colecao ?? $usuario ?? ($geral !== 0), "colecao" => $colecao, "usuario" => $usuario, "sistema" => $geral !== 0,
+        "origem" => $colecao !== null ? "colecao" : ($usuario !== null ? "usuario" : ($geral !== null ? "sistema" : "padrao"))];
 }
 
 function rodizio_ativo()
@@ -4550,7 +4571,12 @@ function rodizio_ativo()
 function rodizio_retomado_em()
 {
     $colecao = (int)cfg("rodizio_retomado_em");
-    return in_array(cfg("rodizio_ativo"), ["0", "1"], true) ? $colecao : max($colecao, (int)sis("rodizio_retomado_em"));
+    if (in_array(cfg("rodizio_ativo"), ["0", "1"], true)) {
+        return $colecao;
+    }
+    $dono = rodizio_dono();
+    return max($colecao, (int)strtotime((string)($dono["rodizio_retomado_em"] ?? "")),
+        ($dono["rodizio_ativo"] ?? null) === null ? (int)sis("rodizio_retomado_em") : 0);
 }
 
 // O usuário do site que veio no pedido (HTTP Basic, com a senha conferida), ou "" (as páginas e a API)
