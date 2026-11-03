@@ -151,6 +151,12 @@ async function recarga(page){
     assert.equal(await page.inputValue('[name=rodizio_ativo]'),'');
     assert.match(await page.locator('[name=rodizio_ativo] option:checked').textContent(),/usuário \(ligado\)/);
     assert.match(await page.locator('body').innerText(),/herdado do usuário/);total++;
+    // Voltar ao padrão geral precisa indicar o valor padrão, mesmo quando há uma substituição gravada.
+    const sistema=inicial();sistema.dados.sistema.parametros=[{chave:'rodizio_ativo',nome:'Rodízio: padrão do sistema',descricao:'1 ligado; 0 desligado',tipo:'sim_nao',valor:0,origem:'sistema',config_php:null,config_valor:null,padrao:1,minimo:0,maximo:1}];
+    await montar(page,sistema);
+    assert.equal(await page.locator('[name="parametros[rodizio_ativo]"] option[value=""]').textContent(),'Padrão: sim');
+    await page.selectOption('[name="parametros[rodizio_ativo]"]','');await salvar(page);await page.locator('#aviso-config').waitFor();
+    assert.equal((await estado(page)).posts.at(-1)['parametros[rodizio_ativo]'],'');total++;
     await ctx.close();console.log(total+' cenários de componente passaram (Chromium; sem rede/banco).');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

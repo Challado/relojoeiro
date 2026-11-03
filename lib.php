@@ -4542,7 +4542,7 @@ function rodizio_dono()
 {
     static $cache = [];
     $c = colecao_atual();
-    $k = (int)$c . ":" . ($GLOBALS["RODIZIO_USUARIO_VERSAO"] ?? 0);
+    $k = (int)$c . ":" . ($GLOBALS["RODIZIO_USUARIO_VERSAO"] ?? 0) . ":" . fuso_atual();
     if (!array_key_exists($k, $cache)) {
         $cache[$k] = $c === null ? null : sem_escopo(function () use ($c) {
             return linha("SELECT u.id, u.rodizio_ativo, u.rodizio_retomado_em FROM usuario u JOIN colecao c ON c.dono_id = u.id WHERE c.id = ?", [$c]);

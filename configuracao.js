@@ -372,7 +372,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
           var de = p.origem === "sistema" ? "" : (p.config_valor !== null ? p.config_valor : p.padrao);
           var origem = p.origem === "sistema" ? t("gravado aqui") : (p.origem === "config" ? t("do config.php ({1})", {1: p.config_php}) : t("o padrão"));
           var campo = p.tipo === "sim_nao"
-            ? el("select", {"name": "parametros[" + p.chave + "]"}, el("option", {"value": "", "selected": p.origem !== "sistema"}, p.config_php === null ? t("Padrão: {1}", {1: de === 1 ? t("sim") : t("não")}) : t("Como o config.php: {1}", {1: de === 1 ? t("sim") : t("não")}))
+            ? el("select", {"name": "parametros[" + p.chave + "]"}, el("option", {"value": "", "selected": p.origem !== "sistema"}, p.config_php === null ? t("Padrão: {1}", {1: p.padrao === 1 ? t("sim") : t("não")}) : t("Como o config.php: {1}", {1: de === 1 ? t("sim") : t("não")}))
               + el("option", {"value": "1", "selected": p.origem === "sistema" && p.valor === 1}, t("Sim")) + el("option", {"value": "0", "selected": p.origem === "sistema" && p.valor === 0}, t("Não")))
             : el("input", {"type": "number", "name": "parametros[" + p.chave + "]", "min": String(p.minimo), "max": String(p.maximo), "value": p.origem === "sistema" ? String(p.valor) : "", "placeholder": String(de)});
           // o rótulo com a descrição em cima e o campo embaixo (largo): a descrição não cabe ao lado do campo no celular

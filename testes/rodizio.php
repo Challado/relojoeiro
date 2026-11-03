@@ -141,6 +141,18 @@ try {
     $local = rodizio_retomado_em();
     exigir_rodizio(op_conta("alterar", ["rodizio_ativo" => "0"])["ok"] && rodizio_ativo(), "A pausa do usuário ignorou a escolha da coleção.");
     exigir_rodizio(rodizio_retomado_em() === $local, "A pausa do usuário mudou a retomada da coleção explícita.");
+    cfg_set("rodizio_ativo", "");
+    cfg_set("rodizio_retomado_em", "0");
+    fuso_definir(null);
+    exigir_rodizio(op_conta("alterar", ["rodizio_ativo" => "1"])["ok"], "Não retomou para conferir o fuso.");
+    $referencia = rodizio_retomado_em();
+    fuso_definir("Asia/Tokyo", "usuario");
+    exigir_rodizio(rodizio_retomado_em() === $referencia, "O fuso mudou o instante da retomada guardado em cache.");
+    exigir_rodizio(op_conta("alterar", ["rodizio_ativo" => "1"])["ok"], "Não salvou no fuso do usuário.");
+    exigir_rodizio(rodizio_retomado_em() === $referencia, "Gravar no fuso do usuário mudou a retomada.");
+    fuso_definir("America/New_York", "usuario");
+    exigir_rodizio(rodizio_retomado_em() === $referencia, "O fuso do visitante mudou a retomada.");
+    fuso_definir(null);
     echo "Rodízio: níveis, permissões, pausa, marcações, previsão e retomada conferem.\n";
 } catch (Throwable $e) {
     fwrite(STDERR, $e->getMessage() . " (" . basename($e->getFile()) . ":" . $e->getLine() . ")\nBase: " . $pasta . "\n");

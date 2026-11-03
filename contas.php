@@ -951,12 +951,16 @@ function op_conta($acao, $d)
                 $erros[] = t("Rodízio: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
             } else {
                 $campos["rodizio_ativo"] = (string)$d["rodizio_ativo"] === "" ? null : (int)$d["rodizio_ativo"];
+                // O login foi lido antes de escolher o fuso do pedido. Releia a preferência já no fuso atual.
+                $preferencia = sem_escopo(function () use ($uid) {
+                    return linha("SELECT rodizio_ativo, rodizio_retomado_em FROM usuario WHERE id = ?", [$uid]);
+                });
                 $geral = parametro_gravado("rodizio_ativo") !== 0;
-                $antes = ($u["rodizio_ativo"] ?? null) === null ? $geral : (int)$u["rodizio_ativo"] === 1;
+                $antes = ($preferencia["rodizio_ativo"] ?? null) === null ? $geral : (int)$preferencia["rodizio_ativo"] === 1;
                 $depois = $campos["rodizio_ativo"] === null ? $geral : $campos["rodizio_ativo"] === 1;
                 if ($depois) {
-                    $retomada = max((int)strtotime((string)($u["rodizio_retomado_em"] ?? "")),
-                        ($u["rodizio_ativo"] ?? null) === null ? (int)sis("rodizio_retomado_em") : 0);
+                    $retomada = max((int)strtotime((string)($preferencia["rodizio_retomado_em"] ?? "")),
+                        ($preferencia["rodizio_ativo"] ?? null) === null ? (int)sis("rodizio_retomado_em") : 0);
                     $campos["rodizio_retomado_em"] = $antes && $retomada === 0 ? null : date("Y-m-d H:i:s", $antes ? $retomada : time());
                 }
             }
