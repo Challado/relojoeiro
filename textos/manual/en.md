@@ -1,4 +1,4 @@
-<!-- origem: 1fe7820a19f6a2eabb72b403b2814fa1a470ee8d -->
+<!-- origem: 25d047aee68861db3f4326054d3eab2dec0a4ed1 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1415,6 +1415,8 @@ The autonomies come out in seconds in the API (`recurso=autonomia`) and in words
 The **Settings** page keeps the options **of the collection** (each collection has its own). In parentheses, each one's name in
 the API (`recurso=config`, under the `config` key), for those who automate; the default of a new collection comes at the end of
 each line.
+
+Cards fill the available spaces according to screen width and content height. The **System** panel spans the full width, with its options in columns; on phones, there is a single column. The layout adapts to font, width and content changes without changing field order or losing focus.
 
 ### General {#geral}
 

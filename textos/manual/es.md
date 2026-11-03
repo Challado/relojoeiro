@@ -1,4 +1,4 @@
-<!-- origem: 1fe7820a19f6a2eabb72b403b2814fa1a470ee8d -->
+<!-- origem: 25d047aee68861db3f4326054d3eab2dec0a4ed1 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1407,6 +1407,8 @@ Las autonomías salen en segundos en la API (`recurso=autonomia`) y en palabras 
 La página **Configuración** guarda las opciones **de la colección** (cada colección tiene las suyas). Entre paréntesis, el
 nombre de cada una en la API (`recurso=config`, en la clave `config`), para quien automatiza; el valor por defecto de una
 colección nueva va al final de cada línea.
+
+Los cuadros ocupan los espacios disponibles según la anchura de la pantalla y la altura del contenido. **Sistema** ocupa todo el ancho, con sus opciones en columnas; en el móvil hay una sola columna. La distribución se adapta a los cambios de fuente, anchura y contenido sin alterar el orden de los campos ni perder el foco.
 
 ### General {#geral}
 

@@ -1,4 +1,4 @@
-<!-- origem: 1fe7820a19f6a2eabb72b403b2814fa1a470ee8d -->
+<!-- origem: 25d047aee68861db3f4326054d3eab2dec0a4ed1 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1455,6 +1455,8 @@ Les autonomies sortent en secondes dans l'API (`recurso=autonomia`) et en mots s
 La page **Configuration** garde les options **de la collection** (chaque collection a les siennes). Entre parenthèses, le nom
 de chacune dans l'API (`recurso=config`, sous la clé `config`), pour qui automatise ; la valeur par défaut d'une nouvelle
 collection vient à la fin de chaque ligne.
+
+Les cartes remplissent les espaces disponibles selon la largeur de l’écran et la hauteur du contenu. Le panneau **Système** occupe toute la largeur, avec ses options en colonnes ; sur téléphone, il n’y a qu’une colonne. La disposition s’adapte aux changements de police, de largeur et de contenu sans modifier l’ordre des champs ni perdre le focus.
 
 ### Général {#geral}
 

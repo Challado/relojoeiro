@@ -1464,6 +1464,8 @@ The **Settings** page keeps the options **of the collection** (each collection h
 the API (`recurso=config`, under the `config` key), for those who automate; the default of a new collection comes at the end of
 each line.
 
+Cards fill the available spaces according to screen width and content height. The **System** panel spans the full width, with its options in columns; on phones, there is a single column. The layout adapts to font, width and content changes without changing field order or losing focus.
+
 ### General
 
 | Option | What it does |

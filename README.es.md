@@ -1457,6 +1457,8 @@ La página **Configuración** guarda las opciones **de la colección** (cada col
 nombre de cada una en la API (`recurso=config`, en la clave `config`), para quien automatiza; el valor por defecto de una
 colección nueva va al final de cada línea.
 
+Los cuadros ocupan los espacios disponibles según la anchura de la pantalla y la altura del contenido. **Sistema** ocupa todo el ancho, con sus opciones en columnas; en el móvil hay una sola columna. La distribución se adapta a los cambios de fuente, anchura y contenido sin alterar el orden de los campos ni perder el foco.
+
 ### General
 
 | Opción | Qué hace |

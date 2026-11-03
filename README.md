@@ -1431,6 +1431,10 @@ As autonomias saem em segundos para a API (`recurso=autonomia`) e por extenso na
 A página **Configuração** guarda as opções **da coleção** (cada coleção tem as suas). Entre parênteses, o nome de cada uma na API
 (`recurso=config`, na chave `config`), para quem automatiza; o padrão de uma coleção nova vem no fim de cada linha.
 
+Os cartões se distribuem pelos espaços livres, conforme a largura da tela e a altura do conteúdo. O quadro **Sistema**
+ocupa a largura toda, com suas opções em colunas; no celular, fica uma coluna só. A distribuição acompanha mudanças
+de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
+
 ### Geral
 
 | Opção | O que faz |

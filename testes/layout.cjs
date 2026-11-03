@@ -1,7 +1,8 @@
 // Conferência do layout: todas as telas, em 15 tamanhos (computador de 1100 a 1920px, tablet de pé e deitado, celular de 320 a
 // 412px), procurando o que quebra: a página que rola de lado, o elemento que sai da caixa (o quadro, o cartão) em que está, a
 // etiqueta (com fundo ou borda) partida em duas linhas, o texto cortado, o botão com o texto partido ("Abrir" numa linha, "foto"
-// na outra) e irmãos sobrepostos. Abre os <details> e passa por cada opção dos menus que mostram partes (o quadro Marcar).
+// na outra), irmãos sobrepostos e espaço vazio aproveitável entre os cartões da Configuração. Abre os <details> e passa
+// por cada opção dos menus que mostram partes (o quadro Marcar).
 // Antes, deixa os dados do cenário "feios" de propósito (nomes longos, observação comprida, fotos: veja estressar); ESTRESSE=0
 // confere com os dados como estão.
 // Roda sobre o banco do cenário (testes/cenario.php: os relógios 1, 3, 4, 5, 7 e 8) e precisa do Playwright com o Chromium:
@@ -178,6 +179,37 @@ function examinar(seletorRaiz) {
       }
     }
   }
+  // Cartões independentes: uma linha da grade não pode deixar uma coluna vazia até o cartão vizinho terminar.
+  // O fim mais baixo da coluna é natural; o defeito é um vão interno em que o próximo cartão poderia começar antes.
+  for (const grade of raiz.querySelectorAll('#form-config .config-grade, #form-config .parametros-sistema')) {
+    const rg = grade.getBoundingClientRect();
+    const cs = getComputedStyle(grade);
+    const topo = rg.top + parseFloat(cs.paddingTop || 0) + parseFloat(cs.borderTopWidth || 0);
+    const limite = Math.max(6 * parseFloat(getComputedStyle(document.documentElement).fontSize), 3 * Math.max(parseFloat(cs.rowGap) || 0, parseFloat(cs.columnGap) || 0));
+    const cartoes = [...grade.children].filter(e => e.matches('.cartao-config, .par-campo') && visivel(e)).map(e => ({e, r: e.getBoundingClientRect()}));
+    for (const atual of cartoes) {
+      const acima = cartoes.filter(outro => outro !== atual && outro.r.bottom <= atual.r.top + 1
+        && Math.min(outro.r.right, atual.r.right) - Math.max(outro.r.left, atual.r.left) > Math.min(outro.r.width, atual.r.width) * .8);
+      const fim = acima.length ? Math.max(...acima.map(outro => outro.r.bottom)) : topo;
+      const vazio = atual.r.top - fim;
+      if (vazio > limite) {
+        probs.push({tipo: 'espaco-aproveitavel', det: Math.round(vazio) + 'px vazios antes do cartão (limite ' + Math.round(limite) + 'px)', quem: nomear(atual.e)});
+      }
+    }
+    // A sobra no fim só é um defeito se um cartão mais abaixo, em outra coluna, couber nela e puder subir bastante.
+    // Uma coluna curta ao lado de um único cartão alto não tem como preencher sua sobra e não deve reprovar.
+    const colunas = cartoes.filter((c, i) => !cartoes.slice(0, i).some(outro => Math.abs(outro.r.left - c.r.left) < 2));
+    const fundo = Math.max(topo, ...cartoes.map(c => c.r.bottom));
+    const intervalo = parseFloat(cs.columnGap) || 0;
+    for (const coluna of colunas) {
+      const fim = Math.max(...cartoes.filter(c => Math.abs(c.r.left - coluna.r.left) < 2).map(c => c.r.bottom));
+      const cabe = cartoes.find(c => Math.abs(c.r.left - coluna.r.left) >= 2 && c.r.width <= coluna.r.width + 2
+        && c.r.top - fim > limite && c.r.height + intervalo <= fundo - fim);
+      if (cabe) {
+        probs.push({tipo: 'espaco-aproveitavel', det: Math.round(fundo - fim) + 'px livres em outra coluna; este cartão pode subir ' + Math.round(cabe.r.top - fim - intervalo) + 'px', quem: nomear(cabe.e)});
+      }
+    }
+  }
   // 6. linhas de texto que se sobrepõem a outros elementos de texto (por exemplo, valor por cima da tabela do lado): folhas
   return probs;
 }
@@ -278,6 +310,16 @@ async function conferirDetector(b) {
     const problemas = (await p.evaluate(examinar)).filter(x => x.tipo === 'texto-partido');
     if (problemas.some(x => x.quem.includes('button#foto')) || !problemas.some(x => x.quem.includes('button#quebra'))) {
       throw new Error('O detector deve ignorar a imagem e continuar detectando o texto partido.');
+    }
+    await p.setViewportSize({width: 1100, height: 800});
+    const cartoes = '<section class="cartao-config" style="height:160px">A</section><section class="cartao-config" style="height:720px">B</section><section class="cartao-config" style="height:140px">C</section><section class="cartao-config" style="height:180px">D</section>';
+    const compactos = [160, 720, 140, 180].map(h => '<section class="cartao-config" style="height:' + h + 'px;grid-row-end:span ' + Math.ceil((h + 16) / 4) + '">Cartão</section>').join('');
+    const colunaLonga = [500, 300, 500, 100, 750, 100, 100].map(h => '<section class="cartao-config" style="height:' + h + 'px">Cartão</section>').join('');
+    await p.setContent('<style>.config-grade{width:536px;margin-bottom:20px;gap:16px}.cartao-config{break-inside:avoid;margin:0 0 16px}#linhas,#compacta{display:grid;grid-template-columns:1fr 1fr;align-items:start}#linhas section,#compacta section{margin:0}#compacta{grid-auto-rows:4px;row-gap:0;grid-auto-flow:dense}#colunas{width:836px;columns:3;column-gap:16px;column-fill:auto;height:1000px}#unica{display:grid;grid-template-columns:1fr}</style><form id="form-config"><div class="config-grade" id="linhas">' + cartoes + '</div><div class="config-grade" id="colunas">' + colunaLonga + '</div><div class="config-grade" id="compacta">' + compactos + '</div><div class="config-grade" id="unica">' + cartoes + '</div></form>');
+    const espacos = (await p.evaluate(examinar)).filter(x => x.tipo === 'espaco-aproveitavel');
+    if (!espacos.some(x => x.quem.includes('#linhas')) || !espacos.some(x => x.quem.includes('#colunas'))
+      || espacos.some(x => /#compacta|#unica/.test(x.quem))) {
+      throw new Error('O detector deve pegar vãos internos e sobras que comportam outro cartão, aceitando a distribuição compacta e a coluna única.');
     }
   } finally {
     await c.close();

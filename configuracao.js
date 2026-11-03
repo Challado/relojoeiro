@@ -138,9 +138,52 @@ function recarregarIdiomaConfig(lingua, mensagem, posicaoAnterior) {
   window.location.reload();
 }
 
-// Um quadro da Configuração: o título, o conteúdo e, se houver, o pé (a explicação e os botões, sempre embaixo: os quadros
-// da mesma linha têm a mesma altura)
-// um quadro da página: o título (com o ⓘ das explicações, quando tem), o corpo e o pé (os avisos que precisam ficar à vista)
+// Distribui cartões e opções do sistema pela altura real, sem mudar a ordem dos elementos e do foco.
+var observadorQuadrosConfig = null;
+var quadroAnimacaoConfig = null;
+var ajustarQuadrosConfig = null;
+
+function agendarQuadrosConfig() {
+  if (quadroAnimacaoConfig === null) {
+    quadroAnimacaoConfig = requestAnimationFrame(function () {
+      quadroAnimacaoConfig = null;
+      if (ajustarQuadrosConfig) { ajustarQuadrosConfig(); }
+    });
+  }
+}
+
+function organizarQuadrosConfig() {
+  if (observadorQuadrosConfig) { observadorQuadrosConfig.disconnect(); observadorQuadrosConfig = null; }
+  if (quadroAnimacaoConfig !== null) { cancelAnimationFrame(quadroAnimacaoConfig); quadroAnimacaoConfig = null; }
+  var grades = Array.from(document.querySelectorAll("#form-config .config-grade, #form-config .parametros-sistema"));
+  ajustarQuadrosConfig = null;
+  if (!grades.length) { return; }
+  var quadros = grades.reduce(function (todos, grade) { return todos.concat(Array.from(grade.children)); }, []);
+  ajustarQuadrosConfig = function () {
+    grades.forEach(function (grade) {
+      var filhos = Array.from(grade.children);
+      var alturas = filhos.map(function (q) { return q.getBoundingClientRect().height; });
+      grade.classList.add("config-colunas");
+      var estilo = getComputedStyle(grade);
+      var linha = parseFloat(estilo.gridAutoRows);
+      var intervalo = parseFloat(estilo.columnGap) || 0;
+      if (!linha) { grade.classList.remove("config-colunas"); return; }
+      filhos.forEach(function (q, i) {
+        var span = "span " + Math.ceil((alturas[i] + intervalo) / linha);
+        if (q.style.gridRowEnd !== span) { q.style.gridRowEnd = span; }
+      });
+    });
+  };
+  ajustarQuadrosConfig();
+  if (typeof ResizeObserver === "function") {
+    observadorQuadrosConfig = new ResizeObserver(agendarQuadrosConfig);
+    quadros.forEach(function (q) { observadorQuadrosConfig.observe(q); });
+  }
+}
+
+addEventListener("resize", agendarQuadrosConfig);
+if (document.fonts) { document.fonts.ready.then(agendarQuadrosConfig); }
+
 function cartao(titulo, corpo, pe, explica) {
   return el("section", {"class": "cartao-config"}, el("h2", {}, h(titulo) + (explica || "")) + el("div", {"class": "cartao-corpo"}, corpo) + (pe ? el("div", {"class": "cartao-pe"}, pe) : ""));
 }
@@ -209,6 +252,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
         res += el("p", {}, el("a", {"href": "configuracao.php", "class": "botao"}, t("Continuar para a Configuração")));
       }
       document.getElementById("configuracao").innerHTML = el("section", {"class": "cartao-config aviso-banco"}, res);
+      organizarQuadrosConfig();
     } else {
       // a cópia de segurança é do sistema inteiro: só o master vê (os outros recebem 403, e o quadro não aparece)
       return Promise.all([api({recurso: "config"}), api({recurso: "backup"}).catch(function () { return null; })]).then(function (rs) {
@@ -368,7 +412,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
           el("p", {"class": "nota"}, h(sp.texto)),
           ex("senhas", t("Senhas"), t("Vale para toda senha nova: a conta criada, a troca em Minha conta, a senha nova pelo link do Esqueci a senha e a do master em Usuários; as que já existem continuam valendo. É do sistema inteiro: só o master muda.")));
         // os parâmetros de operação do sistema inteiro (só o master): o que estava só no config.php; vazio volta ao config.php
-        var parametros = d.sistema.pode_mudar && Array.isArray(d.sistema.parametros) ? cartao(t("Sistema"), el("div", {"class": "campos"}, d.sistema.parametros.map(function (p) {
+        var parametros = d.sistema.pode_mudar && Array.isArray(d.sistema.parametros) ? cartao(t("Sistema"), el("div", {"class": "campos parametros-sistema"}, d.sistema.parametros.map(function (p) {
           var de = p.origem === "sistema" ? "" : (p.config_valor !== null ? p.config_valor : p.padrao);
           var origem = p.origem === "sistema" ? t("gravado aqui") : (p.origem === "config" ? t("do config.php ({1})", {1: p.config_php}) : t("o padrão"));
           var campo = p.tipo === "sim_nao"
@@ -392,7 +436,8 @@ function recarregarConfig(aplicadas, manterPosicao) {
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-          + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + parametros + quadroCron + sorteios + alertas)
+          + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + quadroCron + sorteios + alertas)
+          + parametros
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
@@ -411,6 +456,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
         // ---------- o SQL pela API (só o master): montado depois, pelo recurso=sql ----------
         res += d.sistema.pode_mudar ? el("section", {"id": "sql", "class": "cartao-config"}, el("p", {"class": "nota"}, t("Lendo…"))) : "";
         document.getElementById("configuracao").innerHTML = res;
+        organizarQuadrosConfig();
         montarSql(null);
         if (!manterPosicao && !retornoConfig && window.location.hash) {
           var alvo = document.getElementById(window.location.hash.slice(1));
@@ -510,4 +556,5 @@ recarregarConfig([]).then(function () {
   });
 }).catch(function (e) {
   document.getElementById("configuracao").innerHTML = el("p", {"class": "acao"}, t("Não consegui ler a configuração: {1}", {1: h(e.message)}));
+  organizarQuadrosConfig();
 });

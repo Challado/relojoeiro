@@ -1508,6 +1508,8 @@ La page **Configuration** garde les options **de la collection** (chaque collect
 de chacune dans l'API (`recurso=config`, sous la clé `config`), pour qui automatise ; la valeur par défaut d'une nouvelle
 collection vient à la fin de chaque ligne.
 
+Les cartes remplissent les espaces disponibles selon la largeur de l’écran et la hauteur du contenu. Le panneau **Système** occupe toute la largeur, avec ses options en colonnes ; sur téléphone, il n’y a qu’une colonne. La disposition s’adapte aux changements de police, de largeur et de contenu sans modifier l’ordre des champs ni perdre le focus.
+
 ### Général
 
 | Option | Ce qu'elle fait |

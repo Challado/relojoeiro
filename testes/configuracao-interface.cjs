@@ -34,7 +34,7 @@ var aoGravar=function(){};
 document.addEventListener('submit',function(ev){var f=ev.target;if(ev.defaultPrevented||!f.hasAttribute('data-recurso'))return;ev.preventDefault();var d=new FormData(f);d.append('recurso',f.dataset.recurso);f.querySelectorAll('button').forEach(b=>b.disabled=true);enviar(d).then(r=>aoGravar(f,r,d)).catch(e=>{window.erroTeste=e.message;});});
 
 `;
-const estilo = `*{box-sizing:border-box}body{margin:0;font:16px system-ui}nav{padding:20px;background:#ddd}main{max-width:1000px;margin:auto;padding:20px}.config-grade{display:grid;grid-template-columns:1fr;gap:20px}.cartao-config{border:1px solid #bbb;border-radius:8px;padding:20px}.par-campo{display:grid;grid-template-columns:1fr 52%;gap:10px;padding:12px 0}.par-campo.largo{grid-template-columns:1fr}.controle>*:not([type=checkbox]){max-width:100%;width:100%}select,input,button{padding:10px;min-height:40px}input[type=hidden]{display:none}.barra-salvar{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #999;padding:10px;z-index:10;display:flex;justify-content:space-between}.nota{line-height:1.6}#copia{min-height:350px;margin:30px 0 100px}pre{white-space:pre-wrap}@media(min-width:1000px){.config-grade{grid-template-columns:1fr 1fr}}`;
+const estilo = `.parametros-sistema{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(20rem,100%),1fr));column-gap:20px;align-items:start}.config-grade.config-colunas,.parametros-sistema.config-colunas{grid-auto-rows:4px;row-gap:0;grid-auto-flow:dense;align-items:start}.config-grade.config-colunas>.cartao-config{margin:0}*{box-sizing:border-box}body{margin:0;font:16px system-ui}nav{padding:20px;background:#ddd}main{max-width:1000px;margin:auto;padding:20px}.config-grade{display:grid;grid-template-columns:1fr;gap:20px}.cartao-config{border:1px solid #bbb;border-radius:8px;padding:20px}.par-campo{display:grid;grid-template-columns:1fr 52%;gap:10px;padding:12px 0}.par-campo.largo{grid-template-columns:1fr}.controle>*:not([type=checkbox]){max-width:100%;width:100%}select,input,button{padding:10px;min-height:40px}input[type=hidden]{display:none}.barra-salvar{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #999;padding:10px;z-index:10;display:flex;justify-content:space-between}.nota{line-height:1.6}#copia{min-height:350px;margin:30px 0 100px}pre{white-space:pre-wrap}@media(min-width:1000px){.config-grade{grid-template-columns:1fr 1fr}}`;
 async function montar(page, fixture) {
   // document.open (setContent) descarta os listeners da montagem anterior; cada recarga tem novo estado de JS.
   await page.setContent('<!doctype html><html lang="'+fixture.lingua+'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+estilo+'</style><body><nav id="menu">'+fixture.lingua+'</nav><main id="configuracao"></main></body></html>');
@@ -157,6 +157,25 @@ async function recarga(page){
     assert.equal(await page.locator('[name="parametros[rodizio_ativo]"] option[value=""]').textContent(),'Padrão: sim');
     await page.selectOption('[name="parametros[rodizio_ativo]"]','');await salvar(page);await page.locator('#aviso-config').waitFor();
     assert.equal((await estado(page)).posts.at(-1)['parametros[rodizio_ativo]'],'');total++;
+    // O empilhamento acompanha largura, texto e altura sem trocar a ordem dos campos nem sobrepor cartões.
+    const layout=inicial();layout.dados.sistema.parametros=Array.from({length:6},(_,i)=>({chave:'teste'+i,nome:'Parâmetro '+i,descricao:'Descrição da opção. '.repeat(i+2),tipo:'sim_nao',valor:1,origem:'padrao',config_php:null,config_valor:null,padrao:1,minimo:0,maximo:1}));
+    await page.setViewportSize({width:1440,height:900});await montar(page,layout);
+    const compacta=()=>page.waitForFunction(()=>[...document.querySelectorAll('#form-config .config-grade, #form-config .parametros-sistema')].every(g=>{
+      const rs=[...g.children].map(e=>e.getBoundingClientRect());
+      return rs.every((r,i)=>{
+        if(rs.some((o,j)=>j!==i&&Math.min(r.right,o.right)-Math.max(r.left,o.left)>2&&Math.min(r.bottom,o.bottom)-Math.max(r.top,o.top)>2))return false;
+        const acima=rs.filter((o,j)=>j!==i&&o.bottom<=r.top+1&&Math.min(r.right,o.right)-Math.max(r.left,o.left)>Math.min(r.width,o.width)*.8);
+        return !acima.length||r.top-Math.max(...acima.map(o=>o.bottom))<=96;
+      });
+    }));
+    await compacta();const nomes=await page.locator('#form-config [name]').evaluateAll(es=>es.map(e=>e.name));
+    await page.evaluate(()=>{window.campoLayout=document.querySelector('[name=medicao_janela_dias]');campoLayout.focus();});
+    await page.evaluate(()=>{const d=document.createElement('div');d.style.height='400px';document.querySelector('.config-grade .cartao-config').append(d);});await compacta();
+    await page.evaluate(()=>{document.querySelector('.parametros-sistema').style.fontSize='24px';});await compacta();
+    await page.setViewportSize({width:390,height:844});await compacta();
+    await page.setViewportSize({width:1100,height:700});await compacta();
+    assert.deepEqual(await page.locator('#form-config [name]').evaluateAll(es=>es.map(e=>e.name)),nomes);
+    assert.equal(await page.evaluate(()=>document.activeElement===campoLayout),true);total++;
     await ctx.close();console.log(total+' cenários de componente passaram (Chromium; sem rede/banco).');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

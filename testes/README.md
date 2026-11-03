@@ -11,6 +11,17 @@ pela API, do jeito que uma pessoa usa o sistema:
   agora, e as rodadas acontecem com alguns segundos de diferença, os horários e as contas que andam com o tempo têm uma
   pequena folga; e o hash das senhas, que tem um sal sorteado a cada cálculo, conta só pelo algoritmo. O resto tem de sair idêntico, inclusive o tipo de cada valor (`5` não é `"5"`).
 
+## Espaços vazios na Configuração
+
+`testes/layout.cjs` mede os cartões e as opções do Sistema em cada largura. Reprova vãos internos maiores que seis
+vezes a fonte raiz (96 px com fonte de 16 px), ou três intervalos da grade, o que for maior. Também reprova a sobra no
+fim de uma coluna quando um cartão mais abaixo, em outra coluna, cabe nela e poderia subir além desse limite. A sobra
+natural ao lado de um único cartão alto é aceita. O próprio detector é testado com exemplos que devem falhar e exemplos
+compactos que devem passar; roda no job **Layout das telas** do CI, sem comparação de capturas fixas.
+
+`testes/configuracao-interface.cjs` também verifica mudanças de largura, fonte e conteúdo: os cartões não se sobrepõem,
+não abrem vãos grandes e preservam a ordem dos campos.
+
 ## Como rodar
 
 `php testes/rodizio.php` confere, em uma base SQLite descartável, a hierarquia sistema → usuário → coleção, as permissões,
