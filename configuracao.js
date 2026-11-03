@@ -176,12 +176,18 @@ function organizarQuadrosConfig() {
   };
   ajustarQuadrosConfig();
   if (typeof ResizeObserver === "function") {
-    observadorQuadrosConfig = new ResizeObserver(agendarQuadrosConfig);
+    // O observador roda antes da pintura: adiar mais um quadro deixa o conteúdo aberto sobrepor o vizinho.
+    observadorQuadrosConfig = new ResizeObserver(function () {
+      if (ajustarQuadrosConfig) { ajustarQuadrosConfig(); }
+    });
     quadros.forEach(function (q) { observadorQuadrosConfig.observe(q); });
   }
 }
 
 addEventListener("resize", agendarQuadrosConfig);
+document.addEventListener("toggle", function (ev) {
+  if (ajustarQuadrosConfig && ev.target instanceof Element && ev.target.closest("#form-config")) { ajustarQuadrosConfig(); }
+}, true);
 if (document.fonts) { document.fonts.ready.then(agendarQuadrosConfig); }
 
 function cartao(titulo, corpo, pe, explica) {

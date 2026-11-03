@@ -20,7 +20,8 @@ natural ao lado de um único cartão alto é aceita. O próprio detector é test
 compactos que devem passar; roda no job **Layout das telas** do CI, sem comparação de capturas fixas.
 
 `testes/configuracao-interface.cjs` também verifica mudanças de largura, fonte e conteúdo: os cartões não se sobrepõem,
-não abrem vãos grandes e preservam a ordem dos campos.
+não abrem vãos grandes e preservam a ordem dos campos. O registro do cron é aberto também com a animação adiada,
+para garantir que o crescimento do conteúdo seja acomodado antes da pintura, sem depender de um novo quadro.
 
 ## Como rodar
 

@@ -167,7 +167,7 @@ async function recarga(page){
         const acima=rs.filter((o,j)=>j!==i&&o.bottom<=r.top+1&&Math.min(r.right,o.right)-Math.max(r.left,o.left)>Math.min(r.width,o.width)*.8);
         return !acima.length||r.top-Math.max(...acima.map(o=>o.bottom))<=96;
       });
-    }));
+    }),null,{polling:50,timeout:5000});
     await compacta();const nomes=await page.locator('#form-config [name]').evaluateAll(es=>es.map(e=>e.name));
     await page.evaluate(()=>{window.campoLayout=document.querySelector('[name=medicao_janela_dias]');campoLayout.focus();});
     await page.evaluate(()=>{const d=document.createElement('div');d.style.height='400px';document.querySelector('.config-grade .cartao-config').append(d);});await compacta();
@@ -176,6 +176,11 @@ async function recarga(page){
     await page.setViewportSize({width:1100,height:700});await compacta();
     assert.deepEqual(await page.locator('#form-config [name]').evaluateAll(es=>es.map(e=>e.name)),nomes);
     assert.equal(await page.evaluate(()=>document.activeElement===campoLayout),true);total++;
+    // O cron cresce ao abrir o registro, mesmo com requestAnimationFrame adiado (aba em segundo plano ou CI ocupado).
+    await page.evaluate(()=>{window.animacaoOriginal=window.requestAnimationFrame;window.animacoesPendentes=[];window.requestAnimationFrame=fn=>{animacoesPendentes.push(fn);return animacoesPendentes.length;};});
+    await page.waitForTimeout(100);
+    await page.evaluate(()=>{document.querySelector('.registro-cron').open=true;});await compacta();
+    await page.evaluate(()=>{window.requestAnimationFrame=animacaoOriginal;animacoesPendentes.forEach(fn=>animacaoOriginal(fn));});total++;
     await ctx.close();console.log(total+' cenários de componente passaram (Chromium; sem rede/banco).');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
