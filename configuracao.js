@@ -239,8 +239,15 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var marca = function (nome, ligado) {
           return el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1", "checked": ligado});
         };
+        var rodizio = d.rodizio || {ativo: true, sistema: true, colecao: null, origem: "padrao"};
         var rotina = cartao(t("Rotina do dia"), el("div", {"class": "campos"},
-          parCampo(t("Manhã: relógio do dia e avisos"), hora("horario_manha", cfg("horario_manha")))
+          parCampo(t("Rodízio da coleção"), el("select", {"name": "rodizio_ativo"},
+            el("option", {"value": "", "selected": cfg("rodizio_ativo") === ""}, t("Herdar do sistema ({1})", {1: rodizio.sistema ? t("ligado") : t("desligado")}))
+            + el("option", {"value": "1", "selected": cfg("rodizio_ativo") === "1"}, t("Ligado"))
+            + el("option", {"value": "0", "selected": cfg("rodizio_ativo") === "0"}, t("Desligado"))), null,
+            ex("rodizio-ativo", t("Rodízio da coleção"), t("Desligado, o rodízio pausa os sorteios, o uso automático e os lembretes do plano. O plano e o histórico ficam guardados; cadastro, avisos e marcações manuais continuam disponíveis.")))
+          + parCampo(t("Rodízio efetivo"), h(rodizio.ativo ? t("Ligado") : t("Desligado")) + " · " + h(rodizio.colecao === null ? t("herdado do sistema") : t("definido na coleção")))
+          + parCampo(t("Manhã: relógio do dia e avisos"), hora("horario_manha", cfg("horario_manha")))
           + parCampo(t("Noite: preparar o de amanhã"), hora("horario_noite", cfg("horario_noite")))
           + parCampo(t("No pulso a partir de"), hora("uso_inicio", cfg("uso_inicio")))
           + parCampo(t("Pôr no pulso sozinho"), marca("pulso_auto_inicio", cfg("pulso_auto_inicio") !== "0"), "check",
@@ -365,7 +372,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
           var de = p.origem === "sistema" ? "" : (p.config_valor !== null ? p.config_valor : p.padrao);
           var origem = p.origem === "sistema" ? t("gravado aqui") : (p.origem === "config" ? t("do config.php ({1})", {1: p.config_php}) : t("o padrão"));
           var campo = p.tipo === "sim_nao"
-            ? el("select", {"name": "parametros[" + p.chave + "]"}, el("option", {"value": "", "selected": p.origem !== "sistema"}, t("Como o config.php: {1}", {1: de === 1 ? t("sim") : t("não")}))
+            ? el("select", {"name": "parametros[" + p.chave + "]"}, el("option", {"value": "", "selected": p.origem !== "sistema"}, p.config_php === null ? t("Padrão: {1}", {1: de === 1 ? t("sim") : t("não")}) : t("Como o config.php: {1}", {1: de === 1 ? t("sim") : t("não")}))
               + el("option", {"value": "1", "selected": p.origem === "sistema" && p.valor === 1}, t("Sim")) + el("option", {"value": "0", "selected": p.origem === "sistema" && p.valor === 0}, t("Não")))
             : el("input", {"type": "number", "name": "parametros[" + p.chave + "]", "min": String(p.minimo), "max": String(p.maximo), "value": p.origem === "sistema" ? String(p.valor) : "", "placeholder": String(de)});
           // o rótulo com a descrição em cima e o campo embaixo (largo): a descrição não cabe ao lado do campo no celular

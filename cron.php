@@ -269,7 +269,7 @@ function cron_colecao($hoje, $agora, $forcar)
         $log[] = t("rodada da manhã");
         // a escala se replaneja a partir do estado real; os outros modos só sorteiam na virada do período.
         // O período no pulso de cada dia é criado pela sessao_do_dia, a partir do plano.
-        if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
+        if (rodizio_ativo() && valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
             $n = gerar_escala($hoje);
             $log[] = t("escala refeita a partir do estado real: {1}{2}, até {3}", [1 => $n, 2 => $n === 1 ? " dia" : " dias", 3 => data_txt(strtotime(cfg("escala_fim")))]);
         }

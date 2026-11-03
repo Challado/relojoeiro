@@ -1,4 +1,4 @@
-<!-- origem: c421b4e9e4d6df6611127ff8b185f6520df3b339 -->
+<!-- origem: ccefebd09f43a4f1188e10a80d6df41c89b27641 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1460,6 +1460,7 @@ collection vient à la fin de chaque ligne.
 
 | Option | Ce qu'elle fait |
 |---|---|
+| **Rotation de la collection** (`rodizio_ativo`) | **Hériter du système** (vide, par défaut), **Activé** (`1`) ou **Désactivé** (`0`). Le choix explicite de la collection prévaut sur la valeur générale. Dans **Système**, seul le master modifie **Rotation : valeur par défaut du système** (`parametros[rodizio_ativo]`, valeur par défaut `1`). L’API indique l’état effectif et son origine dans `rodizio`, dans les ressources `config`, `hoje`, `plano` et `ficha`. La désactivation suspend les tirages, les débuts automatiques de port, la préparation et les projections du plan ; les inscriptions, les relevés, les rappels d’entretien et les saisies manuelles restent disponibles. Le programme et l’historique sont conservés : **Plan** affiche le programme enregistré sans actions de modification, et **Aujourd’hui** affiche la pause ou la montre au poignet. Les sessions déjà enregistrées suivent toujours leurs règles de fermeture. À la réactivation, le plan reprend effet ; une nouvelle session automatique ne compte qu’à partir de la reprise, sans remplir la période de pause. Les calendriers cessent d’inclure la montre du jour et sa veille lors de la prochaine synchronisation ; les autres rappels et événements continuent. Aucune migration n’est nécessaire. |
 | **Horaire de port, début et fin** (`uso_inicio`, `uso_fim`) | la période de la journée où une montre est au poignet. Elle vaut pour le plan, les prévisions et le « jour d'usage » de la consommation mesurée (de 7 h à 22 h, 15 heures). Par défaut : 07:00 et 22:00. |
 | **Mettre au poignet tout seul** (`pulso_auto_inicio`) | la case à côté du début : cochée, la montre du jour va toute seule au poignet au début de l'horaire de port ; décochée, seulement par **Mise au poignet**. Si à cette heure elle est ailleurs (sur le chargeur, au soleil, sur le remontoir), elle attend qu'elle en sorte, et la période au poignet commence quand elle en est sortie. Par défaut : cochée. |
 | **Retirer du poignet tout seul** (`pulso_auto_fim`) | la case à côté de la fin : cochée, elle quitte le poignet toute seule à la fin de l'horaire de port (c'est le « se ferme à » du type Au poignet) ; décochée, seulement par **Retirée du poignet**. Par défaut : cochée. |

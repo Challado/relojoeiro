@@ -11,13 +11,15 @@ var mudancas = null;
 
 function montarPlano() {
   var d = dados;
+  var rodizioAtivo = !d.rodizio || d.rodizio.ativo;
   // o dia a dia vem da API uma página por vez (o "Mostrar até" da Configuração), já com os dias livres e o filtro de relógio
   var dd = d.dia_a_dia;
   var mostrados = dd.dias;
   var ultimo = d.plano_fim;
 
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Plano")) + el("div", {"class": "botoes"}, linkRelatorio("plano", {}, t("Relatório do plano"))))
-    + el("p", {"class": "nota"}, t("Modo: {1}{2}{3}. Troque o relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão{4}.", {1: h(d.modo || t("nenhum")), 2: d.escala_fim ? t(" · a escala vai até {1}", {1: dataBr(d.escala_fim)}) : "", 3: ultimo ? t(" · o plano gravado vai até {1}", {1: dataBr(ultimo)}) : "", 4: d.escala_fim ? t(" e só ele muda") : ""}));
+    + (rodizioAtivo ? el("p", {"class": "nota"}, t("Modo: {1}{2}{3}. Troque o relógio de qualquer dia em \"trocar por…\": o dia fica escolhido à mão{4}.", {1: h(d.modo || t("nenhum")), 2: d.escala_fim ? t(" · a escala vai até {1}", {1: dataBr(d.escala_fim)}) : "", 3: ultimo ? t(" · o plano gravado vai até {1}", {1: dataBr(ultimo)}) : "", 4: d.escala_fim ? t(" e só ele muda") : ""}))
+      : el("p", {"class": "nota"}, t("Rodízio desligado. Esta é a programação guardada; ela volta a valer quando o rodízio for ligado.")) + el("a", {"href": "configuracao.php"}, t("Configuração")));
   if (recado !== "") {
     res += el("p", {"class": "acao"}, h(recado)) + tabelaMudancas(mudancas);
   }
@@ -30,7 +32,9 @@ function montarPlano() {
     }).join(""))})));
 
   // escolher os relógios de um período, dia a dia, é no Rodízio manual (o apagar fica no rodapé da página)
-  res += ajudaNota("periodo", t("Escolher os relógios de um período"), t("Para escolher os relógios de um período, dia a dia: na página {1}, no quadro Modo de rodízio, escolha \"Rodízio manual\". Para apagar a programação, veja o fim desta página.", {1: el("a", {"href": "index.php#manual"}, t("Hoje"))}));
+  if (rodizioAtivo) {
+    res += ajudaNota("periodo", t("Escolher os relógios de um período"), t("Para escolher os relógios de um período, dia a dia: na página {1}, no quadro Modo de rodízio, escolha \"Rodízio manual\". Para apagar a programação, veja o fim desta página.", {1: el("a", {"href": "index.php#manual"}, t("Hoje"))}));
+  }
 
   // o resumo, da API: quantos dias cada relógio tem no período, a porcentagem, o próximo dia e quantos foram à mão
   var rs = d.resumo;
@@ -64,7 +68,7 @@ function montarPlano() {
     linhas += el("tr", {"class": (p.dia_semana >= 6 ? "fds" : "") + (p.hoje ? " de-hoje" : "")},
       el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto) + (p.hoje ? " " + el("small", {}, t("hoje")) : ""))
       + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
-      + el("td", {"class": "trocar"}, formTrocarDia(p, d.relogios, d.hoje, d.trocar_hoje)));
+      + el("td", {"class": "trocar"}, rodizioAtivo ? formTrocarDia(p, d.relogios, d.hoje, d.trocar_hoje) : ""));
   });
   fecha();
   res += el("section", {}, el("h2", {}, t("Dia a dia{1}", {1: filtro.relogio !== "" ? t(" (só os dias do relógio escolhido)") : ""}))
@@ -73,7 +77,9 @@ function montarPlano() {
     + (dd.paginas > 1 ? el("p", {"class": "nota"}, t("Página {1} de {2} · {3} dias, {4} por página (o \"Mostrar até\" da {5}).", {1: dd.pagina, 2: dd.paginas, 3: dd.total, 4: dd.por_pagina, 5: el("a", {"href": "configuracao.php"}, t("Configuração"))})) : ""));
 
   // o rodapé: apagar os dias de um período (o modo monta de novo) e apagar tudo, depois de tudo o mais
-  res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje) + formApagarTudo(d.trocar_hoje));
+  if (rodizioAtivo) {
+    res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje) + formApagarTudo(d.trocar_hoje));
+  }
 
   var main = document.getElementById("plano");
   porHtml(main, res);

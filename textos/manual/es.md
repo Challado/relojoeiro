@@ -1,4 +1,4 @@
-<!-- origem: c421b4e9e4d6df6611127ff8b185f6520df3b339 -->
+<!-- origem: ccefebd09f43a4f1188e10a80d6df41c89b27641 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1412,6 +1412,7 @@ colección nueva va al final de cada línea.
 
 | Opción | Qué hace |
 |---|---|
+| **Rotación de la colección** (`rodizio_ativo`) | **Heredar del sistema** (vacío, predeterminado), **Activado** (`1`) o **Desactivado** (`0`). La elección explícita de la colección prevalece sobre el valor general. En **Sistema**, solo el master cambia **Rotación: valor predeterminado del sistema** (`parametros[rodizio_ativo]`, predeterminado `1`). La API muestra el estado efectivo y su origen en `rodizio` en los recursos `config`, `hoje`, `plano` y `ficha`. Al desactivarlo, se pausan los sorteos, los inicios automáticos en la muñeca, la preparación y las proyecciones del plan; el registro, las lecturas, los avisos de mantenimiento y las anotaciones manuales siguen funcionando. Se conservan la programación y el historial: **Plan** muestra la programación guardada sin acciones para modificarla, y **Hoy** muestra la pausa o el reloj en la muñeca. Las sesiones ya registradas siguen sus reglas de cierre. Al volver a activarlo, el plan vuelve a aplicarse; una nueva sesión automática solo cuenta desde la reanudación, sin rellenar el intervalo pausado. Los calendarios dejan de incluir el reloj del día y la víspera en la próxima sincronización; los demás avisos y eventos continúan. No requiere migración. |
 | **Horario de uso, inicio y fin** (`uso_inicio`, `uso_fim`) | el período del día en que un reloj está en la muñeca. Vale para el plan, las previsiones y el "día de uso" del consumo medido (de 7 a 22 h, 15 horas). Predeterminado: 07:00 y 22:00. |
 | **Poner en la muñeca solo** (`pulso_auto_inicio`) | la casilla al lado del inicio: marcada, el reloj del día va solo a la muñeca al inicio del horario de uso; desmarcada, solo con **Me lo puse**. Si a esa hora está en otro lugar (en el cargador, al sol, en el winder), espera a que salga, y el período en la muñeca empieza cuando salió. Predeterminado: marcada. |
 | **Quitar de la muñeca solo** (`pulso_auto_fim`) | la casilla al lado del fin: marcada, sale solo de la muñeca al final del horario de uso (es el "se cierra a las" del tipo En la muñeca); desmarcada, solo con **Me lo quité**. Predeterminado: marcada. |

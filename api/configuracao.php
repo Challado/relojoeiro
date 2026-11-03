@@ -17,7 +17,9 @@ foreach (linhas("SELECT chave, valor FROM config ORDER BY chave") as $c) {
 }
 // o aviso Encostado ligado ou não (a caixa da Configuração liga e desliga o aviso do cadastro, o mesmo que a página Avisos)
 $valores_c["encostado_ativo"] = encostado_ativo() ? "1" : "0";
+$valores_c["rodizio_ativo"] = cfg("rodizio_ativo");
 $saida = ["config" => (object)$valores_c,
+    "rodizio" => rodizio_configuracao(),
     // os idiomas (o menu Idioma padrão)
     "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
     // os fusos (o campo Fuso horário: vazio é o do sistema) e o do sistema

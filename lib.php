@@ -4530,6 +4530,29 @@ function cfg_set($chave, $valor)
     cfg($chave, (string)$valor);
 }
 
+// O rodízio: a coleção pode substituir o padrão do sistema. Sem escolha nos dois níveis, continua ligado.
+// A pausa preserva o plano e as sessões registradas; apenas o plano em execução deixa de valer.
+function rodizio_configuracao()
+{
+    $escolha = cfg("rodizio_ativo");
+    $geral = parametro_gravado("rodizio_ativo");
+    $colecao = in_array($escolha, ["0", "1"], true) ? $escolha === "1" : null;
+    return ["ativo" => $colecao ?? ($geral !== 0), "colecao" => $colecao, "sistema" => $geral !== 0,
+        "origem" => $colecao !== null ? "colecao" : ($geral !== null ? "sistema" : "padrao")];
+}
+
+function rodizio_ativo()
+{
+    return rodizio_configuracao()["ativo"];
+}
+
+// Ao retomar no meio do dia, só começa a contar o uso automático a partir da retomada.
+function rodizio_retomado_em()
+{
+    $colecao = (int)cfg("rodizio_retomado_em");
+    return in_array(cfg("rodizio_ativo"), ["0", "1"], true) ? $colecao : max($colecao, (int)sis("rodizio_retomado_em"));
+}
+
 // O usuário do site que veio no pedido (HTTP Basic, com a senha conferida), ou "" (as páginas e a API)
 function usuario_autenticado()
 {
@@ -4765,6 +4788,9 @@ function ciclo_atual($sequencia, $ids)
 
 function plano_do_dia($data)
 {
+    if (!rodizio_ativo() && $data >= hoje_da_colecao()->format("Y-m-d")) {
+        return null;
+    }
     return linha("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data = ?", [$data]);
 }
 
@@ -5514,6 +5540,9 @@ function bloco_do_dia($blocos, $dia)
 // que resolve o aviso é simulado terminando no começo do dia. Devolve quantos dias gravou
 function plano_montar($modo, $hoje, $de, $ate, $escala)
 {
+    if (!rodizio_ativo()) {
+        return 0;
+    }
     $roteiro = modo_roteiro($modo);
     $blocos = modo_blocos((int)$modo["id"]);
     $rels = [];
@@ -5632,6 +5661,9 @@ function plano_montar($modo, $hoje, $de, $ate, $escala)
 // novo inclusive hoje, que quer outro sorteio para hoje.
 function garantir_plano($hoje, $ate = null, $manter_pulso = true)
 {
+    if (!rodizio_ativo()) {
+        return;
+    }
     $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
     if ($modo) {
         // hoje sem plano, mas com um relógio já no pulso pelo rodízio: o plano de hoje é ele (não se sorteia outro)
@@ -8143,7 +8175,7 @@ function destaque_hoje()
 // Devolve {mostra, relogio_id, e (dia ou pulso: o que o relógio do destaque é), do_dia, no_pulso, texto}
 function destaque_da_pagina_hoje($rels, $dia)
 {
-    $mostra = destaque_hoje();
+    $mostra = rodizio_ativo() ? destaque_hoje() : "pulso";
     $dia_id = $dia !== null ? (int)$dia["relogio_id"] : null;
     $no_pulso = [];
     foreach ($rels as $r) {
@@ -8540,7 +8572,7 @@ function documentos_manutencao($orcamento, $diario = false)
 // Desligado, ele só entra pelo Pôs.
 function pulso_poe_sozinho()
 {
-    return cfg("pulso_auto_inicio") !== "0";
+    return rodizio_ativo() && cfg("pulso_auto_inicio") !== "0";
 }
 
 // O relógio sai do pulso sozinho no fim do horário de uso (a Configuração, ao lado do horário; é o padrão): o "fecha às" do
@@ -8812,7 +8844,7 @@ function fechar_esquecidas($agora, $relogio = null)
 // padrão: o relógio de hoje fica, e toda troca vale a partir de amanhã (as marcações do pulso continuam livres)
 function trocar_hoje_permitido()
 {
-    return cfg("trocar_hoje") === "1";
+    return rodizio_ativo() && cfg("trocar_hoje") === "1";
 }
 
 // O dia de hoje já começou no pulso: pondo sozinho, passou o início do horário de uso; senão, o relógio do dia já foi posto
@@ -8837,7 +8869,7 @@ function sessao_do_dia($agora)
         return;
     }
     $hoje = date("Y-m-d", $agora);
-    $ini = instante($hoje, cfg("uso_inicio"));
+    $ini = max(instante($hoje, cfg("uso_inicio")), rodizio_retomado_em());
     $fim = instante($hoje, cfg("uso_fim"));
     $p = plano_do_dia($hoje);
     // o relógio do dia que saiu da coleção hoje (vendido, emprestado...) não vai mais ao pulso sozinho
@@ -9279,6 +9311,9 @@ function escala_fim_limite($modo, $hoje)
 // vale). Devolve quantos dias gravou.
 function gerar_escala($ini, $ate = null, $nova = false)
 {
+    if (!rodizio_ativo()) {
+        return 0;
+    }
     $gravados = 0;
     $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
     $hoje = hoje_da_colecao();
@@ -9589,7 +9624,7 @@ function previsao_energia($r, $agora)
                 }
             }
             // a próxima entrada no rodízio (o primeiro dia dele no plano a partir de hoje, se não for hoje) e os dias seguidos dele
-            $proxima = valor("SELECT data FROM plano WHERE relogio_id = ? AND data >= ? ORDER BY data LIMIT 1", [(int)$r["id"], $hoje->format("Y-m-d")]);
+            $proxima = rodizio_ativo() ? valor("SELECT data FROM plano WHERE relogio_id = ? AND data >= ? ORDER BY data LIMIT 1", [(int)$r["id"], $hoje->format("Y-m-d")]) : null;
             if ($proxima !== null && $proxima !== $hoje->format("Y-m-d")) {
                 $entrada = instante($proxima, cfg("uso_inicio"));
                 $ctx = ["r" => $r, "momento" => $entrada, "rastro" => [], "pilha" => [], "valores" => $valores];
@@ -9724,7 +9759,7 @@ function autonomia_do_relogio($r, $agora)
     $fim_pulso = max($agora, (int)strtotime((string)valor("SELECT MAX(l.fim) FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
         WHERE l.relogio_id = ? AND t.identificador = 'pulso' AND l.fim > ?", [$id, date("Y-m-d H:i:s", $agora)])));
     $plano = [];
-    foreach (linhas("SELECT data FROM plano WHERE relogio_id = ? AND data >= ? ORDER BY data", [$id, date("Y-m-d", $agora)]) as $p) {
+    foreach (rodizio_ativo() ? linhas("SELECT data FROM plano WHERE relogio_id = ? AND data >= ? ORDER BY data", [$id, date("Y-m-d", $agora)]) : [] as $p) {
         $ini = max($fim_pulso, instante($p["data"], cfg("uso_inicio")));
         $fim = instante($p["data"], cfg("uso_fim"));
         if ($fim > $ini) {
@@ -10418,6 +10453,7 @@ function lote_maximo()
 // padrão, o menor e o maior (no inteiro)]
 // ---------------------------------------------------------------------------------------------------------------------
 const PARAMETROS_SISTEMA = [
+    "rodizio_ativo" => [null, "sim_nao", 1, 0, 1],
     "cadastro_aberto" => ["CADASTRO_ABERTO", "sim_nao", 1, 0, 1],
     "demo_dias" => ["DEMO_DIAS", "inteiro", 30, 0, 3650],
     "convite_dias" => ["CONVITE_DIAS", "inteiro", 7, 1, 365],
@@ -10434,6 +10470,7 @@ const PARAMETROS_SISTEMA = [
 function parametros_sistema_textos()
 {
     return [
+        "rodizio_ativo" => [t("Rodízio: padrão do sistema"), t("1: ligado; 0: desligado. Cada coleção pode herdar este padrão ou escolher seu próprio valor.")],
         "cadastro_aberto" => [t("Cadastro aberto"), t("1: qualquer um cria a conta pela página de cadastro (com os dias de demonstração); 0: só entra quem o master cria ou quem tem um convite")],
         "demo_dias" => [t("Dias da demonstração"), t("os dias da conta criada pelo cadastro aberto, até virar oficial (0: já nasce oficial)")],
         "convite_dias" => [t("Dias do convite"), t("os dias que um convite ou um pedido de acesso espera; depois, o cron apaga")],
@@ -10461,7 +10498,8 @@ function parametros_sistema_lista()
     $valores = ["cadastro_aberto" => cadastro_aberto() ? 1 : 0, "demo_dias" => demo_dias(), "convite_dias" => convite_dias(),
         "documentos_limite" => documentos_limite_sistema(), "api_espera" => api_espera_segundos(), "lote_maximo" => lote_maximo(),
         "backup_ativo" => backup_ativo() ? 1 : 0, "backup_manter" => backup_manter(), "backup_documentos" => backup_com_documentos() ? 1 : 0,
-        "sql_alteracoes" => sql_alteracoes_aprovadas() ? 1 : 0];
+        "sql_alteracoes" => sql_alteracoes_aprovadas() ? 1 : 0,
+        "rodizio_ativo" => parametro_gravado("rodizio_ativo") !== 0 ? 1 : 0];
     $textos = parametros_sistema_textos();
     $res = [];
     foreach (PARAMETROS_SISTEMA as $k => [$linha, $tipo, $padrao, $min, $max]) {

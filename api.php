@@ -1119,6 +1119,8 @@
  *     config.escala_inicio           de onde a escala inteligente conta os dias do modo: amanha ou vazio (o padrão): hoje, ou amanhã quando
  *                                    o dia de hoje já começou no pulso; hoje: sempre hoje (o de hoje que já começou é o 1º dia: a escala de
  *                                    7 dias vai até daqui a 6)
+ *     config.rodizio_ativo           1 ligado, 0 desligado, vazio ou ausente herda o padrão do sistema; padrão geral ligado
+ *     config.rodizio_retomado_em     instante Unix da retomada da coleção: evita registrar uso automático durante a pausa
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
@@ -2240,6 +2242,11 @@
  *     relogios[].restante_guardado   quanto ainda dura a partir de agora se ficar parado depois do que já está lançado (número inteiro, em
  *                                    segundos); null com o motivo
  *   recurso=hoje
+ *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
+ *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o sistema
+ *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, sistema ou padrao
  *     fora_da_colecao[].posse_comportamento
  *                                    o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
  *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
@@ -2454,6 +2461,11 @@
  *     marcas[].relogios[].id         o número do relógio
  *     marcas[].relogios[].nome       o nome do relógio
  *   recurso=ficha
+ *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
+ *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o sistema
+ *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, sistema ou padrao
  *     posses                         os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
  *     posses[]                       as situações na coleção, na ordem (o menu "Situação na coleção" do cadastro)
  *     posses[].valor                 o identificador da situação, o que vai na gravação (posse)
@@ -3816,6 +3828,11 @@
  *                                    e cada arquivo decidem
  *     relogio.documentos.total       quantos documentos ele tem
  *   recurso=config
+ *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
+ *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o sistema
+ *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, sistema ou padrao
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     atualizar_segundos             o intervalo de atualização das páginas, já com o padrão (a Configuração, atualizar_segundos: 1 a
  *                                    86400; 0, não se atualizam sozinhas; padrão 60)
@@ -3898,6 +3915,8 @@
  *     config.escala_inicio           de onde a escala inteligente conta os dias do modo: amanha ou vazio (o padrão): hoje, ou amanhã quando
  *                                    o dia de hoje já começou no pulso; hoje: sempre hoje (o de hoje que já começou é o 1º dia: a escala de
  *                                    7 dias vai até daqui a 6)
+ *     config.rodizio_ativo           1 ligado, 0 desligado, vazio ou ausente herda o padrão do sistema; padrão geral ligado
+ *     config.rodizio_retomado_em     instante Unix da retomada da coleção: evita registrar uso automático durante a pausa
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
  *     fuso_sistema                   o fuso do sistema (o FUSO do config.php, ou o do PHP): o das datas gravadas no banco e o de quem não
@@ -4497,6 +4516,11 @@
  *     previsoes[].relogio            o nome
  *     previsoes[].relogio_id         o relógio
  *   recurso=plano
+ *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
+ *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o sistema
+ *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, sistema ou padrao
  *     escala_fim                     até que dia vai a escala (null fora da escala)
  *     modo                           o nome do modo em uso
  *     plano[]                        o plano gravado: o relógio de cada dia

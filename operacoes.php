@@ -4160,6 +4160,9 @@ function op_criterios($acao, $d)
 // ---------------------------------------------------------------------------------------------------------------------
 function op_rodizio($acao, $d)
 {
+    if (!rodizio_ativo()) {
+        return resultado([t("O rodízio está desligado. Ative na Configuração para alterar o plano; as marcações manuais continuam disponíveis.")], "");
+    }
     $erros = [];
     $msg = "";
     $agora = time();
@@ -4797,6 +4800,9 @@ function op_config($acao, $d)
                 $erros[] = t("{1}: uma hora HH:MM.", [1 => $k]);
             }
         }
+        if (array_key_exists("rodizio_ativo", $d) && (is_array($d["rodizio_ativo"]) || !in_array((string)$d["rodizio_ativo"], ["", "0", "1"], true))) {
+            $erros[] = t("Rodízio: 1 (ligado), 0 (desligado) ou vazio (herdar do sistema).");
+        }
         if ((array_key_exists("uso_inicio", $d) || array_key_exists("uso_fim", $d)) && (preg_match($hora_ok, (string)($d["uso_inicio"] ?? cfg("uso_inicio"))) !== 1
             || preg_match($hora_ok, (string)($d["uso_fim"] ?? cfg("uso_fim"))) !== 1 || (string)($d["uso_fim"] ?? cfg("uso_fim")) <= (string)($d["uso_inicio"] ?? cfg("uso_inicio")))) {
             $erros[] = t("Relógio no pulso: duas horas HH:MM, o fim depois do início.");
@@ -4935,9 +4941,21 @@ function op_config($acao, $d)
             if (array_key_exists("cron_espera_rodadas", $d) && usuario_master()) {
                 sis_set("cron_espera_rodadas", trim((string)$d["cron_espera_rodadas"]));
             }
+            $rodizio_antes = rodizio_ativo();
+            $geral_antes = parametro_gravado("rodizio_ativo") !== 0;
             foreach ($param_gravar as $k_p => $v_p) {
                 sis_set("param_" . $k_p, $v_p);
             }
+            if (!$geral_antes && parametro_gravado("rodizio_ativo") !== 0) {
+                sis_set("rodizio_retomado_em", (string)time());
+            }
+            if (array_key_exists("rodizio_ativo", $d)) {
+                cfg_set("rodizio_ativo", (string)$d["rodizio_ativo"]);
+            }
+            if (!$rodizio_antes && rodizio_ativo()) {
+                cfg_set("rodizio_retomado_em", (string)time());
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             // a força da senha é do sistema inteiro: só o master muda
             foreach (array_keys(SENHA_REGRAS) as $k) {
                 if (array_key_exists("senha_" . $k, $d) && usuario_master()) {

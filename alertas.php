@@ -970,8 +970,8 @@ function agenda_desejada($hoje, $ag)
     }
     // o relógio do dia (o primeiro dia de cada vez que ele entra) e a véspera, a partir do plano
     $anterior = 0;
-    foreach (linhas("SELECT p.data, p.relogio_id, r.* FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data BETWEEN ? AND ? ORDER BY p.data",
-        [$hoje->modify("-1 day")->format("Y-m-d"), $limite]) as $p) {
+    foreach (rodizio_ativo() ? linhas("SELECT p.data, p.relogio_id, r.* FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data BETWEEN ? AND ? ORDER BY p.data",
+        [$hoje->modify("-1 day")->format("Y-m-d"), $limite]) : [] as $p) {
         if ($anterior !== (int)$p["relogio_id"] && $p["data"] >= $hoje->format("Y-m-d")) {
             if ($quer("dia")) {
                 $lista[] = ["chave" => "dia:" . $p["relogio_id"] . ":" . $p["data"], "data" => $p["data"], "hora" => $manha, "momento" => $p["data"] . " " . $manha . ":00",

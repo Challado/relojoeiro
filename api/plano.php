@@ -21,6 +21,7 @@ if ($dias_p === "todos") {
 $plano_p = plano_legivel($de_p, $ate_p);
 $rel_p = ctype_digit((string)($_REQUEST["relogio"] ?? "")) && (int)$_REQUEST["relogio"] > 0 ? (int)$_REQUEST["relogio"] : null;
 $saida = ["modo" => valor("SELECT nome FROM modo WHERE id = ?", [modo_ativo()]),
+    "rodizio" => rodizio_configuracao(),
     // o dia a dia da página, uma página por vez (o "Mostrar até" da Configuração), só de um relógio com relogio=<id>
     "dia_a_dia" => plano_pagina($de_p, $ate_p, $rel_p, (int)($_REQUEST["pagina"] ?? 1),
         ctype_digit((string)($_REQUEST["por_pagina"] ?? "")) ? (int)$_REQUEST["por_pagina"] : plano_por_pagina()), "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null,

@@ -66,6 +66,7 @@ function recarregarHoje() {
   return api({recurso: "hoje", proximos_pagina: paginaProximos}).then(function (d) {
     ajudaGrupo("pagina", t("Hoje"));
     dadosHoje = d;
+    var rodizioAtivo = !d.rodizio || d.rodizio.ativo;
     paginaProximos = d.proximos.pagina;
     // o quadro "Hoje": o relógio do dia, até quando, o tipo, o lembrete, e ao lado as informações dele e a foto
     // o relógio do destaque (a Configuração: o do dia ou o que está no pulso agora): a API diz qual é
@@ -76,7 +77,7 @@ function recarregarHoje() {
       }
     });
     var dz = d.destaque;
-    var texto = el("p", {"class": "data"}, DIAS_SEMANA[diaDaSemana(d.data)] + ", " + dataBr(d.data) + " · " + h(d.modo ? d.modo.nome : t("sem modo")));
+    var texto = el("p", {"class": "data"}, DIAS_SEMANA[diaDaSemana(d.data)] + ", " + dataBr(d.data) + " · " + h(rodizioAtivo ? (d.modo ? d.modo.nome : t("sem modo")) : t("Rodízio desligado")));
     if (item && dz.e === "pulso") {
       // no pulso agora, e não é o do dia: o nome dele, "no pulso agora", e embaixo o relógio do dia
       texto += el("h1", {}, el("a", {"href": "index.php?r=" + item.id, "data-abrir": item.id}, h(item.nome)))
@@ -91,6 +92,9 @@ function recarregarHoje() {
         // sem relógio hoje: o dia fica livre e a sessão do rodízio termina agora (só com a troca no próprio dia ligada)
         + (!d.trocar_hoje ? "" : el("form", {"data-recurso": "rodizio", "class": "sem-relogio", "onsubmit": "return confirm(" + JSON.stringify(t("Hoje sem relógio? O dia fica livre: o {1} sai do rodízio de hoje (se já está no pulso pelo rodízio, sai agora; o tempo que ficou conta). Os outros dias não mudam.", {1: d.dia.relogio})) + ")"},
           el("input", {"type": "hidden", "name": "acao", "value": "sem_relogio"}) + el("button", {"class": "leve"}, t("Sem relógio hoje"))));
+    } else if (!rodizioAtivo) {
+      texto += el("h1", {}, t("Rodízio desligado")) + el("p", {}, t("O plano está pausado. As marcações manuais continuam disponíveis."))
+        + el("a", {"href": "configuracao.php"}, t("Configuração"));
     } else if (d.hoje_livre) {
       // o dia livre: escolher um relógio para hoje (o mesmo "escolher…" dos dias livres), ou deixar assim
       texto += el("h1", {}, t("Hoje sem relógio"))
@@ -271,6 +275,8 @@ function recarregarHoje() {
     porHtml(document.getElementById("bloco-modo"), el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, t("Modo de rodízio")) + " " + el("strong", {}, h(modo ? modo.nome : t("nenhum"))) + " "
       + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? t("pela maior nota") : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, t("editar"))) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo(d.trocar_hoje)));
     mostrarModo();
+    document.getElementById("bloco-modo").hidden = !rodizioAtivo;
+    document.getElementById("bloco-proximos").hidden = !rodizioAtivo;
 
     // A tabela dos relógios: disponíveis primeiro (o de hoje, depois os com aviso), indisponíveis no fim; na tela, a ordem e os
     // filtros escolhidos no cabeçalho valem por cima desta (tabela.js)

@@ -134,6 +134,18 @@ async function recarga(page){
     const pessoal=inicial();pessoal.lingua='en';pessoal.cookies.lingua='en';await montar(page,pessoal);
     await salvar(page);await page.locator('#aviso-config').waitFor();
     assert.equal(await page.getAttribute('html','lang'),'en');assert.equal((await estado(page)).posts.at(-1).lingua,undefined);total++;
+    // Herança do rodízio: o estado efetivo vem da API e o formulário envia a escolha da coleção.
+    const rotacao=inicial();rotacao.dados.config.rodizio_ativo='';
+    rotacao.dados.rodizio={ativo:false,sistema:false,colecao:null,origem:'sistema'};
+    await montar(page,rotacao);
+    assert.equal(await page.inputValue('[name=rodizio_ativo]'),'');
+    assert.match(await page.locator('[name=rodizio_ativo] option:checked').textContent(),/desligado/);
+    await page.selectOption('[name=rodizio_ativo]','1');await salvar(page);await page.locator('#aviso-config').waitFor();
+    assert.equal((await estado(page)).posts.at(-1).rodizio_ativo,'1');
+    await page.selectOption('[name=rodizio_ativo]','0');await salvar(page);await page.locator('#aviso-config').waitFor();
+    assert.equal((await estado(page)).posts.at(-1).rodizio_ativo,'0');
+    await page.selectOption('[name=rodizio_ativo]','');await salvar(page);await page.locator('#aviso-config').waitFor();
+    assert.equal((await estado(page)).posts.at(-1).rodizio_ativo,'');total++;
     await ctx.close();console.log(total+' cenários de componente passaram (Chromium; sem rede/banco).');
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

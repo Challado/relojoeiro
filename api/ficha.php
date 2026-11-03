@@ -24,7 +24,7 @@ foreach (campos_na_ordem_da_ficha(campos_todos()) as $c) {
         "padrao" => $c["padrao"], "no_id" => $c["no_id"] === null ? 0 : (int)$c["no_id"], "so_desejado" => (int)($c["so_desejado"] ?? 0) === 1,
         "secao" => $c["secao"], "multiplo" => (int)($c["multiplo"] ?? 0) === 1, "regra" => campo_regra_texto($c), "valor" => $proprios[$ident] ?? null, "do_calibre" => $do_calibre[$ident] ?? null];
 }
-$saida = ["hoje" => $hoje->format("Y-m-d"), "trocar_hoje" => trocar_hoje_permitido(), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
+$saida = ["hoje" => $hoje->format("Y-m-d"), "rodizio" => rodizio_configuracao(), "trocar_hoje" => trocar_hoje_permitido(), "relogio" => null, "copia_sistema" => documentos_copia_sistema(), "painel_modo" => painel_modo(), "campos" => $campos,
     // as situações na coleção, na ordem, para o menu do cadastro
     "posses" => lista_opcoes("relogio_situacao"),
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "caminho" => no_caminho($o[0]), "cadeia" => no_cadeia($o[0])]; }, nos_em_ordem()),
@@ -38,7 +38,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
 } elseif ($r) {
     $id = (int)$r["id"];
     $v = visao_relogio($r, $agora);
-    $proxima = valor("SELECT data FROM plano WHERE relogio_id = ? AND data >= ? ORDER BY data LIMIT 1", [$id, $hoje->format("Y-m-d")]);
+    $proxima = rodizio_ativo() ? valor("SELECT data FROM plano WHERE relogio_id = ? AND data >= ? ORDER BY data LIMIT 1", [$id, $hoje->format("Y-m-d")]) : null;
     $abertas = [];
     foreach ($v["abertas"] as $a) {
         $abertas[$a["tipo"]] = $a;

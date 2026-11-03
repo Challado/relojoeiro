@@ -40,6 +40,8 @@ jobs:
         run: php testes/motores.php
       - name: Primeira descarga, recarga no rodízio e robustez das previsões
         run: php testes/previsao.php
+      - name: Rodízio por coleção e sistema, pausa e retomada
+        run: php testes/rodizio.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

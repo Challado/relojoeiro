@@ -81,6 +81,7 @@ foreach (avisos_todos() as $ident => $versoes) {
     $avisos_nomes[] = $versoes[0]["nome"];
 }
 $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => cfg("uso_inicio"), "comecou" => $dia !== null && dia_comecou($agora),
+    "rodizio" => rodizio_configuracao(),
     "pulso_poe_sozinho" => pulso_poe_sozinho(), "pulso_tira_sozinho" => pulso_tira_sozinho(),
     "modo" => $modo ? ["id" => (int)$modo["id"], "nome" => $modo["nome"], "tipo" => $modo["tipo"], "tipo_texto" => t(MODO_TIPOS[$modo["tipo"]] ?? "Personalizado"), "semanas" => (int)$modo["semanas"], "selecao" => $modo["selecao"], "escala_dias" => $modo["escala_dias"] === null ? null : (int)$modo["escala_dias"]] : null,
     "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null, "max_sem_uso" => (int)cfg("max_sem_uso"),
@@ -118,3 +119,9 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
         "valor" => round(array_sum(array_map(function ($r) { return $r["compra"]["valor"] ?? 0; }, $rels)), 2),
         "desejados" => count(array_filter($fora_h, function ($r) { return $r["posse"] === "desejado"; })),
         "fora" => count($fora_h)]];
+if (!rodizio_ativo()) {
+    $saida["plano"] = [];
+    $saida["proximos"] = array_replace($saida["proximos"], ["pagina" => 1, "paginas" => 1, "total" => 0, "dias" => []]);
+    $saida["hoje_livre"] = false;
+    $saida["livres"] = [];
+}

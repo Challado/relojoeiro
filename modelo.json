@@ -3671,6 +3671,7 @@
         }
     ],
     "config": {
+        "rodizio_ativo": "",
         "uso_inicio": "07:00",
         "uso_fim": "22:00",
         "horario_manha": "06:30",
