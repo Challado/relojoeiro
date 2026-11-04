@@ -273,6 +273,7 @@ function usuario_publico($u)
     return ["id" => (int)$u["id"], "login" => $u["login"], "email" => $u["email"] ?? null, "papel" => $u["papel"], "idioma" => $u["idioma"] ?? null, "fuso" => $u["fuso"] ?? null,
         "nivel" => ($u["nivel"] ?? "avancado") === "basico" ? "basico" : "avancado",
         "rodizio_ativo" => ($u["rodizio_ativo"] ?? null) === null ? null : (int)$u["rodizio_ativo"] === 1,
+        "recupera_ontem" => ($u["recupera_ontem"] ?? null) === null ? null : (int)$u["recupera_ontem"] === 1,
         "criado" => $u["criado"], "ultimo_acesso" => $u["ultimo_acesso"] ?? null, "expira_em" => $exp, "demo" => $exp !== null,
         "dias_restantes" => $exp !== null ? max(0, (int)ceil((strtotime((string)$exp) - time()) / 86400)) : null, "bloqueado" => (int)($u["bloqueado"] ?? 0) === 1];
 }
@@ -654,7 +655,7 @@ function conta_consulta()
         $real = $GLOBALS["USUARIO_REAL"] ?? null;
         return ["usuario" => usuario_publico($u), "vendo_como" => $real !== null ? ["login" => $u["login"], "master" => $real["login"]] : null,
             "colecoes" => colecoes_visiveis($u), "colecao" => colecao_atual(), "papel" => papel_na_colecao(),
-            "arvores" => arvores_do_dono($uid), "rodizio_sistema" => parametro_gravado("rodizio_ativo") !== 0,
+            "arvores" => arvores_do_dono($uid), "rodizio_sistema" => parametro_gravado("rodizio_ativo") !== 0, "recupera_ontem_sistema" => parametro_gravado("recupera_ontem") === 1,
             "pedidos" => array_map(function ($p) { return ["id" => (int)$p["id"], "colecao_id" => $p["colecao_id"] !== null ? (int)$p["colecao_id"] : null,
                 "dono_id" => $p["dono_id"] !== null ? (int)$p["dono_id"] : null, "alvo" => alvo_codigo($p["colecao_id"], $p["dono_id"]), "criado" => $p["criado"], "expira" => $p["expira"]]; },
                 linhas("SELECT * FROM pedido WHERE usuario_id = ? ORDER BY criado", [$uid])),
@@ -965,6 +966,14 @@ function op_conta($acao, $d)
                 }
             }
         }
+        // passar o relógio de ontem para hoje: o padrão do dono (vazio herda o sistema)
+        if (array_key_exists("recupera_ontem", $d)) {
+            if (is_array($d["recupera_ontem"]) || !in_array((string)$d["recupera_ontem"], ["", "0", "1"], true)) {
+                $erros[] = t("Passar o relógio de ontem: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
+            } else {
+                $campos["recupera_ontem"] = (string)$d["recupera_ontem"] === "" ? null : (int)$d["recupera_ontem"];
+            }
+        }
         if (array_key_exists("email", $d)) {
             $email = trim((string)$d["email"]);
             if ($email !== "" && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
@@ -1019,7 +1028,7 @@ function op_conta($acao, $d)
             }
             $msg = isset($campos["senha_hash"]) ? t("Conta atualizada. Os aparelhos lembrados foram esquecidos: entre de novo com a senha nova.") : t("Conta atualizada.");
         } elseif (count($erros) === 0) {
-            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel, rodizio_ativo ou senha (com senha_atual).");
+            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel, rodizio_ativo, recupera_ontem ou senha (com senha_atual).");
         }
     } elseif ($acao === "excluir") {
         if ($u["papel"] === "master" && (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario WHERE papel = 'master'"); }) <= 1) {

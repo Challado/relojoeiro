@@ -25,6 +25,10 @@ para garantir que o crescimento do conteúdo seja acomodado antes da pintura, se
 
 ## Como rodar
 
+`php testes/recupera_ontem.php` confere o passar o relógio de ontem para hoje: a herança sistema → usuário → coleção e a regra (o
+relógio do plano de ontem sem uso passa para hoje e os outros dias andam um dia), os casos em que não passa (usado, trazido
+no dia anterior, indisponível, hoje livre, o de hoje já no pulso) e o dia livre e o bloco que andam junto.
+
 `php testes/rodizio.php` confere, em uma base SQLite descartável, a hierarquia sistema → usuário → coleção, as permissões,
 a herança nas coleções do mesmo dono (também para membros e cron), a pausa sem apagar programação ou histórico, as
 marcações manuais, as previsões e a retomada sem uso automático retroativo.

@@ -109,6 +109,11 @@ function quadroDados(d) {
       + parCampo(t("Idioma"), el("select", {"name": "idioma"}, el("option", {"value": "", "selected": !u.idioma}, t("O da coleção")) + d.linguas.map(function (l) {
         return el("option", {"value": l.codigo, "selected": u.idioma === l.codigo}, h(l.nome));
       }).join("")))
+      + parCampo(t("Relógio de ontem sem uso passa para hoje: padrão das minhas coleções"), el("select", {"name": "recupera_ontem"},
+        el("option", {"value": "", "selected": u.recupera_ontem == null}, t("Herdar do sistema ({1})", {1: d.recupera_ontem_sistema ? t("ligado") : t("desligado")}))
+        + el("option", {"value": "1", "selected": u.recupera_ontem === true}, t("Ligado"))
+        + el("option", {"value": "0", "selected": u.recupera_ontem === false}, t("Desligado"))), "largo",
+        ajuda("recupera-ontem-usuario", t("Relógio de ontem sem uso passa para hoje: padrão das minhas coleções"), el("p", {}, t("Vale nas coleções de que você é dono, inclusive para os membros e o cron. Se o relógio do plano de ontem não foi ao pulso nem um pouquinho, ele passa para hoje e os outros dias do plano andam um dia. Cada coleção pode herdar este valor ou substituí-lo na Configuração."))))
       + parCampo(t("Rodízio: padrão das minhas coleções"), el("select", {"name": "rodizio_ativo"},
         el("option", {"value": "", "selected": u.rodizio_ativo == null}, t("Herdar do sistema ({1})", {1: d.rodizio_sistema ? t("ligado") : t("desligado")}))
         + el("option", {"value": "1", "selected": u.rodizio_ativo === true}, t("Ligado"))

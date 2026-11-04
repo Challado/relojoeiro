@@ -1276,6 +1276,7 @@ $MIGRACOES = [
     "v54" => ["migracao_v54.sql", tk("os relatórios cadastrados: em Cadastros › Relatórios e pela API (recurso=relatorios), cada um com as colunas (uma expressão por relógio, o formato e a conta do rodapé), o filtro, a ordem, o agrupamento e quais relógios; eles aparecem no catálogo dos relatórios (Meus relatórios), com o CSV"), "relatorio"],
     "v55" => ["migracao_v55.sql", tk("o SQL pela API (recurso=sql, só o master: SELECT, INSERT, ALTER TABLE ... ADD COLUMN e, com a aprovação na Configuração do sistema, UPDATE e DELETE), com o registro de cada execução; e os parâmetros de operação do config.php (o cadastro aberto, os dias da demonstração e do convite, o tamanho dos documentos, a espera das telas, o lote, a cópia de segurança) também na Configuração › Sistema e pela API"), "sql_execucao"],
     "v56" => ["migracao_v56.sql", tk("o rodízio em três níveis: padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração"), "sistema.chave=migracao_v56", "migracao_v56_dados"],
+    "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem"],
 ];
 
 function migracao_v56_dados($nova = false)
@@ -4537,7 +4538,7 @@ function rodizio_dono()
     $k = (int)$c . ":" . ($GLOBALS["RODIZIO_USUARIO_VERSAO"] ?? 0) . ":" . fuso_atual();
     if (!array_key_exists($k, $cache)) {
         $cache[$k] = $c === null ? null : sem_escopo(function () use ($c) {
-            return linha("SELECT u.id, u.rodizio_ativo, u.rodizio_retomado_em FROM usuario u JOIN colecao c ON c.dono_id = u.id WHERE c.id = ?", [$c]);
+            return linha("SELECT u.id, u.rodizio_ativo, u.rodizio_retomado_em, u.recupera_ontem FROM usuario u JOIN colecao c ON c.dono_id = u.id WHERE c.id = ?", [$c]);
         });
     }
     return $cache[$k];
@@ -4557,6 +4558,93 @@ function rodizio_configuracao()
 function rodizio_ativo()
 {
     return rodizio_configuracao()["ativo"];
+}
+
+// Passar o relógio de ontem para hoje (recupera_ontem), em três níveis como o rodízio: a escolha da coleção (config, vazio
+// herda), a do dono (usuario.recupera_ontem, vazio herda) e a do sistema (o parâmetro recupera_ontem; padrão desligado).
+// Ligado, o relógio do plano de ontem que não foi ao pulso nem um pouquinho passa para hoje e os outros dias do plano
+// andam um dia (plano_recuperar_ontem)
+function recupera_ontem_configuracao()
+{
+    $escolha = cfg("recupera_ontem");
+    $dono = rodizio_dono();
+    $usuario = ($dono["recupera_ontem"] ?? null) === null ? null : (int)$dono["recupera_ontem"] === 1;
+    $colecao = in_array($escolha, ["0", "1"], true) ? $escolha === "1" : null;
+    $sistema = parametro_gravado("recupera_ontem") === 1;
+    return ["ativo" => $colecao ?? $usuario ?? $sistema, "colecao" => $colecao, "usuario" => $usuario, "sistema" => $sistema,
+        "origem" => $colecao !== null ? "colecao" : ($usuario !== null ? "usuario" : "sistema")];
+}
+
+function recupera_ontem_ativo()
+{
+    return recupera_ontem_configuracao()["ativo"];
+}
+
+// O relógio foi ao pulso no dia ($dia, AAAA-MM-DD, o da coleção), nem que seja um pouquinho: alguma sessão do tipo No pulso
+// (a do rodízio ou a marcada à mão) que começou antes do fim do dia e não acabou antes do começo dele (a aberta conta)
+function relogio_usado_no_dia($relogio_id, $dia)
+{
+    $pulso = lancamento_tipos()["pulso"] ?? null;
+    if ($pulso === null) {
+        return false;
+    }
+    $fim = (new DateTimeImmutable($dia))->modify("+1 day")->format("Y-m-d");
+    return valor("SELECT l.id FROM lancamento l WHERE l.tipo_id = ? AND l.relogio_id = ? AND l.inicio < ? AND (l.fim IS NULL OR l.fim > ?) LIMIT 1",
+        [(int)$pulso["id"], (int)$relogio_id, $fim . " 00:00:00", $dia . " 00:00:00"]) !== null;
+}
+
+// Uma vez por dia (o primeiro plano montado dele), com recupera_ontem ligado: se o relógio do plano de ontem não foi ao pulso
+// nem um pouquinho, ele passa para hoje e todos os outros dias do plano, de hoje em diante (os dias livres também), andam um
+// dia. Não passa quando: ontem já foi um relógio trazido de antes (não se arrasta o mesmo relógio dia após dia); o relógio
+// ficou indisponível, saiu da coleção ou está na manutenção; hoje é um dia livre; ou o relógio de hoje já foi ao pulso (o dia
+// já começou). O de hoje fica à mão no plano, com o motivo. Devolve se passou
+function plano_recuperar_ontem($hoje)
+{
+    $h = $hoje->format("Y-m-d");
+    if (!recupera_ontem_ativo() || !rodizio_ativo() || cfg("recupera_ontem_visto") === $h) {
+        return false;
+    }
+    // vale uma vez por dia, passe ou não
+    cfg_set("recupera_ontem_visto", $h);
+    $ontem = $hoje->modify("-1 day")->format("Y-m-d");
+    $plano_ontem = plano_do_dia($ontem);
+    if ($plano_ontem === null || cfg("recupera_ontem_em") === $ontem || dia_livre($h)) {
+        return false;
+    }
+    $relogio = linha("SELECT * FROM relogio WHERE id = ?", [(int)$plano_ontem["relogio_id"]]);
+    if (!$relogio || (int)$relogio["disponivel"] !== 1 || !da_colecao($relogio) || manutencao_aberta((int)$relogio["id"]) !== null
+        || relogio_usado_no_dia((int)$relogio["id"], $ontem)) {
+        return false;
+    }
+    $plano_hoje = plano_do_dia($h);
+    if ($plano_hoje !== null && ((int)$plano_hoje["relogio_id"] === (int)$relogio["id"] || relogio_usado_no_dia((int)$plano_hoje["relogio_id"], $h))) {
+        return false;
+    }
+    banco_atomico(function () use ($hoje, $h, $relogio) {
+        // os dias de hoje em diante, do último para o primeiro, cada um para o dia seguinte (com o bloco do modo que o escolheu)
+        $blocos = [];
+        foreach (linhas("SELECT data, bloco_id FROM plano_bloco WHERE data >= ?", [$h]) as $b) {
+            $blocos[substr((string)$b["data"], 0, 10)] = (int)$b["bloco_id"];
+        }
+        foreach (linhas("SELECT * FROM plano WHERE data >= ? ORDER BY data DESC", [$h]) as $x) {
+            $d = substr((string)$x["data"], 0, 10);
+            sql("DELETE FROM plano WHERE data = ?", [$d]);
+            plano_gravar((new DateTimeImmutable($d))->modify("+1 day")->format("Y-m-d"), (int)$x["relogio_id"], $blocos[$d] ?? null, $x["origem"], $x["motivo"], $x["acao"]);
+        }
+        foreach (array_column(linhas("SELECT data FROM plano_livre WHERE data >= ? ORDER BY data DESC", [$h]), "data") as $d) {
+            $d = substr((string)$d, 0, 10);
+            sql("DELETE FROM plano_livre WHERE data = ?", [$d]);
+            plano_livre_marcar((new DateTimeImmutable($d))->modify("+1 day")->format("Y-m-d"));
+        }
+        // na escala, o último dia empurrado passa do fim dela: sai (a escala não cresce)
+        if (cfg("escala_fim") !== "") {
+            sql("DELETE FROM plano WHERE data > ?", [cfg("escala_fim")]);
+        }
+        plano_gravar($h, (int)$relogio["id"], null, "manual", t("Passou de ontem: não foi usado."));
+        cfg_set("recupera_ontem_em", $h);
+    });
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    return true;
 }
 
 // Ao retomar no meio do dia, só começa a contar o uso automático a partir da retomada.
@@ -5684,6 +5772,8 @@ function garantir_plano($hoje, $ate = null, $manter_pulso = true)
     }
     $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
     if ($modo) {
+        // o relógio de ontem que ficou sem uso passa para hoje (a opção recupera_ontem; uma vez por dia)
+        plano_recuperar_ontem($hoje);
         // hoje sem plano, mas com um relógio já no pulso pelo rodízio: o plano de hoje é ele (não se sorteia outro)
         $no_pulso = $manter_pulso ? valor("SELECT l.relogio_id FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
             WHERE t.identificador = 'pulso' AND l.origem = 'rodizio' AND DATE(l.inicio) = ? ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [$hoje->format("Y-m-d")]) : null;
@@ -10472,6 +10562,7 @@ function lote_maximo()
 // ---------------------------------------------------------------------------------------------------------------------
 const PARAMETROS_SISTEMA = [
     "rodizio_ativo" => [null, "sim_nao", 1, 0, 1],
+    "recupera_ontem" => [null, "sim_nao", 0, 0, 1],
     "cadastro_aberto" => ["CADASTRO_ABERTO", "sim_nao", 1, 0, 1],
     "demo_dias" => ["DEMO_DIAS", "inteiro", 30, 0, 3650],
     "convite_dias" => ["CONVITE_DIAS", "inteiro", 7, 1, 365],
@@ -10489,6 +10580,7 @@ function parametros_sistema_textos()
 {
     return [
         "rodizio_ativo" => [t("Rodízio: padrão do sistema"), t("1: ligado; 0: desligado. Cada coleção pode herdar este padrão ou escolher seu próprio valor.")],
+        "recupera_ontem" => [t("Passar o relógio de ontem para hoje: padrão do sistema"), t("1: o relógio do plano de ontem que não foi ao pulso nem um pouquinho passa para hoje, e os outros dias do plano andam um dia; 0: desligado. Cada usuário e cada coleção pode herdar este padrão ou escolher o seu.")],
         "cadastro_aberto" => [t("Cadastro aberto"), t("1: qualquer um cria a conta pela página de cadastro (com os dias de demonstração); 0: só entra quem o master cria ou quem tem um convite")],
         "demo_dias" => [t("Dias da demonstração"), t("os dias da conta criada pelo cadastro aberto, até virar oficial (0: já nasce oficial)")],
         "convite_dias" => [t("Dias do convite"), t("os dias que um convite ou um pedido de acesso espera; depois, o cron apaga")],
@@ -10517,7 +10609,7 @@ function parametros_sistema_lista()
         "documentos_limite" => documentos_limite_sistema(), "api_espera" => api_espera_segundos(), "lote_maximo" => lote_maximo(),
         "backup_ativo" => backup_ativo() ? 1 : 0, "backup_manter" => backup_manter(), "backup_documentos" => backup_com_documentos() ? 1 : 0,
         "sql_alteracoes" => sql_alteracoes_aprovadas() ? 1 : 0,
-        "rodizio_ativo" => parametro_gravado("rodizio_ativo") !== 0 ? 1 : 0];
+        "rodizio_ativo" => parametro_gravado("rodizio_ativo") !== 0 ? 1 : 0, "recupera_ontem" => parametro_gravado("recupera_ontem") === 1 ? 1 : 0];
     $textos = parametros_sistema_textos();
     $res = [];
     foreach (PARAMETROS_SISTEMA as $k => [$linha, $tipo, $padrao, $min, $max]) {

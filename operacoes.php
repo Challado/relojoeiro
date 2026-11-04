@@ -4803,6 +4803,9 @@ function op_config($acao, $d)
         if (array_key_exists("rodizio_ativo", $d) && (is_array($d["rodizio_ativo"]) || !in_array((string)$d["rodizio_ativo"], ["", "0", "1"], true))) {
             $erros[] = t("Rodízio: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
         }
+        if (array_key_exists("recupera_ontem", $d) && (is_array($d["recupera_ontem"]) || !in_array((string)$d["recupera_ontem"], ["", "0", "1"], true))) {
+            $erros[] = t("Passar o relógio de ontem: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
+        }
         if ((array_key_exists("uso_inicio", $d) || array_key_exists("uso_fim", $d)) && (preg_match($hora_ok, (string)($d["uso_inicio"] ?? cfg("uso_inicio"))) !== 1
             || preg_match($hora_ok, (string)($d["uso_fim"] ?? cfg("uso_fim"))) !== 1 || (string)($d["uso_fim"] ?? cfg("uso_fim")) <= (string)($d["uso_inicio"] ?? cfg("uso_inicio")))) {
             $erros[] = t("Relógio no pulso: duas horas HH:MM, o fim depois do início.");
@@ -4952,6 +4955,9 @@ function op_config($acao, $d)
             }
             if (array_key_exists("rodizio_ativo", $d)) {
                 cfg_set("rodizio_ativo", (string)$d["rodizio_ativo"]);
+            }
+            if (array_key_exists("recupera_ontem", $d)) {
+                cfg_set("recupera_ontem", (string)$d["recupera_ontem"]);
             }
             if (rodizio_ativo()) {
                 cfg_set("rodizio_retomado_em", (string)max((int)cfg("rodizio_retomado_em"), $rodizio_antes ? $retomada_antes : time()));

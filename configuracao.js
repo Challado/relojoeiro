@@ -290,12 +290,18 @@ function recarregarConfig(aplicadas, manterPosicao) {
           return el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1", "checked": ligado});
         };
         var rodizio = d.rodizio || {ativo: true, sistema: true, colecao: null, usuario: null, origem: "padrao"};
+        var recupera = d.recupera_ontem || {ativo: false, sistema: false, colecao: null, usuario: null, origem: "sistema"};
         var rotina = cartao(t("Rotina do dia"), el("div", {"class": "campos"},
           parCampo(t("Rodízio da coleção"), el("select", {"name": "rodizio_ativo"},
             el("option", {"value": "", "selected": cfg("rodizio_ativo") === ""}, t("Herdar do usuário ({1})", {1: (rodizio.usuario === null || rodizio.usuario === undefined ? rodizio.sistema : rodizio.usuario) ? t("ligado") : t("desligado")}))
             + el("option", {"value": "1", "selected": cfg("rodizio_ativo") === "1"}, t("Ligado"))
             + el("option", {"value": "0", "selected": cfg("rodizio_ativo") === "0"}, t("Desligado"))), null,
             ex("rodizio-ativo", t("Rodízio da coleção"), t("Desligado, o rodízio pausa os sorteios, o uso automático e os lembretes do plano. O plano e o histórico ficam guardados; cadastro, avisos e marcações manuais continuam disponíveis.")))
+          + parCampo(t("Relógio de ontem sem uso passa para hoje"), el("select", {"name": "recupera_ontem"},
+            el("option", {"value": "", "selected": cfg("recupera_ontem") === ""}, t("Herdar do usuário ({1})", {1: (recupera.usuario === null || recupera.usuario === undefined ? recupera.sistema : recupera.usuario) ? t("ligado") : t("desligado")}))
+            + el("option", {"value": "1", "selected": cfg("recupera_ontem") === "1"}, t("Ligado"))
+            + el("option", {"value": "0", "selected": cfg("recupera_ontem") === "0"}, t("Desligado"))), null,
+            ex("recupera-ontem", t("Relógio de ontem sem uso passa para hoje"), t("Ligado, se o relógio do plano de ontem não foi ao pulso nem um pouquinho (você usou outro, ou nenhum), ele passa para hoje e todos os outros dias do plano andam um dia. Se ele foi usado, mesmo que pouco, nada muda. Não passa o mesmo relógio dois dias seguidos, nem um indisponível, na manutenção ou fora da coleção, nem quando hoje é um dia livre ou o relógio de hoje já foi ao pulso. A conta é feita uma vez por dia, quando o plano de hoje é montado. Vale o da coleção; vazio herda o do usuário (Minha conta) e depois o do sistema (Configuração › Sistema).")))
           + parCampo(t("Rodízio efetivo"), h(rodizio.ativo ? t("Ligado") : t("Desligado")) + " · " + h(rodizio.colecao !== null ? t("definido na coleção") : (rodizio.origem === "usuario" ? t("herdado do usuário") : t("herdado do sistema"))))
           + parCampo(t("Manhã: relógio do dia e avisos"), hora("horario_manha", cfg("horario_manha")))
           + parCampo(t("Noite: preparar o de amanhã"), hora("horario_noite", cfg("horario_noite")))

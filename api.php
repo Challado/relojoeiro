@@ -1125,6 +1125,8 @@
  *                                    7 dias vai até daqui a 6)
  *     config.rodizio_ativo           1 ligado, 0 desligado, vazio ou ausente herda o dono da coleção e depois o sistema; padrão geral
  *                                    ligado
+ *     config.recupera_ontem          1 ligado, 0 desligado, vazio ou ausente herda o dono da coleção e depois o sistema; padrão geral
+ *                                    desligado
  *     config.rodizio_retomado_em     instante Unix da retomada da coleção: evita registrar uso automático durante a pausa
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
@@ -3844,6 +3846,13 @@
  *                                    membros e cron
  *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
  *     rodizio.origem                 de onde vem a escolha efetiva: colecao, usuario, sistema ou padrao
+ *     recupera_ontem                 passar o relógio de ontem sem uso para hoje: o estado efetivo e a escolha em cada nível
+ *     recupera_ontem.ativo           verdadeiro: o relógio do plano de ontem que não foi ao pulso nem um pouquinho passa para hoje, e os
+ *                                    outros dias do plano andam um dia
+ *     recupera_ontem.colecao         a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
+ *     recupera_ontem.usuario         a escolha do dono da coleção: true ligado, false desligado, null herda o sistema
+ *     recupera_ontem.sistema         o padrão geral (desligado quando o master não ligou)
+ *     recupera_ontem.origem          de onde vem a escolha efetiva: colecao, usuario ou sistema
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     atualizar_segundos             o intervalo de atualização das páginas, já com o padrão (a Configuração, atualizar_segundos: 1 a
  *                                    86400; 0, não se atualizam sozinhas; padrão 60)
@@ -3928,6 +3937,8 @@
  *                                    7 dias vai até daqui a 6)
  *     config.rodizio_ativo           1 ligado, 0 desligado, vazio ou ausente herda o dono da coleção e depois o sistema; padrão geral
  *                                    ligado
+ *     config.recupera_ontem          1 ligado, 0 desligado, vazio ou ausente herda o dono da coleção e depois o sistema; padrão geral
+ *                                    desligado
  *     config.rodizio_retomado_em     instante Unix da retomada da coleção: evita registrar uso automático durante a pausa
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
@@ -6773,7 +6784,11 @@
  *     usuario.fuso                   o fuso horário da pessoa ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão
  *                                    o do sistema
  *     rodizio_sistema                o padrão geral do rodízio, para a opção Herdar do sistema em Minha conta
+ *     recupera_ontem_sistema         o padrão geral de passar o relógio de ontem sem uso para hoje (verdadeiro quando o master ligou), para
+ *                                    a opção Herdar do sistema em Minha conta
  *     usuario.rodizio_ativo          o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
+ *     usuario.recupera_ontem         o padrão do usuário para passar o relógio de ontem sem uso para hoje, nas coleções de que é dono: true
+ *                                    ligado, false desligado, null herda o sistema
  *     usuario.nivel                  o modo da interface: basico (o dia a dia: as telas deixam de fora as páginas e as partes do avançado)
  *                                    ou avancado (tudo); o motor é o mesmo
  *     niveis[]                       os modos da interface, para a escolha em Minha conta
@@ -7049,6 +7064,8 @@
  *     usuarios[].papel               master (cuida do sistema inteiro) ou comum
  *     usuarios[].idioma              o idioma dele; null: o da coleção
  *     usuarios[].rodizio_ativo       o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
+ *     usuarios[].recupera_ontem      o padrão do usuário para passar o relógio de ontem sem uso para hoje, nas coleções de que é dono: true
+ *                                    ligado, false desligado, null herda o sistema
  *     usuarios[].nivel               o modo da interface dele: basico ou avancado
  *     usuarios[].fuso                o fuso horário dele ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão o do
  *                                    sistema
