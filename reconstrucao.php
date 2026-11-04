@@ -1192,6 +1192,7 @@ function reconstrucao_codigo()
     "testes/motores.php" => ["testes", t('a regressão dos pesos extremos dos sorteios e das unidades, do horizonte e do minuto da previsão de carga')],
     "testes/previsao.php" => ["testes", t('a regressão da primeira descarga, calibração fixa, recarga no rodízio, confiança e resposta JSON')],
     "testes/rodizio.php" => ["testes", t('a regressão da herança do rodízio, permissões, pausa, marcações manuais, previsões e retomada sem uso retroativo')],
+    "testes/recupera_ontem.php" => ["testes", t('a regressão do relógio de ontem sem uso que passa para hoje: herança nos três níveis, a regra, quem usou um pouco, os casos em que não passa e o deslocamento dos blocos')],
     "testes/cenario.php" => ["testes", t('o roteiro de aceitação: faz pela API o que uma pessoa faz e tira a fotografia de tudo o que a API devolve')],
     "testes/comparar.php" => ["testes", t('compara duas fotografias do cenário (os quatro bancos, ou a reescrita com a versão atual)')],
     "testes/paridade.sh" => ["testes", t('o teste de paridade com um comando: os quatro bancos ao mesmo tempo, numa pasta temporária, e a comparação')],

@@ -8985,6 +8985,7 @@ Evento de teste criado pela tela Agendas do Relojoeiro.' => '{1}
         'a regressão dos pesos extremos dos sorteios e das unidades, do horizonte e do minuto da previsão de carga' => '极端抽签权重以及电量预测单位、时间范围和分钟精度的回归测试',
         'a regressão da primeira descarga, calibração fixa, recarga no rodízio, confiança e resposta JSON' => '首次放电、固定校准、轮换中途充电、可信度和 JSON 响应的回归测试',
         'a regressão da herança do rodízio, permissões, pausa, marcações manuais, previsões e retomada sem uso retroativo' => '轮换继承、权限、暂停、手动记录、预测及无追溯佩戴恢复的回归测试',
+        'a regressão do relógio de ontem sem uso que passa para hoje: herança nos três níveis, a regra, quem usou um pouco, os casos em que não passa e o deslocamento dos blocos' => '昨天未使用的手表顺延到今天的回归测试：三级继承、规则、只戴过一点的情况、不顺延的情形以及区块的后移',
         'o roteiro de aceitação: faz pela API o que uma pessoa faz e tira a fotografia de tudo o que a API devolve' => '验收脚本：通过 API 做一个人会做的事，并拍摄 API 返回的一切的快照',
         'compara duas fotografias do cenário (os quatro bancos, ou a reescrita com a versão atual)' => '比较场景的两份快照（四个数据库，或用当前版本重写后的）',
         'o teste de paridade com um comando: os quatro bancos ao mesmo tempo, numa pasta temporária, e a comparação' => '用一条命令做的一致性测试：四个数据库同时，在临时文件夹中，并进行比较',
