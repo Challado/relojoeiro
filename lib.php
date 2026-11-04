@@ -3751,16 +3751,18 @@ function tabela_variaveis($linha, $r, $agora)
 
 // Os relógios de um total: os da tabela da página Hoje (os da coleção: na coleção e emprestados), ou só os de $ids; cada um
 // com o contexto da conta de uma fórmula e as variáveis da tabela. Guardados por requisição
-function totais_relogios($ids = null)
+function totais_relogios($ids = null, $quais = "colecao")
 {
     static $cache = [];
     $agora = time();
-    $chave = (int)colecao_atual() . "|" . ($ids === null ? "*" : implode(",", $ids)) . "|" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    $chave = (int)colecao_atual() . "|" . $quais . "|" . ($ids === null ? "*" : implode(",", $ids)) . "|" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
     if (!isset($cache[$chave])) {
         $extra = ["nos" => nos_todos(), "hoje" => hoje_da_colecao(), "dia" => null];
         $res = [];
         foreach (linhas("SELECT * FROM relogio ORDER BY nome, id") as $r) {
-            if (!da_colecao($r) || ($ids !== null && !in_array((int)$r["id"], $ids, true))) {
+            // quais: colecao (os da coleção: na coleção e emprestados), desejados (a lista de desejos) ou todos
+            $entra = $quais === "todos" || ($quais === "desejados" ? posse_de($r) === "desejado" : da_colecao($r));
+            if (!$entra || ($ids !== null && !in_array((int)$r["id"], $ids, true))) {
                 continue;
             }
             $linha = tabela_linha($r, $agora, $extra);
@@ -4241,31 +4243,21 @@ function relatorios_todos()
     }, linhas("SELECT * FROM relatorio ORDER BY nome, id"));
 }
 
-// Os relógios de um relatório, cada um com o contexto da conta (como os dos totais): os da coleção (os mesmos dos totais),
-// os desejados ou todos
+// Os relógios de um relatório, cada um com o contexto da conta (os mesmos dos totais, com o mesmo cache da requisição): os
+// da coleção, os desejados ou todos
 function relatorio_relogios($quais)
 {
-    if ($quais === "colecao") {
-        return totais_relogios(null);
-    }
-    $agora = time();
-    $extra = ["nos" => nos_todos(), "hoje" => hoje_da_colecao(), "dia" => null];
-    $res = [];
-    foreach (linhas("SELECT * FROM relogio ORDER BY nome, id") as $r) {
-        if ($quais === "desejados" && posse_de($r) !== "desejado") {
-            continue;
-        }
-        $linha = tabela_linha($r, $agora, $extra);
-        $res[] = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"]),
-            "tabela" => tabela_variaveis($linha, $r, $agora)];
-    }
-    return $res;
+    return totais_relogios(null, $quais);
 }
 
-// Um valor de uma coluna em texto: no formato dela (o texto sai como está; o número, como no formato numero)
+// Um valor de uma coluna em texto: no formato dela. O formato texto deixa o valor como está (um código "0123" ou uma
+// referência "44011" não são números); os outros passam pelo total_texto
 function relatorio_texto($v, $formato)
 {
-    return total_texto($v, $formato === "texto" ? "numero" : $formato);
+    if ($formato === "texto") {
+        return $v === null || $v === "" ? "—" : (string)$v;
+    }
+    return total_texto($v, $formato);
 }
 
 // A ordem de dois valores: os vazios por último; dois números, como números; o resto, como texto (a ordem natural)
@@ -4344,7 +4336,7 @@ function relatorio_montar($def)
                 } elseif ($col["total"] !== null && count($nums) > 0) {
                     $v = ["soma" => array_sum($nums), "media" => array_sum($nums) / max(1, count($nums)), "menor" => min($nums), "maior" => max($nums)][$col["total"]];
                 }
-                $total[] = $col["total"] === null ? "" : ($col["total"] === "conta" ? total_texto($v, "inteiro") : relatorio_texto($v, $col["formato"]));
+                $total[] = $col["total"] === null ? "" : ($col["total"] === "conta" ? total_texto($v, "inteiro") : relatorio_texto($v, $col["formato"] === "texto" ? "numero" : $col["formato"]));
             }
         }
         $secoes[] = ["titulo" => $grupo === null ? null : ($g["valor"] === null || $g["valor"] === "" ? t("Sem valor") : total_rotulo((string)$g["valor"])),

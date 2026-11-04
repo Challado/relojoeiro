@@ -1474,6 +1474,11 @@ if (($rr_1["titulo"] ?? "") !== "Relógios por marca" || count($rr_1["secoes"] ?
 ler("2 relatorio cadastrado em csv", ["recurso" => "relatorios", "tipo" => "r" . $rc_1, "csv" => 1]);
 ler("2 relatorio avulso", ["recurso" => "relatorios", "tipo" => "avulso", "colunas" => json_encode([["titulo" => "Relógio", "expressao" => "nome"], ["titulo" => "Marca", "expressao" => "marca"]]),
     "agrupar" => "tipo", "relogios" => "desejados"]);
+// o formato texto deixa o valor como está (o código do relógio sem a formatação de número), e o rodapé dele usa o numero
+$rr_t = ler("2 relatorio avulso formato texto", ["recurso" => "relatorios", "tipo" => "avulso", "colunas" => json_encode([["titulo" => "Código", "expressao" => "codigo", "formato" => "texto", "total" => "soma"]]), "limite" => "1"]);
+if (!isset($rr_t["secoes"][0]["linhas"][0][0]) || !preg_match("/^\\d+\$/", $rr_t["secoes"][0]["linhas"][0][0])) {
+    $falhas[] = "relatório avulso: o formato texto mexeu no valor: " . json_encode($rr_t["secoes"][0]["linhas"][0] ?? null);
+}
 $rr_a = ler("2 relatorio avulso recusado", ["recurso" => "relatorios", "tipo" => "avulso", "colunas" => json_encode([["titulo" => "X", "expressao" => "nao_existe"]])]);
 if (!isset($rr_a["erro"])) {
     $falhas[] = "relatório avulso recusado: passou";

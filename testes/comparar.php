@@ -113,9 +113,10 @@ function comparar($x, $y, $caminho, $chave)
             }
         }
         // um total sobre a carga (a Carga média do cadastro, MEDIA(carga)): a carga de cada relógio é um número inteiro que cai
-        // com o tempo, e no banco mais lento um relógio já pode ter descido um ponto; até 1 de diferença é o tempo (um relógio
-        // a mais ou a menos no conjunto muda bem mais que isso)
-        if (!$lista_x && is_string($x["expressao"] ?? null) && ($x["expressao"] ?? null) === ($y["expressao"] ?? null) && preg_match("/\\bcarga\\b/", $x["expressao"]) === 1
+        // com o tempo, e no banco mais lento um relógio já pode ter descido um ponto; só nas leituras em que um banco de fato
+        // atrasou em relação ao outro (FOLGA_ATRASO: a medida de cada leitura), até 1 de diferença é o tempo (um relógio a mais
+        // ou a menos no conjunto muda bem mais que isso). Sem atraso medido, a conta tem de bater
+        if (($GLOBALS["FOLGA_ATRASO"] ?? 0) > 0 && !$lista_x && is_string($x["expressao"] ?? null) && ($x["expressao"] ?? null) === ($y["expressao"] ?? null) && preg_match("/\\bcarga\\b/", $x["expressao"]) === 1
             && is_array($x["resultado"] ?? null) && is_array($y["resultado"] ?? null) && is_numeric($x["resultado"]["valor"] ?? null) && is_numeric($y["resultado"]["valor"] ?? null)
             && abs($x["resultado"]["valor"] - $y["resultado"]["valor"]) <= 1) {
             $y["resultado"]["valor"] = $x["resultado"]["valor"];
