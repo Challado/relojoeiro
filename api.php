@@ -500,7 +500,11 @@
  *   recurso=sql               executar (só o master; comando: um comando SQL no dialeto do MySQL, traduzido para o banco em
  *                             uso, um por vez; limite: as linhas do SELECT, 1 a 5000, padrão 200). Valem SELECT, INSERT e
  *                             ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>; UPDATE e DELETE só com a aprovação na
- *                             Configuração do sistema (parametros[sql_alteracoes]=1); o resto é recusado. Tudo fica no registro
+ *                             Configuração do sistema (parametros[sql_alteracoes]=1); o resto é recusado, e também: comentário
+ *                             no comando, o INSERT que atualiza (ON DUPLICATE KEY, ON CONFLICT, OR REPLACE), o INSERT na tabela
+ *                             sistema, a escrita que cita sql_execucao e o ALTER numa tabela do sistema, com NOT NULL sem DEFAULT ou
+ *                             com chave, índice ou posição. O SELECT vai ao banco com LIMIT. Tudo fica no registro, com os textos
+ *                             entre aspas trocados por ?
  *                            Ex. executar: curl -u lucas:senha -d recurso=sql -d acao=executar --data-urlencode "comando=SELECT nome FROM relogio" http://servidor/relojoeiro/api.php
  *   recurso=relatorios        salvar (id: 0 cria; nome (até 120, sem repetir na árvore, sem diferença de maiúsculas nem de
  *                             espaços), descricao, colunas (até 30: JSON [{"titulo", "expressao", "formato", "total"}] ou os
@@ -5993,12 +5997,12 @@
  *     execucoes[].id                 o número da execução
  *     execucoes[].quando             quando foi pedida (AAAA-MM-DD HH:MM:SS)
  *     execucoes[].usuario            o login de quem pediu; null: a conta saiu
- *     execucoes[].comando            o comando, como veio
+ *     execucoes[].comando            o comando, com os textos entre aspas trocados por ? (um valor digitado não fica gravado)
  *     execucoes[].tipo               select, insert, update, delete ou alter; null: não deu para saber
  *     execucoes[].ok                 true: rodou; false: recusado ou com erro do banco
  *     execucoes[].linhas             as linhas lidas (SELECT) ou mudadas (o resto); null: não contou
  *     execucoes[].duracao_ms         quanto tempo levou, em milissegundos
- *     execucoes[].erro               o porquê da recusa ou o erro do banco; null: nenhum
+ *     execucoes[].erro               o porquê da recusa ou o erro do banco (os textos entre aspas, trocados por ?); null: nenhum
  *     erro                           o motivo (só o master; a tabela que não existe)
  *   recurso=reserva
  *     reserva.protocolos             os protocolos do teste, na ordem

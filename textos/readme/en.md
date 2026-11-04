@@ -1,4 +1,4 @@
-<!-- origem: 00872d7c177ca3cb70578bb6d0ba718de037a8bc -->
+<!-- origem: 2ae055a25d7832e8792cfb6212e3bea0019a9b07 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -249,14 +249,15 @@ as in the migrations), without the collections' scope.
 
 | Command | When it is allowed |
 |---|---|
-| `SELECT` | always (without `INTO`); the response brings up to `limite` rows (default 200, up to 5000) and says whether it cut |
-| `INSERT` | always |
-| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | always: a new field in an existing table, one at a time |
+| `SELECT` | always (without `INTO`); the database already returns at most `limite` rows (default 200, up to 5000), and the response says whether it cut |
+| `INSERT` | always, except one that updates (`ON DUPLICATE KEY`, `ON CONFLICT`, `OR REPLACE`: it would be an `UPDATE` without the approval) and except on the `sistema` and `sql_execucao` tables |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | always: a new field (`NULL`, or `NOT NULL` with `DEFAULT`; no key, index or position) in an existing table that is not a system one (accounts, tokens, access, `sistema`, `colecao`, `no`), one at a time |
 | `UPDATE`, `DELETE` | only with the approval turned on in the **System** box of Settings (`parametros[sql_alteracoes]=1`) |
-| the rest (`DROP`, `TRUNCATE`, `CREATE`, another `ALTER`, more than one command, the `?` parameter) | never: refused before reaching the database |
+| the rest (`DROP`, `TRUNCATE`, `CREATE`, another `ALTER`, more than one command, the `?` parameter, a comment in the command) | never: refused before reaching the database |
 
 Each request, the refused one, the one with an error and the one that worked, goes into the log (the `sql_execucao` table,
-read at `recurso=sql`): when, who, the command, the rows and the error. The database error comes back as it came, without a
+read at `recurso=sql`): when, who, the command, the rows and the error. The command goes into the log with the quoted texts replaced by `?`: a
+password hash or a token typed in it is not kept. The database error comes back as it came, without a
 new attempt. A column created this way stays outside `schema.sql`: a backup with it only comes back in a database that also
 has it.
 

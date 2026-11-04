@@ -2093,14 +2093,15 @@ lo traduce para la base en uso, como en las migraciones), sin el alcance de las 
 
 | Comando | Cuándo vale |
 |---|---|
-| `SELECT` | siempre (sin `INTO`); la respuesta trae hasta `limite` filas (predeterminado 200, hasta 5000) y dice si cortó |
-| `INSERT` | siempre |
-| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | siempre: un campo nuevo en una tabla que existe, uno a la vez |
+| `SELECT` | siempre (sin `INTO`); la base ya devuelve como máximo `limite` filas (predeterminado 200, hasta 5000), y la respuesta dice si cortó |
+| `INSERT` | siempre, menos el que actualiza (`ON DUPLICATE KEY`, `ON CONFLICT`, `OR REPLACE`: sería un `UPDATE` sin la aprobación) y menos en las tablas `sistema` y `sql_execucao` |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | siempre: un campo nuevo (`NULL`, o `NOT NULL` con `DEFAULT`; sin clave, índice ni posición) en una tabla que existe y no es del sistema (cuentas, tokens, accesos, `sistema`, `colecao`, `no`), uno a la vez |
 | `UPDATE`, `DELETE` | solo con la aprobación activada en el cuadro **Sistema** de la Configuración (`parametros[sql_alteracoes]=1`) |
-| el resto (`DROP`, `TRUNCATE`, `CREATE`, otro `ALTER`, más de un comando, el parámetro `?`) | nunca: rechazado antes de llegar a la base |
+| el resto (`DROP`, `TRUNCATE`, `CREATE`, otro `ALTER`, más de un comando, el parámetro `?`, un comentario en el comando) | nunca: rechazado antes de llegar a la base |
 
 Cada petición, la rechazada, la que dio error y la que funcionó, queda en el registro (la tabla `sql_execucao`, leída en
-`recurso=sql`): cuándo, quién, el comando, las filas y el error. El error de la base vuelve tal como vino, sin nuevo
+`recurso=sql`): cuándo, quién, el comando, las filas y el error. El comando entra en el registro con los textos entre comillas cambiados por `?`: un
+hash de contraseña o un token escrito en él no queda guardado. El error de la base vuelve tal como vino, sin nuevo
 intento. Una columna creada así queda fuera del `schema.sql`: una copia de seguridad con ella solo vuelve en una base que
 también la tenga.
 

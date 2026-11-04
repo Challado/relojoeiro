@@ -2157,14 +2157,15 @@ pour la base utilisée, comme dans les migrations), sans la portée des collecti
 
 | Commande | Quand elle est permise |
 |---|---|
-| `SELECT` | toujours (sans `INTO`) ; la réponse apporte jusqu'à `limite` lignes (par défaut 200, jusqu'à 5000) et dit si elle a coupé |
-| `INSERT` | toujours |
-| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | toujours : un nouveau champ dans une table qui existe, un à la fois |
+| `SELECT` | toujours (sans `INTO`) ; la base renvoie déjà au plus `limite` lignes (par défaut 200, jusqu'à 5000), et la réponse dit si elle a coupé |
+| `INSERT` | toujours, sauf celui qui met à jour (`ON DUPLICATE KEY`, `ON CONFLICT`, `OR REPLACE` : ce serait un `UPDATE` sans l'approbation) et sauf dans les tables `sistema` et `sql_execucao` |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | toujours : un nouveau champ (`NULL`, ou `NOT NULL` avec `DEFAULT` ; sans clé, index ni position) dans une table qui existe et n'est pas du système (comptes, jetons, accès, `sistema`, `colecao`, `no`), un à la fois |
 | `UPDATE`, `DELETE` | seulement avec l'approbation activée dans le cadre **Système** de la Configuration (`parametros[sql_alteracoes]=1`) |
-| le reste (`DROP`, `TRUNCATE`, `CREATE`, un autre `ALTER`, plus d'une commande, le paramètre `?`) | jamais : refusé avant d'aller à la base |
+| le reste (`DROP`, `TRUNCATE`, `CREATE`, un autre `ALTER`, plus d'une commande, le paramètre `?`, un commentaire dans la commande) | jamais : refusé avant d'aller à la base |
 
 Chaque requête, la refusée, celle en erreur et celle qui a marché, reste dans le journal (la table `sql_execucao`, lue dans
-`recurso=sql`) : quand, qui, la commande, les lignes et l'erreur. L'erreur de la base revient telle quelle, sans nouvelle
+`recurso=sql`) : quand, qui, la commande, les lignes et l'erreur. La commande entre dans le journal avec les textes entre guillemets remplacés par `?` : un
+hash de mot de passe ou un jeton saisi dedans n'est pas gardé. L'erreur de la base revient telle quelle, sans nouvelle
 tentative. Une colonne créée ainsi reste hors du `schema.sql` : une sauvegarde avec elle ne revient que dans une base qui
 l'a aussi.
 

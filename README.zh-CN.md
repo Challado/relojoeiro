@@ -1392,14 +1392,14 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 
 | 命令 | 何时可用 |
 |---|---|
-| `SELECT` | 始终可用（不带 `INTO`）；响应最多返回 `limite` 行（默认 200，最多 5000），并说明是否截断 |
-| `INSERT` | 始终可用 |
-| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | 始终可用：在已有的表中新增字段，每次一个 |
+| `SELECT` | 始终可用（不带 `INTO`）；数据库本身最多返回 `limite` 行（默认 200，最多 5000），响应会说明是否截断 |
+| `INSERT` | 始终可用，但会更新的除外（`ON DUPLICATE KEY`、`ON CONFLICT`、`OR REPLACE`：那等于未经批准的 `UPDATE`），对 `sistema` 和 `sql_execucao` 表也除外 |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | 始终可用：在已有的、不属于系统的表（账户、令牌、访问、`sistema`、`colecao`、`no`）中新增字段（`NULL`，或带 `DEFAULT` 的 `NOT NULL`；不能有键、索引或位置），每次一个 |
 | `UPDATE`、`DELETE` | 只有在设置的**系统**框中开启批准后（`parametros[sql_alteracoes]=1`） |
-| 其余（`DROP`、`TRUNCATE`、`CREATE`、其他 `ALTER`、多条命令、`?` 参数） | 从不：在到达数据库之前就被拒绝 |
+| 其余（`DROP`、`TRUNCATE`、`CREATE`、其他 `ALTER`、多条命令、`?` 参数、命令中的注释） | 从不：在到达数据库之前就被拒绝 |
 
-每次请求，无论被拒绝、出错还是成功，都记入日志（`sql_execucao` 表，在 `recurso=sql` 中读取）：时间、请求者、命令、行数和错误。
-数据库的错误原样返回，不会重试。这样创建的列不在 `schema.sql` 中：包含它的备份只能恢复到同样有这一列的数据库。
+每次请求，无论被拒绝、出错还是成功，都记入日志（`sql_execucao` 表，在 `recurso=sql` 中读取）：时间、请求者、命令、行数和错误。命令记入日志时，引号内的文本换成 `?`：
+在其中输入的密码哈希或令牌不会被保存。数据库的错误原样返回，不会重试。这样创建的列不在 `schema.sql` 中：包含它的备份只能恢复到同样有这一列的数据库。
 
 ### 用户与密码
 

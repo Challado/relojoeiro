@@ -362,7 +362,7 @@ $saida = [
             "excluir" => ["campos" => t('confirmar=1; id: os relógios que apontam para ele ficam sem calibre'), "exemplo" => t('curl -u lucas:senha -d recurso=calibres -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php')],
         ],
         "sql" => [
-            "executar" => ["campos" => t('comando (um comando SQL, no dialeto do MySQL: o sistema traduz para o banco em uso; um por vez, sem parâmetros ?), limite (as linhas do SELECT na resposta, 1 a 5000, padrão 200). Só o master. Valem SELECT (sem INTO), INSERT, ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo> (um campo novo numa tabela que existe) e, com a aprovação ligada na Configuração do sistema (parametros[sql_alteracoes]=1), UPDATE e DELETE; o resto (DROP, TRUNCATE, CREATE, outro ALTER, mais de um comando) é recusado antes de ir ao banco. A resposta traz resultado: tipo, colunas e linhas (no SELECT), total (as lidas), cortado (passou do limite), afetadas (as mudadas), duracao_ms e erro; recusado ou com erro do banco, ok é false. Cada pedido fica no registro (recurso=sql, execucoes), sem nova tentativa. Uma coluna criada aqui fica fora do schema.sql: um backup dela só volta num banco que também a tenha'),
+            "executar" => ["campos" => t('comando (um comando SQL, no dialeto do MySQL: o sistema traduz para o banco em uso; um por vez, sem parâmetros ?), limite (as linhas do SELECT na resposta, 1 a 5000, padrão 200). Só o master. Valem SELECT (sem INTO), INSERT, ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo> (um campo novo numa tabela que existe) e, com a aprovação ligada na Configuração do sistema (parametros[sql_alteracoes]=1), UPDATE e DELETE; o resto (DROP, TRUNCATE, CREATE, outro ALTER, mais de um comando) é recusado antes de ir ao banco. Também são recusados: comentário no comando (/* */, -- e #); o INSERT que atualiza (ON DUPLICATE KEY, ON CONFLICT, OR REPLACE); o INSERT na tabela sistema e qualquer escrita que cite sql_execucao (o registro); o ALTER numa tabela do sistema (sistema, usuario, api_token, convite, pedido, acesso_dono, colecao_usuario, colecao, no...), com NOT NULL sem DEFAULT ou com chave, índice, referência, posição ou AUTO_INCREMENT. O SELECT vai ao banco com LIMIT (o do comando, no máximo limite mais um): a resposta nunca passa de limite linhas. A resposta traz resultado: tipo, colunas e linhas (no SELECT), total (as lidas, até o limite), cortado (há mais linhas que o limite), afetadas (as mudadas), duracao_ms e erro; recusado ou com erro do banco, ok é false. Cada pedido fica no registro (recurso=sql, execucoes), com os textos entre aspas trocados por ?, sem nova tentativa. Uma coluna criada aqui fica fora do schema.sql: um backup dela só volta num banco que também a tenha'),
                 "exemplo" => t('curl -u lucas:senha -d recurso=sql -d acao=executar --data-urlencode "comando=SELECT nome FROM relogio ORDER BY nome" http://servidor/relojoeiro/api.php')],
         ],
         "relatorios" => [
@@ -3808,12 +3808,12 @@ $saida = [
             "execucoes[].id" => t('o número da execução'),
             "execucoes[].quando" => t('quando foi pedida (AAAA-MM-DD HH:MM:SS)'),
             "execucoes[].usuario" => t('o login de quem pediu; null: a conta saiu'),
-            "execucoes[].comando" => t('o comando, como veio'),
+            "execucoes[].comando" => t('o comando, com os textos entre aspas trocados por ? (um valor digitado não fica gravado)'),
             "execucoes[].tipo" => t('select, insert, update, delete ou alter; null: não deu para saber'),
             "execucoes[].ok" => t('true: rodou; false: recusado ou com erro do banco'),
             "execucoes[].linhas" => t('as linhas lidas (SELECT) ou mudadas (o resto); null: não contou'),
             "execucoes[].duracao_ms" => t('quanto tempo levou, em milissegundos'),
-            "execucoes[].erro" => t('o porquê da recusa ou o erro do banco; null: nenhum'),
+            "execucoes[].erro" => t('o porquê da recusa ou o erro do banco (os textos entre aspas, trocados por ?); null: nenhum'),
             "erro" => t('o motivo (só o master; a tabela que não existe)'),
         ],
         "reserva" => [

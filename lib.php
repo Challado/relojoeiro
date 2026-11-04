@@ -10569,20 +10569,80 @@ function sql_alteracoes_aprovadas()
 // ---------------------------------------------------------------------------------------------------------------------
 // O SQL pelo recurso=sql (só o master; sem o escopo das coleções: o banco inteiro). Um comando por vez, no SQL do MySQL (o
 // mesmo das migrações: cada banco recebe a tradução dele). Valem: SELECT (as linhas, até o limite), INSERT, ALTER TABLE
-// <tabela> ADD [COLUMN] <coluna> <tipo> (um campo novo numa tabela) e, só com a aprovação ligada na Configuração do sistema
-// (sql_alteracoes), UPDATE e DELETE. O resto (DROP, TRUNCATE, CREATE, o ALTER que não é ADD COLUMN, o SELECT ... INTO, o
-// parâmetro ?, mais de um comando) é recusado antes de ir ao banco. Cada pedido, o recusado, o que deu erro e o que deu
-// certo, fica no registro (a tabela sql_execucao): quando, quem, o comando, o tipo, as linhas, o tempo e o erro. Sem nova
-// tentativa: o erro do banco volta como veio.
+// <tabela> ADD [COLUMN] <coluna> <tipo> (um campo novo, NULL ou com DEFAULT, numa tabela que não é do sistema) e, só com a
+// aprovação ligada na Configuração do sistema (sql_alteracoes), UPDATE e DELETE. O resto (DROP, TRUNCATE, CREATE, o ALTER
+// que não é ADD COLUMN, o SELECT ... INTO, o parâmetro ?, mais de um comando) é recusado antes de ir ao banco, e também:
+// comentário no comando (/* */, -- e #: o MySQL executa o que está em /*! */ e o tradutor não vê), o INSERT que atualiza
+// (ON DUPLICATE KEY, ON CONFLICT, OR REPLACE: seria um UPDATE sem a aprovação), o INSERT na tabela sistema (a aprovação mora
+// nela) e qualquer escrita que cite o registro (sql_execucao). O SELECT já vai ao banco com o LIMIT (o do comando, no
+// máximo o limite pedido mais um): o banco não devolve mais do que cabe na resposta. Cada pedido, o recusado, o que deu
+// erro e o que deu certo, fica no registro (a tabela sql_execucao): quando, quem, o comando com os valores entre aspas
+// trocados por '?' (um hash ou um token digitado não fica gravado), o tipo, as linhas, o tempo e o erro. Sem nova tentativa:
+// o erro do banco volta como veio.
 // ---------------------------------------------------------------------------------------------------------------------
 const SQL_LIMITE_PADRAO = 200;
 const SQL_LIMITE_MAXIMO = 5000;
 const SQL_TIPOS = ["select", "insert", "update", "delete", "alter"];
+// as tabelas que o SQL não escreve: o registro dele (nenhuma escrita) e a sistema (nenhum INSERT: a aprovação do UPDATE e do
+// DELETE mora nela; o resto muda pela Configuração)
+const SQL_TABELA_REGISTRO = "sql_execucao";
+const SQL_TABELAS_SEM_INSERT = ["sistema", "sql_execucao"];
+// as tabelas que não ganham campo pelo SQL: as das contas, dos acessos, do token e do próprio sistema
+const SQL_TABELAS_SEM_CAMPO = ["sistema", "sql_execucao", "usuario", "api_token", "usuario_token", "usuario_aparelho", "usuario_smtp", "push_inscricao", "convite", "pedido",
+    "acesso_dono", "colecao_usuario", "colecao", "no"];
 
+// Há comentário no comando (/* */, -- ou #, fora dos textos e dos nomes entre aspas)? O MySQL executa o que está em /*! */ e
+// entende o -- sem espaço de outro jeito que o tradutor: o comando com comentário nem chega a ser lido
+function sql_tem_comentario($texto)
+{
+    $n = strlen($texto);
+    for ($i = 0; $i < $n; $i++) {
+        $c = $texto[$i];
+        if ($c === "'" || $c === "\"" || $c === "`") {
+            // o texto ou o nome entre aspas, até a aspa que fecha (\ pula o próximo; a aspa dobrada abre outro logo em seguida)
+            for ($i++; $i < $n && $texto[$i] !== $c; $i++) {
+                if ($texto[$i] === "\\" && $c !== "`") {
+                    $i++;
+                }
+            }
+        } elseif ($c === "#" || ($c === "-" && ($texto[$i + 1] ?? "") === "-") || ($c === "/" && ($texto[$i + 1] ?? "") === "*")) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// O nome da tabela que um INSERT, UPDATE ou DELETE escreve (minúsculas; null: não achei): depois do INTO, do UPDATE ou do
+// primeiro FROM, pulando as palavras de modo (IGNORE, OR REPLACE...) e o nome do banco antes do ponto
+function sql_tabela_alvo($sem_espaco, $primeira)
+{
+    $ini = null;
+    foreach ($sem_espaco as $i => $x) {
+        if ($x[0] === "w" && strtoupper($x[1]) === ($primeira === "INSERT" ? "INTO" : ($primeira === "DELETE" ? "FROM" : "UPDATE")) && ($primeira === "UPDATE" ? $i === 0 : true)) {
+            $ini = $i + 1;
+            break;
+        }
+    }
+    $modos = ["LOW_PRIORITY", "DELAYED", "HIGH_PRIORITY", "IGNORE", "OR", "REPLACE", "ROLLBACK", "ABORT", "FAIL", "QUICK", "ONLY"];
+    for ($i = (int)$ini; $ini !== null && $i < count($sem_espaco); $i++) {
+        $x = $sem_espaco[$i];
+        if ($x[0] === "w" && in_array(strtoupper($x[1]), $modos, true)) {
+            continue;
+        }
+        if (($x[0] === "w" || $x[0] === "q") && ($sem_espaco[$i + 1] ?? null) === ["o", "."] && isset($sem_espaco[$i + 2])) {
+            return strtolower($sem_espaco[$i + 2][1]);
+        }
+        return $x[0] === "w" || $x[0] === "q" ? strtolower($x[1]) : null;
+    }
+    return null;
+}
 // O tipo de um comando e o erro, se ele não vale: [tipo (select, insert, update, delete ou alter; null: não deu para
 // saber), o comando sem o ; do fim, o erro ("" se vale)]
 function sql_classificar($comando)
 {
+    if (sql_tem_comentario((string)$comando)) {
+        return [null, "", t("Sem comentários no comando (/* */, -- e #): escreva só o comando.")];
+    }
     $p = sql_pedacos((string)$comando);
     // o ; do fim (e os espaços) saem; outro ; é mais de um comando
     while (count($p) > 0 && (end($p)[0] === "e" || end($p) === ["o", ";"])) {
@@ -10618,6 +10678,24 @@ function sql_classificar($comando)
         if ($primeira !== "INSERT" && !sql_alteracoes_aprovadas()) {
             return [strtolower($primeira), $texto, t("UPDATE e DELETE só rodam com a aprovação ligada na Configuração do sistema (SQL: UPDATE e DELETE aprovados).")];
         }
+        // o registro do SQL não se escreve (nem citado dentro do comando)
+        foreach ($sem_espaco as $x) {
+            if (($x[0] === "w" || $x[0] === "q") && strtolower($x[1]) === SQL_TABELA_REGISTRO) {
+                return [strtolower($primeira), $texto, t("A tabela {1} é o registro do SQL: ninguém escreve nela.", [1 => SQL_TABELA_REGISTRO])];
+            }
+        }
+        if ($primeira === "INSERT") {
+            // o INSERT que atualiza é um UPDATE sem a aprovação
+            foreach ($palavras as $i => $w) {
+                if (($w === "ON" && in_array($palavras[$i + 1] ?? "", ["DUPLICATE", "CONFLICT"], true)) || ($w === "OR" && ($palavras[$i + 1] ?? "") === "REPLACE")) {
+                    return ["insert", $texto, t("O INSERT não atualiza: sem ON DUPLICATE KEY, ON CONFLICT nem OR REPLACE (para atualizar, o UPDATE, com a aprovação).")];
+                }
+            }
+            $alvo = sql_tabela_alvo($sem_espaco, "INSERT");
+            if (in_array($alvo, SQL_TABELAS_SEM_INSERT, true)) {
+                return ["insert", $texto, t("A tabela {1} só muda pela Configuração: o INSERT do SQL não escreve nela.", [1 => $alvo])];
+            }
+        }
         return [strtolower($primeira), $texto, ""];
     }
     if ($primeira === "ALTER") {
@@ -10627,6 +10705,17 @@ function sql_classificar($comando)
             || preg_match("/^(INDEX|KEY|UNIQUE|CONSTRAINT|FOREIGN|PRIMARY|CHECK|FULLTEXT|SPATIAL)\$/i", $m[3]) === 1
             || count($proibidas) > 0 || in_array(",", array_column(array_filter($sem_espaco, function ($x) { return $x[0] === "o"; }), 1), true) && sql_virgula_fora($sem_espaco)) {
             return ["alter", $texto, t("Do ALTER, só ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>: um campo novo por vez.")];
+        }
+        if (in_array(strtolower($m[1]), SQL_TABELAS_SEM_CAMPO, true)) {
+            return ["alter", $texto, t("A tabela {1} é do sistema: não ganha campo pelo SQL.", [1 => $m[1]])];
+        }
+        // só o nome e o tipo, com NULL, NOT NULL e DEFAULT: sem chave, índice, referência nem posição; e o campo novo numa tabela
+        // que já tem linhas não pode ser NOT NULL sem o DEFAULT
+        if (count(array_intersect($palavras, ["PRIMARY", "UNIQUE", "REFERENCES", "CHECK", "AUTO_INCREMENT", "GENERATED", "FIRST", "AFTER", "KEY", "INDEX"])) > 0) {
+            return ["alter", $texto, t("O campo novo leva só o nome e o tipo, com NULL, NOT NULL e DEFAULT: sem chave, índice, referência, posição nem AUTO_INCREMENT.")];
+        }
+        if (preg_match("/\\bNOT NULL\\b/i", $c) === 1 && !in_array("DEFAULT", $palavras, true)) {
+            return ["alter", $texto, t("O campo novo NOT NULL precisa de DEFAULT: a tabela já tem linhas.")];
         }
         if (!banco_tem_tabela($m[1])) {
             return ["alter", $texto, t("A tabela {1} não existe.", [1 => $m[1]])];
@@ -10655,6 +10744,58 @@ function sql_virgula_fora($pedacos)
     return false;
 }
 
+// O SELECT com o LIMIT (no máximo $n linhas): o LIMIT do comando, se ele tem (o de fora dos parênteses; o número passa de $n,
+// vira $n), ou um LIMIT $n no fim. O banco devolve só o que cabe na resposta (no Firebird, o tradutor faz o LIMIT)
+function sql_limitar($texto, $n)
+{
+    $p = sql_pedacos($texto);
+    $nivel = 0;
+    foreach ($p as $i => $x) {
+        if ($x === ["o", "("]) {
+            $nivel++;
+        } elseif ($x === ["o", ")"]) {
+            $nivel--;
+        } elseif ($nivel === 0 && $x[0] === "w" && strtoupper($x[1]) === "LIMIT") {
+            // LIMIT n, LIMIT n OFFSET m ou LIMIT m, n: o último número antes do OFFSET é o de linhas
+            $alvo = null;
+            for ($j = $i + 1; $j < count($p); $j++) {
+                if ($p[$j][0] === "e") {
+                    continue;
+                }
+                if ($p[$j][0] === "n") {
+                    $alvo = $j;
+                    continue;
+                }
+                if ($p[$j] === ["o", ","]) {
+                    continue;
+                }
+                break;
+            }
+            if ($alvo !== null && (float)$p[$alvo][1] > $n) {
+                $p[$alvo][1] = (string)$n;
+            }
+            return sql_texto($p, "mysql");
+        }
+    }
+    return sql_texto($p, "mysql") . " LIMIT " . (int)$n;
+}
+
+// O comando para o registro: os textos entre aspas viram '?' (um hash de senha, um token ou uma chave digitados no comando não
+// ficam gravados), e o resto como está, sem comentário e com os espaços numa só; o erro do banco também (ele cita o valor)
+function sql_mascarar($comando)
+{
+    $s = "";
+    foreach (sql_pedacos((string)$comando) as $x) {
+        $s .= $x[0] === "s" ? "'?'" : ($x[0] === "q" ? "`" . $x[1] . "`" : $x[1]);
+    }
+    return trim($s);
+}
+
+function sql_mascarar_erro($erro)
+{
+    return $erro === null ? null : (string)preg_replace("/'[^']*'/u", "'?'", (string)$erro);
+}
+
 // Um valor de uma linha do SELECT para a resposta: o binário vira um aviso com o tamanho (a resposta é JSON em texto)
 function sql_valor_resposta($v)
 {
@@ -10679,10 +10820,11 @@ function sql_rodar($comando, $limite)
                     banco_script($texto);
                 } else {
                     unset($GLOBALS["BANCO_AFETADAS"]);
-                    $r = banco_executar_cru($texto);
+                    // o SELECT pede ao banco uma linha a mais que o limite: com ela, a resposta diz que cortou
+                    $r = banco_executar_cru($tipo === "select" ? sql_limitar($texto, $limite + 1) : $texto);
                     if ($tipo === "select" && $r !== null) {
                         $res["colunas"] = $r[0];
-                        $res["total"] = count($r[1]);
+                        $res["total"] = min(count($r[1]), $limite);
                         $res["cortado"] = count($r[1]) > $limite;
                         $res["linhas"] = array_map(function ($l) { return array_map("sql_valor_resposta", array_values($l)); }, array_slice($r[1], 0, $limite));
                     } else {
@@ -10699,8 +10841,8 @@ function sql_rodar($comando, $limite)
     $u = usuario_atual();
     sem_escopo(function () use ($comando, $res, $u) {
         sql("INSERT INTO sql_execucao (quando, usuario_id, comando, tipo, ok, linhas, duracao_ms, erro) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [date("Y-m-d H:i:s"), $u !== null ? (int)$u["id"] : null, trim((string)$comando) === "" ? null : mb_substr((string)$comando, 0, 20000, "UTF-8"), $res["tipo"], $res["ok"] ? 1 : 0,
-                $res["tipo"] === "select" ? $res["total"] : $res["afetadas"], $res["duracao_ms"], $res["erro"]]);
+            [date("Y-m-d H:i:s"), $u !== null ? (int)$u["id"] : null, trim((string)$comando) === "" ? null : mb_substr(sql_mascarar($comando), 0, 20000, "UTF-8"), $res["tipo"], $res["ok"] ? 1 : 0,
+                $res["tipo"] === "select" ? $res["total"] : $res["afetadas"], $res["duracao_ms"], sql_mascarar_erro($res["erro"])]);
     });
     return $res;
 }

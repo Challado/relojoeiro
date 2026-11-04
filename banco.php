@@ -717,6 +717,8 @@ function banco_executar_banco($comando, $params = [])
                 $GLOBALS["BANCO_AFETADAS"] = (int)pg_affected_rows($res);
                 return null;
             }
+            // as linhas devolvidas (um INSERT ou UPDATE ... RETURNING): o que o recurso=sql conta como afetadas
+            $GLOBALS["BANCO_AFETADAS"] = (int)pg_num_rows($res);
             $n = pg_num_fields($res);
             $nomes = [];
             $conv = [];

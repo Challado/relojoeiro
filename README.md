@@ -2056,14 +2056,15 @@ migrações), sem o escopo das coleções.
 
 | Comando | Quando vale |
 |---|---|
-| `SELECT` | sempre (sem `INTO`); a resposta traz até `limite` linhas (padrão 200, até 5000) e diz se cortou |
-| `INSERT` | sempre |
-| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | sempre: um campo novo numa tabela que existe, um por vez |
+| `SELECT` | sempre (sem `INTO`); o banco já devolve no máximo `limite` linhas (padrão 200, até 5000), e a resposta diz se cortou |
+| `INSERT` | sempre, menos o que atualiza (`ON DUPLICATE KEY`, `ON CONFLICT`, `OR REPLACE`: seria um `UPDATE` sem a aprovação) e menos nas tabelas `sistema` e `sql_execucao` |
+| `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | sempre: um campo novo (`NULL`, ou `NOT NULL` com `DEFAULT`; sem chave, índice nem posição) numa tabela que existe e não é do sistema (contas, tokens, acessos, `sistema`, `colecao`, `no`), um por vez |
 | `UPDATE`, `DELETE` | só com a aprovação ligada no quadro **Sistema** da Configuração (`parametros[sql_alteracoes]=1`) |
-| o resto (`DROP`, `TRUNCATE`, `CREATE`, outro `ALTER`, mais de um comando, o parâmetro `?`) | nunca: recusado antes de ir ao banco |
+| o resto (`DROP`, `TRUNCATE`, `CREATE`, outro `ALTER`, mais de um comando, o parâmetro `?`, comentário no comando) | nunca: recusado antes de ir ao banco |
 
 Cada pedido, o recusado, o que deu erro e o que deu certo, fica no registro (a tabela `sql_execucao`, lida em
-`recurso=sql`): quando, quem, o comando, as linhas e o erro. O erro do banco volta como veio, sem nova tentativa. Uma
+`recurso=sql`): quando, quem, o comando, as linhas e o erro. O comando entra no registro com os textos entre aspas trocados
+por `?`: um hash de senha ou um token digitado nele não fica gravado. O erro do banco volta como veio, sem nova tentativa. Uma
 coluna criada assim fica fora do `schema.sql`: uma cópia de segurança com ela só volta num banco que também a tenha.
 
 ### Os usuários e as senhas

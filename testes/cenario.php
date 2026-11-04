@@ -1513,19 +1513,38 @@ foreach (["", "SELECT nome FROM marca; SELECT nome FROM relogio", "SELECT nome F
 escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT nome FROM marca ORDER BY nome", "limite" => "0"], false);
 escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT nome, pais FROM marca ORDER BY nome;"]);
 escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT nome FROM marca ORDER BY nome", "limite" => "1"]);
-escrever(["recurso" => "sql", "acao" => "executar", "comando" => "ALTER TABLE sql_execucao ADD COLUMN nota VARCHAR(80) NULL"]);
-escrever(["recurso" => "sql", "acao" => "executar", "comando" => "INSERT INTO sql_execucao (quando, comando, ok) VALUES ('2026-01-01 00:00:00', 'manual', 1)"]);
+// o SELECT com um LIMIT maior que o pedido vai cortado no banco (o limite pedido mais um), e a resposta diz que cortou
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT nome FROM marca ORDER BY nome LIMIT 100000", "limite" => "2"]);
+// as recusas do endurecimento: comentário (o /*! */ que o MySQL executa, o -- sem espaço, o #), o INSERT que atualiza, o INSERT
+// na sistema (a aprovação mora nela), a escrita no registro, o campo novo numa tabela do sistema, NOT NULL sem DEFAULT, o
+// campo com chave ou posição
+foreach (["SELECT 1 /*!50000 INTO OUTFILE '/tmp/x' */", "SELECT 1 --1 INTO OUTFILE '/tmp/x'", "SELECT nome FROM marca # um comentario",
+    "INSERT INTO marca (no_id, nome) VALUES (1, 'x') ON DUPLICATE KEY UPDATE nome = 'y'", "INSERT OR REPLACE INTO marca (no_id, nome) VALUES (1, 'x')",
+    "INSERT INTO sistema (chave, valor) VALUES ('param_sql_alteracoes', '1')", "INSERT INTO sql_execucao (quando, comando, ok) VALUES ('2026-01-01 00:00:00', 'x', 1)",
+    "ALTER TABLE usuario ADD COLUMN nota_sql VARCHAR(80) NULL", "ALTER TABLE marca ADD COLUMN nota_sql INT NOT NULL", "ALTER TABLE marca ADD COLUMN nota_sql INT NULL UNIQUE",
+    "ALTER TABLE marca ADD COLUMN nota_sql INT NULL AFTER nome"] as $cmd_s) {
+    escrever(["recurso" => "sql", "acao" => "executar", "comando" => $cmd_s], false);
+}
+// um campo novo (NULL), um INSERT (o texto entre aspas vira ? no registro), e com a aprovação ligada, um UPDATE, um SELECT e um
+// DELETE; sem ela, o DELETE é recusado de novo
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "ALTER TABLE marca ADD COLUMN nota_sql VARCHAR(80) NULL"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "INSERT INTO marca (no_id, nome) SELECT MIN(id), 'Marca do SQL' FROM no"]);
 escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["sql_alteracoes" => "1"]]);
-escrever(["recurso" => "sql", "acao" => "executar", "comando" => "UPDATE sql_execucao SET nota = 'pelo teste' WHERE quando = '2026-01-01 00:00:00'"]);
-escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT comando, nota FROM sql_execucao WHERE quando = '2026-01-01 00:00:00'"]);
-escrever(["recurso" => "sql", "acao" => "executar", "comando" => "DELETE FROM sql_execucao WHERE quando = '2026-01-01 00:00:00'"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "UPDATE marca SET nota_sql = 'segredo-do-teste' WHERE nome = 'Marca do SQL'"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "SELECT nome, nota_sql FROM marca WHERE nome = 'Marca do SQL'"]);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "DELETE FROM sql_execucao WHERE ok = 0"], false);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "DELETE FROM marca WHERE nome = 'Marca do SQL'"]);
 escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["sql_alteracoes" => ""]]);
-escrever(["recurso" => "sql", "acao" => "executar", "comando" => "DELETE FROM sql_execucao WHERE quando = '2026-01-01 00:00:00'"], false);
+escrever(["recurso" => "sql", "acao" => "executar", "comando" => "DELETE FROM marca WHERE nome = 'Marca do SQL'"], false);
 ler("2 sql colunas de uma tabela", ["recurso" => "sql", "tabela" => "marca"]);
 ler("2 sql tabela que nao existe", ["recurso" => "sql", "tabela" => "nao_existe"]);
 $sql_l = ler("2 sql depois", ["recurso" => "sql", "limite" => 30]);
 if (count($sql_l["execucoes"] ?? []) < 20) {
     $falhas[] = "SQL: o registro não tem as execuções";
+}
+// o registro não guarda o texto entre aspas dos comandos
+if (strpos(json_encode($sql_l["execucoes"] ?? []), "segredo-do-teste") !== false) {
+    $falhas[] = "SQL: o registro guardou um valor digitado no comando";
 }
 
 // (no fim, depois das leituras que contam o tempo das sessões abertas: estes passos não atrasam aquelas leituras no banco
