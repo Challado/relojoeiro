@@ -119,6 +119,10 @@ function quadroDados(d) {
         + el("option", {"value": "1", "selected": u.rodizio_ativo === true}, t("Ligado"))
         + el("option", {"value": "0", "selected": u.rodizio_ativo === false}, t("Desligado"))), "largo",
         ajuda("rodizio-usuario", t("Rodízio: padrão das minhas coleções"), el("p", {}, t("Vale nas coleções de que você é dono, inclusive para os membros e o cron. Cada coleção pode herdar este valor ou substituí-lo na Configuração."))))
+      // o padrão de cada opção da coleção, para as coleções de que é dono: cada coleção herda e pode escolher a sua
+      + el("details", {"class": "largo"}, el("summary", {}, t("Padrões das minhas coleções"))
+        + el("p", {"class": "nota"}, t("Valem nas coleções de que você é dono que não escolheram a sua (na Configuração da coleção), inclusive para os membros e o cron. Vazio, vale o padrão do sistema."))
+        + camposOpcoes(d.opcoes, "opcoes"))
       // o fuso horário da pessoa: as datas e horas que ela vê e digita (no banco fica tudo no fuso do sistema)
       + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, d.fuso.colecao ? t("O da coleção ({1})", {1: d.fuso.colecao.replace(/_/g, " ")}) : t("O do sistema ({1})", {1: d.fuso.sistema.replace(/_/g, " ")}),
         t("O do navegador (neste aparelho: {1})", {1: (fusoNavegador() || "?").replace(/_/g, " ")}))), "largo")

@@ -279,7 +279,10 @@
  *   recurso=config           tudo o que a página Configuração mostra (da coleção): {"config": {chave: valor}, "linguas", "mostrar_ate":
  *                            {"proximos", "plano"} (quantos dias por página, já com o padrão), "aleatorio": {"fontes", "ultimo_lote",
  *                            "fora_desde"} (de onde vêm os números dos sorteios: RANDOM.ORG, senão ANU QRNG, senão o random_int), "sol_fim",
- *                            "sistema": {"url_sistema", "pode_mudar"} (o endereço do sistema: só o master muda), "repeticoes", "eventos":
+ *                            "sistema": {"url_sistema", "pode_mudar", "padroes"} (o endereço do sistema: só o master muda; os padrões do
+ *                            sistema de cada opção, só para o master), "opcoes": {"grupos", "opcoes": [{"chave", "tipo", "titulo",
+ *                            "escolha", "herdado", "efetivo", "origem"...}]} (as opções da coleção em três níveis: o que a coleção
+ *                            escolheu, o que herda do dono e do sistema e o que vale), "repeticoes", "eventos":
  *                            [como em recurso=eventos, com "proximas_60" (as 5 dos próximos 60 dias)], "relogios": [{"id", "nome",
  *                            "disponivel"}], "destinos": [{"id", "nome", "tipo", "ativo"}], "agendas": [{"id", "nome", "tipo", "ativa"}],
  *                            "cron_estado": {"situacao" (nunca, parado ou rodando), "ultima", "minutos", "texto", "crontab", "erro",
@@ -308,7 +311,8 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=usuarios"
  *   recurso=conta            Minha conta: {"usuario", "vendo_como", "colecoes", "colecao", "papel", "arvores", "pedidos", "convites",
  *                            "aprovacoes", "tokens", "push": {"configurado", "chave_publica", "aparelhos"}, "email_configurado",
- *                            "smtp", "demo_dias", "linguas", "niveis"}; parte=menu: só o que o menu das páginas usa (o seletor da coleção,
+ *                            "smtp", "demo_dias", "linguas", "niveis", "opcoes"} (as opções em três níveis: a escolha do usuário e o que
+ *                            ele herda do sistema); parte=menu: só o que o menu das páginas usa (o seletor da coleção,
  *                            a demonstração, as aprovações, a faixa Vendo como, o idioma padrão e o modo da interface: nivel e ocultos)
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=conta"
  *   recurso=colecoes         {"colecoes": [{"id", "nome", "dono_id", "dono", "papel", "no_id"}], "colecao", "arvores": [{"id", "nome",
@@ -666,7 +670,10 @@
  *                             (do sistema inteiro: só o master); parametros[<chave>] (só o master: os parâmetros de operação
  *                             do sistema, o que era só do config.php: cadastro_aberto, demo_dias, convite_dias,
  *                             documentos_limite, api_espera, lote_maximo, backup_ativo, backup_manter, backup_documentos e
- *                             sql_alteracoes; vazio volta ao config.php); só o que vier), evento_salvar (evento_id
+ *                             sql_alteracoes; vazio volta ao config.php); as opções da coleção em três níveis (as de cima, os
+ *                             horários, os limites, o gasto da bateria e as telas: sistema → usuário → coleção; vazio herda o
+ *                             dono da coleção e depois o sistema; padroes[<chave>]: o padrão do sistema, só o master; o do dono se
+ *                             grava em conta/alterar, opcoes[<chave>]); só o que vier), evento_salvar (evento_id
  *                             ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio, dias_semana, dia_mes, intervalo_dias,
  *                             relogio_id; o evento novo já vai para todos os destinos), evento_excluir (evento_id ou id, confirmar=1)
  *                            sorteio_casas: de 0 a 8 casas decimais nos pesos dos sorteios; padrão 2. Se todos os pesos positivos
@@ -694,7 +701,8 @@
  *                            Ex. salvar: curl -u lucas:senha -d recurso=usuarios -d acao=salvar -d login=visitante -d senha=segredo123 http://servidor/relojoeiro/api.php
  *                            Ex. oficializar: curl -u lucas:senha -d recurso=usuarios -d acao=oficializar -d login=visitante http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=usuarios -d acao=excluir -d login=visitante -d confirmar=1 http://servidor/relojoeiro/api.php
- *   recurso=conta             alterar (email, idioma, nivel, senha_atual e senha), token_criar (nome: devolve o token, só agora), token_revogar
+ *   recurso=conta             alterar (email, idioma, nivel, senha_atual e senha, opcoes[<chave>]: o padrão do dono para as
+ *                             coleções de que é dono, as mesmas opções de config/salvar; vazio herda o sistema), token_criar (nome: devolve o token, só agora), token_revogar
  *                             (id), aparelho_lembrar (nome: o aplicativo no celular entra sem a senha por este aparelho, pelo cookie que
  *                             grava), aparelho_esquecer (id; vazio: este), push_inscrever (endpoint, p256dh, auth, aparelho), push_cancelar (id), push_testar,
  *                             smtp_salvar (o servidor de e-mail próprio: proprio=0 volta ao do sistema; host, porta, seguranca, usuario, senha,
@@ -3853,6 +3861,30 @@
  *     recupera_ontem.usuario         a escolha do dono da coleção: true ligado, false desligado, null herda o sistema
  *     recupera_ontem.sistema         o padrão geral (desligado quando o master não ligou)
  *     recupera_ontem.origem          de onde vem a escolha efetiva: colecao, usuario ou sistema
+ *     opcoes                         as opções da coleção em três níveis (sistema → usuário → coleção), da coleção do pedido (escolha: o
+ *                                    que a coleção escolheu; herdado: o do dono, senão o do sistema, senão o padrão de fábrica): os grupos
+ *                                    (as telas agrupam por eles) e cada opção com o que este nível escolheu, o que herda e o que vale
+ *     opcoes.grupos                  os grupos das opções, na ordem das telas
+ *     opcoes.grupos[].chave          o identificador do grupo: rotina, limites ou telas
+ *     opcoes.grupos[].texto          o nome do grupo, no idioma do pedido
+ *     opcoes.opcoes                  as opções, uma por linha
+ *     opcoes.opcoes[].chave          o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
+ *     opcoes.opcoes[].grupo          o grupo da opção
+ *     opcoes.opcoes[].tipo           hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     opcoes.opcoes[].titulo         o nome da opção, no idioma do pedido
+ *     opcoes.opcoes[].minimo         o menor valor aceito (inteiro e decimal; null nos outros tipos)
+ *     opcoes.opcoes[].maximo         o maior valor aceito (inteiro e decimal; null nos outros tipos)
+ *     opcoes.opcoes[].valores        os valores possíveis de um enum (null nos outros tipos)
+ *     opcoes.opcoes[].valores[].valor
+ *                                    o valor, como se manda
+ *     opcoes.opcoes[].valores[].texto
+ *                                    o nome do valor, no idioma do pedido
+ *     opcoes.opcoes[].padrao         o padrão de fábrica: o que vale quando nenhum nível escolheu
+ *     opcoes.opcoes[].escolha        o que este nível escolheu (vazio: não escolheu, herda)
+ *     opcoes.opcoes[].herdado        o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     opcoes.opcoes[].origem_herdado de onde vem o herdado: usuario, sistema ou padrao
+ *     opcoes.opcoes[].efetivo        o que vale neste nível (a escolha, senão o herdado)
+ *     opcoes.opcoes[].origem         de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     atualizar_segundos             o intervalo de atualização das páginas, já com o padrão (a Configuração, atualizar_segundos: 1 a
  *                                    86400; 0, não se atualizam sozinhas; padrão 60)
@@ -4027,6 +4059,39 @@
  *     sistema.parametros[].padrao    o valor sem o gravado e sem o config.php
  *     sistema.parametros[].minimo    o menor valor aceito
  *     sistema.parametros[].maximo    o maior valor aceito
+ *     sistema.padroes                só para o master (null para os outros): o padrão do sistema de cada opção da coleção, na mesma forma
+ *                                    de opcoes (escolha: o que o master escolheu; herdado: o padrão de fábrica)
+ *     sistema.padroes.grupos         os grupos das opções, na ordem das telas
+ *     sistema.padroes.grupos[].chave o identificador do grupo: rotina, limites ou telas
+ *     sistema.padroes.grupos[].texto o nome do grupo, no idioma do pedido
+ *     sistema.padroes.opcoes         as opções, uma por linha
+ *     sistema.padroes.opcoes[].chave o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
+ *     sistema.padroes.opcoes[].grupo o grupo da opção
+ *     sistema.padroes.opcoes[].tipo  hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     sistema.padroes.opcoes[].titulo
+ *                                    o nome da opção, no idioma do pedido
+ *     sistema.padroes.opcoes[].minimo
+ *                                    o menor valor aceito (inteiro e decimal; null nos outros tipos)
+ *     sistema.padroes.opcoes[].maximo
+ *                                    o maior valor aceito (inteiro e decimal; null nos outros tipos)
+ *     sistema.padroes.opcoes[].valores
+ *                                    os valores possíveis de um enum (null nos outros tipos)
+ *     sistema.padroes.opcoes[].valores[].valor
+ *                                    o valor, como se manda
+ *     sistema.padroes.opcoes[].valores[].texto
+ *                                    o nome do valor, no idioma do pedido
+ *     sistema.padroes.opcoes[].padrao
+ *                                    o padrão de fábrica: o que vale quando nenhum nível escolheu
+ *     sistema.padroes.opcoes[].escolha
+ *                                    o que este nível escolheu (vazio: não escolheu, herda)
+ *     sistema.padroes.opcoes[].herdado
+ *                                    o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     sistema.padroes.opcoes[].origem_herdado
+ *                                    de onde vem o herdado: usuario, sistema ou padrao
+ *     sistema.padroes.opcoes[].efetivo
+ *                                    o que vale neste nível (a escolha, senão o herdado)
+ *     sistema.padroes.opcoes[].origem
+ *                                    de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
  *     senha_politica.regras          o mínimo de cada regra (0: não exige)
  *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
@@ -6786,6 +6851,30 @@
  *     rodizio_sistema                o padrão geral do rodízio, para a opção Herdar do sistema em Minha conta
  *     recupera_ontem_sistema         o padrão geral de passar o relógio de ontem sem uso para hoje (verdadeiro quando o master ligou), para
  *                                    a opção Herdar do sistema em Minha conta
+ *     opcoes                         as opções da coleção em três níveis (sistema → usuário → coleção), o padrão do usuário (escolha: o que
+ *                                    ele escolheu como padrão das coleções de que é dono; herdado: o do sistema): os grupos (as telas
+ *                                    agrupam por eles) e cada opção com o que este nível escolheu, o que herda e o que vale
+ *     opcoes.grupos                  os grupos das opções, na ordem das telas
+ *     opcoes.grupos[].chave          o identificador do grupo: rotina, limites ou telas
+ *     opcoes.grupos[].texto          o nome do grupo, no idioma do pedido
+ *     opcoes.opcoes                  as opções, uma por linha
+ *     opcoes.opcoes[].chave          o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
+ *     opcoes.opcoes[].grupo          o grupo da opção
+ *     opcoes.opcoes[].tipo           hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     opcoes.opcoes[].titulo         o nome da opção, no idioma do pedido
+ *     opcoes.opcoes[].minimo         o menor valor aceito (inteiro e decimal; null nos outros tipos)
+ *     opcoes.opcoes[].maximo         o maior valor aceito (inteiro e decimal; null nos outros tipos)
+ *     opcoes.opcoes[].valores        os valores possíveis de um enum (null nos outros tipos)
+ *     opcoes.opcoes[].valores[].valor
+ *                                    o valor, como se manda
+ *     opcoes.opcoes[].valores[].texto
+ *                                    o nome do valor, no idioma do pedido
+ *     opcoes.opcoes[].padrao         o padrão de fábrica: o que vale quando nenhum nível escolheu
+ *     opcoes.opcoes[].escolha        o que este nível escolheu (vazio: não escolheu, herda)
+ *     opcoes.opcoes[].herdado        o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     opcoes.opcoes[].origem_herdado de onde vem o herdado: usuario, sistema ou padrao
+ *     opcoes.opcoes[].efetivo        o que vale neste nível (a escolha, senão o herdado)
+ *     opcoes.opcoes[].origem         de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     usuario.rodizio_ativo          o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
  *     usuario.recupera_ontem         o padrão do usuário para passar o relógio de ontem sem uso para hoje, nas coleções de que é dono: true
  *                                    ligado, false desligado, null herda o sistema

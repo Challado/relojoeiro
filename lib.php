@@ -1277,6 +1277,7 @@ $MIGRACOES = [
     "v55" => ["migracao_v55.sql", tk("o SQL pela API (recurso=sql, só o master: SELECT, INSERT, ALTER TABLE ... ADD COLUMN e, com a aprovação na Configuração do sistema, UPDATE e DELETE), com o registro de cada execução; e os parâmetros de operação do config.php (o cadastro aberto, os dias da demonstração e do convite, o tamanho dos documentos, a espera das telas, o lote, a cópia de segurança) também na Configuração › Sistema e pela API"), "sql_execucao"],
     "v56" => ["migracao_v56.sql", tk("o rodízio em três níveis: padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração"), "sistema.chave=migracao_v56", "migracao_v56_dados"],
     "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem"],
+    "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
 ];
 
 function migracao_v56_dados($nova = false)
@@ -4503,7 +4504,19 @@ function avisos_na_hora_vencidos($momento)
 // ---------------------------------------------------------------------------------------------------------------------
 // Configuração (chave e valor), o login do site, e o envio pela API de mensagem
 // ---------------------------------------------------------------------------------------------------------------------
+// O valor que vale de uma configuração da coleção do pedido: o que a coleção escolheu; se ela não escolheu (vazio) e a opção é
+// das três hierarquias (a tabela OPCOES, opcoes.php), o do dono dela, senão o do sistema, senão o padrão de fábrica
 function cfg($chave, $novo = null)
+{
+    $v = cfg_cru($chave, $novo);
+    if ($v === "" && isset(OPCOES[$chave]) && colecao_atual() !== null) {
+        return opcao_valor_herdado($chave);
+    }
+    return $v;
+}
+
+// O que a coleção do pedido guardou (vazio: não escolheu, e herda quando a opção é das três hierarquias)
+function cfg_cru($chave, $novo = null)
 {
     // a configuração da coleção do pedido (sem coleção, só o idioma da instalação)
     static $cache = [];
@@ -4526,7 +4539,7 @@ function cfg($chave, $novo = null)
 function cfg_set($chave, $valor)
 {
     sql("REPLACE INTO config (colecao_id, chave, valor) VALUES (?, ?, ?)", [colecao_atual(), $chave, (string)$valor]);
-    cfg($chave, (string)$valor);
+    cfg_cru($chave, (string)$valor);
 }
 
 // O padrão é do sistema; o dono pode substituí-lo para suas coleções, e cada coleção pode substituir o dono.
@@ -10680,7 +10693,7 @@ const SQL_TIPOS = ["select", "insert", "update", "delete", "alter"];
 const SQL_TABELA_REGISTRO = "sql_execucao";
 const SQL_TABELAS_SEM_INSERT = ["sistema", "sql_execucao"];
 // as tabelas que não ganham campo pelo SQL: as das contas, dos acessos, do token e do próprio sistema
-const SQL_TABELAS_SEM_CAMPO = ["sistema", "sql_execucao", "usuario", "api_token", "usuario_token", "usuario_aparelho", "usuario_smtp", "push_inscricao", "convite", "pedido",
+const SQL_TABELAS_SEM_CAMPO = ["sistema", "sql_execucao", "usuario", "api_token", "usuario_token", "usuario_aparelho", "usuario_opcao", "usuario_smtp", "push_inscricao", "convite", "pedido",
     "acesso_dono", "colecao_usuario", "colecao", "no"];
 
 // Há comentário no comando (/* */, -- ou #, fora dos textos e dos nomes entre aspas)? O MySQL executa o que está em /*! */ e
@@ -11322,6 +11335,8 @@ function backup_restaurar_tudo($arquivo)
 
 // as coleções (o escopo do pedido, o modelo.json, os segredos, a configuração do sistema, a migração v25)
 require_once __DIR__ . "/colecoes.php";
+// as opções em três níveis (sistema → usuário → coleção): a tabela OPCOES e o que o cfg() herda
+require_once __DIR__ . "/opcoes.php";
 // os alertas (os destinos das mensagens, as agendas, o e-mail, o Web Push)
 require_once __DIR__ . "/alertas.php";
 // as contas (o cadastro, a conta, as coleções, os convites, os pedidos e o painel do master)

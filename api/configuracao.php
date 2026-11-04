@@ -21,6 +21,9 @@ $valores_c["rodizio_ativo"] = cfg("rodizio_ativo");
 $valores_c["recupera_ontem"] = cfg("recupera_ontem");
 $saida = ["config" => (object)$valores_c,
     "rodizio" => rodizio_configuracao(),
+    // as opções das três hierarquias (sistema → usuário → coleção): cada uma com o que a coleção escolheu (vazio herda), o que
+    // herda e de onde, e o que vale
+    "opcoes" => opcoes_lista("colecao"),
     // passar o relógio de ontem para hoje: o valor que vale, a escolha de cada nível e a origem
     "recupera_ontem" => recupera_ontem_configuracao(),
     // os idiomas (o menu Idioma padrão)
@@ -38,7 +41,9 @@ $saida = ["config" => (object)$valores_c,
     // o que é do sistema inteiro (só o master muda): o endereço do sistema
     "sistema" => ["url_sistema" => sis("url_sistema"), "cron_espera_rodadas" => cron_espera_rodadas(), "pode_mudar" => usuario_master(),
         // os parâmetros de operação (o que estava só no config.php), cada um com o valor que vale e de onde vem: só para o master
-        "parametros" => usuario_master() ? parametros_sistema_lista() : null],
+        "parametros" => usuario_master() ? parametros_sistema_lista() : null,
+        // o padrão do sistema de cada opção da coleção (o que o master escolhe; os outros não veem)
+        "padroes" => usuario_master() ? opcoes_lista("sistema") : null],
     // a força da senha (do sistema: só o master muda): o mínimo de cada regra e o texto
     "senha_politica" => senha_politica_api(),
     // o DOCUMENTOS_COPIA_BANCO do config.php não vale mais (a cópia é escolhida aqui, por coleção): definido, a página avisa

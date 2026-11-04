@@ -4795,106 +4795,50 @@ function op_config($acao, $d)
     $hoje = hoje_da_colecao();
     $hora_ok = "/^([01][0-9]|2[0-3]):[0-5][0-9]\$/";
     if ($acao === "salvar") {
-        foreach (["horario_manha", "horario_noite", "sol_fim"] as $k) {
-            if (array_key_exists($k, $d) && preg_match($hora_ok, (string)$d[$k]) !== 1) {
-                $erros[] = t("{1}: uma hora HH:MM.", [1 => $k]);
-            }
-        }
         if (array_key_exists("rodizio_ativo", $d) && (is_array($d["rodizio_ativo"]) || !in_array((string)$d["rodizio_ativo"], ["", "0", "1"], true))) {
             $erros[] = t("Rodízio: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
         }
         if (array_key_exists("recupera_ontem", $d) && (is_array($d["recupera_ontem"]) || !in_array((string)$d["recupera_ontem"], ["", "0", "1"], true))) {
             $erros[] = t("Passar o relógio de ontem: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
         }
-        if ((array_key_exists("uso_inicio", $d) || array_key_exists("uso_fim", $d)) && (preg_match($hora_ok, (string)($d["uso_inicio"] ?? cfg("uso_inicio"))) !== 1
-            || preg_match($hora_ok, (string)($d["uso_fim"] ?? cfg("uso_fim"))) !== 1 || (string)($d["uso_fim"] ?? cfg("uso_fim")) <= (string)($d["uso_inicio"] ?? cfg("uso_inicio")))) {
-            $erros[] = t("Relógio no pulso: duas horas HH:MM, o fim depois do início.");
+        // as opções das três hierarquias (a tabela OPCOES, opcoes.php): um conferidor só; vazio herda do nível acima
+        [$erros_o, $opcoes_ok] = opcoes_conferir(array_intersect_key($d, OPCOES));
+        $erros = array_merge($erros, $erros_o);
+        // o horário de uso: o fim depois do início, com o que vale depois da mudança (a escolha do pedido ou o que a coleção herda)
+        if (count($erros_o) === 0 && (array_key_exists("uso_inicio", $opcoes_ok) || array_key_exists("uso_fim", $opcoes_ok))) {
+            $vale = function ($k) use ($opcoes_ok) {
+                return array_key_exists($k, $opcoes_ok) ? ($opcoes_ok[$k] !== "" ? $opcoes_ok[$k] : opcao_valor_herdado($k)) : cfg($k);
+            };
+            if ($vale("uso_fim") <= $vale("uso_inicio")) {
+                $erros[] = t("Relógio no pulso: duas horas HH:MM, o fim depois do início.");
+            }
         }
-        if (array_key_exists("carga_limiar", $d) && (!ctype_digit(trim((string)$d["carga_limiar"])) || (int)$d["carga_limiar"] < 1 || (int)$d["carga_limiar"] > 99)) {
-            $erros[] = t("Carregar: o limite é uma carga de 1 a 99%.");
-        }
-        if (array_key_exists("sol_limiar", $d) && (!ctype_digit(trim((string)$d["sol_limiar"])) || (int)$d["sol_limiar"] < 1 || (int)$d["sol_limiar"] > 99)) {
-            $erros[] = t("Solar: o limite é uma carga de 1 a 99%.");
-        }
-        if (array_key_exists("max_sem_uso", $d) && (!ctype_digit(trim((string)$d["max_sem_uso"])) || (int)$d["max_sem_uso"] > 365)) {
-            $erros[] = t("Garantia de rodízio: de 0 a 365 dias.");
-        }
-        if (array_key_exists("sorteio_casas", $d) && (!ctype_digit(trim((string)$d["sorteio_casas"])) || (int)$d["sorteio_casas"] > 8)) {
-            $erros[] = t("{1}: um número inteiro de {2} a {3}.", [1 => t("Casas decimais dos pesos"), 2 => 0, 3 => 8]);
-        }
-        if (array_key_exists("medicao_janela_dias", $d) && (!ctype_digit(trim((string)$d["medicao_janela_dias"])) || (int)$d["medicao_janela_dias"] < 1 || (int)$d["medicao_janela_dias"] > 3650)) {
-            $erros[] = t("Gasto medido: a média usa de 1 a 3650 dias de medições.");
-        }
-        if (array_key_exists("medicao_meia_vida_dias", $d) && (!ctype_digit(trim((string)$d["medicao_meia_vida_dias"])) || (int)$d["medicao_meia_vida_dias"] > 3650)) {
-            $erros[] = t("{1}: um número inteiro de {2} a {3}.", [1 => t("Gasto medido: meia-vida dos dados (dias; 0 desliga)"), 2 => 0, 3 => 3650]);
-        }
-        if (array_key_exists("medicao_base", $d) && !in_array((string)$d["medicao_base"], ["dias", "leituras"], true)) {
-            $erros[] = t("Gasto medido: contar por dias ou por leituras.");
-        }
-        if (array_key_exists("gasto_motor", $d) && (string)$d["gasto_motor"] !== "" && !in_array((string)$d["gasto_motor"], GASTO_MOTORES, true)) {
-            $erros[] = t("Gasto da bateria: como calcular: vazio (conforme o relógio e o grupo), horas, robusto, marcacao, cadastro ou formulas.");
-        }
-        if (array_key_exists("documentos_copia", $d) && !in_array((string)$d["documentos_copia"], ["", "todos", "nenhum"], true)) {
-            $erros[] = t("Cópia dos documentos no banco: vazio (conforme o relógio e o arquivo), todos ou nenhum.");
-        }
-        if (array_key_exists("medicao_janela_leituras", $d) && (!ctype_digit(trim((string)$d["medicao_janela_leituras"])) || (int)$d["medicao_janela_leituras"] < 2 || (int)$d["medicao_janela_leituras"] > 1000)) {
-            $erros[] = t("Gasto medido: de 2 a 1000 leituras de cada tipo.");
-        }
-        if (array_key_exists("encostado_dias", $d) && (!ctype_digit(trim((string)$d["encostado_dias"])) || (int)$d["encostado_dias"] < 1 || (int)$d["encostado_dias"] > 3650)) {
-            $erros[] = t("Aviso Encostado: de 1 a 3650 dias sem ir ao pulso.");
-        }
-        if (array_key_exists("previsao_limite", $d) && (numero_br($d["previsao_limite"]) === null || numero_br($d["previsao_limite"]) < 0 || numero_br($d["previsao_limite"]) > 100)) {
-            $erros[] = t("Previsão: o limite é uma carga de 0 a 100%.");
+        // o padrão do sistema de cada opção (padroes[<chave>]; vazio: volta o padrão de fábrica): só o master
+        $padroes_ok = [];
+        if (array_key_exists("padroes", $d)) {
+            if (!usuario_master()) {
+                $erros[] = t("Os padrões do sistema são do sistema inteiro: só o master muda.");
+            } elseif (!is_array($d["padroes"])) {
+                $erros[] = t("padroes: os campos padroes[<chave>], um para cada opção que muda.");
+            } else {
+                [$erros_p, $padroes_ok] = opcoes_conferir($d["padroes"]);
+                $erros = array_merge($erros, $erros_p);
+                $erro_h = count($erros_p) === 0 ? opcoes_conferir_horario("sistema", null, $padroes_ok) : null;
+                if ($erro_h !== null) {
+                    $erros[] = $erro_h;
+                }
+            }
         }
         if (array_key_exists("url_sistema", $d) && trim((string)$d["url_sistema"]) !== "" && preg_match("#^https?://#i", trim((string)$d["url_sistema"])) !== 1) {
             $erros[] = t("Endereço do sistema: começando por http:// ou https:// (vazio: sem link).");
         } elseif (array_key_exists("url_sistema", $d) && !usuario_master() && trim((string)$d["url_sistema"]) !== sis("url_sistema")) {
             $erros[] = t("O endereço do sistema é do sistema inteiro: só o master muda.");
         }
-        foreach (["proximos_por_pagina" => t("Próximos dias"), "plano_por_pagina" => t("Plano")] as $k => $onde) {
-            if (array_key_exists($k, $d) && (!ctype_digit(trim((string)$d[$k])) || (int)$d[$k] < 1 || (int)$d[$k] > 366)) {
-                $erros[] = t("{1}: mostrar até de 1 a 366 dias por página.", [1 => $onde]);
-            }
-        }
-        if (array_key_exists("painel_modo", $d) && !in_array((string)$d["painel_modo"], ["lado", "flutuante"], true)) {
-            $erros[] = t("Abrir o relógio: lado (ao lado da lista) ou flutuante (numa janela grande por cima da página).");
-        }
         if (array_key_exists("idioma", $d) && !isset(LINGUAS[(string)$d["idioma"]])) {
             $erros[] = t("Idioma: {linguas}.", ["linguas" => implode(", ", array_keys(LINGUAS))]);
         }
-        if (array_key_exists("destaque_hoje", $d) && !in_array((string)$d["destaque_hoje"], ["dia", "pulso"], true)) {
-            $erros[] = t("Destaque da página Hoje: dia (o relógio do dia) ou pulso (o relógio no pulso agora).");
-        }
         if (array_key_exists("fuso", $d) && trim((string)$d["fuso"]) !== "" && fuso_valido($d["fuso"]) === null) {
             $erros[] = t("Fuso horário desconhecido: use um nome como America/Sao_Paulo ou Europe/Lisbon (a lista da Configuração), ou vazio para o do sistema.");
-        }
-        if (array_key_exists("calibre_campos", $d) && !in_array((string)$d["calibre_campos"], ["", "movimento", "todos"], true)) {
-            $erros[] = t("Campos no formulário do calibre: movimento (só os do movimento) ou todos.");
-        }
-        if (array_key_exists("relojinho_modo", $d) && !in_array((string)$d["relojinho_modo"], ["", "hora", "aleatorio", "sem_repeticao"], true)) {
-            $erros[] = t("O reloginho da barra é hora, aleatorio ou sem_repeticao.");
-        }
-        if (array_key_exists("atualizar_segundos", $d) && trim((string)$d["atualizar_segundos"]) !== ""
-            && (!ctype_digit(trim((string)$d["atualizar_segundos"])) || (int)$d["atualizar_segundos"] > 86400)) {
-            $erros[] = t("Intervalo de atualização: de 1 a 86400 segundos, ou 0 (as páginas não se atualizam sozinhas); vazio: 60.");
-        }
-        if (array_key_exists("trocar_hoje", $d) && !in_array(trim((string)$d["trocar_hoje"]), ["", "0", "1"], true)) {
-            $erros[] = t("Trocar o relógio de hoje no próprio dia: 1 (pode) ou 0 (só a partir de amanhã; vazio: 0).");
-        }
-        if (array_key_exists("semana_inicio", $d) && !in_array((string)$d["semana_inicio"], ["", "segunda", "domingo"], true)) {
-            $erros[] = t("A semana começa na segunda ou no domingo (vazio: segunda).");
-        }
-        if (array_key_exists("escala_inicio", $d) && !in_array((string)$d["escala_inicio"], ["", "amanha", "hoje"], true)) {
-            $erros[] = t("O primeiro dia da escala inteligente: amanha (hoje, ou amanhã quando o dia de hoje já começou no pulso) ou hoje (sempre hoje; vazio: amanha).");
-        }
-        if (array_key_exists("escala_periodo", $d) && !in_array((string)$d["escala_periodo"], ["", "corridos", "semana", "mes"], true)) {
-            $erros[] = t("Onde a escala inteligente fecha: corridos (os dias do período contados), semana (no fim da semana, semanas inteiras) ou mes (no fim do mês, meses inteiros); vazio: corridos.");
-        }
-        if (array_key_exists("semana_ultimo_dia", $d) && !in_array((string)$d["semana_ultimo_dia"], ["", "dia_seguinte", "semana_seguinte"], true)) {
-            $erros[] = t("No último dia da semana, os modos por semana montam: dia_seguinte (só o dia seguinte) ou semana_seguinte (a semana seguinte inteira); vazio: dia_seguinte.");
-        }
-        if (array_key_exists("hora_relogio", $d) && !in_array((string)$d["hora_relogio"], ["", "analogico", "digital", "anadigi", "ambos"], true)) {
-            $erros[] = t("Relógio da Hora certa: analogico, digital, anadigi (os dois no mesmo relógio) ou ambos (um ao lado do outro).");
         }
         // a força da senha: o tamanho de 4 a 128, cada mínimo de 0 a 32, e os mínimos juntos cabem no tamanho
         $sp = senha_politica();
@@ -4937,7 +4881,17 @@ function op_config($acao, $d)
         } elseif ($mexe_senha && $sp["maiusculas"] + $sp["minusculas"] + $sp["numeros"] + $sp["simbolos"] > $sp["tamanho"]) {
             $erros[] = t("Os mínimos de maiúsculas, minúsculas, números e símbolos, somados, passam do tamanho da senha.");
         }
+        // o padrão do sistema primeiro (refaz o que depende dele em cada coleção); uma coleção que ficaria com o horário de uso
+        // invertido recusa tudo
+        if (count($erros) === 0 && count($padroes_ok) > 0) {
+            try {
+                opcoes_sistema_gravar($padroes_ok);
+            } catch (OpcoesErro $e) {
+                $erros[] = $e->getMessage();
+            }
+        }
         if (count($erros) === 0) {
+            $foto_opcoes = opcoes_foto();
             if (array_key_exists("url_sistema", $d) && usuario_master()) {
                 sis_set("url_sistema", trim((string)$d["url_sistema"]));
             }
@@ -4969,55 +4923,21 @@ function op_config($acao, $d)
                     sis_set("senha_" . $k, (string)(int)$d["senha_" . $k]);
                 }
             }
-            // o primeiro dia da escala mudou: o fim dela sai, e a próxima montagem (a página Hoje, o cron) refaz a escala contando do
-            // primeiro dia novo (como mudar os dias do modo)
-            if (array_key_exists("escala_inicio", $d) && (cfg("escala_inicio") === "hoje") !== (trim((string)$d["escala_inicio"]) === "hoje")) {
-                cfg_set("escala_fim", "");
-            }
-            // onde a escala fecha mudou (ou a semana, com a escala fechando na semana ou no mês): o mesmo
-            $periodo_n = array_key_exists("escala_periodo", $d) ? trim((string)$d["escala_periodo"]) : cfg("escala_periodo");
-            if (($periodo_n === "" ? "corridos" : $periodo_n) !== (cfg("escala_periodo") === "" ? "corridos" : cfg("escala_periodo"))
-                || (array_key_exists("semana_inicio", $d) && in_array($periodo_n, ["semana", "mes"], true)
-                && ((string)$d["semana_inicio"] === "domingo") !== (cfg("semana_inicio") === "domingo"))) {
-                cfg_set("escala_fim", "");
-            }
-            foreach (["horario_manha", "horario_noite", "uso_inicio", "uso_fim", "max_sem_uso", "sorteio_casas", "carga_limiar", "sol_limiar", "medicao_janela_dias", "medicao_meia_vida_dias", "medicao_base", "medicao_janela_leituras", "gasto_motor", "documentos_copia", "encostado_dias", "painel_modo", "destaque_hoje", "idioma", "proximos_por_pagina", "plano_por_pagina", "hora_relogio", "semana_inicio", "escala_inicio", "escala_periodo", "semana_ultimo_dia", "trocar_hoje", "atualizar_segundos", "relojinho_modo", "calibre_campos"] as $k) {
-                if (array_key_exists($k, $d)) {
-                    cfg_set($k, trim((string)$d[$k]));
-                }
+            // as opções das três hierarquias que vieram: a escolha da coleção (vazio herda)
+            foreach ($opcoes_ok as $k => $v) {
+                cfg_set($k, $v);
             }
             // o fuso da coleção, com o nome na caixa certa (vazio: o do sistema)
             if (array_key_exists("fuso", $d)) {
                 cfg_set("fuso", (string)(fuso_valido($d["fuso"]) ?? ""));
-            }
-            // a hora do sol fica na Configuração; tirando do sol sozinho, o "fecha às" do tipo No sol é ela; sem tirar sozinho,
-            // nenhum (só o Tirar do sol)
-            if (array_key_exists("sol_fim", $d)) {
-                cfg_set("sol_fim", (string)$d["sol_fim"]);
-            }
-            if (array_key_exists("sol_auto_fim", $d)) {
-                cfg_set("sol_auto_fim", (string)$d["sol_auto_fim"] === "1" ? "1" : "0");
-            }
-            if ((array_key_exists("sol_fim", $d) || array_key_exists("sol_auto_fim", $d)) && isset(lancamento_tipos()["sol"])) {
-                sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'sol'", [sol_tira_sozinho() ? sol_fim_hora() . ":00" : null]);
-            }
-            if (array_key_exists("previsao_limite", $d)) {
-                cfg_set("previsao_limite", (string)numero_br($d["previsao_limite"]));
             }
             // a caixa "Avisar quando um relógio fica encostado": liga ou desliga o aviso Encostado do cadastro (todas as versões
             // dele na árvore), o mesmo que a página Avisos faz; desligado, some o aviso, a coluna da Hoje e o filtro
             if (array_key_exists("encostado_ativo", $d)) {
                 sql("UPDATE aviso SET ativo = ? WHERE identificador = 'encostado'", [(string)$d["encostado_ativo"] === "1" ? 1 : 0]);
             }
-            foreach (["pulso_auto_inicio" => "pulso_auto_inicio", "pulso_auto_fim" => "pulso_auto_fim"] as $k => $chave) {
-                if (array_key_exists($k, $d)) {
-                    cfg_set($chave, (string)$d[$k] === "1" ? "1" : "0");
-                }
-            }
-            // tirando do pulso sozinho, o "fecha às" do tipo No pulso é o fim do horário de uso; sem tirar sozinho, nenhum (só o Tirou)
-            if ((array_key_exists("pulso_auto_fim", $d) || array_key_exists("uso_fim", $d)) && isset(lancamento_tipos()["pulso"])) {
-                sql("UPDATE lancamento_tipo SET fecha_as = ? WHERE identificador = 'pulso'", [pulso_tira_sozinho() ? cfg("uso_fim") . ":00" : null]);
-            }
+            // o que depende do valor que vale: o "fecha às" dos tipos No pulso e No sol, o fim da escala inteligente
+            opcoes_efeitos($foto_opcoes, array_keys($opcoes_ok));
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             $msg = t("Configuração salva.");
         }

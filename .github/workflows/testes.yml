@@ -44,6 +44,8 @@ jobs:
         run: php testes/rodizio.php
       - name: Passar o relógio de ontem sem uso para hoje
         run: php testes/recupera_ontem.php
+      - name: Opções em três níveis (sistema, usuário e coleção)
+        run: php testes/opcoes.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

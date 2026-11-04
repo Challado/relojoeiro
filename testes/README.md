@@ -25,6 +25,10 @@ para garantir que o crescimento do conteúdo seja acomodado antes da pintura, se
 
 ## Como rodar
 
+`php testes/opcoes.php` confere as opções em três níveis (sistema → usuário → coleção), todas as da tabela OPCOES: o valor que vale em
+cada nível e o que cada um herda, o conferidor único, quem pode mudar o quê, a cascata nas coleções do dono (e só nelas), o que se refaz
+quando o valor que vale muda (o "fecha às" do pulso e do sol, o fim da escala) e a recusa que desfaz tudo (o horário de uso invertido).
+
 `php testes/recupera_ontem.php` confere o passar o relógio de ontem para hoje: a herança sistema → usuário → coleção e a regra (o
 relógio do plano de ontem sem uso passa para hoje e os outros dias andam um dia), os casos em que não passa (usado, trazido
 no dia anterior, indisponível, hoje livre, o de hoje já no pulso) e o dia livre e o bloco que andam junto.

@@ -1431,6 +1431,24 @@ As autonomias saem em segundos para a API (`recurso=autonomia`) e por extenso na
 A página **Configuração** guarda as opções **da coleção** (cada coleção tem as suas). Entre parênteses, o nome de cada uma na API
 (`recurso=config`, na chave `config`), para quem automatiza; o padrão de uma coleção nova vem no fim de cada linha.
 
+**As opções em três níveis.** Cada opção da coleção que não é do sistema inteiro (os horários, os limites, o gasto da bateria, a
+semana e a escala, as telas: 33 ao todo) segue a hierarquia **sistema → usuário → coleção**, a mesma do rodízio: o **master**
+escolhe o padrão do sistema (no quadro **Padrões do sistema**), cada **dono** escolhe o padrão das coleções dele (em **Minha conta**,
+**Padrões das minhas coleções**) e cada **coleção** pode escolher a dela. O mais específico prevalece; o de cima é só um padrão, nunca
+um bloqueio. Um campo vazio **herda** (o rótulo diz de onde vem o valor de agora: do usuário, do sistema ou o padrão de fábrica); nas
+listas, a primeira escolha é **Herdar (…)**; nos campos de hora e de número, o botão **Herdar** esvazia o campo. Vale também para os
+membros e para o cron, que seguem o dono da coleção. Coleção nova já nasce herdando tudo; as que já existiam seguem com o valor que
+tinham, e a migração v58 passa para o vazio os que estavam iguais ao padrão de fábrica. Mudar um padrão refaz o que depende dele em
+cada coleção que herda (o "fecha às" do pulso e do sol, o fim da escala inteligente); um horário de uso que deixaria alguma coleção com
+o fim antes do início é recusado e nada muda. Pela API: `config/salvar` com a chave da opção (a coleção), `conta/alterar` com
+`opcoes[<chave>]` (o dono) e `config/salvar` com `padroes[<chave>]` (o sistema, só o master); a resposta de `recurso=config` traz
+`opcoes` com a escolha de cada nível, o que herda e de onde.
+
+Ficam de fora, de propósito: o que é do sistema inteiro por natureza (a força da senha, o endereço do sistema, as rodadas do cron e
+os parâmetros do quadro **Sistema**), o idioma e o fuso (seguem a pessoa que olha: a escolha dela, depois a da coleção, depois a do
+sistema), o rodízio e o relógio de ontem sem uso (já têm os três níveis, com a coluna própria do usuário) e o que só pode ficar no
+`config.php` (o banco, as chaves, as pastas e o e-mail).
+
 Os cartões se distribuem pelos espaços livres, conforme a largura da tela e a altura do conteúdo. O quadro **Sistema**
 ocupa a largura toda, com suas opções em colunas; no celular, fica uma coluna só. A distribuição acompanha mudanças
 de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
@@ -1442,17 +1460,17 @@ de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
 | **Rodízio da coleção** (`rodizio_ativo`) | **Herdar do usuário** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). A hierarquia é **sistema → usuário → coleção**: cada nível herda o anterior ou o substitui. Em **Minha conta**, **Rodízio: padrão das minhas coleções** (`conta/alterar`, `rodizio_ativo` vazio/1/0) vale nas coleções de que a pessoa é dona, inclusive para membros e cron; não depende de quem abriu a página. A escolha explícita da coleção prevalece sobre o usuário e o sistema. Em **Sistema**, só o master muda **Rodízio: padrão do sistema** (`parametros[rodizio_ativo]`, padrão `1`). A API mostra o estado efetivo e a origem em `rodizio` nos recursos `config`, `hoje`, `plano` e `ficha`. Desligado, pausa sorteios, entradas automáticas no pulso, preparação e projeções do plano; cadastro, leituras, avisos de manutenção e marcações manuais continuam funcionando. A programação e o histórico são preservados: **Plano** mostra a programação guardada, sem ações de alteração, e **Hoje** mostra a pausa ou quem está no pulso. As sessões já registradas continuam seguindo suas regras de encerramento. Ao ligar novamente, o plano volta a valer; uma nova sessão automática só começa a contar a partir da retomada, sem preencher o tempo pausado. As agendas deixam de incluir o relógio do dia e a véspera na próxima sincronização; os demais avisos e eventos continuam. A migração **v56** acrescenta a preferência à conta; quem já existe começa herdando, com o padrão geral ligado. |
 | **Relógio de ontem sem uso passa para hoje** (`recupera_ontem`) | **Herdar do usuário** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). Ligado, se o relógio do plano de **ontem** não foi ao pulso **nem um pouquinho** (você usou outro, ou nenhum), ele **passa para hoje** e todos os outros dias do plano, de hoje em diante (e os dias livres), **andam um dia**; foi usado, mesmo que pouco, e nada muda. Não passa: o mesmo relógio dois dias seguidos (o que passou ontem não passa de novo), um relógio indisponível, na manutenção ou fora da coleção, um hoje livre, nem quando o relógio de hoje já foi ao pulso. A conta é feita uma vez por dia, quando o plano de hoje é montado (a página Hoje ou o cron); o dia de hoje fica à mão no plano, com o motivo *Passou de ontem: não foi usado*. Três níveis como o rodízio: **sistema** (só o master, em **Sistema**, `parametros[recupera_ontem]`, padrão desligado) → **usuário** (em **Minha conta**, `conta/alterar`, `recupera_ontem` vazio/1/0) → **coleção** (aqui, `recupera_ontem`); a API mostra o estado efetivo e a origem em `recupera_ontem` do `recurso=config`. |
 | **Horário de uso, início e fim** (`uso_inicio`, `uso_fim`) | o período do dia em que um relógio está no pulso. Vale para o plano, as previsões e o "dia de uso" do gasto medido (das 7h às 22h, 15 horas). Padrão: 07:00 e 22:00. |
-| **Pôr no pulso sozinho** (`pulso_auto_inicio`) | a caixa ao lado do início: marcada, o relógio do dia entra no pulso sozinho no início do horário de uso; desmarcada, só pelo **Pôs**. Se nessa hora ele está noutro lugar (no carregador, no sol, no winder), espera ele sair de lá, e o período no pulso começa quando ele saiu. Padrão: marcada. |
-| **Tirar do pulso sozinho** (`pulso_auto_fim`) | a caixa ao lado do fim: marcada, ele sai do pulso sozinho no fim do horário de uso (é o "fecha às" do tipo No pulso); desmarcada, só pelo **Tirou**. Padrão: marcada. |
+| **Pôr no pulso sozinho** (`pulso_auto_inicio`) | a escolha ao lado do início: ligado, o relógio do dia entra no pulso sozinho no início do horário de uso; desligado, só pelo **Pôs**. Se nessa hora ele está noutro lugar (no carregador, no sol, no winder), espera ele sair de lá, e o período no pulso começa quando ele saiu. Padrão: ligado. |
+| **Tirar do pulso sozinho** (`pulso_auto_fim`) | a escolha ao lado do fim: ligado, ele sai do pulso sozinho no fim do horário de uso (é o "fecha às" do tipo No pulso); desligado, só pelo **Tirou**. Padrão: ligado. |
 | **Rodada da manhã** (`horario_manha`) | a hora em que o cron manda a mensagem do dia (o relógio de hoje e os avisos) e refaz o plano a partir do que aconteceu. Padrão: 06:30. |
 | **Rodada da noite** (`horario_noite`) | a hora da mensagem da véspera: o relógio de amanhã e o que preparar. Padrão: 20:00. |
 | **A sessão no sol esquecida fecha às** (`sol_fim`, que grava o "fecha às" do tipo No sol) | quem pôs no sol e esqueceu do **Tirou** tem a sessão fechada nessa hora. Padrão: 18:00. |
-| **Tirar do sol sozinho** (`sol_auto_fim`) | a caixa ao lado da hora do sol: marcada, o solar sai do sol sozinho nessa hora; desmarcada, a sessão no sol fica aberta até o **Tirar do sol** (esquecida, ele continua carregando na conta), e a hora fica guardada para quando a caixa for marcada de novo. Padrão: marcada. |
+| **Tirar do sol sozinho** (`sol_auto_fim`) | a escolha ao lado da hora do sol: ligado, o solar sai do sol sozinho nessa hora; desligado, a sessão no sol fica aberta até o **Tirar do sol** (esquecida, ele continua carregando na conta), e a hora fica guardada para quando ela for ligada de novo. Padrão: marcada. |
 | **A semana começa** (`semana_inicio`) | o primeiro dia da semana do rodízio: **Na segunda-feira** (`segunda`) ou **No domingo** (`domingo`). O plano dos [modos de rodízio](#os-modos-de-rodízio) vem montado até o último dia da semana (o domingo ou o sábado), e o ciclo, a próxima semana e o relógio para a semana inteira contam dela; vale para os próximos sorteios (o que já está no plano fica; **Sortear de novo** refaz). A função `SEMANA_DO_ANO()` das fórmulas continua a semana ISO. Padrão: segunda-feira. |
 | **A escala inteligente começa** (`escala_inicio`) | de onde a [escala inteligente](#a-escala-inteligente) conta os dias do modo: **Amanhã, se o dia de hoje já começou no pulso** (`amanha`, o padrão: o dia de hoje que já começou fica de fora da conta, e a escala de 7 dias vai de amanhã até daqui a 7, com o dia da semana de hoje aparecendo de novo no fim) ou **Sempre hoje** (`hoje`: hoje é o 1º dia, e a escala de 7 dias vai até daqui a 6). O relógio de hoje que já começou no pulso não muda nos dois casos. Mudou: o fim da escala sai, e a próxima montagem (a página Hoje, o cron) refaz a escala contando do primeiro dia novo. |
 | **A escala inteligente fecha** (`escala_periodo`) | onde termina o período da [escala inteligente](#a-escala-inteligente): **Nos dias corridos do período** (`corridos`, o padrão: os dias do modo contados do primeiro dia dela; a de uma semana, numa terça, vai até a terça seguinte), **No fim da semana (semanas inteiras)** (`semana`: os dias ÷ 7, arredondado; a de uma semana vai até o último dia da semana, pela **A semana começa**, e no último dia da semana monta a semana seguinte inteira) ou **No fim do mês (meses inteiros)** (`mes`: os dias ÷ 30,4, arredondado; a de um mês vai até o último dia do mês, a de meio ano até o fim do 6º mês contando o de agora; no último dia do mês, até o fim do mês seguinte; com menos de 4 semanas, como no fim da semana). Quando o período acaba, o seguinte começa no dia depois do fim, do mesmo jeito. Mudou (ou mudou a semana, fechando na semana ou no mês): o fim da escala sai, e a próxima montagem refaz a escala. |
 | **No último dia da semana, os modos por semana montam** (`semana_ultimo_dia`) | nos modos que planejam por semana (fora da escala): **Só o dia seguinte** (`dia_seguinte`, o padrão: no último dia da semana o plano traz o dia de amanhã, e a semana seguinte entra inteira no dia em que ela começa) ou **A semana seguinte inteira** (`semana_seguinte`: no último dia da semana, as semanas do modo contam da semana que vem, que vem montada inteira; com a semana começando na segunda, no domingo o plano traz de segunda a domingo). A lista das semanas da página Modos de rodízio segue a escolha. |
-| **Trocar o relógio de hoje no próprio dia** (`trocar_hoje`) | desmarcada (o padrão), o relógio de hoje fica: o **trocar por…** e o **escolher…** do dia de hoje, o **Usando hoje**, o **Sortear de novo** *inclusive hoje*, o **Sem relógio hoje** e o **Excluindo hoje** do Apagar tudo não aparecem, no Rodízio manual o dia de hoje fica parado, e o **Sortear de novo** vale a partir de amanhã mesmo com o dia ainda por começar (a API recusa o que trocaria o de hoje): o relógio de amanhã se escolhe até hoje. Marcada, o de hoje também se troca no próprio dia, e o novo passa a ser o do pulso a partir de agora. As marcações do pulso (**Pôs** e **Tirou**) continuam livres nos dois casos. Padrão: desmarcada. |
+| **Trocar o relógio de hoje no próprio dia** (`trocar_hoje`) | desligado (o padrão), o relógio de hoje fica: o **trocar por…** e o **escolher…** do dia de hoje, o **Usando hoje**, o **Sortear de novo** *inclusive hoje*, o **Sem relógio hoje** e o **Excluindo hoje** do Apagar tudo não aparecem, no Rodízio manual o dia de hoje fica parado, e o **Sortear de novo** vale a partir de amanhã mesmo com o dia ainda por começar (a API recusa o que trocaria o de hoje): o relógio de amanhã se escolhe até hoje. Ligado, o de hoje também se troca no próprio dia, e o novo passa a ser o do pulso a partir de agora. As marcações do pulso (**Pôs** e **Tirou**) continuam livres nos dois casos. Padrão: desligado. |
 | **Limite de carga** (`carga_limiar`) | a carga (%) em que os avisos mandam carregar ou dar corda; o campo **Limite de carga** de um relógio vale no lugar dele. De 1 a 99. Padrão: 20. |
 | **Limite do solar** (`sol_limiar`) | a carga (%) em que o solar deve ir para o sol. De 1 a 99. Padrão: 70. |
 | **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. O aviso Carregar converte a taxa por dia de uso em dias civis e não prevê datas além de 366 dias. A previsão detalhada procura o instante do limite com precisão de até um minuto. `chega_limite_em` traz data e hora, no formato `AAAA-MM-DD HH:MM:SS`. |
@@ -1525,6 +1543,10 @@ O quadro **Sistema** traz o que é do sistema inteiro e antes só mudava no `con
 | **Passar o relógio de ontem para hoje: padrão do sistema** | o padrão das coleções que não escolheram (veja a opção da coleção, em Rotina do dia) | não |
 | **SQL: UPDATE e DELETE aprovados** | libera o UPDATE e o DELETE no [SQL pela API](#o-sql-pela-api) | não |
 
+**Padrões do sistema.** Logo abaixo do quadro, o master escolhe o padrão de cada opção da coleção (os horários, os limites, o
+gasto da bateria e as telas: veja **As opções em três níveis**, no começo desta seção). Vazio, vale o padrão de fábrica; uma coleção
+ou um dono que escolheu a sua mantém a escolha. Pela API, `padroes[<chave>]` no `config/salvar`.
+
 ### O que o sistema guarda sozinho
 
 Estas não aparecem como opção: o sistema anota para ele mesmo, e a API mostra. (O modo de rodízio em uso não fica aqui: é a
@@ -1560,17 +1582,17 @@ E do sistema inteiro (a tabela `sistema`):
 | **22:00** | Fim do horário de uso: a sessão no pulso fecha. Uma sessão esquecida aberta também fecha sozinha na hora cadastrada no tipo. |
 | **A cada minuto** | O cron confere se falta montar algum dia do plano e dispara os eventos personalizados no minuto marcado. |
 
-**Pôr e tirar do pulso sozinho é opcional**, cada ponta com a sua caixa, ao lado do horário de uso na **Configuração**:
+**Pôr e tirar do pulso sozinho é opcional**, cada ponta com a sua escolha, ao lado do horário de uso na **Configuração** (e herdável do dono e do sistema):
 
-| Caixa | Marcada (o padrão) | Desmarcada |
+| Escolha | Ligado (o padrão) | Desligado |
 |---|---|---|
 | **pôr no pulso sozinho** (ao lado de *"a partir de"*) | às 7h o relógio do dia entra no pulso | ele só entra pelo **Pôs no pulso** |
 | **tirar do pulso sozinho** (ao lado de *"até"*) | às 22h ele sai do pulso, mesmo esquecido | ele só sai pelo **Tirou do pulso**: esquecido, continua contando como no pulso |
 
 O **Pôs no pulso** e o **Tirou do pulso** do relógio do dia ficam no quadro de hoje. Os de qualquer relógio ficam no alto do painel dele,
 embaixo do nome: **Pulso** e um botão só, **Pôr** quando ele não está no pulso e **Tirar** quando está (marca agora); para
-outra hora, use o quadro **Marcar** do painel. O que foi marcado sempre vale: um *Tirou* às 21h encerra o uso às 21h, e um *Pôs* às 6h30 começa às 6h30, com as caixas
-marcadas ou não. Nos dois jeitos, o horário de uso continua valendo para o que é previsão: o plano, a escala e quanto a carga
+outra hora, use o quadro **Marcar** do painel. O que foi marcado sempre vale: um *Tirou* às 21h encerra o uso às 21h, e um *Pôs* às 6h30 começa às 6h30, com as escolhas
+ligadas ou não. Nos dois jeitos, o horário de uso continua valendo para o que é previsão: o plano, a escala e quanto a carga
 vai durar nos próximos dias.
 
 ---

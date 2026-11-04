@@ -60,7 +60,7 @@ $php = array_values(array_filter($repo, function ($f) { return substr($f, -4) ==
 $js = array_values(array_filter($repo, function ($f) { return substr($f, -3) === ".js" && strpos($f, "/") === false && is_file($f); }));
 
 // os .php da raiz: os internos (núcleo, banco, scripts) e as páginas (o resto, menos o api.php)
-const INTERNOS = ["lib.php", "banco.php", "config.php", "config.exemplo.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "pagina.php", "cron.php", "importar.php",
+const INTERNOS = ["lib.php", "banco.php", "config.php", "config.exemplo.php", "operacoes.php", "colecoes.php", "opcoes.php", "alertas.php", "contas.php", "pagina.php", "cron.php", "importar.php",
     "instalar.php", "senha.php", "reconstrucao.php"];
 $raiz_php = array_values(array_filter($php, function ($f) { return strpos($f, "/") === false; }));
 $paginas = array_values(array_filter($raiz_php, function ($f) { return !in_array($f, INTERNOS, true) && $f !== "api.php"; }));
@@ -145,7 +145,7 @@ foreach ($paginas as $f) {
 }
 $idiomas = definidas("textos/funcoes.php");
 $nucleo = [];
-foreach (array_merge(["lib.php", "banco.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "cron.php", "reconstrucao.php"], glob("api/*.php")) as $f) {
+foreach (array_merge(["lib.php", "banco.php", "operacoes.php", "colecoes.php", "opcoes.php", "alertas.php", "contas.php", "cron.php", "reconstrucao.php"], glob("api/*.php")) as $f) {
     $nucleo = array_merge($nucleo, definidas($f));
 }
 $fora = array_diff(array_intersect(chamadas("pagina.php"), $nucleo), ["pagina_login"]);
@@ -204,7 +204,7 @@ foreach ($js as $f) {
 
 // ---------- 4. quem toca no banco ----------
 $banco = definidas("banco.php");
-$pode_banco = array_merge(["banco.php", "lib.php", "operacoes.php", "colecoes.php", "alertas.php", "contas.php", "api.php", "cron.php", "reconstrucao.php"], glob("api/*.php"));
+$pode_banco = array_merge(["banco.php", "lib.php", "operacoes.php", "colecoes.php", "opcoes.php", "alertas.php", "contas.php", "api.php", "cron.php", "reconstrucao.php"], glob("api/*.php"));
 foreach ($php as $f) {
     if (strpos($f, "testes/") === 0 || in_array($f, $pode_banco, true)) {
         continue;

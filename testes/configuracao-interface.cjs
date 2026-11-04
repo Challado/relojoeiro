@@ -6,6 +6,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require(process.env.PLAYWRIGHT || require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const fonte = fs.readFileSync(process.env.CONFIG_SCRIPT || path.join(__dirname, '..', 'configuracao.js'), 'utf8');
+const apiJs = fs.readFileSync(path.join(__dirname, '..', 'api.js'), 'utf8');
+// os ajudantes das opções em três níveis (campoOpcao, camposOpcoes, o botão Herdar), os mesmos do api.js
+const ajudantesOpcoes = apiJs.slice(apiJs.indexOf('function origemOpcao'), apiJs.indexOf('// Uma senha nova com a confirmação'));
+// a lista de opções que a API entrega (chave, grupo, tipo, valores): só o que a tela usa
+const OPCOES_FIXTURE = [['horario_manha','rotina','hora'],['horario_noite','rotina','hora'],['uso_inicio','rotina','hora'],['pulso_auto_inicio','rotina','sim_nao'],['uso_fim','rotina','hora'],['pulso_auto_fim','rotina','sim_nao'],['sol_fim','rotina','hora'],['sol_auto_fim','rotina','sim_nao'],['semana_inicio','rotina','enum',['segunda','domingo']],['escala_inicio','rotina','enum',['amanha','hoje']],['escala_periodo','rotina','enum',['corridos','semana','mes']],['semana_ultimo_dia','rotina','enum',['dia_seguinte','semana_seguinte']],['trocar_hoje','rotina','sim_nao'],['max_sem_uso','limites','inteiro'],['sorteio_casas','limites','inteiro'],['carga_limiar','limites','inteiro'],['sol_limiar','limites','inteiro'],['previsao_limite','limites','decimal'],['gasto_motor','limites','enum',['individual','horas','robusto']],['medicao_base','limites','enum',['dias','leituras']],['medicao_janela_dias','limites','inteiro'],['medicao_janela_leituras','limites','inteiro'],['medicao_meia_vida_dias','limites','inteiro'],['encostado_dias','limites','inteiro'],['documentos_copia','limites','enum',['individual','todos','nenhum']],['painel_modo','telas','enum',['lado','flutuante']],['destaque_hoje','telas','enum',['dia','pulso']],['calibre_campos','telas','enum',['movimento','todos']],['relojinho_modo','telas','enum',['hora','aleatorio','sem_repeticao']],['hora_relogio','telas','enum',['ambos','analogico','digital','anadigi']],['proximos_por_pagina','telas','inteiro'],['plano_por_pagina','telas','inteiro'],['atualizar_segundos','telas','inteiro']];
+function listaOpcoes(valores = {}) {
+  return {grupos:[{chave:'rotina',texto:'Rotina do dia'},{chave:'limites',texto:'Limites e contas'},{chave:'telas',texto:'Telas'}],opcoes:OPCOES_FIXTURE.map(([chave,grupo,tipo,vals])=>({chave,grupo,tipo,titulo:'Opção '+chave,minimo:tipo==='inteiro'||tipo==='decimal'?0:null,maximo:tipo==='inteiro'||tipo==='decimal'?100000:null,
+    valores:vals?vals.map(v=>({valor:v,texto:'Valor '+v})):null,padrao:'',escolha:valores[chave]||'',herdado:vals?vals[0]:(tipo==='hora'?'07:00':'1'),origem_herdado:'padrao',efetivo:'',origem:'padrao'}))};
+}
 const salvas = {'pt-BR':'Configuração salva.',en:'Configuration saved.','zh-CN':'配置已保存。',hi:'सेटिंग सहेजी गई。',es:'Configuración guardada.',fr:'Configuration enregistrée.'};
 function dadosConfig() {
   return {config:{idioma:'pt-BR',horario_manha:'06:30',horario_noite:'20:00',uso_inicio:'07:00',uso_fim:'22:00',encostado_dias:'30'},
@@ -13,7 +22,8 @@ function dadosConfig() {
     mostrar_ate:{proximos:7,plano:31},atualizar_segundos:60,relojinho:{modo:'hora',modelos:24},cron_estado:{situacao:'rodando',texto:'Cron OK',registro:'registro\n'.repeat(30)},
     sol_fim:'18:00',sol_auto_fim:true,config_php_copia:null,
     senha_politica:{regras:{tamanho:8,maiusculas:1,minusculas:1,numeros:1,simbolos:1},texto:'A senha precisa de pelo menos 8 caracteres.'},sistema:{pode_mudar:true,url_sistema:'https://exemplo.invalid'},
-    aleatorio:{ultimo_lote:null,fora_desde:null},eventos:[],destinos:[],agendas:[]};
+    aleatorio:{ultimo_lote:null,fora_desde:null},eventos:[],destinos:[],agendas:[],
+    opcoes:listaOpcoes({horario_manha:'06:30',horario_noite:'20:00',uso_inicio:'07:00',uso_fim:'22:00',encostado_dias:'30'})};
 }
 const base = `
 var LINGUA=document.documentElement.lang, TEXTOS={}, ESTRITO=false;
@@ -28,6 +38,7 @@ function ajudaNota(c,ti){return el('button',{type:'button',class:'ajuda-linha','
 function opcoesFuso(f,a,v) {return el('option',{value:''},v)+f.map(x=>el('option',{value:x.nome,selected:a===x.nome},x.nome)).join('');}
 function dataBr(x){return String(x).slice(0,10);} function horaBr(x){return String(x).slice(11,16);}
 function textoResposta(r){return (r.mensagem||'')+(r.erros&&r.erros.length?' '+r.erros.join(' '):'');}
+${ajudantesOpcoes}
 function api(p){return window.fixtureAPI(p);}
 function enviar(d){return window.fixtureEnviar(Object.fromEntries(d));}
 var aoGravar=function(){};
@@ -157,6 +168,27 @@ async function recarga(page){
     assert.equal(await page.locator('[name="parametros[rodizio_ativo]"] option[value=""]').textContent(),'Padrão: sim');
     await page.selectOption('[name="parametros[rodizio_ativo]"]','');await salvar(page);await page.locator('#aviso-config').waitFor();
     assert.equal((await estado(page)).posts.at(-1)['parametros[rodizio_ativo]'],'');total++;
+    // As opções em três níveis: vazio herda (a primeira escolha da lista diz de onde), o botão Herdar esvazia o campo de hora e de
+    // número, e o padrão do sistema (só o master) grava em padroes[<chave>].
+    const herda=inicial();herda.dados.sistema.padroes=listaOpcoes({uso_fim:'23:00'});herda.dados.opcoes=listaOpcoes({uso_fim:'21:30',carga_limiar:'30',painel_modo:'flutuante'});
+    await montar(page,herda);
+    assert.equal(await page.inputValue('[name=uso_fim]'),'21:30');
+    assert.equal(await page.inputValue('[name=carga_limiar]'),'30');
+    assert.match(await page.locator('[name=semana_inicio] option').first().textContent(),/^Herdar \(Valor segunda, padrão de fábrica\)$/);
+    assert.equal(await page.inputValue('[name=semana_inicio]'),'');
+    assert.equal(await page.inputValue('[name=painel_modo]'),'flutuante');
+    await page.click('[data-herdar=uso_fim]');await page.click('[data-herdar=carga_limiar]');
+    assert.equal(await page.inputValue('[name=uso_fim]'),'');assert.equal(await page.inputValue('[name=carga_limiar]'),'');
+    assert.equal(await page.inputValue('[name="padroes[uso_fim]"]'),'23:00');
+    await page.fill('[name="padroes[carga_limiar]"]','35');await page.selectOption('[name="padroes[painel_modo]"]','flutuante');
+    await salvar(page);await page.locator('#aviso-config').waitFor();
+    const gravado=(await estado(page)).posts.at(-1);
+    assert.equal(gravado.uso_fim,'');assert.equal(gravado.carga_limiar,'');assert.equal(gravado.semana_inicio,'');
+    assert.equal(gravado['padroes[uso_fim]'],'23:00');assert.equal(gravado['padroes[carga_limiar]'],'35');assert.equal(gravado['padroes[painel_modo]'],'flutuante');total++;
+    // quem não é master não vê os padrões do sistema
+    const semMaster=inicial();semMaster.dados.sistema.pode_mudar=false;semMaster.dados.sistema.padroes=null;
+    await montar(page,semMaster);
+    assert.equal(await page.locator('[name^="padroes["]').count(),0);total++;
     // O empilhamento acompanha largura, texto e altura sem trocar a ordem dos campos nem sobrepor cartões.
     const layout=inicial();layout.dados.sistema.parametros=Array.from({length:6},(_,i)=>({chave:'teste'+i,nome:'Parâmetro '+i,descricao:'Descrição da opção. '.repeat(i+2),tipo:'sim_nao',valor:1,origem:'padrao',config_php:null,config_valor:null,padrao:1,minimo:0,maximo:1}));
     await page.setViewportSize({width:1440,height:900});await montar(page,layout);

@@ -267,6 +267,9 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var c = d.config;
         idiomaConfig = c.idioma || "pt-BR";
         var cfg = function (k) { return c[k] === undefined ? "" : c[k]; };
+        // as opções das três hierarquias (sistema → usuário → coleção), por chave
+        var oc = {};
+        d.opcoes.opcoes.forEach(function (o) { oc[o.chave] = o; });
         // as explicações de cada opção ficam na gaveta (o ⓘ ao lado de cada uma e o botão Explicações do título)
         ajudaGrupo("pagina", t("Configuração"));
         var ex = function (chave, titulo, html) { return ajuda(chave, titulo, el("p", {}, html)); };
@@ -284,7 +287,6 @@ function recarregarConfig(aplicadas, manterPosicao) {
           cron += el("details", {"class": "registro-cron"}, el("summary", {}, t("Registro da última rodada")) + el("pre", {}, h(ce.registro)));
         }
         // ---------- os quadros do alto: cada opção numa linha, o rótulo à esquerda e o campo à direita, todos alinhados ----------
-        var hora = function (nome, valor) { return el("input", {"type": "time", "name": nome, "value": valor}); };
         var numero = function (nome, valor, min, max) { return el("input", {"type": "number", "min": min, "max": max, "name": nome, "value": valor}); };
         var marca = function (nome, ligado) {
           return el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1", "checked": ligado});
@@ -303,72 +305,49 @@ function recarregarConfig(aplicadas, manterPosicao) {
             + el("option", {"value": "0", "selected": cfg("recupera_ontem") === "0"}, t("Desligado"))), null,
             ex("recupera-ontem", t("Relógio de ontem sem uso passa para hoje"), t("Ligado, se o relógio do plano de ontem não foi ao pulso nem um pouquinho (você usou outro, ou nenhum), ele passa para hoje e todos os outros dias do plano andam um dia. Se ele foi usado, mesmo que pouco, nada muda. Não passa o mesmo relógio dois dias seguidos, nem um indisponível, na manutenção ou fora da coleção, nem quando hoje é um dia livre ou o relógio de hoje já foi ao pulso. A conta é feita uma vez por dia, quando o plano de hoje é montado. Vale o da coleção; vazio herda o do usuário (Minha conta) e depois o do sistema (Configuração › Sistema).")))
           + parCampo(t("Rodízio efetivo"), h(rodizio.ativo ? t("Ligado") : t("Desligado")) + " · " + h(rodizio.colecao !== null ? t("definido na coleção") : (rodizio.origem === "usuario" ? t("herdado do usuário") : t("herdado do sistema"))))
-          + parCampo(t("Manhã: relógio do dia e avisos"), hora("horario_manha", cfg("horario_manha")))
-          + parCampo(t("Noite: preparar o de amanhã"), hora("horario_noite", cfg("horario_noite")))
-          + parCampo(t("No pulso a partir de"), hora("uso_inicio", cfg("uso_inicio")))
-          + parCampo(t("Pôr no pulso sozinho"), marca("pulso_auto_inicio", cfg("pulso_auto_inicio") !== "0"), "check",
-            ex("pulso-auto", t("Pôr e tirar do pulso sozinho"), t("Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong>; sem <strong>tirar sozinho</strong>, só sai pelo ")
+          + campoOpcao(oc.horario_manha, "horario_manha", null)
+          + campoOpcao(oc.horario_noite, "horario_noite", null)
+          + campoOpcao(oc.uso_inicio, "uso_inicio", null)
+          + campoOpcao(oc.pulso_auto_inicio, "pulso_auto_inicio", null, ex("pulso-auto", t("Pôr e tirar do pulso sozinho"), t("Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong>; sem <strong>tirar sozinho</strong>, só sai pelo ")
               + t("<strong>Tirou do pulso</strong> (esquecido, continua contando como no pulso). O horário de uso vale sempre para o plano e as previsões. Fora do pulso, o relógio conta como guardado.")))
-          + parCampo(t("No pulso até"), hora("uso_fim", cfg("uso_fim")))
-          + parCampo(t("Tirar do pulso sozinho"), marca("pulso_auto_fim", cfg("pulso_auto_fim") !== "0"), "check", ajudaRef("pulso-auto"))
-          + parCampo(t("Sessão no sol esquecida fecha às"), hora("sol_fim", d.sol_fim))
-          + parCampo(t("Tirar do sol sozinho"), marca("sol_auto_fim", d.sol_auto_fim), "check",
-            ex("sol-auto", t("Tirar do sol sozinho"), t("Sem <strong>tirar do sol sozinho</strong>, o solar só sai do sol pelo <strong>Tirar do sol</strong> (esquecido, continua carregando na conta).")))
+          + campoOpcao(oc.uso_fim, "uso_fim", null)
+          + campoOpcao(oc.pulso_auto_fim, "pulso_auto_fim", null, ajudaRef("pulso-auto"))
+          + campoOpcao(oc.sol_fim, "sol_fim", null)
+          + campoOpcao(oc.sol_auto_fim, "sol_auto_fim", null, ex("sol-auto", t("Tirar do sol sozinho"), t("Sem <strong>tirar do sol sozinho</strong>, o solar só sai do sol pelo <strong>Tirar do sol</strong> (esquecido, continua carregando na conta).")))
           // a semana do rodízio: o horizonte do plano, o ciclo, a próxima semana e os blocos contam dela
-          + parCampo(t("A semana começa"), el("select", {"name": "semana_inicio"}, el("option", {"value": "segunda", "selected": cfg("semana_inicio") !== "domingo"}, t("Na segunda-feira"))
-            + el("option", {"value": "domingo", "selected": cfg("semana_inicio") === "domingo"}, t("No domingo"))), null,
-            ex("semana", t("A semana começa"), t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")))
+          + campoOpcao(oc.semana_inicio, "semana_inicio", null, ex("semana", t("A semana começa"), t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")))
           // o primeiro dia da escala inteligente: amanhã quando o de hoje já começou no pulso (o padrão) ou sempre hoje
-          + parCampo(t("A escala inteligente começa"), el("select", {"name": "escala_inicio"}, el("option", {"value": "amanha", "selected": cfg("escala_inicio") !== "hoje"}, t("Amanhã, se o dia de hoje já começou no pulso"))
-            + el("option", {"value": "hoje", "selected": cfg("escala_inicio") === "hoje"}, t("Sempre hoje"))), null,
-            ex("escala-inicio", t("A escala inteligente começa"), t("De onde a escala conta os dias do modo (o período dela). <strong>Amanhã, se o dia de hoje já começou no pulso</strong> (o padrão): o dia de hoje que já começou fica de fora da conta, e a escala de 7 dias vai de amanhã até daqui a 7 dias (o mesmo dia da semana aparece duas vezes, hoje e no fim). ")
+          + campoOpcao(oc.escala_inicio, "escala_inicio", null, ex("escala-inicio", t("A escala inteligente começa"), t("De onde a escala conta os dias do modo (o período dela). <strong>Amanhã, se o dia de hoje já começou no pulso</strong> (o padrão): o dia de hoje que já começou fica de fora da conta, e a escala de 7 dias vai de amanhã até daqui a 7 dias (o mesmo dia da semana aparece duas vezes, hoje e no fim). ")
               + t("<strong>Sempre hoje</strong>: hoje é o 1º dia, e a escala de 7 dias vai até daqui a 6 (uma semana certa). O relógio de hoje que já começou no pulso não muda nos dois casos. Mudou: a escala é refeita na próxima vez que o plano é montado (a página Hoje, o cron).")))
           // onde a escala fecha: nos dias corridos do período (o padrão), no fim da semana ou no fim do mês
-          + parCampo(t("A escala inteligente fecha"), el("select", {"name": "escala_periodo"}, el("option", {"value": "corridos", "selected": ["semana", "mes"].indexOf(cfg("escala_periodo")) < 0}, t("Nos dias corridos do período"))
-            + el("option", {"value": "semana", "selected": cfg("escala_periodo") === "semana"}, t("No fim da semana (semanas inteiras)"))
-            + el("option", {"value": "mes", "selected": cfg("escala_periodo") === "mes"}, t("No fim do mês (meses inteiros)"))), null,
-            ex("escala-periodo", t("A escala inteligente fecha"), t("Onde termina o período da escala (o do modo: uma semana, um mês...). <strong>Nos dias corridos do período</strong> (o padrão): os dias contados do primeiro dia dela; a de uma semana, numa terça, vai até a terça seguinte. ")
+          + campoOpcao(oc.escala_periodo, "escala_periodo", null, ex("escala-periodo", t("A escala inteligente fecha"), t("Onde termina o período da escala (o do modo: uma semana, um mês...). <strong>Nos dias corridos do período</strong> (o padrão): os dias contados do primeiro dia dela; a de uma semana, numa terça, vai até a terça seguinte. ")
               + t("<strong>No fim da semana</strong>: semanas inteiras, pela \"A semana começa\": a de uma semana vai do primeiro dia dela até o último dia da semana (numa terça, com a semana começando na segunda, até o domingo); no último dia da semana, a semana seguinte inteira. ")
               + t("<strong>No fim do mês</strong>: meses inteiros (a de um mês vai até o último dia do mês; a de meio ano, até o fim do 6º mês contando o de agora; no último dia do mês, até o fim do mês seguinte); com menos de 4 semanas, como no fim da semana. Quando o período acaba, o seguinte começa no dia depois do fim, do mesmo jeito. Mudou: a escala é refeita na próxima vez que o plano é montado.")))
           // no último dia da semana, os modos por semana montam só o dia seguinte (o padrão) ou a semana seguinte inteira
-          + parCampo(t("No último dia da semana, os modos por semana montam"), el("select", {"name": "semana_ultimo_dia"}, el("option", {"value": "dia_seguinte", "selected": cfg("semana_ultimo_dia") !== "semana_seguinte"}, t("Só o dia seguinte"))
-            + el("option", {"value": "semana_seguinte", "selected": cfg("semana_ultimo_dia") === "semana_seguinte"}, t("A semana seguinte inteira"))), null,
-            ex("semana-ultimo-dia", t("No último dia da semana"), t("Nos modos que planejam por semana (fora da escala). <strong>Só o dia seguinte</strong> (o padrão): no último dia da semana o plano traz o dia de amanhã, e a semana seguinte entra inteira no dia em que ela começa. ")
+          + campoOpcao(oc.semana_ultimo_dia, "semana_ultimo_dia", null, ex("semana-ultimo-dia", t("No último dia da semana"), t("Nos modos que planejam por semana (fora da escala). <strong>Só o dia seguinte</strong> (o padrão): no último dia da semana o plano traz o dia de amanhã, e a semana seguinte entra inteira no dia em que ela começa. ")
               + t("<strong>A semana seguinte inteira</strong>: no último dia da semana, as semanas do modo já contam da semana que vem, e ela vem montada inteira (com a semana começando na segunda, no domingo o plano traz de segunda a domingo).")))
           // trocar o relógio de hoje no próprio dia: desligado (o padrão), a troca vale a partir de amanhã
-          + parCampo(t("Trocar o relógio de hoje no próprio dia"), marca("trocar_hoje", d.trocar_hoje), "check",
-            ex("trocar-hoje", t("Trocar o relógio de hoje no próprio dia"), t("Desligado (o padrão), o relógio de hoje fica: o <strong>trocar por…</strong>, o <strong>Usando hoje</strong>, o <strong>Sortear de novo</strong>, o <strong>Sem relógio hoje</strong>, o período e o Rodízio manual valem a partir de amanhã, e o relógio de amanhã se escolhe até hoje. ")
+          + campoOpcao(oc.trocar_hoje, "trocar_hoje", null, ex("trocar-hoje", t("Trocar o relógio de hoje no próprio dia"), t("Desligado (o padrão), o relógio de hoje fica: o <strong>trocar por…</strong>, o <strong>Usando hoje</strong>, o <strong>Sortear de novo</strong>, o <strong>Sem relógio hoje</strong>, o período e o Rodízio manual valem a partir de amanhã, e o relógio de amanhã se escolhe até hoje. ")
               + t("Ligado, o relógio de hoje também se troca no próprio dia, e passa a ser o do pulso a partir de agora. As marcações do pulso (Pôs e Tirou) continuam livres nos dois casos.")))));
         var limites = cartao(t("Limites e contas"), el("div", {"class": "campos"},
-          parCampo(t("Carregar quando a carga chegar a (%)"), numero("carga_limiar", cfg("carga_limiar") !== "" ? cfg("carga_limiar") : "20", "1", "99"), null,
-            ex("limite", t("O limite de carga"), t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral.")))
-          + parCampo(t("Solar: pôr no sol quando chegar a (%)"), numero("sol_limiar", cfg("sol_limiar") !== "" ? cfg("sol_limiar") : "70", "1", "99"))
+          campoOpcao(oc.carga_limiar, "carga_limiar", null, ex("limite", t("O limite de carga"), t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral.")))
+          + campoOpcao(oc.sol_limiar, "sol_limiar", null)
+          + campoOpcao(oc.previsao_limite, "previsao_limite", null)
+          + campoOpcao(oc.max_sem_uso, "max_sem_uso", null)
           // como calcular o gasto da bateria: a escolha da coleção vale por todos os relógios; vazia, valem o relógio e o grupo
           // (o campo do cadastro "Como calcular o gasto da bateria")
-          + avancado("config.gasto", parCampo(t("Gasto da bateria: como calcular (válido para todos os relógios)"), el("select", {"name": "gasto_motor"}, el("option", {"value": "", "selected": ["horas", "robusto", "marcacao", "cadastro", "formulas"].indexOf(cfg("gasto_motor")) < 0}, t("Individual (no relógio ou no grupo)"))
-            + el("option", {"value": "horas", "selected": cfg("gasto_motor") === "horas"}, t("1. Pelas horas registradas (o motor original)"))
-            + el("option", {"value": "robusto", "selected": cfg("gasto_motor") === "robusto"}, t("2. Pelas horas registradas, com leituras e cadastro (robusto)"))
-            + el("option", {"value": "marcacao", "selected": cfg("gasto_motor") === "marcacao"}, t("3. Pela marcação: duas taxas separadas"))
-            + el("option", {"value": "cadastro", "selected": cfg("gasto_motor") === "cadastro"}, t("4. Só o cadastro"))
-            + el("option", {"value": "formulas", "selected": cfg("gasto_motor") === "formulas"}, t("5. Pelas fórmulas do cadastro"))), null,
-            ex("motor", t("O gasto da bateria"), t("O gasto da bateria tem cinco motores (veja a Ajuda); a escolha aqui vale para todos os relógios da coleção, e vazia valem a do relógio e a do grupo (o campo \"Como calcular o gasto da bateria\" do cadastro)."))))
+          + avancado("config.gasto", campoOpcao(oc.gasto_motor, "gasto_motor", null, ex("motor", t("O gasto da bateria"), t("O gasto da bateria tem cinco motores (veja a Ajuda); a escolha aqui vale para todos os relógios da coleção, e vazia valem a do relógio e a do grupo (o campo \"Como calcular o gasto da bateria\" do cadastro)."))))
           // o gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso)
-          + avancado("config.gasto", parCampo(t("Gasto medido: contar por"), el("select", {"name": "medicao_base"}, el("option", {"value": "dias", "selected": cfg("medicao_base") !== "leituras"}, t("Dias (os últimos dias)"))
-            + el("option", {"value": "leituras", "selected": cfg("medicao_base") === "leituras"}, t("Leituras (as últimas de cada tipo)"))), null,
-            ex("medido", t("O gasto medido"), t("O gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso), conforme o \"contar por\"; as de fora saem da conta."))))
-          + avancado("config.gasto", parCampo(t("Gasto medido: média dos últimos (dias)"), numero("medicao_janela_dias", cfg("medicao_janela_dias") !== "" ? cfg("medicao_janela_dias") : "90", "1", "3650")))
-          + avancado("config.gasto", parCampo(t("Gasto medido: últimas leituras (de cada tipo)"), numero("medicao_janela_leituras", cfg("medicao_janela_leituras") !== "" ? cfg("medicao_janela_leituras") : "20", "2", "1000")))
-          + avancado("config.gasto", parCampo(t("Gasto medido: meia-vida dos dados (dias; 0 desliga)"), numero("medicao_meia_vida_dias", cfg("medicao_meia_vida_dias") !== "" ? cfg("medicao_meia_vida_dias") : "0", "0", "3650"), null,
-            ex("idade", t("O gasto medido"), t("Com meia-vida de N dias, uma leitura de N dias atrás pesa metade de uma atual. A janela continua limitando a idade dos dados; 0 mantém pesos iguais por idade. Os cinco motores continuam disponíveis."))))
+          + avancado("config.gasto", campoOpcao(oc.medicao_base, "medicao_base", null, ex("medido", t("O gasto medido"), t("O gasto medido conta as medições dos últimos dias ou as últimas leituras de cada tipo (em uso e em repouso), conforme o \"contar por\"; as de fora saem da conta."))))
+          + avancado("config.gasto", campoOpcao(oc.medicao_janela_dias, "medicao_janela_dias", null))
+          + avancado("config.gasto", campoOpcao(oc.medicao_janela_leituras, "medicao_janela_leituras", null))
+          + avancado("config.gasto", campoOpcao(oc.medicao_meia_vida_dias, "medicao_meia_vida_dias", null, ex("idade", t("O gasto medido"), t("Com meia-vida de N dias, uma leitura de N dias atrás pesa metade de uma atual. A janela continua limitando a idade dos dados; 0 mantém pesos iguais por idade. Os cinco motores continuam disponíveis."))))
           // o Encostado: a caixa liga ou desliga o aviso inteiro (o aviso do cadastro, a coluna da Hoje, o filtro); os dias, o limite
           + parCampo(t("Avisar quando um relógio fica encostado"), marca("encostado_ativo", cfg("encostado_ativo") !== "0"), "check",
             ex("encostado", t("O aviso Encostado"), t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong>; a caixa desliga tudo (o aviso, a coluna da Hoje e o filtro: é o mesmo aviso Encostado da página Avisos).")))
-          + parCampo(t("Aviso Encostado: dias sem ir ao pulso"), numero("encostado_dias", cfg("encostado_dias") !== "" ? cfg("encostado_dias") : "30", "1", "3650"))
+          + campoOpcao(oc.encostado_dias, "encostado_dias", null)
           // a cópia dos documentos no banco: a escolha da coleção vale sobre o relógio e o arquivo (antes era o config.php)
-          + parCampo(t("Cópia dos documentos no banco (válido para todos os relógios)"), el("select", {"name": "documentos_copia"}, el("option", {"value": "", "selected": cfg("documentos_copia") !== "todos" && cfg("documentos_copia") !== "nenhum"}, t("Individual (no relógio ou no arquivo)"))
-            + el("option", {"value": "todos", "selected": cfg("documentos_copia") === "todos"}, t("Todos os arquivos"))
-            + el("option", {"value": "nenhum", "selected": cfg("documentos_copia") === "nenhum"}, t("Nenhum arquivo"))), null,
-            ex("copia", t("A cópia dos documentos no banco"), t("A cópia dos documentos no banco escolhida aqui vale sobre o relógio e o arquivo.")))),
+          + campoOpcao(oc.documentos_copia, "documentos_copia", null, ex("copia", t("A cópia dos documentos no banco"), t("A cópia dos documentos no banco escolhida aqui vale sobre o relógio e o arquivo.")))),
           // o aviso que precisa ficar à vista: o config.php com a opção que não vale mais
           d.config_php_copia !== null ? el("p", {"class": "nota"}, el("strong", {"class": "em atrasado"}, t("O config.php ainda define DOCUMENTOS_COPIA_BANCO, que não vale mais: a cópia dos documentos é escolhida aqui, por coleção. "))) : "");
         var tela = cartao(t("Telas"), el("div", {"class": "campos"},
@@ -380,33 +359,19 @@ function recarregarConfig(aplicadas, manterPosicao) {
             ex("fuso", t("Fuso horário"), t("O da coleção vale para quem não escolheu o seu em Minha conta, e para o cron, as mensagens e as agendas dela; vazio, o do sistema (o config.php). ")
               + t("Cada pessoa vê e digita as horas no fuso dela; no banco fica tudo no fuso do sistema.")))
           // o relógio da página Hora certa
-          + parCampo(t("Relógio da Hora certa"), el("select", {"name": "hora_relogio"}, [["ambos", t("Analógico e digital (um ao lado do outro)")], ["analogico", t("Analógico")], ["digital", t("Digital")], ["anadigi", t("Anadigi (o visor digital dentro do analógico)")]].map(function (o) {
-            return el("option", {"value": o[0], "selected": (cfg("hora_relogio") || "ambos") === o[0]}, o[1]);
-          }).join("")), "largo",
-            ex("hora", t("Relógio da Hora certa"), t("O mostrador da página Hora certa: analógico, digital, anadigi (o visor digital dentro do mostrador) ou os dois, um ao lado do outro.")))
-          + parCampo(t("Abrir o relógio na página Hoje"), el("select", {"name": "painel_modo"}, el("option", {"value": "lado", "selected": cfg("painel_modo") !== "flutuante"}, t("Ao lado da lista"))
-            + el("option", {"value": "flutuante", "selected": cfg("painel_modo") === "flutuante"}, t("Numa janela flutuante, grande"))), null,
-            ex("painel", t("Abrir o relógio"), t("<strong>Ao lado da lista:</strong> o relógio clicado abre num painel à direita, e a lista continua à vista. <strong>Numa janela flutuante:</strong> abre grande, ")
+          + campoOpcao(oc.hora_relogio, "hora_relogio", "largo", ex("hora", t("Relógio da Hora certa"), t("O mostrador da página Hora certa: analógico, digital, anadigi (o visor digital dentro do mostrador) ou os dois, um ao lado do outro.")))
+          + campoOpcao(oc.painel_modo, "painel_modo", null, ex("painel", t("Abrir o relógio"), t("<strong>Ao lado da lista:</strong> o relógio clicado abre num painel à direita, e a lista continua à vista. <strong>Numa janela flutuante:</strong> abre grande, ")
               + t("no meio da tela, com os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira.")))
-          + parCampo(t("Destaque no alto da página Hoje"), el("select", {"name": "destaque_hoje"}, el("option", {"value": "dia", "selected": cfg("destaque_hoje") !== "pulso"}, t("O relógio do dia"))
-            + el("option", {"value": "pulso", "selected": cfg("destaque_hoje") === "pulso"}, t("O relógio no pulso agora"))), null,
-            ex("destaque", t("Destaque"), t("O quadro grande no alto da página Hoje mostra o relógio do dia (o do plano) ou o que está no pulso agora, ")
+          + campoOpcao(oc.destaque_hoje, "destaque_hoje", null, ex("destaque", t("Destaque"), t("O quadro grande no alto da página Hoje mostra o relógio do dia (o do plano) ou o que está no pulso agora, ")
               + t("mesmo que seja outro (o do dia aparece embaixo do nome). Sem nenhum relógio no pulso, fica o do dia.")))
           // o formulário do calibre (Cadastros › Calibres): só os campos do movimento (a marca do campo) ou todos
-          + parCampo(t("Formulário do calibre (Cadastros › Calibres)"), el("select", {"name": "calibre_campos"}, el("option", {"value": "movimento", "selected": cfg("calibre_campos") !== "todos"}, t("Só os campos do movimento"))
-            + el("option", {"value": "todos", "selected": cfg("calibre_campos") === "todos"}, t("Todos os campos do cadastro"))), "largo")
+          + campoOpcao(oc.calibre_campos, "calibre_campos", "largo")
           // o reloginho da barra (e da aba): um modelo por hora do dia, na ordem, sorteado ou sorteado sem repetir
-          + parCampo(t("Reloginho da barra (um dos {1} modelos por hora)", {1: d.relojinho.modelos}), el("select", {"name": "relojinho_modo"},
-            [["hora", t("Normal: cada hora tem o seu")], ["aleatorio", t("Aleatório: sorteia um a cada hora (pode repetir)")],
-              ["sem_repeticao", t("Aleatório sem repetição: os 24 embaralhados, cada um uma vez por dia")]].map(function (o) {
-              return el("option", {"value": o[0], "selected": d.relojinho.modo === o[0]}, o[1]);
-            }).join("")), "largo")
-          + parCampo(t("Próximos dias (página Hoje): mostrar até (dias por página)"), numero("proximos_por_pagina", String(d.mostrar_ate.proximos), "1", "366"), null,
-            ex("mostrar", t("Mostrar até"), t("Quantos dias os Próximos dias (página Hoje, padrão 7) e o dia a dia da página Plano (padrão 31) mostram de cada vez. ")
+          + campoOpcao(oc.relojinho_modo, "relojinho_modo", "largo")
+          + campoOpcao(oc.proximos_por_pagina, "proximos_por_pagina", null, ex("mostrar", t("Mostrar até"), t("Quantos dias os Próximos dias (página Hoje, padrão 7) e o dia a dia da página Plano (padrão 31) mostram de cada vez. ")
               + t("Passando disso, embaixo aparecem as páginas: &lt; (anterior), os números e &gt; (próxima).")))
-          + parCampo(t("Plano: mostrar até (dias por página)"), numero("plano_por_pagina", String(d.mostrar_ate.plano), "1", "366"), null, ajudaRef("mostrar"))
-          + parCampo(t("Intervalo de atualização das páginas (segundos; 0 desliga)"), numero("atualizar_segundos", String(d.atualizar_segundos), "0", "86400"), null,
-            ex("atualizar", t("Intervalo de atualização"), t("De quantos em quantos segundos a Hoje (com o painel), a Ficha, o Plano, os Totais e o Histórico leem tudo de novo sozinhos, sem recarregar a página (a carga, a autonomia, a última leitura, os avisos, os contadores). ")
+          + campoOpcao(oc.plano_por_pagina, "plano_por_pagina", null, ajudaRef("mostrar"))
+          + campoOpcao(oc.atualizar_segundos, "atualizar_segundos", null, ex("atualizar", t("Intervalo de atualização"), t("De quantos em quantos segundos a Hoje (com o painel), a Ficha, o Plano, os Totais e o Histórico leem tudo de novo sozinhos, sem recarregar a página (a carga, a autonomia, a última leitura, os avisos, os contadores). ")
               + t("De 1 a 86400; 0 desliga; padrão 60. Nunca por cima de quem está digitando ou tem algo mudado e não gravado.")))
           + parCampo(t("Endereço do sistema (a âncora {link})"), d.sistema.pode_mudar ? el("input", {"name": "url_sistema", "value": d.sistema.url_sistema, "placeholder": t("http://servidor/relogios")})
             : el("span", {}, d.sistema.url_sistema !== "" ? h(d.sistema.url_sistema) : t("(o do pedido; só o master muda)")), "largo")
@@ -434,12 +399,15 @@ function recarregarConfig(aplicadas, manterPosicao) {
           // o rótulo com a descrição em cima e o campo embaixo (largo): a descrição não cabe ao lado do campo no celular
           return parCampo(p.nome, campo, "largo", el("small", {"class": "nota", "style": "display:block; overflow-wrap: anywhere"}, h(p.descricao) + " · " + origem));
         }).join("")), null, ex("parametros", t("Sistema"), t("Os parâmetros de operação do sistema inteiro, que antes só mudavam no config.php: o gravado aqui vale; vazio volta a valer a linha do config.php (ou o padrão). As credenciais, as chaves e as pastas continuam só no config.php. Só o master muda."))) : "";
+        // o padrão do sistema de cada opção da coleção (só o master): cada usuário e cada coleção herda, e pode escolher a sua
+        var padroes = d.sistema.pode_mudar && d.sistema.padroes ? cartao(t("Padrões do sistema"), el("div", {"class": "campos parametros-sistema"}, camposOpcoes(d.sistema.padroes, "padroes")), null,
+          ex("padroes", t("Padrões do sistema"), t("O padrão de cada opção da coleção: horários, limites, gasto da bateria e telas. Vale em toda coleção que não escolheu a sua e cujo dono não escolheu o dele (em Minha conta); vazio, vale o padrão de fábrica. O mais específico prevalece: a coleção, depois o dono, depois o sistema."))) : "";
         var quadroCron = cartao(t("Cron"), cron);
         // de onde vêm os números dos sorteios (a API diz o último lote e se os dois serviços estão fora)
         var al = d.aleatorio;
         var sorteios = cartao(t("Sorteios"), el("div", {"class": "campos"},
           parCampo(t("Os números vêm de"), el("span", {}, t("1. RANDOM.ORG (ruído atmosférico) · 2. fora do ar, ANU QRNG (quântico) · 3. sem os dois, o gerador seguro do PHP")))
-          + parCampo(t("Casas decimais dos pesos"), numero("sorteio_casas", cfg("sorteio_casas") !== "" ? cfg("sorteio_casas") : "2", "0", "8"))
+          + campoOpcao(oc.sorteio_casas, "sorteio_casas", null)
           + parCampo(t("Último lote"), el("span", {}, al.ultimo_lote ? h(al.ultimo_lote.replace(/ em (\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, " em $3/$2/$1 $4")) : t("nenhum ainda")))
           + (al.fora_desde ? parCampo(t("Serviços fora"), el("span", {"class": "acao"}, t("os dois sem responder desde {1} {2}; o sistema tenta de novo depois de 10 minutos", {1: dataBr(al.fora_desde), 2: horaBr(al.fora_desde)}))) : "")),
           "", ex("sorteios", t("Sorteios"), t("Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.")));
@@ -449,7 +417,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
           + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + quadroCron + sorteios + alertas)
-          + parametros
+          + parametros + padroes
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------

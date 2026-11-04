@@ -173,6 +173,17 @@ CREATE TABLE usuario_aparelho (
     FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- as opções que um usuário escolheu como padrão das coleções de que é dono (Minha conta; v58): uma linha por opção; sem a
+-- linha, ele herda o padrão do sistema. A coleção que escolheu a dela (o config) prevalece
+CREATE TABLE usuario_opcao (
+    usuario_id  INT NOT NULL,
+    chave       VARCHAR(40) NOT NULL,
+    valor       VARCHAR(100) NOT NULL,
+    PRIMARY KEY (usuario_id, chave),
+    FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE,
+    CONSTRAINT ck_usuario_opcao_chave CHECK (TRIM(chave) <> '')
+) ENGINE=InnoDB;
+
 -- o servidor de e-mail próprio de um usuário (Minha conta): os e-mails dele saem por ele, não pelo do sistema (v37)
 CREATE TABLE usuario_smtp (
     usuario_id     INT PRIMARY KEY,

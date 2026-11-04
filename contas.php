@@ -656,6 +656,7 @@ function conta_consulta()
         return ["usuario" => usuario_publico($u), "vendo_como" => $real !== null ? ["login" => $u["login"], "master" => $real["login"]] : null,
             "colecoes" => colecoes_visiveis($u), "colecao" => colecao_atual(), "papel" => papel_na_colecao(),
             "arvores" => arvores_do_dono($uid), "rodizio_sistema" => parametro_gravado("rodizio_ativo") !== 0, "recupera_ontem_sistema" => parametro_gravado("recupera_ontem") === 1,
+            "opcoes" => opcoes_lista("usuario", $uid),
             "pedidos" => array_map(function ($p) { return ["id" => (int)$p["id"], "colecao_id" => $p["colecao_id"] !== null ? (int)$p["colecao_id"] : null,
                 "dono_id" => $p["dono_id"] !== null ? (int)$p["dono_id"] : null, "alvo" => alvo_codigo($p["colecao_id"], $p["dono_id"]), "criado" => $p["criado"], "expira" => $p["expira"]]; },
                 linhas("SELECT * FROM pedido WHERE usuario_id = ? ORDER BY criado", [$uid])),
@@ -974,6 +975,21 @@ function op_conta($acao, $d)
                 $campos["recupera_ontem"] = (string)$d["recupera_ontem"] === "" ? null : (int)$d["recupera_ontem"];
             }
         }
+        // as opções da coleção: o padrão do dono (opcoes[<chave>]; vazio herda o sistema); vale nas coleções de que é dono que não
+        // escolheram a sua
+        $opcoes_u = [];
+        if (array_key_exists("opcoes", $d)) {
+            if (!is_array($d["opcoes"])) {
+                $erros[] = t("opcoes: os campos opcoes[<chave>], um para cada opção que muda.");
+            } else {
+                [$erros_o, $opcoes_u] = opcoes_conferir($d["opcoes"]);
+                $erros = array_merge($erros, $erros_o);
+                $erro_h = count($erros_o) === 0 ? opcoes_conferir_horario("usuario", $uid, $opcoes_u) : null;
+                if ($erro_h !== null) {
+                    $erros[] = $erro_h;
+                }
+            }
+        }
         if (array_key_exists("email", $d)) {
             $email = trim((string)$d["email"]);
             if ($email !== "" && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
@@ -1012,6 +1028,13 @@ function op_conta($acao, $d)
                 $campos["senha_hash"] = password_hash((string)$d["senha"], PASSWORD_DEFAULT);
             }
         }
+        if (count($erros) === 0 && count($opcoes_u) > 0) {
+            try {
+                opcoes_usuario_gravar($uid, $opcoes_u);
+            } catch (OpcoesErro $e) {
+                $erros[] = $e->getMessage();
+            }
+        }
         if (count($erros) === 0 && count($campos) > 0) {
             sem_escopo(function () use ($campos, $uid) {
                 sql("UPDATE usuario SET " . implode(", ", array_map(function ($k) { return $k . " = ?"; }, array_keys($campos))) . " WHERE id = ?", array_merge(array_values($campos), [$uid]));
@@ -1027,8 +1050,10 @@ function op_conta($acao, $d)
                 aparelho_cookie("", true);
             }
             $msg = isset($campos["senha_hash"]) ? t("Conta atualizada. Os aparelhos lembrados foram esquecidos: entre de novo com a senha nova.") : t("Conta atualizada.");
+        } elseif (count($erros) === 0 && count($opcoes_u) > 0) {
+            $msg = t("Conta atualizada.");
         } elseif (count($erros) === 0) {
-            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel, rodizio_ativo, recupera_ontem ou senha (com senha_atual).");
+            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel, rodizio_ativo, recupera_ontem, opcoes ou senha (com senha_atual).");
         }
     } elseif ($acao === "excluir") {
         if ($u["papel"] === "master" && (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario WHERE papel = 'master'"); }) <= 1) {

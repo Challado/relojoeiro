@@ -1073,6 +1073,59 @@ function parCampo(rotulo, controle, tipo, explica) {
   return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo) + (explica || "")) + el("span", {"class": "controle"}, controle));
 }
 
+// As opções das três hierarquias (sistema → usuário → coleção), cada uma como um campo: a escolha deste nível (vazio herda), o
+// que herda e de onde. o: um item da lista opcoes da API; nome: o nome do campo na gravação; tipo: a classe do par (largo...);
+// explica: o ⓘ das explicações
+function origemOpcao(origem) {
+  return origem === "usuario" ? t("do usuário") : (origem === "sistema" ? t("do sistema") : t("padrão de fábrica"));
+}
+function textoOpcao(o, valor) {
+  if (o.tipo === "sim_nao") {
+    return valor === "1" ? t("Ligado") : t("Desligado");
+  }
+  var v = (o.valores || []).filter(function (i) { return i.valor === valor; })[0];
+  return v ? v.texto : valor;
+}
+function campoOpcao(o, nome, tipo, explica) {
+  var herdado = h(textoOpcao(o, o.herdado));
+  var origem = origemOpcao(o.origem_herdado);
+  var controle;
+  if (o.valores || o.tipo === "sim_nao") {
+    var lista = o.tipo === "sim_nao" ? [{valor: "1", texto: t("Ligado")}, {valor: "0", texto: t("Desligado")}] : o.valores;
+    controle = el("select", {"name": nome}, el("option", {"value": "", "selected": o.escolha === ""}, t("Herdar ({1}, {2})", {1: herdado, 2: origem}))
+      + lista.map(function (i) { return el("option", {"value": i.valor, "selected": o.escolha === i.valor}, h(i.texto)); }).join(""));
+  } else {
+    var atributos = {"type": o.tipo === "hora" ? "time" : "number", "name": nome, "value": o.escolha};
+    if (o.tipo !== "hora") {
+      atributos.min = String(o.minimo);
+      atributos.max = String(o.maximo);
+      atributos.step = o.tipo === "decimal" ? "any" : "1";
+    }
+    controle = el("input", atributos) + el("button", {"type": "button", "class": "leve", "data-herdar": nome}, t("Herdar"))
+      + el("small", {"class": "nota herdado"}, t("Vazio herda: {1} ({2})", {1: herdado, 2: origem}));
+  }
+  return parCampo(o.titulo, el("span", {"class": "opcao"}, controle), tipo, explica);
+}
+// Os campos de uma lista de opções, em grupos; prefixo: o nome do conjunto na gravação (opcoes[<chave>], padroes[<chave>]);
+// vazio, o nome é a própria chave (a Configuração da coleção)
+function camposOpcoes(lista, prefixo) {
+  return lista.grupos.map(function (g) {
+    return el("h3", {}, h(g.texto)) + lista.opcoes.filter(function (o) { return o.grupo === g.chave; }).map(function (o) {
+      return campoOpcao(o, prefixo ? prefixo + "[" + o.chave + "]" : o.chave, "largo");
+    }).join("");
+  }).join("");
+}
+// o botão Herdar de uma opção de número ou de hora: esvazia o campo, e o nível de cima passa a valer
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest ? ev.target.closest("[data-herdar]") : null;
+  var campo = b && b.form ? b.form.elements[b.getAttribute("data-herdar")] : null;
+  if (campo) {
+    campo.value = "";
+    campo.dispatchEvent(new Event("input", {bubbles: true}));
+    campo.dispatchEvent(new Event("change", {bubbles: true}));
+  }
+});
+
 // Uma senha nova com a confirmação (Criar conta, a senha nova pelo link, Minha conta, Usuários): os dois campos e, embaixo,
 // a força pedida (o texto da API) e, enquanto a pessoa digita, o que a API diz da senha: cada regra com ✓ ou ✗, a
 // confirmação e a força. Quem confere é a API (recurso=cadastro, acao=conferir_senha, sem gravar); a tela só mostra
