@@ -301,6 +301,41 @@ function simular_matriz($semana_inicio, $dia)
             $rodizio($campos, $campos["acao"] . " hoje (recusado)", false);
         }
         $conferir("as ações de hoje recusadas");
+        // a partir do próximo período: o de agora (hoje inclusive) fica como está, e o seguinte sai montado. Fora da escala, é a semana que vem
+        // até onde o modo monta (ou até onde a próxima semana já foi montada), e os dias à mão e os livres dela ficam; na escala, é a escala
+        // seguinte, do dia depois do fim da que vale (o fim passa a ser o dela, que o conferir do dia a dia não espera: o apagar tudo de
+        // depois volta a escala ao normal)
+        $periodo = chamar("GET", ["recurso" => "hoje", "incluir" => "proximo_periodo"])["proximo_periodo"] ?? null;
+        [$p_antes, , $escala_fim_antes] = $ler();
+        $onde_p = $nome . " · " . $ativo . " · a partir do próximo período";
+        if ($periodo === null || $periodo["escala"] !== $escala) {
+            $falhas[] = $onde_p . ": o proximo_periodo veio " . json_encode($periodo) . " (a escala: " . json_encode($escala) . ")";
+        } else {
+            $rodizio(["acao" => "resortear_proximo"], "a partir do próximo período");
+            if (!$escala) {
+                if ($periodo["fim"] > $prox_fim) {
+                    $prox_fim = $periodo["fim"];
+                }
+                $conferir("a partir do próximo período", [$periodo["inicio"], $periodo["fim"], $p_antes]);
+            } else {
+                [$plano_p, $livres_p, $escala_fim_p] = $ler();
+                if ($escala_fim_p !== $periodo["fim"] || $periodo["inicio"] !== data_mais($escala_fim_antes, 1)) {
+                    $falhas[] = $onde_p . ": a escala seguinte devia ir de " . data_mais($escala_fim_antes, 1) . " a " . $periodo["fim"] . " e o fim ficou em " . ($escala_fim_p ?: "nada");
+                }
+                for ($d = data_mais($dia, 1); $d <= $escala_fim_p; $d = data_mais($d, 1)) {
+                    if (!isset($plano_p[$d]) && !isset($livres_p[$d])) {
+                        $falhas[] = $onde_p . ": o plano tem um buraco em " . $d . " (devia ir até " . $escala_fim_p . ")";
+                        break;
+                    }
+                }
+                foreach ($p_antes as $d => $x) {
+                    if ($d > $dia && $d < $periodo["inicio"] && (int)($plano_p[$d]["relogio_id"] ?? 0) !== (int)$x["relogio_id"]) {
+                        $falhas[] = $onde_p . ": o período de agora mudou em " . $d;
+                        break;
+                    }
+                }
+            }
+        }
         // o Apagar tudo: sai tudo, os à mão e a próxima semana também
         $rodizio(["acao" => "apagar_tudo"], "apagar tudo");
         $guardados = [];
