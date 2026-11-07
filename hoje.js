@@ -195,7 +195,8 @@ function recarregarHoje() {
     // modo, a próxima semana). Os blocos, as semanas e o roteiro se editam nos Modos de rodízio
     var modo = d.modo;
     var escala = modo !== null && modo.escala_dias !== null;
-    var nomeHoje = d.comecou && d.dia ? d.dia.relogio : "";
+    // o relógio de hoje, para os textos do Sortear de novo; sem plano para hoje, o texto diz só que hoje fica como está
+    var nomeHoje = d.dia ? d.dia.relogio : "";
     var selModos = {};
     var tiposModo = {};
     d.modos.forEach(function (m) {
@@ -244,14 +245,24 @@ function recarregarHoje() {
     var sorteios = [];
     if (d.comecou || !d.trocar_hoje) {
       // o relógio de hoje fica (já começou no pulso, ou a Configuração não troca o de hoje no próprio dia)
-      sorteios.push(["resortear", t("a partir de amanhã"), t("Refaz o plano de amanhã até {1} pelo modo atual; hoje continua o {2}.", {1: ateQuando, 2: nomeHoje}),
-        t("Sortear de novo a partir de amanhã? Hoje continua o {1}.", {1: nomeHoje}), true]);
+      sorteios.push(["resortear", t("a partir de amanhã"), nomeHoje !== "" ? t("Refaz o plano de amanhã até {1} pelo modo atual; hoje continua o {2}.", {1: ateQuando, 2: nomeHoje}) : t("Refaz o plano de amanhã até {1} pelo modo atual; hoje fica como está.", {1: ateQuando}),
+        nomeHoje !== "" ? t("Sortear de novo a partir de amanhã? Hoje continua o {1}.", {1: nomeHoje}) : t("Sortear de novo a partir de amanhã? Hoje fica como está."), true]);
       if (d.trocar_hoje) {
-        sorteios.push(["resortear_hoje", t("inclusive hoje"), t("Refaz também hoje: se sair outro relógio, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}),
-          t("Sortear de novo inclusive hoje? Se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}), true]);
+        sorteios.push(["resortear_hoje", t("inclusive hoje"), nomeHoje !== "" ? t("Refaz também hoje: se sair outro relógio, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}) : t("Refaz também hoje: o relógio que sair passa a ser o do pulso a partir de agora."),
+          nomeHoje !== "" ? t("Sortear de novo inclusive hoje? Se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}) : t("Sortear de novo inclusive hoje? O relógio que sair para hoje passa a ser o do pulso a partir de agora."), true]);
       }
     } else {
       sorteios.push(["resortear", t("a partir de hoje"), t("Refaz o plano de hoje até {1} pelo modo atual (o dia ainda não começou no pulso).", {1: ateQuando}), t("Sortear de novo a partir de hoje?"), true]);
+    }
+    // a partir do próximo período, pela configuração dos sorteios: ignora o que está valendo (hoje inclusive) e refaz do começo do
+    // período seguinte (a semana que vem até onde o modo monta, ou a escala seguinte)
+    if (d.proximo_periodo) {
+      var pp = d.proximo_periodo;
+      var ppDatas = {1: dataBr(pp.inicio, true), 2: dataBr(pp.fim, true)};
+      sorteios.push(["resortear_proximo", t("a partir do próximo período ({1} a {2})", ppDatas),
+        pp.escala ? t("Monta a escala seguinte, de {1} a {2}, pelo modo atual, sem mexer no período de agora (hoje inclusive); os dias que ainda faltam dele contam como uso.", ppDatas)
+          : t("Refaz o plano de {1} a {2}, o próximo período pelo modo atual, sem mexer no período de agora (hoje inclusive); os dias que ainda faltam dele contam como uso.", ppDatas),
+        t("Sortear de novo a partir do próximo período, de {1} a {2}? O período de agora fica como está.", ppDatas), true]);
     }
     if (!escala && modo !== null && modo.semanas > 1) {
       var ps = d.proxima_semana;

@@ -134,7 +134,7 @@ function formModo(e, f) {
     corpo += el("div", {"class": "form-grade trechos"}, [[t("Segunda a sexta"), b1, 0, t("um relógio para os cinco dias")], [t("Sábado e domingo"), b2, 1, t("um relógio para os dois dias")]].map(function (x) {
       return el("fieldset", {"class": "trecho"}, el("legend", {}, x[0])
         + el("label", {}, t("Escolher de {1}", {1: el("select", {"name": "de[" + x[2] + "]"}, opcoesDe(valorDe(x[1]), false))}) + " " + (x[2] === 0 ? ajudaEscolherDe() : ajudaRef("escolher-de")))
-        + el("p", {"class": "trecho-ajuda"}, x[2] === 0 ? ajuda("um-por", t("Um relógio para o trecho ou um por dia"), el("p", {}, t("Um relógio para o trecho: o mesmo relógio em todos os dias do trecho, dentro da semana (escolhido no primeiro dia dele). Um relógio por dia: cada dia tem a sua escolha, e o de ontem fica de fora se houver outro candidato."))) : ajudaRef("um-por"))
+        + el("p", {"class": "trecho-ajuda"}, t("Um relógio para o trecho ou um por dia") + " " + (x[2] === 0 ? ajuda("um-por", t("Um relógio para o trecho ou um por dia"), el("p", {}, t("Um relógio para o trecho: o mesmo relógio em todos os dias do trecho, dentro da semana (escolhido no primeiro dia dele). Um relógio por dia: cada dia tem a sua escolha, e o de ontem fica de fora se houver outro candidato."))) : ajudaRef("um-por")))
         + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "um_por[" + x[2] + "]", "value": "bloco", "checked": x[1] === null ? x[2] === 0 : x[1].um_por === "bloco"}) + " " + x[3])
         + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "um_por[" + x[2] + "]", "value": "dia", "checked": x[1] === null ? x[2] === 1 : x[1].um_por === "dia"}) + " " + t("um relógio por dia")));
     }).join(""));

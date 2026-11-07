@@ -10,7 +10,8 @@
 // (página e tela: um filtro, expressão regular, no nome; ex.: node testes/layout.cjs "ficha" "cel-"). Grava em testes/layout/
 // uma captura de cada tela, o relatorio.tsv (uma linha por problema) e o agrupado.txt (o mesmo problema com as telas em que
 // aparece). Termina com 0 se não achou nada, 1 se achou. LINGUA=en (zh-CN, hi, es, fr) confere as telas nesse idioma (o
-// cookie do seletor do menu); sem ela, em português.
+// cookie do seletor do menu); sem ela, em português. SO=ajuda-solta,ajuda-sem-nome confere só esses tipos de problema (o CI "Botões de
+// ajuda": o ⓘ colado ao rótulo ou ao campo que explica, e com nome e explicação).
 const { chromium, devices } = require(process.env.PLAYWRIGHT || require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const fs = require('fs');
 const BASE = process.env.BASE || 'http://127.0.0.1:8101/';
@@ -179,6 +180,31 @@ function examinar(seletorRaiz) {
       }
     }
   }
+  // 5a. o ⓘ de ajuda solto: tem de ficar colado ao que explica (o texto do rótulo ou o campo, na mesma linha e a no máximo 24px);
+  // sozinho numa linha, ou longe do rótulo (embaixo do campo, na ponta da linha), não dá para saber de onde é
+  for (const b of raiz.querySelectorAll('button.ajuda-i')) {
+    if (!visivel(b) || !b.parentElement) continue;
+    const rb = b.getBoundingClientRect();
+    const vizinhos = [];
+    for (const no of b.parentElement.childNodes) {
+      if (no === b) continue;
+      if (no.nodeType === 3 && no.textContent.trim()) {
+        const rg = document.createRange();
+        rg.selectNodeContents(no);
+        vizinhos.push(...[...rg.getClientRects()].filter((q) => q.width >= 1));
+      } else if (no.nodeType === 1 && visivel(no) && !no.matches('button.ajuda-i')) {
+        vizinhos.push(...no.getClientRects());
+      }
+    }
+    const colado = vizinhos.some((q) => Math.min(q.bottom, rb.bottom) - Math.max(q.top, rb.top) >= rb.height * .5
+      && Math.max(rb.left - q.right, q.left - rb.right) <= 24);
+    if (!b.getAttribute('aria-label') || !b.getAttribute('data-ajuda')) {
+      probs.push({ tipo: 'ajuda-sem-nome', det: 'o ⓘ sem aria-label ou sem a explicação que abre (data-ajuda)', quem: nomear(b.parentElement) });
+    }
+    if (!colado) {
+      probs.push({ tipo: 'ajuda-solta', det: 'o ⓘ não encosta no rótulo nem no campo que explica', quem: nomear(b.parentElement) });
+    }
+  }
   // Cartões independentes: uma linha da grade não pode deixar uma coluna vazia até o cartão vizinho terminar.
   // O fim mais baixo da coluna é natural; o defeito é um vão interno em que o próximo cartão poderia começar antes.
   for (const grade of raiz.querySelectorAll('#form-config .config-grade, #form-config .parametros-sistema')) {
@@ -262,6 +288,11 @@ async function auditarTela(b, tela, fp, relatorio, total) {
         probs = probs.concat(mais.map((x) => ({ ...x, det: x.det + ' [menu ' + m.i + ' opção ' + k + ']' })));
       }
     }
+    // SO=tipo1,tipo2: só esses tipos de problema contam (o CI dos botões de ajuda confere só o ⓘ: SO=ajuda-solta,ajuda-sem-nome)
+    if (process.env.SO) {
+      const so = process.env.SO.split(',');
+      probs = probs.filter((x) => so.includes(x.tipo));
+    }
     const vistos = new Set();
     probs = probs.filter((x) => { const k = x.tipo + x.quem; if (vistos.has(k)) return false; vistos.add(k); return true; });
     // o problema no menu do alto: como ele estava na hora (aberto pelo botão? o CSS do celular valia?), para saber a causa sem a captura
@@ -320,6 +351,18 @@ async function conferirDetector(b) {
     if (!espacos.some(x => x.quem.includes('#linhas')) || !espacos.some(x => x.quem.includes('#colunas'))
       || espacos.some(x => /#compacta|#unica/.test(x.quem))) {
       throw new Error('O detector deve pegar vãos internos e sobras que comportam outro cartão, aceitando a distribuição compacta e a coluna única.');
+    }
+    // o ⓘ de ajuda: embaixo do campo e sozinho numa linha são soltos; colado ao texto do rótulo (o campo desce) não
+    const bi = '<button type="button" class="ajuda-i" data-ajuda="x" aria-label="Explicação" style="width:20px;height:20px;padding:0">ⓘ</button>';
+    await p.setContent('<label id="ruim" style="display:flex;flex-direction:column;width:300px">Escolher de<select style="width:100%"><option>a</option></select>' + bi + '</label>'
+      + '<label id="bom" style="display:flex;flex-wrap:wrap;align-items:center;width:300px">Escolher de' + bi.replace('style="', 'style="order:1;')
+      + '<select style="order:2;flex:1 1 100%"><option>a</option></select></label><p id="so" style="margin:8px 0">' + bi + '</p>'
+      + '<button type="button" class="ajuda-i" style="width:20px;height:20px">ⓘ</button>');
+    const soltas = await p.evaluate(examinar);
+    const soltos = soltas.filter(x => x.tipo === 'ajuda-solta');
+    if (!soltos.some(x => x.quem.includes('label#ruim')) || !soltos.some(x => x.quem.includes('p#so')) || soltos.some(x => x.quem.includes('label#bom'))
+      || soltas.filter(x => x.tipo === 'ajuda-sem-nome').length !== 1) {
+      throw new Error('O detector deve pegar o ⓘ embaixo do campo, o sozinho e o sem nome, e aceitar o colado ao rótulo.');
     }
   } finally {
     await c.close();

@@ -108,6 +108,9 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "trocar_hoje" => trocar_hoje_permitido(),
     "proxima_semana" => ["inicio" => $ini_s->format("Y-m-d"), "fim" => $ini_s->modify("+6 days")->format("Y-m-d"),
         "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$ini_s->format("Y-m-d"), $ini_s->modify("+6 days")->format("Y-m-d")]) > 1],
+    // o próximo período do rodízio (a opção "a partir do próximo período" do Sortear de novo): a semana que vem até onde o modo monta, ou a
+    // escala seguinte; sem o rodízio, vazio
+    "proximo_periodo" => $modo ? (function ($pp) use ($modo) { return ["inicio" => $pp[0]->format("Y-m-d"), "fim" => $pp[1]->format("Y-m-d"), "escala" => $modo["escala_dias"] !== null]; })(proximo_periodo($modo, $hoje)) : null,
     "modos" => $modos_h,
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "nome" => $n[$o[0]]["nome"], "profundidade" => $o[1], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "avisos_nomes" => array_values(array_unique($avisos_nomes)),

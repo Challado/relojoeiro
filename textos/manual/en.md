@@ -1,4 +1,4 @@
-<!-- origem: c433e93e806dbdeab66ff62c5ea2e5040e45531b -->
+<!-- origem: 1cfdeca2cc722e27eb784b6a411a24990e59a3f9 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -320,6 +320,8 @@ as if you had already worn the watches in the plan (the use counts in the days w
 not, because no one knows whether the watch will be charged). Each day is chosen this way, with the earlier days of the plan
 already on the wrist, which is why Monday's watch does not come back on Tuesday just because it looks idle. The days chosen
 by hand stay. On the smart schedule there is no next week: it already plans its own period.
+
+**From the next period.** In any mode, **Draw again** also has **from the next period** (with its dates in the list): it ignores what is in effect now, today included, which stays as it is, and redraws from the first day of the following period, by the draw settings. Outside the smart schedule, it is next week (the week starts on the day set in the Settings) up to where the mode builds the plan; on the smart schedule, it is the next schedule, from the day after the end of the current one and with the mode's days (it becomes the current one, and the earlier plan stays). What is left of the current period reaches the next one counting as use. The days chosen by hand and the free ones in that stretch stay, except with **Overwrite everything**. Through the API: `recurso=rodizio&acao=resortear_proximo`; `recurso=hoje` brings the `proximo_periodo` (`inicio`, `fim`, `escala`).
 
 ### The mode's script {#o-roteiro-do-modo}
 

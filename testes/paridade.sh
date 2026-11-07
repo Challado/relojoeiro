@@ -10,6 +10,9 @@
 #   testes/paridade.sh --rolagem sqlite          e a conferência da rolagem (testes/rolagem.cjs) no primeiro: em cada
 #                                                tamanho de tela, cada página rola até o fim, o menu aberto até o último
 #                                                item e a gaveta Explicações até a última explicação
+#   testes/paridade.sh --ajuda sqlite           e a conferência dos botões de ajuda (o ⓘ) no primeiro: em todas as páginas e nos 15
+#                                                tamanhos de tela, cada ⓘ colado ao rótulo ou ao campo que explica (não solto
+#                                                embaixo do campo nem sozinho numa linha) e com nome e explicação
 #   testes/paridade.sh --manter sqlite           deixa os servidores no ar no fim (para olhar as telas); Ctrl+C derruba
 #   LINGUA=zh-CN testes/paridade.sh --textos sqlite   e a conferência dos textos fixos (testes/texto-fixo.cjs) no primeiro:
 #                                                nenhum texto nas telas fora do dicionário (o roteiro no mesmo idioma)
@@ -32,6 +35,7 @@ RAIZ=$(pwd)
 
 LAYOUT=0
 ROLAGEM=0
+AJUDA=0
 MANTER=0
 TEXTOS=0
 BANCOS=()
@@ -39,10 +43,11 @@ for a in "$@"; do
   case "$a" in
     --layout) LAYOUT=1 ;;
     --rolagem) ROLAGEM=1 ;;
+    --ajuda) AJUDA=1 ;;
     --manter) MANTER=1 ;;
     --textos) TEXTOS=1 ;;
     sqlite|pgsql|mysql|firebird) BANCOS+=("$a") ;;
-    *) echo "Não conheço \"$a\". Uso: testes/paridade.sh [--layout] [--rolagem] [--textos] [--manter] [sqlite] [pgsql] [mysql] [firebird]" >&2; exit 2 ;;
+    *) echo "Não conheço \"$a\". Uso: testes/paridade.sh [--layout] [--rolagem] [--ajuda] [--textos] [--manter] [sqlite] [pgsql] [mysql] [firebird]" >&2; exit 2 ;;
   esac
 done
 [ ${#BANCOS[@]} -eq 0 ] && BANCOS=(sqlite pgsql mysql firebird)
@@ -197,6 +202,11 @@ fi
 if [ $LAYOUT -eq 1 ]; then
   echo "Conferência do layout no $REF:"
   if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/layout" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/layout/agrupado.txt:"; sed 's/^/    /' "$PASTA/layout/agrupado.txt" 2>/dev/null | head -60; fi
+fi
+
+if [ $AJUDA -eq 1 ]; then
+  echo "Conferência dos botões de ajuda (ⓘ) no $REF:"
+  if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/ajuda" SO="ajuda-solta,ajuda-sem-nome" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/ajuda/agrupado.txt:"; sed 's/^/    /' "$PASTA/ajuda/agrupado.txt" 2>/dev/null | head -60; fi
 fi
 
 if [ $ROLAGEM -eq 1 ]; then

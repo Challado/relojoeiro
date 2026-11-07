@@ -2008,6 +2008,13 @@ button.ajuda-i {
 }
 button.ajuda-i:hover, button.ajuda-i:focus-visible { border-color: var(--safira); background: #e8eef6; outline: none; }
 .ajuda-botao { margin-left: auto; }
+/* o ⓘ de um campo da grade de formulário fica colado ao texto do rótulo, na primeira linha, e o campo desce para a linha de baixo
+   (antes o ⓘ ia para uma linha só dele, embaixo do campo, longe do que explica) */
+.form-grade label:not(.check):has(> button.ajuda-i) { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: .1rem; row-gap: .25rem; }
+.form-grade label:not(.check):has(> button.ajuda-i) > :is(input, select, textarea) { order: 2; flex: 1 1 100%; width: 100%; min-width: 0; }
+.form-grade label:not(.check):has(> button.ajuda-i) > button.ajuda-i { order: 1; }
+p.trecho-ajuda { margin: 0; font-size: .9rem; }
+.ajuda-grude { white-space: nowrap; }
 .ajuda-fundo { position: fixed; inset: 0; z-index: 90; background: rgba(16, 22, 29, .45); }
 .ajuda-gaveta {
   position: fixed; z-index: 91; top: 0; right: 0; bottom: 0; width: min(32rem, 94vw); display: flex; flex-direction: column;

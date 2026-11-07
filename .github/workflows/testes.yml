@@ -1,6 +1,6 @@
 # Os testes a cada push no main (e quando pedido na aba Actions): o teste de paridade (testes/paridade.sh) nos bancos, que
-# confere também a documentação da API (o dicionário do cabeçalho e os campos explicados), a conferência do layout das telas e
-# a dos textos fixos (nenhum texto na tela fora do dicionário: o sistema inteiro em chinês).
+# confere também a documentação da API (o dicionário do cabeçalho e os campos explicados), a conferência do layout das telas, a
+# dos botões de ajuda (o ⓘ colado ao rótulo ou ao campo que explica) e a dos textos fixos (nenhum texto na tela fora do dicionário: o sistema inteiro em chinês).
 # Nos jobs dos bancos, depois da paridade, o teste da atualização (testes/migracao.sh): um banco instalado pela versão de
 # antes do push, com dados, passa para a de agora pelas migrações, como no servidor de quem usa ao fazer o git pull.
 # A simulação dos modos de rodízio (testes/simulacao.sh): cada modo vivido dia a dia, 28 dias, com o relógio da máquina
@@ -163,6 +163,34 @@ jobs:
         with:
           name: layout
           path: /tmp/relojoeiro-paridade.*/layout/
+          if-no-files-found: ignore
+          retention-days: 7
+  ajuda:
+    name: Botões de ajuda (ⓘ colados ao que explicam)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: sqlite3, curl, mbstring, fileinfo, dom, zlib, gd, zip
+          coverage: none
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - name: Playwright e o Chromium
+        run: |
+          npm install -g playwright@1
+          playwright install --with-deps chromium
+      - name: Cada ⓘ colado ao rótulo ou ao campo, com nome e explicação (todas as páginas, 15 tamanhos de tela)
+        run: testes/paridade.sh --ajuda sqlite
+      - name: Capturas das telas (para olhar quando falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ajuda
+          path: /tmp/relojoeiro-paridade.*/ajuda/
           if-no-files-found: ignore
           retention-days: 7
   rolagem:

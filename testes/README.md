@@ -49,6 +49,7 @@ testes/paridade.sh                      # os quatro, ao mesmo tempo; o SQLite é
 testes/paridade.sh sqlite mysql         # só esses (o primeiro é a referência)
 testes/paridade.sh --layout sqlite      # e, no fim, a conferência do layout (veja abaixo) no primeiro
 testes/paridade.sh --rolagem sqlite     # e a conferência da rolagem (veja abaixo) no primeiro
+testes/paridade.sh --ajuda sqlite       # e a conferência dos botões de ajuda (o ⓘ, veja abaixo) no primeiro
 testes/paridade.sh --manter sqlite      # deixa o servidor no ar no fim, para olhar as telas (Ctrl+C derruba)
 ```
 
@@ -182,6 +183,24 @@ Pelo `paridade.sh`, sobre o banco do cenário: `testes/paridade.sh --rolagem sql
 `BASE=http://127.0.0.1:8101/ node testes/rolagem.cjs`; os dois argumentos filtram a página (ou `menu`, ou `gaveta`) e o
 tamanho: `node testes/rolagem.cjs "menu" "cel-"`. O resultado esperado é `A rolagem confere: ...`; quando trava, diz o tamanho,
 a página e o que não deu para alcançar.
+
+# Conferência dos botões de ajuda (o ⓘ)
+
+O ⓘ que abre a explicação fica **colado ao que explica**: na mesma linha do texto do rótulo (ou do campo), a no máximo 24px,
+e nunca sozinho numa linha nem embaixo do campo, longe do rótulo. É o mesmo `testes/layout.cjs` (as mesmas telas, em 15
+tamanhos, com os dados de estresse), com `SO=ajuda-solta,ajuda-sem-nome`: só esses dois problemas contam.
+
+| Problema | O que é |
+|---|---|
+| `ajuda-solta` | o ⓘ não encosta em nenhum texto nem campo do próprio rótulo na mesma linha: foi para a linha de baixo, ficou na ponta ou sozinho |
+| `ajuda-sem-nome` | o ⓘ sem `aria-label` ou sem a explicação que abre (`data-ajuda`) |
+
+O detector tem um autoteste (`conferirDetector`, em HTML montado na hora): o ⓘ embaixo do campo, o sozinho e o sem nome têm de
+ser pegos, e o colado ao rótulo, aceito. No `api.js`, o `el()` junta a última palavra do texto e o ⓘ num trecho que não
+quebra (`ajudaGruda`), e o `estilo.css` põe o ⓘ ao lado do texto do rótulo nos formulários em grade (`.form-grade`).
+
+Pelo `paridade.sh`: `testes/paridade.sh --ajuda sqlite`. Ou, com um servidor do cenário no ar:
+`SO=ajuda-solta,ajuda-sem-nome BASE=http://127.0.0.1:8101/ node testes/layout.cjs`. O resultado esperado é `{} 0 problemas`.
 
 # A documentação da API
 
@@ -344,6 +363,8 @@ quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo
 - **Simulação dos modos de rodízio:** o libfaketime e o `testes/simulacao.sh` (veja acima): os 19 modos, 28 dias cada, as trocas de modo e a matriz do rodízio;
 - **Layout das telas:** o Playwright com o Chromium, o `configuracao-interface.cjs` e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
   telas ficam para baixar na página da rodada (Artifacts, "layout");
+- **Botões de ajuda:** o `testes/paridade.sh --ajuda sqlite`: em todas as páginas e nos 15 tamanhos, cada ⓘ colado ao rótulo ou ao
+  campo que explica, com nome e explicação; quando falha, as capturas ficam para baixar (Artifacts, "ajuda");
 - **Rolagem das telas:** o `testes/paridade.sh --rolagem sqlite`: no computador, no tablet de pé e deitado e no celular, cada
   página rola até o fim, o menu aberto até o último item e a gaveta Explicações até a última explicação;
 - **Nenhum texto fixo:** o `LINGUA=zh-CN testes/paridade.sh --textos sqlite`, o sistema inteiro em chinês.

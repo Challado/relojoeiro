@@ -1,4 +1,4 @@
-<!-- origem: c433e93e806dbdeab66ff62c5ea2e5040e45531b -->
+<!-- origem: 1cfdeca2cc722e27eb784b6a411a24990e59a3f9 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -320,6 +320,8 @@ jours sans utilisation et dans la note ; la charge non, parce qu'on ne sait pas 
 choisi ainsi, avec les jours précédents du plan déjà au poignet, et c'est pourquoi la montre du lundi ne revient pas le mardi
 juste parce qu'elle semble arrêtée. Les jours choisis à la main restent. Dans le planning intelligent il n'y a pas de semaine
 prochaine : il planifie déjà sa propre période.
+
+**À partir de la prochaine période.** Dans tous les modes, **Refaire le tirage** a aussi **à partir de la prochaine période** (avec ses dates dans la liste) : il ignore ce qui est en vigueur, aujourd'hui compris, qui reste tel quel, et refait à partir du premier jour de la période suivante, selon la configuration des tirages. Hors planning intelligent, c'est la semaine prochaine (la semaine commence le jour fixé dans la Configuration) jusqu'où le mode construit le plan ; dans le planning intelligent, c'est le planning suivant, à partir du lendemain de la fin de l'actuel et avec les jours du mode (il devient celui d'aujourd'hui, et le plan d'avant reste). Ce qui reste de la période actuelle arrive à la suivante en comptant comme usage. Les jours choisis à la main et les jours libres de ce tronçon restent, sauf avec **Tout écraser**. Par l'API : `recurso=rodizio&acao=resortear_proximo` ; `recurso=hoje` renvoie le `proximo_periodo` (`inicio`, `fim`, `escala`).
 
 ### Le scénario du mode {#o-roteiro-do-modo}
 

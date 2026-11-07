@@ -299,8 +299,14 @@ function h(t) {
 }
 
 // Uma marca HTML: el("p", {"class": "nota"}, "texto já seguro"). Atributo null ou false não sai; true sai sem valor.
+// O ⓘ de ajuda não vai sozinho para a linha de baixo: a última palavra do texto e o ⓘ ficam juntas, num trecho que não quebra
+var AJUDA_GRUDE = /(?<=^|\s|>)(?<!ajuda-grude">)([^\s<>]+)(\s*)(<button type="button" class="ajuda-i"[^>]*>[^<]*<\/button>)/g;
+function ajudaGruda(conteudo) {
+  return typeof conteudo === "string" && conteudo.indexOf('class="ajuda-i"') >= 0 ? conteudo.replace(AJUDA_GRUDE, '<span class="ajuda-grude">$1$2$3</span>') : conteudo;
+}
 function el(nome, atributos, conteudo) {
   var res = "<" + nome;
+  conteudo = ajudaGruda(conteudo);
   Object.keys(atributos || {}).forEach(function (k) {
     var v = atributos[k];
     if (v === true) {

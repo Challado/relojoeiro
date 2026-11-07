@@ -369,6 +369,14 @@ se o relógio vai ser carregado). Cada dia é escolhido assim, com os anteriores
 segunda não volta na terça só por parecer parado. Os dias escolhidos à mão ficam. Na escala inteligente não há próxima
 semana: ela já planeja o próprio período.
 
+**A partir do próximo período.** Em qualquer modo, o **Sortear de novo** tem também **a partir do próximo período** (com as
+datas dele na lista): ele ignora o que está valendo, hoje inclusive, que fica como está, e refaz do primeiro dia do período
+seguinte, pela configuração dos sorteios. Fora da escala, é a semana que vem (a semana começa no dia da Configuração) até onde o modo monta o plano;
+na escala inteligente, é a escala seguinte, do dia depois do fim da que vale e com os dias do modo (ela passa a ser a de agora, e o plano
+de antes fica). O que falta do período de agora chega ao seguinte contando como uso. Os dias escolhidos à mão e os livres do
+trecho ficam, menos com **Sobrescrever tudo**. Pela API: `recurso=rodizio&acao=resortear_proximo`; o `recurso=hoje` traz o
+`proximo_periodo` (`inicio`, `fim`, `escala`).
+
 ### O roteiro do modo
 
 Por baixo, todo modo é um **roteiro**: cinco linhas que o motor de fórmulas calcula para cada relógio disponível, no começo
@@ -2061,7 +2069,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `relatorios` | `salvar` (o nome, sem repetir outro; a descrição; as colunas, em JSON: o título, a expressão, o formato e a conta do rodapé; o filtro, a ordem, o decrescente, o agrupamento, quais relógios e o limite), `excluir` |
 | `sql` | `executar` (só o master; `comando`: um comando SQL no dialeto do MySQL, um por vez; `limite`: as linhas do SELECT). Veja [O SQL pela API](#o-sql-pela-api) |
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do sol, do carregador; do winder, o pôr é pela página Winders, o `winder_posicoes`, a não ser que o relógio tenha o lugar dele livre: aí volta para lá), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular; no winder, abre só de volta ao lugar), `periodo` (um período que já passou; no winder, com a posição, `posicao_id`; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia O `iniciar` que começa no instante em que acabou um trecho do mesmo tipo emenda nele (ele volta a ficar aberto), e o `periodo` sem `fim` fica aberto, do início até agora. |
-| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
+| `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `resortear_proximo` (a partir do próximo período), `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos; o campo com as regras do valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |

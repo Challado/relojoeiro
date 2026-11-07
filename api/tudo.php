@@ -80,7 +80,9 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
 $modos = [];
 foreach (linhas("SELECT * FROM modo ORDER BY ordem, id") as $m) {
     $modos[] = ["id" => (int)$m["id"], "nome" => $m["nome"], "tipo" => $m["tipo"], "semanas" => (int)$m["semanas"], "roteiro" => $m["roteiro"], "roteiro_efetivo" => modo_roteiro_texto($m),
-        "selecao" => $m["selecao"], "escala_dias" => $m["escala_dias"] === null ? null : (int)$m["escala_dias"], "ciclo" => (int)$m["ciclo"] === 1,
+        "selecao" => $m["selecao"], "forma" => modo_forma($m), "escala_dias" => $m["escala_dias"] === null ? null : (int)$m["escala_dias"], "ciclo" => (int)$m["ciclo"] === 1,
+        // os critérios que a nota do modo usa (vazio: todos)
+        "criterios" => array_column(linhas("SELECT nome FROM modo_criterio WHERE modo_id = ? ORDER BY nome", [(int)$m["id"]]), "nome"),
         "ordem" => (int)$m["ordem"], "ativo" => (int)$m["id"] === modo_ativo(),
         "blocos" => array_map(function ($b) {
             return ["id" => (int)$b["id"], "nome" => $b["nome"], "dias" => array_map("intval", explode(",", $b["dias"])), "no_id" => $b["no_id"] === null ? null : (int)$b["no_id"],
