@@ -222,6 +222,7 @@ Los criterios que vienen listos, para todos los relojes:
 | Equilibrio de uso | 30 | uso en los últimos 30 días comparado con el promedio de la colección: el poco usado sube |
 | Preferencia | 20 | su nota para el reloj (0 a 100) |
 | Novedad y valor | 10 | hace cuánto se compró y cuánto costó (aprovechar la inversión) |
+| Menos usado | 0 | días de uso en total comparados con la media de la colección: el que se usó poco desde siempre sube. Viene con peso 0 (la nota de hoy no cambia): dale peso en Criterios, o marca solo este en la escala inteligente |
 
 Cada grupo, e incluso cada reloj, puede tener su propio conjunto. El smartwatch, por ejemplo, también pesa la **energía** (la
 carga ahora y cuántos días aguanta), para no sortear un reloj que se va a apagar al mediodía. La página **Criterios** muestra
@@ -235,6 +236,8 @@ o una fórmula) y da la nota según el rango en que cae el valor; el subparámet
 todo rango) queda fuera, y los demás se reparten su peso. Todo se edita en la página **Criterios**, y **Restaurar los criterios
 iniciales** vuelve a estos.
 
+El parámetro **Menos usado** mide los días de uso en total (`menos_usado`: los días en que el reloj fue a la muñeca, `dias_de_uso`, contra la media de la colección): el que se usó poco desde siempre recibe una nota alta, aunque se haya usado ayer (el *Tiempo sin uso* mira solo hace cuánto paró; el *Equilibrio de uso*, solo los últimos 30 días). Viene en todos los conjuntos, con **peso 0**: la nota de hoy no cambia hasta que le des peso en **Criterios**. La forma de elección **menos usado**, al contrario, no mira la nota: va directo el reloj con menos días de uso (véase [Los modos de rotación](#los-modos-de-rotación)).
+
 **Todos los relojes**
 
 | Parámetro | Peso | Subparámetro (la variable, el peso dentro del parámetro) | Los rangos: el valor → la nota |
@@ -244,6 +247,7 @@ iniciales** vuelve a estos.
 | Preferencia | 20 | Su nota para el reloj (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novedad y valor | 10 | Novedad: días desde la compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 o más → 30 |
 |  |  | Aprovechar la inversión: valor pagado (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 o más → 90 |
+| Menos usado | 0 | Días de uso en total, comparados con la media (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 o más → 0 |
 
 **Smartwatch**
 
@@ -257,6 +261,7 @@ iniciales** vuelve a estos.
 | Preferencia | 10 | Su nota para el reloj (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novedad y valor | 5 | Novedad: días desde la compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 o más → 30 |
 |  |  | Aprovechar la inversión: valor pagado (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 o más → 90 |
+| Menos usado | 0 | Días de uso en total, comparados con la media (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 o más → 0 |
 
 **Tradicional › Mecánico**
 
@@ -270,6 +275,7 @@ iniciales** vuelve a estos.
 | Preferencia | 10 | Su nota para el reloj (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novedad y valor | 5 | Novedad: días desde la compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 o más → 30 |
 |  |  | Aprovechar la inversión: valor pagado (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 o más → 90 |
+| Menos usado | 0 | Días de uso en total, comparados con la media (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 o más → 0 |
 
 **Tradicional › Cuarzo › Pila**
 
@@ -282,6 +288,7 @@ iniciales** vuelve a estos.
 | Preferencia | 10 | Su nota para el reloj (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novedad y valor | 5 | Novedad: días desde la compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 o más → 30 |
 |  |  | Aprovechar la inversión: valor pagado (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 o más → 90 |
+| Menos usado | 0 | Días de uso en total, comparados con la media (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 o más → 0 |
 
 **Tradicional › Cuarzo › Solar**
 
@@ -289,6 +296,7 @@ iniciales** vuelve a estos.
 |---|---:|---|---|
 | Luz | 25 | Carga de luz (%) (`energia`) | 0 a 30 → 80; 30 a 70 → 65; 70 a 100 → 50 |
 | Revisión | 10 | Revisión al día (`dias_ate_revisao`) | 0 a 30 → 20; 30 a 180 → 60; 180 o más → 100 |
+| Menos usado | 0 | Días de uso en total, comparados con la media (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 o más → 0 |
 
 Y existe una **garantía de rotación**: ningún reloj pasa más de N días parado (21 por defecto). Vale **antes** de la nota: si
 algún candidato ya pasó el límite, gana directamente, primero el que lleva más tiempo parado. Solo cuando nadie pasó el
@@ -321,7 +329,7 @@ pide solo lo que tiene sentido en él:
 - **Personalizado**: usted escribe el guion (vea [El guion del modo](#el-guion-del-modo)).
 
 En los tres primeros, el **criterio de elección** es el sorteo: por la **mayor nota**, por **sorteo por la nota** (la nota se
-vuelve probabilidad), **aleatorio** o por **fila** (el que lleva más tiempo esperando). Con el **ciclo** activado, un reloj
+vuelve probabilidad), **aleatorio**, por **fila** (el que lleva más tiempo esperando) o por **menos usado** (el que tiene menos días de uso en total; en empate, el más tiempo parado). Con el **ciclo** activado, un reloj
 solo vuelve después de que todos los candidatos hayan pasado en la semana. El cuadro **Modo de rotación** de la página Hoy
 elige el modo, el criterio y la garantía de rotación; **Aplicar modo** solo marca: nada del plan cambia hasta que haga clic en
 **Sortear de nuevo** (menos lo que el modo anterior sorteó después del fin de las semanas del nuevo, como los días de la
@@ -438,7 +446,7 @@ haga clic en **OK**:
 - con más de 7 días, las páginas están debajo: **‹ Anterior**, **1 2 3 …**, **Siguiente ›**. Lo que elige en una página se
   conserva mientras recorre las demás; nada cambia antes de guardar;
 - el selector de cada día tiene los relojes disponibles, **Decide por mí**, el grupo **Sortear este día por** (*la mayor
-  nota*, *sorteo por la nota*, *aleatorio* o *fila*: el día se sortea al guardar por esa forma, sin el de ayer ni el de mañana,
+  nota*, *sorteo por la nota*, *aleatorio*, *fila* o *menos usado*: el día se sortea al guardar por esa forma, sin el de ayer ni el de mañana,
   como el Decide por mí) y **Sin reloj (día libre)**. Al principio, muestra el reloj que el día ya tiene elegido a mano; un día libre aparece como libre; y el resto (sorteado o todavía sin reloj),
   como *Decide por mí*;
 - **Guardar la rotación manual** guarda todo el período: los días con reloj quedan elegidos a mano, los de *Decide por mí* y los de
@@ -469,12 +477,14 @@ Es el modo más completo. En lugar de sortear semana a semana, **planifica de 7 
 día:
 
 1. calcula la nota de cada reloj con el estado simulado de ese día;
-2. elige el reloj por la mayor nota (el guion de la escala: `peso = 0`); el smartwatch se queda en la muñeca los días que
+2. elige el reloj por la forma del modo (la mayor nota, por defecto: el guion de la escala, `peso = 0`); el smartwatch se queda en la muñeca los días que
    aguanta la batería (hasta 7: la fórmula `dias_seguidos`);
 3. simula el uso (la sesión en la muñeca en el horario de uso) y su efecto en la carga y la reserva de todos;
 4. comprueba los avisos: si el elegido va a necesitar carga o cuerda, anota la acción en el día (*"cargar antes de usar"*) y
    simula el registro que la resuelve;
 5. pasa al día siguiente.
+
+**Lo que la escala usa en el cálculo.** En el modo, la escala elige la **forma de elección** entre cuatro: la **mayor nota** (la de siempre), el **sorteo por la nota**, el **menos usado** (el reloj con menos días de uso en total; en empate, el más tiempo parado: todos pasan por la muñeca, de los menos a los más usados, y el uso simulado de cada día ya cuenta al día siguiente) y la **fila** (el más tiempo sin uso). Y, en las formas que miran la nota (la mayor nota y el sorteo por la nota), marca los **criterios que cuentan en la nota**: una casilla por parámetro de los [criterios](#la-nota-de-cada-reloj-criterios) (*Tiempo sin uso*, *Equilibrio de uso*, *Preferencia*, *Menos usado*...); con todos marcados, o ninguno, valen todos los de cada reloj, como siempre fue, y los pesos siguen siendo los de Criterios, rehechos solo entre los marcados. La escala sin elección sigue por la mayor nota con todos los criterios. La forma y los criterios valen para cualquier modo que use la nota, no solo para la escala. Por la API: `selecao` (`inteligente`, `ponderado`, `menos_usado` o `fifo` en la escala) y `criterios[]` (los nombres de los parámetros; lista vacía: todos) en `modos`/`salvar`; `recurso=cadastros` trae `criterios_disponiveis`, `formas` y, en cada modo, `criterios` y `forma`.
 
 Cada mañana el cron **vuelve a planificar desde el estado real**. Si usó otro reloj, se olvidó de cargar o registró una lectura
 distinta de la prevista, el plan se corrige. Los días elegidos a mano y los libres se mantienen; los sorteados, de hoy en
@@ -2494,12 +2504,12 @@ mañana)*, y lo que usted cambia vale de mañana en adelante. ¿Quiere usar otro
 muñeca**: el uso queda registrado, y el plan no cambia.
 
 La misma lista tiene el grupo **Sortear este día por**: *la mayor nota*, *sorteo por la nota*, *aleatorio, todos con la misma
-probabilidad* o *fila: el más tiempo sin uso*. Solo ese día se sortea en el momento, por esa forma, entre los relojes del bloque
+probabilidad* *fila: el más tiempo sin uso* o *el menos usado: menos días de uso en total*. Solo ese día se sortea en el momento, por esa forma, entre los relojes del bloque
 del modo activo que cubre el día (sin bloque, entre todos los disponibles), sin el reloj que tenía el día; la garantía de
 rotación va por delante (menos en el aleatorio), y los días anteriores del plan cuentan como uso. El día queda *a mano*, con el
 motivo *"Sorteado a mano (la mayor nota): …"*, y por eso el Sortear de nuevo y el cron lo respetan; **volver a sortear**
 devuelve el día al modo. Hoy, el sorteado pasa a la muñeca desde ese momento. Por la API: `recurso=rodizio`, `acao=trocar_dia`,
-`relogio_id=sortear:<forma>` (`inteligente`, `ponderado`, `aleatorio` o `fifo`).
+`relogio_id=sortear:<forma>` (`inteligente`, `ponderado`, `aleatorio`, `fifo` o `menos_usado`).
 
 **¿Y si hoy no quiero usar ningún reloj?**
 En el cuadro del reloj del día, arriba de la página Hoy, **Sin reloj hoy** (pide confirmación): el día queda **libre**, sin

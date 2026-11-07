@@ -1431,6 +1431,13 @@
             "grupo": "raiz"
         },
         {
+            "identificador": "menos_usado",
+            "nome": "Menos usado: dias de uso no total, comparado com a média da coleção",
+            "expressao": "SE(PADRAO(MEDIA_COLECAO(\"dias_de_uso\"); 0) > 0; dias_de_uso * 100 / MEDIA_COLECAO(\"dias_de_uso\"); 100)",
+            "unidade": "%",
+            "grupo": "raiz"
+        },
+        {
             "identificador": "dias_desde_compra",
             "nome": "Dias desde a compra",
             "expressao": "DIAS_DESDE(data_compra)",
@@ -2101,6 +2108,52 @@
             ]
         },
         {
+            "grupo": "raiz",
+            "nome": "Menos usado",
+            "peso": 0,
+            "ordem": 5,
+            "subparametros": [
+                {
+                    "nome": "Dias de uso no total, comparado com a média",
+                    "variavel": "menos_usado",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "grupo": "smartwatch",
             "nome": "Energia",
             "peso": 30,
@@ -2418,6 +2471,52 @@
             ]
         },
         {
+            "grupo": "smartwatch",
+            "nome": "Menos usado",
+            "peso": 0,
+            "ordem": 7,
+            "subparametros": [
+                {
+                    "nome": "Dias de uso no total, comparado com a média",
+                    "variavel": "menos_usado",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "grupo": "mecanico",
             "nome": "Reserva de marcha",
             "peso": 25,
@@ -2720,6 +2819,52 @@
             ]
         },
         {
+            "grupo": "mecanico",
+            "nome": "Menos usado",
+            "peso": 0,
+            "ordem": 7,
+            "subparametros": [
+                {
+                    "nome": "Dias de uso no total, comparado com a média",
+                    "variavel": "menos_usado",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "grupo": "pilha",
             "nome": "Vida da pilha",
             "peso": 15,
@@ -2984,6 +3129,52 @@
             ]
         },
         {
+            "grupo": "pilha",
+            "nome": "Menos usado",
+            "peso": 0,
+            "ordem": 7,
+            "subparametros": [
+                {
+                    "nome": "Dias de uso no total, comparado com a média",
+                    "variavel": "menos_usado",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "grupo": "solar",
             "nome": "Luz",
             "peso": 25,
@@ -3242,6 +3433,52 @@
                             "de": 1500,
                             "ate": null,
                             "nota": 90
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "grupo": "solar",
+            "nome": "Menos usado",
+            "peso": 0,
+            "ordem": 7,
+            "subparametros": [
+                {
+                    "nome": "Dias de uso no total, comparado com a média",
+                    "variavel": "menos_usado",
+                    "peso": 100,
+                    "ordem": 1,
+                    "faixas": [
+                        {
+                            "de": 0,
+                            "ate": 25,
+                            "nota": 100
+                        },
+                        {
+                            "de": 25,
+                            "ate": 60,
+                            "nota": 80
+                        },
+                        {
+                            "de": 60,
+                            "ate": 100,
+                            "nota": 60
+                        },
+                        {
+                            "de": 100,
+                            "ate": 140,
+                            "nota": 35
+                        },
+                        {
+                            "de": 140,
+                            "ate": 200,
+                            "nota": 15
+                        },
+                        {
+                            "de": 200,
+                            "ate": null,
+                            "nota": 0
                         }
                     ]
                 }

@@ -612,7 +612,7 @@
  *                             (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: o
  *                             relógio de hoje a partir de agora; motivo, opcional: a frase que fica no plano), trocar_dia (data,
  *                             relogio_id: o relógio daquele dia, à mão; hoje, como o usando; 0: o dia volta a ser sorteado;
- *                             sortear:<forma>, inteligente, ponderado, aleatorio ou fifo: o dia é sorteado agora por essa forma,
+ *                             sortear:<forma>, inteligente, ponderado, aleatorio, fifo ou menos_usado: o dia é sorteado agora por essa forma,
  *                             entre os disponíveis do bloco do modo ativo que cobre o dia, sem o que o dia tinha, e fica à mão
  *                             com o motivo "Sorteado à mão (<forma>): ..."), proxima_semana (em qualquer dia: a semana
  *                             seguinte inteira, com os dias que faltam desta já contados como uso), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
@@ -623,7 +623,7 @@
  *                             tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão; trocar_dia ou periodo
  *                             num dia livre o tira de lá), manual (o Rodízio manual: de, ate; dias[AAAA-MM-DD]: o id do relógio,
  *                             auto (Decida por mim: o sistema decide ao gravar, pelo critério do recurso=rodizio_manual),
- *                             sortear:<forma> (o dia sorteado ao gravar por essa forma: inteligente, ponderado, aleatorio ou fifo) ou livre
+ *                             sortear:<forma> (o dia sorteado ao gravar por essa forma: inteligente, ponderado, aleatorio, fifo ou menos_usado) ou livre
  *                             (hoje não); o dia que não vem fica com a escolha de partida (dias[].escolha); tudo fica gravado à mão,
  *                             com o motivo; hoje, com outro relógio, ele passa a ser o do pulso a partir de agora; hoje em auto
  *                             continua o que está; fora do período, vale o modo ativo), apagar_tudo (toda a programação de
@@ -644,8 +644,10 @@
  *                            Ex. apagar_tudo: curl -u lucas:senha -d recurso=rodizio -d acao=apagar_tudo -d hoje=1 http://servidor/relojoeiro/api.php
  *                            Ex. manual: curl -u lucas:senha -d recurso=rodizio -d acao=manual -d de=2026-12-20 -d ate=2027-01-05 -d "dias[2026-12-20]=12" -d "dias[2026-12-21]=auto" -d "dias[2026-12-25]=livre" http://servidor/relojoeiro/api.php
  *   recurso=modos             salvar (id: 0 cria; nome; tipo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
- *                             (sem ele, inferido dos blocos); selecao: inteligente, ponderado, aleatorio ou fifo (o aleatório força
- *                             aleatorio; a escala e o personalizado não a usam); escala_dias: 7 a 730, só na escala; semanas: 1 a 8,
+ *                             (sem ele, inferido dos blocos); selecao: inteligente, ponderado, aleatorio, fifo ou menos_usado (o
+ *                             aleatório força aleatorio; a escala escolhe entre inteligente, ponderado, menos_usado e fifo; o
+ *                             personalizado não a usa); criterios[]: os nomes dos parâmetros dos critérios que contam na nota do
+ *                             modo (vazio: todos); escala_dias: 7 a 730, só na escala; semanas: 1 a 8,
  *                             quantas semanas à frente o plano vem montado (não na escala); blocos: [{nome, dias: [1..7], no_id (0:
  *                             todos), um_por: bloco ou dia, relogio_id: fixo (0: sorteia)}], substitui os blocos (a forma deles é
  *                             conferida pelo tipo); roteiro: as linhas "nome = expressão" do personalizado (conferidas como no
@@ -1223,8 +1225,8 @@
  *     criterios.modos[].escala       verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)
  *     criterios.modos[].nome         o nome do modo
  *     criterios.modos[].tipo         o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
- *     criterios.modos[].selecao      a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio ou fifo (o
- *                                    mais tempo sem uso)
+ *     criterios.modos[].selecao      a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio, fifo (o mais
+ *                                    tempo sem uso) ou menos_usado (o de menos dias de uso no total)
  *     criterios.notas[]              a nota de cada relógio agora, com a conta
  *     criterios.notas[].conjunto     o lugar dos critérios usados: "" (todos), g:<grupo> ou r:<relógio>; null: nenhum (nota neutra, 50)
  *     criterios.notas[].conjunto_texto
@@ -1340,7 +1342,7 @@
  *     modos[].id                     o número do modo
  *     modos[].nome                   o nome do modo
  *     modos[].ordem                  a posição do modo
- *     modos[].selecao                a forma de escolha: inteligente, ponderado, aleatorio ou fifo
+ *     modos[].selecao                a forma de escolha: inteligente, ponderado, aleatorio, fifo ou menos_usado
  *     modos[].roteiro                o roteiro escrito à mão (o personalizado); null nos outros tipos
  *     modos[].roteiro_efetivo        o roteiro que vale: o escrito, ou o gerado dos blocos e da forma de escolha
  *     modos[].semanas                quantas semanas à frente o plano vem montado (1 a 8; a escala usa o período dela)
@@ -2345,7 +2347,7 @@
  *     modo.escala_dias               o horizonte da escala inteligente, em dias; null: sorteio pelos blocos
  *     modo.id                        o número do modo
  *     modo.nome                      o nome
- *     modo.selecao                   a forma de escolha (inteligente, ponderado, aleatorio, fifo)
+ *     modo.selecao                   a forma de escolha (inteligente, ponderado, aleatorio, fifo, menos_usado)
  *     modo.semanas                   quantas semanas à frente o plano vem montado (1 a 8; a escala usa o período dela)
  *     modo.tipo                      o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
  *     modo.tipo_texto                o tipo por extenso, no idioma do pedido
@@ -4286,6 +4288,19 @@
  *     tipos_de_modo[]                os tipos de modo, na ordem da lista da tela
  *     tipos_de_modo[].chave          a chave do tipo (o que se grava em modos salvar)
  *     tipos_de_modo[].nome           o nome do tipo, no idioma do pedido
+ *     modos[].criterios              os critérios que a nota do modo usa: os nomes dos parâmetros dos critérios (vazio: valem todos os de
+ *                                    cada relógio)
+ *     modos[].forma                  a forma de escolha que vale no modo: a selecao, e na escala inteligente a escolhida entre inteligente,
+ *                                    ponderado, menos_usado e fifo (a maior nota quando não escolheu)
+ *     formas                         as formas de escolha, na ordem da lista da tela
+ *     formas[].chave                 a chave da forma (inteligente, ponderado, aleatorio, fifo ou menos_usado: o que se grava em selecao)
+ *     formas[].nome                  o nome da forma, no idioma do pedido
+ *     formas_da_escala               as formas que a escala inteligente aceita em selecao
+ *     formas_da_escala[]             uma forma que a escala inteligente aceita
+ *     modos[].criterios[]            o nome de um critério usado pela nota do modo
+ *     criterios_disponiveis[]        o nome de um parâmetro dos critérios da coleção
+ *     criterios_disponiveis          os nomes dos parâmetros dos critérios da coleção (sem repetir): o que um modo pode escolher usar na
+ *                                    nota
  *     roteiro_padrao                 a expressão padrão de cada saída do roteiro, usada quando o roteiro não a define
  *     roteiro_padrao.candidato       quem entra na escolha do dia: 1 (todos)
  *     roteiro_padrao.nota            a nota: nota_criterios (a nota pelos critérios)
@@ -4396,8 +4411,8 @@
  *     modos[].ativo                  verdadeiro ou falso: é o modo em uso
  *     modos[].escala                 verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)
  *     modos[].nome                   o nome do modo
- *     modos[].selecao                a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio ou fifo (o
- *                                    mais tempo sem uso)
+ *     modos[].selecao                a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio, fifo (o mais
+ *                                    tempo sem uso) ou menos_usado (o de menos dias de uso no total)
  *     notas[]                        a nota de cada relógio agora, com a conta
  *     notas[].conjunto               o lugar dos critérios usados: "" (todos), g:<grupo> ou r:<relógio>; null: nenhum (nota neutra, 50)
  *     notas[].conjunto_texto         esse lugar por extenso

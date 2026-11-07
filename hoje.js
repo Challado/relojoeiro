@@ -5,8 +5,14 @@ var SELECOES = {
   inteligente: [t("Inteligente"), t("Vai o relógio com a maior nota nos critérios. Previsível: com os mesmos dados, a mesma escolha.")],
   ponderado: [t("Inteligente com sorteio"), t("Sorteio em que a nota de cada relógio é a chance dele: quem tem nota maior sai mais vezes, mas todos têm chance. Variedade sem perder o critério.")],
   aleatorio: [t("Totalmente aleatório"), t("Todos os relógios do tipo têm a mesma chance, sem olhar os critérios. Os números vêm do RANDOM.ORG (ruído atmosférico); fora do ar, do ANU QRNG (quântico); sem os dois, do gerador seguro do PHP.")],
-  fifo: [t("Fila (FIFO)"), t("Vai o que está há mais tempo sem uso: todos passam pelo pulso, em fila. Não olha os critérios, e já garante o rodízio por natureza.")]
+  fifo: [t("Fila (FIFO)"), t("Vai o que está há mais tempo sem uso: todos passam pelo pulso, em fila. Não olha os critérios, e já garante o rodízio por natureza.")],
+  menos_usado: [t("Menos usado"), t("Vai o que tem menos dias de uso no total (empate: o mais tempo parado): todos passam pelo pulso, dos menos aos mais usados. Não olha os critérios.")]
 };
+
+// como a escala escolhe o relógio de cada dia (a forma do modo; vazia ou a maior nota: a maior nota)
+function formaDaEscala(forma) {
+  return forma === "ponderado" ? t("pelo sorteio pela nota") : (forma === "menos_usado" ? t("pelo menos usado") : (forma === "fifo" ? t("pela fila") : t("pela maior nota")));
+}
 
 // o dia da semana (1 a 7) de uma data AAAA-MM-DD
 function diaDaSemana(data) {
@@ -220,9 +226,9 @@ function recarregarHoje() {
     var ladoSelecao = el("label", {"class": "campo-principal", "data-com-selecao": true}, t("Como escolher o relógio {1}", {1: el("select", {"name": "selecao"}, Object.keys(SELECOES).map(function (k) {
       return el("option", {"value": k, "selected": modo !== null && modo.selecao === k}, h(SELECOES[k][0]));
     }).join(""))}))
-      + el("p", {"class": "campo-principal", "data-sem-selecao": true}, t("Como escolher o relógio: {1}", {1: el("strong", {"data-sem-selecao-texto": true}, t("pela maior nota"))}))
+      + el("p", {"class": "campo-principal", "data-sem-selecao": true}, t("Como escolher o relógio: {1}", {1: el("strong", {"data-sem-selecao-texto": true}, formaDaEscala(modo !== null ? modo.selecao : ""))}))
       + Object.keys(SELECOES).map(function (k) { return el("p", {"class": "nota explicacao", "data-explica-selecao": k}, h(SELECOES[k][1])); }).join("")
-      + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "escala"}, t("A escala escolhe sempre pela maior nota nos critérios, com as medidas de cada dia simulado."))
+      + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "escala"}, t("A escala escolhe pela forma do modo (a maior nota, o sorteio pela nota, o menos usado ou a fila), com as medidas de cada dia simulado; a forma e os critérios que contam na nota se escolhem nos Modos de rodízio."))
       + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "aleatorio"}, h(SELECOES.aleatorio[1]))
       + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "personalizado"}, t("O roteiro do modo diz a nota e o peso de cada relógio; mude-o nos Modos de rodízio."))
       + el("div", {"data-garantia": true}, el("label", {"class": "campo-principal"}, t("Garantia de rodízio: dias sem uso, no máximo {1}", {1: el("input", {"type": "number", "name": "max_sem_uso", "min": "0", "max": "365", "value": d.max_sem_uso, "class": "curto"})}))
@@ -273,7 +279,7 @@ function recarregarHoje() {
       + el("p", {"class": "acao", "id": "manual-recado", "hidden": true}, "")
       + el("div", {"id": "manual-dias"}, ""));
     porHtml(document.getElementById("bloco-modo"), el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, t("Modo de rodízio")) + " " + el("strong", {}, h(modo ? modo.nome : t("nenhum"))) + " "
-      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? t("pela maior nota") : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, t("editar"))) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo(d.trocar_hoje)));
+      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? formaDaEscala(modo.selecao) : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, t("editar"))) + formModo + formManual + formSorteio + formApagarPeriodo(d.data) + formApagarTudo(d.trocar_hoje)));
     mostrarModo();
     document.getElementById("bloco-modo").hidden = !rodizioAtivo;
     document.getElementById("bloco-proximos").hidden = !rodizioAtivo;

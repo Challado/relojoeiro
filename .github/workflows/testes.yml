@@ -46,6 +46,8 @@ jobs:
         run: php testes/recupera_ontem.php
       - name: Opções em três níveis (sistema, usuário e coleção)
         run: php testes/opcoes.php
+      - name: Menos usado e a escala que escolhe a forma e os critérios
+        run: php testes/menos_usado.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

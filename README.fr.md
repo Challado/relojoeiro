@@ -228,6 +228,7 @@ Les critères fournis, pour toutes les montres :
 | Équilibre d'usage | 30 | usage sur les 30 derniers jours comparé à la moyenne de la collection : la moins portée monte |
 | Préférence | 20 | votre note pour la montre (0 à 100) |
 | Nouveauté et valeur | 10 | depuis quand elle a été achetée et combien elle a coûté (rentabiliser l'investissement) |
+| Moins utilisé | 0 | jours d'usage au total comparés à la moyenne de la collection : celle qui a été peu utilisée depuis toujours monte. Il vient avec un poids de 0 (la note d'aujourd'hui ne change pas) : donnez-lui du poids dans Critères, ou cochez-le seul dans le planning intelligent |
 
 Chaque groupe, et même chaque montre, peut avoir son propre ensemble. La smartwatch, par exemple, pèse aussi l'**énergie** (la
 charge actuelle et combien de jours elle tient), pour ne pas tirer une montre qui va s'éteindre à midi. La page **Critères**
@@ -241,6 +242,8 @@ ou une formule) et donne la note selon la tranche où tombe la valeur ; un sous-
 hors de toute tranche) est laissé de côté, et les autres se partagent son poids. Tout se modifie sur la page **Critères**, et
 **Restaurer les critères initiaux** revient à ceux-ci.
 
+Le paramètre **Moins utilisé** mesure les jours d'usage au total (`menos_usado` : les jours où la montre est allée au poignet, `dias_de_uso`, contre la moyenne de la collection) : celle qui a été peu utilisée depuis toujours reçoit une note haute, même si elle a été portée hier (le *Temps sans usage* regarde seulement depuis quand elle est arrêtée ; l'*Équilibre d'usage*, seulement les 30 derniers jours). Il vient dans tous les ensembles, avec un **poids de 0** : la note d'aujourd'hui ne change pas tant que vous ne lui donnez pas de poids dans **Critères**. Le mode de choix **moins utilisé**, au contraire, ne regarde pas la note : part directement la montre qui a le moins de jours d'usage (voir [Les modes de rotation](#les-modes-de-rotation)).
+
 **Toutes les montres**
 
 | Paramètre | Poids | Sous-paramètre (la variable, le poids dans le paramètre) | Les tranches : la valeur → la note |
@@ -250,6 +253,7 @@ hors de toute tranche) est laissé de côté, et les autres se partagent son poi
 | Préférence | 20 | Votre note pour la montre (`preferencia`) | 0 à 20 → 0; 20 à 40 → 25; 40 à 60 → 50; 60 à 80 → 75; 80 à 100 → 100 |
 | Nouveauté et valeur | 10 | Nouveauté : jours depuis l'achat (`dias_desde_compra`, 60) | 0 à 15 → 100; 15 à 45 → 80; 45 à 120 → 55; 120 à 365 → 40; 365 ou plus → 30 |
 |  |  | Rentabiliser l'investissement : prix payé (`valor_compra`, 40) | 0 à 300 → 30; 300 à 800 → 50; 800 à 1500 → 70; 1500 ou plus → 90 |
+| Moins utilisé | 0 | Jours d'usage au total, comparés à la moyenne (`menos_usado`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
 
 **Smartwatch**
 
@@ -263,6 +267,7 @@ hors de toute tranche) est laissé de côté, et les autres se partagent son poi
 | Préférence | 10 | Votre note pour la montre (`preferencia`) | 0 à 20 → 0; 20 à 40 → 25; 40 à 60 → 50; 60 à 80 → 75; 80 à 100 → 100 |
 | Nouveauté et valeur | 5 | Nouveauté : jours depuis l'achat (`dias_desde_compra`, 60) | 0 à 15 → 100; 15 à 45 → 80; 45 à 120 → 55; 120 à 365 → 40; 365 ou plus → 30 |
 |  |  | Rentabiliser l'investissement : prix payé (`valor_compra`, 40) | 0 à 300 → 30; 300 à 800 → 50; 800 à 1500 → 70; 1500 ou plus → 90 |
+| Moins utilisé | 0 | Jours d'usage au total, comparés à la moyenne (`menos_usado`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
 
 **Traditionnelle › Mécanique**
 
@@ -276,6 +281,7 @@ hors de toute tranche) est laissé de côté, et les autres se partagent son poi
 | Préférence | 10 | Votre note pour la montre (`preferencia`) | 0 à 20 → 0; 20 à 40 → 25; 40 à 60 → 50; 60 à 80 → 75; 80 à 100 → 100 |
 | Nouveauté et valeur | 5 | Nouveauté : jours depuis l'achat (`dias_desde_compra`, 60) | 0 à 15 → 100; 15 à 45 → 80; 45 à 120 → 55; 120 à 365 → 40; 365 ou plus → 30 |
 |  |  | Rentabiliser l'investissement : prix payé (`valor_compra`, 40) | 0 à 300 → 30; 300 à 800 → 50; 800 à 1500 → 70; 1500 ou plus → 90 |
+| Moins utilisé | 0 | Jours d'usage au total, comparés à la moyenne (`menos_usado`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
 
 **Traditionnelle › Quartz › Pile**
 
@@ -288,6 +294,7 @@ hors de toute tranche) est laissé de côté, et les autres se partagent son poi
 | Préférence | 10 | Votre note pour la montre (`preferencia`) | 0 à 20 → 0; 20 à 40 → 25; 40 à 60 → 50; 60 à 80 → 75; 80 à 100 → 100 |
 | Nouveauté et valeur | 5 | Nouveauté : jours depuis l'achat (`dias_desde_compra`, 60) | 0 à 15 → 100; 15 à 45 → 80; 45 à 120 → 55; 120 à 365 → 40; 365 ou plus → 30 |
 |  |  | Rentabiliser l'investissement : prix payé (`valor_compra`, 40) | 0 à 300 → 30; 300 à 800 → 50; 800 à 1500 → 70; 1500 ou plus → 90 |
+| Moins utilisé | 0 | Jours d'usage au total, comparés à la moyenne (`menos_usado`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
 
 **Traditionnelle › Quartz › Solaire**
 
@@ -295,6 +302,7 @@ hors de toute tranche) est laissé de côté, et les autres se partagent son poi
 |---|---:|---|---|
 | Lumière | 25 | Charge lumineuse (%) (`energia`) | 0 à 30 → 80; 30 à 70 → 65; 70 à 100 → 50 |
 | Révision | 10 | Révision à jour (`dias_ate_revisao`) | 0 à 30 → 20; 30 à 180 → 60; 180 ou plus → 100 |
+| Moins utilisé | 0 | Jours d'usage au total, comparés à la moyenne (`menos_usado`) | 0 à 25 → 100; 25 à 60 → 80; 60 à 100 → 60; 100 à 140 → 35; 140 à 200 → 15; 200 ou plus → 0 |
 
 Et il existe une **garantie de rotation** : aucune montre ne reste plus de N jours au repos (21 par défaut). Elle s'applique
 **avant** la note : si un candidat a déjà dépassé la limite, il gagne directement, celui au repos depuis le plus longtemps
@@ -329,7 +337,7 @@ demande que ce qui a du sens pour lui :
 - **Personnalisé** : vous écrivez le scénario (voir [Le scénario du mode](#le-scénario-du-mode)).
 
 Dans les trois premiers, le **critère de choix** est le tirage : par la **meilleure note**, par **tirage selon la note** (la
-note devient la chance), **au hasard** ou par **file d'attente** (celle qui attend depuis le plus longtemps). Avec le **cycle**
+note devient la chance), **au hasard**, par **file d'attente** (celle qui attend depuis le plus longtemps) ou par **moins utilisé** (celle qui a le moins de jours d'usage au total ; à égalité, la plus longtemps immobile). Avec le **cycle**
 activé, une montre ne revient qu'après le passage de toutes les candidates dans la semaine. Le cadre **Mode de rotation** de
 la page Aujourd'hui choisit le mode, le critère et la garantie de rotation ; **Appliquer le mode** ne fait que marquer : rien
 du plan ne change tant que vous ne cliquez pas sur **Refaire le tirage** (sauf ce que le mode précédent a tiré après la fin
@@ -449,7 +457,7 @@ choisissez vous-même la montre de chaque jour d'une période (les vacances, un 
 - au-delà de 7 jours, les pages sont en dessous : **‹ Précédent**, **1 2 3 …**, **Suivant ›**. Ce que vous choisissez sur
   une page est conservé pendant que vous parcourez les autres ; rien ne change avant d'enregistrer ;
 - le sélecteur de chaque jour contient les montres disponibles, **Décider pour moi**, le groupe **Tirer ce jour au sort
-  par** (*la meilleure note*, *tirage selon la note*, *aléatoire* ou *file* : le jour est tiré au sort à l'enregistrement
+  par** (*la meilleure note*, *tirage selon la note*, *aléatoire*, *file* ou *moins utilisé* : le jour est tiré au sort à l'enregistrement
   selon ce mode, sans celle d'hier ni celle de demain, comme Décider pour moi) et **Sans montre (jour libre)**. Au départ,
   il montre la montre que le jour a déjà choisie à la main ; un jour libre apparaît comme libre ; et le reste (tiré
   ou encore sans montre), comme *Décider pour moi* ;
@@ -482,12 +490,14 @@ C'est le mode le plus complet. Au lieu de tirer semaine après semaine, il **pla
 simulant jour par jour :
 
 1. il calcule la note de chaque montre avec l'état simulé de ce jour-là ;
-2. il choisit la montre par la meilleure note (le scénario du planning : `peso = 0`) ; la smartwatch reste au poignet le
+2. il choisit la montre selon le mode de choix du mode (la meilleure note par défaut : le scénario du planning, `peso = 0`) ; la smartwatch reste au poignet le
    nombre de jours que tient la batterie (jusqu'à 7 : la formule `dias_seguidos`) ;
 3. il simule le port (la session au poignet pendant l'horaire de port) et son effet sur la charge et la réserve de toutes ;
 4. il vérifie les alertes : si la montre choisie va avoir besoin d'une charge ou d'un remontage, il note l'action sur le jour
    (*« charger avant de porter »*) et simule la saisie qui la résout ;
 5. il passe au jour suivant.
+
+**Ce que le planning utilise dans le calcul.** Dans le mode, le planning choisit le **mode de choix** parmi quatre : la **meilleure note** (l'habituel), le **tirage selon la note**, le **moins utilisé** (la montre qui a le moins de jours d'usage au total ; à égalité, la plus longtemps immobile : toutes passent par le poignet, des moins aux plus utilisées, et l'usage simulé de chaque jour compte déjà le lendemain) et la **file** (la plus longtemps sans usage). Et, dans les modes de choix qui regardent la note (la meilleure note et le tirage selon la note), il coche les **critères qui comptent dans la note** : une case par paramètre des [critères](#la-note-de-chaque-montre-critères) (*Temps sans usage*, *Équilibre d'usage*, *Préférence*, *Moins utilisé*...) ; avec tous cochés, ou aucun, tous ceux de chaque montre comptent, comme toujours, et les poids restent ceux de Critères, refaits seulement parmi les cochés. Un planning sans choix suit la meilleure note avec tous les critères. Le mode de choix et les critères valent pour tout mode qui utilise la note, pas seulement le planning. Par l'API : `selecao` (`inteligente`, `ponderado`, `menos_usado` ou `fifo` dans le planning) et `criterios[]` (les noms des paramètres ; liste vide : tous) dans `modos`/`salvar` ; `recurso=cadastros` apporte `criterios_disponiveis`, `formas` et, dans chaque mode, `criterios` et `forma`.
 
 Chaque matin, le cron **replanifie à partir de l'état réel**. Si vous avez porté une autre montre, oublié de charger ou saisi
 un relevé différent de celui prévu, le plan se corrige. Les jours choisis à la main et les libres restent ; les tirés, à partir
@@ -2569,13 +2579,13 @@ partir de demain)*, et ce que vous changez vaut à partir de demain. Vous voulez
 Marquez son **Mise au poignet** : l'usage est enregistré, et le plan ne change pas.
 
 La même liste a le groupe **Tirer ce jour au sort par** : *la meilleure note*, *tirage selon la note*, *aléatoire, toutes
-avec la même chance* ou *file : la plus longtemps sans usage*. Seul ce jour est tiré au sort sur-le-champ, selon ce mode,
+avec la même chance* *file : la plus longtemps sans usage* ou *le moins utilisé : le moins de jours d'usage au total*. Seul ce jour est tiré au sort sur-le-champ, selon ce mode,
 parmi les montres du bloc du mode actif qui couvre le jour (sans bloc, parmi toutes les disponibles), sans la montre que le
 jour avait ; la garantie de rotation passe en premier (sauf en aléatoire), et les jours précédents du plan comptent comme
 usage. Le jour reste *à la main*, avec le motif *« Tiré au sort à la main (la meilleure note) : … »*, et c'est pourquoi
 Refaire le tirage et le cron le respectent ; **retirer au sort** rend le jour au mode. Aujourd'hui, la montre tirée va au
 poignet dès maintenant. Par l'API : `recurso=rodizio`, `acao=trocar_dia`, `relogio_id=sortear:<mode>` (`inteligente`,
-`ponderado`, `aleatorio` ou `fifo`).
+`ponderado`, `aleatorio`, `fifo` ou `menos_usado`).
 
 **Et si aujourd'hui je ne veux porter aucune montre ?**
 Dans le cadre de la montre du jour, en haut de la page Aujourd'hui, **Jour sans montre** (demande confirmation) : le jour reste

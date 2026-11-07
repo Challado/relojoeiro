@@ -4652,8 +4652,26 @@ function op_modos($acao, $d)
         if ($nome === "" || strlen($nome) > 80) {
             $erros[] = t("Dê um nome ao modo (até 80 caracteres).");
         }
-        if (!in_array($sel, ["inteligente", "ponderado", "aleatorio", "fifo"], true)) {
-            $erros[] = t("Forma de escolha: inteligente, ponderado, aleatorio ou fifo.");
+        if (!isset(formas_de_escolha()[$sel])) {
+            $erros[] = t("Forma de escolha: {1}.", [1 => implode(", ", array_keys(formas_de_escolha()))]);
+        }
+        // os critérios que a nota do modo usa (criterios[]: os nomes dos parâmetros; vazio: todos): cada um tem de existir
+        $criterios_novos = null;
+        if (array_key_exists("criterios", $d)) {
+            $lista_c = is_array($d["criterios"]) ? $d["criterios"] : (trim((string)$d["criterios"]) === "" ? [] : [$d["criterios"]]);
+            $existentes = criterios_nomes();
+            $criterios_novos = [];
+            foreach ($lista_c as $nome_c) {
+                $nome_c = trim((string)$nome_c);
+                if ($nome_c === "") {
+                    continue;
+                }
+                if (!in_array($nome_c, $existentes, true)) {
+                    $erros[] = t("Critério desconhecido: {1}.", [1 => $nome_c]);
+                } elseif (!in_array($nome_c, $criterios_novos, true)) {
+                    $criterios_novos[] = $nome_c;
+                }
+            }
         }
         // o tipo: o que veio, senão o de antes (com blocos novos, inferido deles), senão inferido dos blocos
         $tipo = trim((string)($d["tipo"] ?? ""));
@@ -4670,6 +4688,14 @@ function op_modos($acao, $d)
         }
         if ($tipo === "aleatorio") {
             $sel = "aleatorio";
+        } elseif ($tipo === "escala") {
+            // a escala inteligente escolhe entre a maior nota, o sorteio pela nota, o menos usado e a fila; sem escolha (um modo novo
+            // ou que não era escala), a maior nota, como sempre foi
+            if (!array_key_exists("selecao", $d) && (!$atual || $atual["tipo"] !== "escala")) {
+                $sel = "inteligente";
+            } elseif (isset(formas_de_escolha()[$sel]) && !in_array($sel, MODO_ESCALA_FORMAS, true)) {
+                $erros[] = t("A escala inteligente escolhe entre {1}.", [1 => implode(", ", MODO_ESCALA_FORMAS)]);
+            }
         }
         $semanas = array_key_exists("semanas", $d) ? trim((string)$d["semanas"]) : (string)($atual["semanas"] ?? 1);
         if (!ctype_digit($semanas) || (int)$semanas < 1 || (int)$semanas > 8) {
@@ -4750,6 +4776,14 @@ function op_modos($acao, $d)
                         sql("INSERT INTO modo_bloco_dia (bloco_id, dia) VALUES (?, ?)", [$bloco, (int)$dia]);
                     }
                 }
+            }
+            // os critérios que a nota do modo usa (o que veio substitui o que havia)
+            if ($criterios_novos !== null) {
+                sql("DELETE FROM modo_criterio WHERE modo_id = ?", [$id]);
+                foreach ($criterios_novos as $nome_c) {
+                    sql("INSERT INTO modo_criterio (modo_id, nome) VALUES (?, ?)", [$id, $nome_c]);
+                }
+                $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             }
             // o modo salvo (mesmo o ativo) vale para os próximos sorteios: o plano gravado continua (Sortear de novo o refaz)
             $msg = t("Modo {1} salvo{2}.", [1 => $nome, 2 => count($dias_usados) > 0 && count($dias_usados) < 7 ? t(" (os dias sem bloco ficam sem relógio sorteado)") : ""]);

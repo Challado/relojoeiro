@@ -1,4 +1,4 @@
-<!-- origem: e677cfc6cc54b9c7b3bd402c9948d78b8a02763f -->
+<!-- origem: c433e93e806dbdeab66ff62c5ea2e5040e45531b -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -173,6 +173,7 @@ The criteria that come ready, for all watches:
 | Balance of use | 30 | use in the last 30 days compared with the collection's average: whoever was little used goes up |
 | Preference | 20 | your score for the watch (0 to 100) |
 | Novelty and value | 10 | how long ago it was bought and how much it cost (making the most of the investment) |
+| Least used | 0 | days of use in total compared with the collection average: whoever has been little used since always goes up. It comes with weight 0 (today's score does not change): give it weight in Criteria, or check only it in the smart schedule |
 
 Each group, and even each watch, can have its own set. The smartwatch, for example, also weighs the **energy** (the charge
 now and how many days it lasts), so as not to draw a watch that will die at noon. The **Criteria** page shows the whole
@@ -186,6 +187,8 @@ the score by the range the value falls in; a subparameter without a value (an em
 left out, and the others share its weight. Everything is edited on the **Criteria** page, and **Restore the initial criteria**
 goes back to these.
 
+The **Least used** parameter measures the days of use in total (`menos_usado`: the days the watch went on the wrist, `dias_de_uso`, against the collection average): whoever has been little used since always gets a high score, even if it was worn yesterday (*Time without use* only looks at how long ago it stopped; *Balance of use*, only at the last 30 days). It comes in every set, with **weight 0**: today's score does not change until you give it weight in **Criteria**. The **least used** way of choosing, on the other hand, does not look at the score: the watch with the fewest days of use goes straight away (see [The rotation modes](#os-modos-de-rodízio)).
+
 **All watches**
 
 | Parameter | Weight | Subparameter (the variable, the weight within the parameter) | The ranges: the value → the score |
@@ -195,6 +198,7 @@ goes back to these.
 | Preference | 20 | Your score for the watch (`preferencia`) | 0 to 20 → 0; 20 to 40 → 25; 40 to 60 → 50; 60 to 80 → 75; 80 to 100 → 100 |
 | Novelty and value | 10 | Novelty: days since purchase (`dias_desde_compra`, 60) | 0 to 15 → 100; 15 to 45 → 80; 45 to 120 → 55; 120 to 365 → 40; 365 or more → 30 |
 |  |  | Make the most of the investment: price paid (`valor_compra`, 40) | 0 to 300 → 30; 300 to 800 → 50; 800 to 1500 → 70; 1500 or more → 90 |
+| Least used | 0 | Days of use in total, compared with the average (`menos_usado`) | 0 to 25 → 100; 25 to 60 → 80; 60 to 100 → 60; 100 to 140 → 35; 140 to 200 → 15; 200 or more → 0 |
 
 **Smartwatch**
 
@@ -208,6 +212,7 @@ goes back to these.
 | Preference | 10 | Your score for the watch (`preferencia`) | 0 to 20 → 0; 20 to 40 → 25; 40 to 60 → 50; 60 to 80 → 75; 80 to 100 → 100 |
 | Novelty and value | 5 | Novelty: days since purchase (`dias_desde_compra`, 60) | 0 to 15 → 100; 15 to 45 → 80; 45 to 120 → 55; 120 to 365 → 40; 365 or more → 30 |
 |  |  | Make the most of the investment: price paid (`valor_compra`, 40) | 0 to 300 → 30; 300 to 800 → 50; 800 to 1500 → 70; 1500 or more → 90 |
+| Least used | 0 | Days of use in total, compared with the average (`menos_usado`) | 0 to 25 → 100; 25 to 60 → 80; 60 to 100 → 60; 100 to 140 → 35; 140 to 200 → 15; 200 or more → 0 |
 
 **Traditional › Mechanical**
 
@@ -221,6 +226,7 @@ goes back to these.
 | Preference | 10 | Your score for the watch (`preferencia`) | 0 to 20 → 0; 20 to 40 → 25; 40 to 60 → 50; 60 to 80 → 75; 80 to 100 → 100 |
 | Novelty and value | 5 | Novelty: days since purchase (`dias_desde_compra`, 60) | 0 to 15 → 100; 15 to 45 → 80; 45 to 120 → 55; 120 to 365 → 40; 365 or more → 30 |
 |  |  | Make the most of the investment: price paid (`valor_compra`, 40) | 0 to 300 → 30; 300 to 800 → 50; 800 to 1500 → 70; 1500 or more → 90 |
+| Least used | 0 | Days of use in total, compared with the average (`menos_usado`) | 0 to 25 → 100; 25 to 60 → 80; 60 to 100 → 60; 100 to 140 → 35; 140 to 200 → 15; 200 or more → 0 |
 
 **Traditional › Quartz › Battery**
 
@@ -233,6 +239,7 @@ goes back to these.
 | Preference | 10 | Your score for the watch (`preferencia`) | 0 to 20 → 0; 20 to 40 → 25; 40 to 60 → 50; 60 to 80 → 75; 80 to 100 → 100 |
 | Novelty and value | 5 | Novelty: days since purchase (`dias_desde_compra`, 60) | 0 to 15 → 100; 15 to 45 → 80; 45 to 120 → 55; 120 to 365 → 40; 365 or more → 30 |
 |  |  | Make the most of the investment: price paid (`valor_compra`, 40) | 0 to 300 → 30; 300 to 800 → 50; 800 to 1500 → 70; 1500 or more → 90 |
+| Least used | 0 | Days of use in total, compared with the average (`menos_usado`) | 0 to 25 → 100; 25 to 60 → 80; 60 to 100 → 60; 100 to 140 → 35; 140 to 200 → 15; 200 or more → 0 |
 
 **Traditional › Quartz › Solar**
 
@@ -245,6 +252,7 @@ goes back to these.
 | Preference | 10 | Your score for the watch (`preferencia`) | 0 to 20 → 0; 20 to 40 → 25; 40 to 60 → 50; 60 to 80 → 75; 80 to 100 → 100 |
 | Novelty and value | 5 | Novelty: days since purchase (`dias_desde_compra`, 60) | 0 to 15 → 100; 15 to 45 → 80; 45 to 120 → 55; 120 to 365 → 40; 365 or more → 30 |
 |  |  | Make the most of the investment: price paid (`valor_compra`, 40) | 0 to 300 → 30; 300 to 800 → 50; 800 to 1500 → 70; 1500 or more → 90 |
+| Least used | 0 | Days of use in total, compared with the average (`menos_usado`) | 0 to 25 → 100; 25 to 60 → 80; 60 to 100 → 60; 100 to 140 → 35; 140 to 200 → 15; 200 or more → 0 |
 
 And there is a **rotation guarantee**: no watch sits idle for more than N days (21 by default). It applies **before** the
 score: if some candidate has already passed the limit, it wins outright, the one idle the longest first. Only when nobody has
@@ -279,7 +287,7 @@ for what makes sense in it:
 - **Custom**: you write the script (see [The mode's script](#o-roteiro-do-modo)).
 
 In the first three, the **choice criterion** is the draw: by the **highest score**, by **draw by score** (the score becomes
-the chance), **random** or by **queue** (whoever has been waiting the longest). With the **cycle** on, a watch only comes back
+the chance), **random**, by **queue** (whoever has been waiting the longest) or by **least used** (whoever has the fewest days of use in total; ties, the longest idle). With the **cycle** on, a watch only comes back
 after all the candidates have had their turn in the week. The **Rotation mode** panel on the Today page chooses the mode, the
 criterion and the rotation guarantee; **Apply mode** only marks: nothing in the plan changes until you click **Draw again** (except what the
 previous mode drew after the end of the new one's weeks, like the days of the 30-day schedule, which goes away at the next build).
@@ -395,7 +403,7 @@ each day of a period yourself (the holidays, a trip, a whole month). Set the sta
 - with more than 7 days, the pages are below: **‹ Previous**, **1 2 3 …**, **Next ›**. What you choose on one page is kept
   while you move through the others; nothing changes before saving;
 - each day's selector has the available watches, **Decide for me**, the group **Draw this day by** (*the highest score*,
-  *draw by score*, *random* or *queue*: the day is drawn when saving by that way, without yesterday's and tomorrow's, like
+  *draw by score*, *random*, *queue* or *least used*: the day is drawn when saving by that way, without yesterday's and tomorrow's, like
   Decide for me) and **No watch (free day)**. At the start, it shows the watch the day already has chosen by hand; a free day appears as free; and the rest (drawn or still without a watch), as
   *Decide for me*;
 - **Save the manual rotation** saves the whole period: the days with a watch are chosen by hand, the *Decide for me* and the
@@ -426,12 +434,14 @@ It is the most complete mode. Instead of drawing week by week, it **plans from 7
 day:
 
 1. it calculates each watch's score with that day's simulated state;
-2. it chooses the watch by the highest score (the schedule's script: `peso = 0`); the smartwatch stays on the wrist for the
+2. it chooses the watch by the mode's way (the highest score by default: the schedule's script, `peso = 0`); the smartwatch stays on the wrist for the
    days the battery lasts (up to 7: the `dias_seguidos` formula);
 3. it simulates the use (the wrist session in the wearing hours) and its effect on everyone's charge and reserve;
 4. it checks the alerts: if the chosen one will need charging or winding, it notes the action on the day (*"charge before
    wearing"*) and simulates the entry that resolves it;
 5. it moves on to the next day.
+
+**What the schedule uses in the calculation.** In the mode, the schedule chooses the **way of choosing** among four: the **highest score** (the usual one), the **draw by score**, the **least used** (the watch with the fewest days of use in total; ties, the longest idle: all of them go through the wrist, from the least to the most used, and each simulated day's use already counts the next day) and the **queue** (the longest without use). And, in the ways that look at the score (the highest score and the draw by score), it checks the **criteria that count in the score**: one checkbox per parameter of the [criteria](#a-nota-de-cada-relógio-critérios) (*Time without use*, *Balance of use*, *Preference*, *Least used*...); with all checked, or none, all those of each watch count, as it always was, and the weights are still those of Criteria, redone only among the checked ones. A schedule without a choice follows the highest score with all the criteria. The way and the criteria apply to any mode that uses the score, not only the schedule. Through the API: `selecao` (`inteligente`, `ponderado`, `menos_usado` or `fifo` in the schedule) and `criterios[]` (the parameter names; empty list: all) in `modos`/`salvar`; `recurso=cadastros` brings `criterios_disponiveis`, `formas` and, in each mode, `criterios` and `forma`.
 
 Every morning the cron **replans from the real state**. If you wore another watch, forgot to charge or logged a different
 reading than expected, the plan corrects itself. The days chosen by hand and the free ones stay; the drawn ones, from today on,
@@ -1914,12 +1924,12 @@ tomorrow on. Want to wear another watch today anyway? Mark its **Put on the wris
 change.
 
 The same list has the group **Draw this day by**: *the highest score*, *draw by score*, *random, all with the same chance*
-or *queue: the longest without use*. Only that day is drawn on the spot, by that way, among the watches of the active mode's
+*queue: the longest without use* or *the least used: the fewest days of use in total*. Only that day is drawn on the spot, by that way, among the watches of the active mode's
 block that covers the day (no block: among all the available ones), without the watch the day had; the rotation guarantee
 comes first (except on random), and the previous days of the plan count as use. The day stays *by hand*, with the reason
 *"Drawn by hand (the highest score): …"*, which is why Draw again and the cron respect it; **draw again** gives the day back
 to the mode. Today, the drawn watch goes to the wrist from now on. Through the API: `recurso=rodizio`, `acao=trocar_dia`,
-`relogio_id=sortear:<way>` (`inteligente`, `ponderado`, `aleatorio` or `fifo`).
+`relogio_id=sortear:<way>` (`inteligente`, `ponderado`, `aleatorio`, `fifo` or `menos_usado`).
 
 **What if today I don't want to wear any watch?**
 In the watch of the day box, at the top of the Today page, **No watch today** (it asks for confirmation): the day is left

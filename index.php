@@ -110,7 +110,9 @@ function mostrarSelecao() {
     // escala, no aleatório e no personalizado ele é fixo (a maior nota, a mesma chance, o roteiro)
     var tipo = (JSON.parse(grade.getAttribute("data-tipos") || "{}"))[modo.value] || "";
     var fixo = tipo === "escala" || tipo === "aleatorio" || tipo === "personalizado";
-    var textos = {escala: t("pela maior nota"), aleatorio: t("todos com a mesma chance"), personalizado: t("pelo roteiro do modo")};
+    var forma = (JSON.parse(grade.getAttribute("data-selecoes") || "{}"))[modo.value];
+    var textos = {escala: forma === "ponderado" ? t("pelo sorteio pela nota") : (forma === "menos_usado" ? t("pelo menos usado") : (forma === "fifo" ? t("pela fila") : t("pela maior nota"))),
+      aleatorio: t("todos com a mesma chance"), personalizado: t("pelo roteiro do modo")};
     document.querySelectorAll("[data-com-selecao]").forEach(function (e) { e.hidden = fixo; });
     document.querySelectorAll("[data-sem-selecao]").forEach(function (e) {
       e.hidden = !fixo || (e.hasAttribute("data-explica-tipo") && e.getAttribute("data-explica-tipo") !== tipo);

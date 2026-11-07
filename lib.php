@@ -1277,8 +1277,67 @@ $MIGRACOES = [
     "v55" => ["migracao_v55.sql", tk("o SQL pela API (recurso=sql, só o master: SELECT, INSERT, ALTER TABLE ... ADD COLUMN e, com a aprovação na Configuração do sistema, UPDATE e DELETE), com o registro de cada execução; e os parâmetros de operação do config.php (o cadastro aberto, os dias da demonstração e do convite, o tamanho dos documentos, a espera das telas, o lote, a cópia de segurança) também na Configuração › Sistema e pela API"), "sql_execucao"],
     "v56" => ["migracao_v56.sql", tk("o rodízio em três níveis: padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração"), "sistema.chave=migracao_v56", "migracao_v56_dados"],
     "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem"],
+    "v59" => ["migracao_v59.sql", tk("o menos usado: a forma de escolha (o relógio com menos dias de uso no total) e o critério Menos usado nas notas; a escala inteligente escolhe a forma e os critérios que usa no cálculo"), "modo_criterio", "migracao_v59_dados"],
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
 ];
+
+// O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
+// parâmetro de critério "Menos usado", com peso 0 (a nota de hoje não muda até dar peso a ele), em cada conjunto de critérios da
+// árvore (um por grupo ou por relógio que tem critérios). Uma instalação nova já tem tudo (o modelo)
+function migracao_v59_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    sem_escopo(function () {
+        $m = modelo_ler();
+        $formulas = array_values(array_filter($m["formulas"] ?? [], function ($f) { return in_array($f["identificador"], ["dias_de_uso", "menos_usado"], true) && ($f["grupo"] ?? "") === "raiz"; }));
+        $param = array_values(array_filter($m["criterios"] ?? [], function ($c) { return ($c["grupo"] ?? "") === "raiz" && ($c["subparametros"][0]["variavel"] ?? "") === "menos_usado"; }))[0] ?? null;
+        foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+            $rid = (int)$raiz["id"];
+            $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id LIMIT 1", [$rid]));
+            $tr = modelo_tradutor($lingua);
+            foreach ($formulas as $f) {
+                if ((int)valor("SELECT COUNT(*) FROM formula WHERE identificador = ? AND no_id = ?", [$f["identificador"], $rid]) === 0) {
+                    sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$f["identificador"], $tr($f["nome"]), $f["expressao"], (string)($f["unidade"] ?? ""), $rid]);
+                }
+            }
+            if ($param === null) {
+                continue;
+            }
+            // os grupos e os relógios da árvore
+            $nos = [$rid];
+            for ($nivel = [$rid]; count($nivel) > 0;) {
+                $nivel = array_values(array_diff(array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id")), $nos));
+                $nos = array_merge($nos, $nivel);
+            }
+            $lista = implode(", ", $nos);
+            $conjuntos = [];
+            foreach (linhas("SELECT DISTINCT escopo_no_id FROM criterio_parametro WHERE escopo_no_id IN (" . $lista . ")") as $x) {
+                $conjuntos[] = ["escopo_no_id", (int)$x["escopo_no_id"]];
+            }
+            foreach (linhas("SELECT DISTINCT escopo_relogio_id FROM criterio_parametro WHERE escopo_relogio_id IN (SELECT id FROM relogio WHERE no_id IN (" . $lista . "))") as $x) {
+                $conjuntos[] = ["escopo_relogio_id", (int)$x["escopo_relogio_id"]];
+            }
+            $nome_p = $tr($param["nome"]);
+            foreach ($conjuntos as [$coluna, $alvo]) {
+                if ((int)valor("SELECT COUNT(*) FROM criterio_parametro WHERE " . $coluna . " = ? AND nome = ?", [$alvo, $nome_p]) > 0) {
+                    continue;
+                }
+                $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) FROM criterio_parametro WHERE " . $coluna . " = ?", [$alvo]) + 1;
+                sql("INSERT INTO criterio_parametro (" . $coluna . ", nome, peso, ordem) VALUES (?, ?, 0, ?)", [$alvo, $nome_p, $ordem]);
+                $pid = ultimo_id();
+                foreach ($param["subparametros"] as $sb) {
+                    sql("INSERT INTO criterio_sub (parametro_id, nome, variavel, peso, ordem) VALUES (?, ?, ?, ?, ?)", [$pid, $tr($sb["nome"]), $sb["variavel"], $sb["peso"], (int)$sb["ordem"]]);
+                    $sid = ultimo_id();
+                    foreach ($sb["faixas"] as $fx) {
+                        sql("INSERT INTO criterio_faixa (sub_id, de, ate, categoria, nota) VALUES (?, ?, ?, ?, ?)", [$sid, $fx["de"] ?? null, $fx["ate"] ?? null, $fx["categoria"] ?? null, $fx["nota"]]);
+                    }
+                }
+            }
+        }
+    });
+}
 
 function migracao_v56_dados($nova = false)
 {
@@ -3388,7 +3447,7 @@ function variavel_valor($ident, &$ctx)
     } elseif ($ident === "nota_criterios") {
         if (!isset($ctx["pilha"]["nota_criterios"])) {
             $ctx["pilha"]["nota_criterios"] = true;
-            $res = nota_do_relogio($ctx["r"], $ctx["momento"])["nota"];
+            $res = nota_do_relogio($ctx["r"], $ctx["momento"], $ctx["criterios"] ?? null)["nota"];
             unset($ctx["pilha"]["nota_criterios"]);
         }
     } elseif ($ident === "marca" && !isset($campos[$ident])) {
@@ -4822,7 +4881,7 @@ function escopo_texto($chave)
 
 // A nota de 0 a 100 de um relógio, pelo conjunto mais perto dele, com a conta. Subparâmetro sem valor sai e os pesos dos
 // que ficam se reescalam. Sem conjunto nenhum: 50.
-function nota_do_relogio($r, $momento)
+function nota_do_relogio($r, $momento, $usar = null)
 {
     $cfg = criterios_config();
     $chave = isset($cfg[""]) ? "" : null;
@@ -4837,6 +4896,10 @@ function nota_do_relogio($r, $momento)
     $ctx = ["r" => $r, "momento" => $momento, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"])];
     $params = [];
     foreach ($chave !== null ? $cfg[$chave] : [] as $p) {
+        // $usar: os nomes dos parâmetros que a conta usa (os do modo); null: todos
+        if ($usar !== null && !in_array((string)$p["nome"], $usar, true)) {
+            continue;
+        }
         $subs = [];
         foreach ($p["subs"] as $sb) {
             $v = variavel_valor($sb["variavel"], $ctx);
@@ -5089,12 +5152,44 @@ function roteiro_completo($arvores)
     return $arvores;
 }
 
+// Os nomes dos parâmetros de critério da coleção, sem repetir (cada conjunto tem os seus), na ordem em que aparecem: o que um modo
+// pode escolher usar
+function criterios_nomes()
+{
+    $nomes = [];
+    foreach (criterios_config(true) as $conjunto) {
+        foreach ($conjunto as $p) {
+            if (!in_array($p["nome"], $nomes, true)) {
+                $nomes[] = $p["nome"];
+            }
+        }
+    }
+    return $nomes;
+}
+
+// Os critérios que a nota do modo usa (modo_criterio): os nomes dos parâmetros; null, sem nenhum escolhido: todos os do conjunto
+function modo_criterios_usados($modo)
+{
+    static $cache = [];
+    $k = (int)colecao_atual() . ":" . (int)$modo["id"] . ":" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!array_key_exists($k, $cache)) {
+        $nomes = array_column(linhas("SELECT nome FROM modo_criterio WHERE modo_id = ? ORDER BY nome", [(int)$modo["id"]]), "nome");
+        $cache[$k] = count($nomes) > 0 ? $nomes : null;
+    }
+    return $cache[$k];
+}
+
+// A escala do menos usado: a nota é -dias de uso × isto + dias sem uso (até isto - 1); os dias de uso vêm de volta da nota
+const MENOS_USADO_ESCALA = 10000;
+
 // O roteiro de uma forma de escolha sozinha (o "Sortear este dia por", o critério do quadro Modo de rodízio): todos são
 // candidatos; a nota e o peso conforme a forma; a garantia de rodízio, menos no aleatório
 function roteiro_da_forma($forma)
 {
     $linhas = ["inteligente" => "nota = nota_criterios\npeso = 0", "ponderado" => "nota = nota_criterios\npeso = MAX(1; nota_criterios)",
-        "aleatorio" => "peso = 1\ngarantia = 0", "fifo" => "nota = dias_sem_uso\npeso = 0"];
+        "aleatorio" => "peso = 1\ngarantia = 0", "fifo" => "nota = dias_sem_uso\npeso = 0",
+        // o menos usado: menos dias de uso no total (a nota é o oposto, em milhares: o empate sai para o mais tempo sem uso)
+        "menos_usado" => "nota = 0 - PADRAO(dias_de_uso; 0) * " . MENOS_USADO_ESCALA . " + MIN(PADRAO(dias_sem_uso; 0); " . (MENOS_USADO_ESCALA - 1) . ")\npeso = 0"];
     return $linhas[$forma] ?? $linhas["ponderado"];
 }
 
@@ -5117,6 +5212,22 @@ function bloco_seguidos($dias, $dia)
     $pos = function ($x) use ($ini) { return ($x - $ini + 7) % 7 + 1; };
     return max(array_map($pos, $dias)) - $pos($dia) + 1;
 }
+
+// A forma de escolha de um modo que não é personalizado: a escolhida (a escala inteligente escolhe entre a maior nota, o sorteio pela
+// nota, o menos usado e a fila; outra forma, ou nenhuma, vale a maior nota); o aleatório todo dia é sempre aleatório
+function modo_forma($modo)
+{
+    $sel = (string)($modo["selecao"] ?? "ponderado");
+    if (($modo["tipo"] ?? "") === "aleatorio") {
+        return "aleatorio";
+    }
+    if (($modo["escala_dias"] ?? null) !== null) {
+        return in_array($sel, MODO_ESCALA_FORMAS, true) ? $sel : "inteligente";
+    }
+    return $sel;
+}
+// As formas de escolha que a escala inteligente aceita
+const MODO_ESCALA_FORMAS = ["inteligente", "ponderado", "menos_usado", "fifo"];
 
 // O texto do roteiro de um modo que não é personalizado, gerado dos blocos e da forma de escolha: quem é candidato em
 // cada dia da semana (o grupo ou o relógio fixo do bloco do dia), quantos dias fica (um por bloco: até o fim do bloco;
@@ -5167,7 +5278,7 @@ function modo_roteiro_texto($modo, $blocos = null)
     } else {
         $dias = "ESCOLHA(DIA_SEMANA(); " . implode("; ", $seguidos) . ")";
     }
-    $forma = $escala ? "inteligente" : (string)($modo["selecao"] ?? "ponderado");
+    $forma = modo_forma($modo);
     return "candidato = " . $candidato . "\n" . roteiro_da_forma($forma) . "\ndias = " . $dias . ($forma === "aleatorio" ? "" : "\ngarantia = " . ROTEIRO_SAIDAS["garantia"]);
 }
 
@@ -5186,13 +5297,14 @@ function modo_roteiro($modo)
 // As formas de escolha do sorteio (a selecao do modo), com o nome que as telas e os motivos usam
 function formas_de_escolha()
 {
-    return ["inteligente" => t("a maior nota"), "ponderado" => t("sorteio pela nota"), "aleatorio" => t("aleatório, todos com a mesma chance"), "fifo" => t("fila: o mais tempo sem uso")];
+    return ["inteligente" => t("a maior nota"), "ponderado" => t("sorteio pela nota"), "aleatorio" => t("aleatório, todos com a mesma chance"), "fifo" => t("fila: o mais tempo sem uso"),
+        "menos_usado" => t("o menos usado: menos dias de uso no total")];
 }
 
 // O roteiro calculado para um relógio num dia: as cinco saídas e as linhas do roteiro, como números (null: vazio)
-function roteiro_calcular($arvores, $r, $dia, $m_ini)
+function roteiro_calcular($arvores, $r, $dia, $m_ini, $criterios = null)
 {
-    $ctx = ["r" => $r, "momento" => $m_ini, "dia" => $dia, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"]), "locais" => $arvores];
+    $ctx = ["r" => $r, "momento" => $m_ini, "dia" => $dia, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio((int)$r["id"]), "locais" => $arvores, "criterios" => $criterios];
     $res = [];
     foreach (array_keys($arvores) as $nome) {
         $v = variavel_valor($nome, $ctx);
@@ -5220,15 +5332,16 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
         $estilo = $estilo ?? $roteiro;
         $roteiro = roteiro_completo(roteiro_ler(roteiro_da_forma($roteiro))["arvores"]);
     } elseif ($estilo === null) {
-        $estilo = $modo && ($modo["tipo"] ?? "personalizado") !== "personalizado" ? (($modo["escala_dias"] ?? null) !== null ? "inteligente" : (string)$modo["selecao"]) : "roteiro";
+        $estilo = $modo && ($modo["tipo"] ?? "personalizado") !== "personalizado" ? modo_forma($modo) : "roteiro";
     }
     $escolhido = null;
     $motivo = "";
     // o roteiro em cada relógio: quem não é candidato no dia sai. Só depois, e só entre os candidatos, as regras de não
     // repetir (o de ontem, o ciclo): cada uma só tira se sobrar outro candidato; senão ele repete, e o motivo diz por quê
     $info = [];
+    $criterios = $modo ? modo_criterios_usados($modo) : null;
     foreach ($cands as $cid => $r) {
-        $c = roteiro_calcular($roteiro, $r, $dia, $m_ini);
+        $c = roteiro_calcular($roteiro, $r, $dia, $m_ini, $criterios);
         if (($c["candidato"] ?? null) !== null && (float)$c["candidato"] != 0) {
             $info[$cid] = ["nota" => (float)($c["nota"] ?? 0), "peso" => max(0.0, (float)($c["peso"] ?? 0)), "garantia" => ($c["garantia"] ?? null) !== null && (float)$c["garantia"] != 0,
                 "dias" => is_numeric($c["dias"] ?? null) ? max(1, min(366, (int)floor((float)$c["dias"]))) : 1, "dsu" => $c["dias_sem_uso"], "nunca" => $c["nunca"]];
@@ -5287,9 +5400,15 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
             // sem peso: a maior nota (a ordem dos candidatos é a do cadastro: o empate fica com o cadastrado primeiro)
             uasort($info, function ($x, $y) { return $y["nota"] <=> $x["nota"]; });
             $escolhido = (int)array_key_first($info);
-            $motivo = $estilo === "fifo"
-                ? t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre])
-                : t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
+            if ($estilo === "menos_usado") {
+                // a nota é -dias de uso × a escala + os dias sem uso: os dias de uso voltam dela
+                $usos = (int)ceil(-$info[$escolhido]["nota"] / MENOS_USADO_ESCALA);
+                $motivo = t("Menos usado: {1}, {2}.", [1 => $usos > 0 ? t("{1} dias de uso no total", [1 => $usos]) : t("nenhum dia de uso"), 2 => $entre]);
+            } else {
+                $motivo = $estilo === "fifo"
+                    ? t("Fila: o mais tempo sem uso ({1}), {2}.", [1 => motivo_parado($info[$escolhido]["dsu"], $info[$escolhido]["nunca"]), 2 => $entre])
+                    : t("A maior nota ({1}), {2}.", [1 => motivo_nota($info[$escolhido]["nota"]), 2 => $entre]);
+            }
         } else {
             // A precisão do peso é configurável (0 a 8 casas, padrão 2).
             // Se TODOS os pesos positivos virarem zero com o arredondamento, usa os originais: não fica sem escolhido.

@@ -4,7 +4,8 @@ var SELECOES = {
   inteligente: [t("Inteligente"), t("vai o relógio com a maior nota nos critérios")],
   ponderado: [t("Inteligente com sorteio"), t("sorteio em que a nota de cada relógio é a chance dele: variedade sem perder o critério")],
   aleatorio: [t("Totalmente aleatório"), t("todos com a mesma chance, sem olhar os critérios (os números do RANDOM.ORG; fora do ar, do ANU QRNG; sem os dois, do gerador seguro do PHP)")],
-  fifo: [t("Fila (FIFO)"), t("vai o que está há mais tempo sem uso: todos passam pelo pulso em rodízio")]
+  fifo: [t("Fila (FIFO)"), t("vai o que está há mais tempo sem uso: todos passam pelo pulso em rodízio")],
+  menos_usado: [t("Menos usado"), t("vai o que tem menos dias de uso no total (empate: o mais tempo parado)")]
 };
 var q = new URLSearchParams(window.location.search);
 var escopo = q.get("escopo") || "";
@@ -105,7 +106,7 @@ function recarregarCriterios() {
       + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-criterios"}, el("thead", {}, el("tr", {}, el("th", {}, t("Modo de rodízio")) + el("th", {}, t("Forma de escolha"))))
         + el("tbody", {}, d.modos.map(function (m) {
           return el("tr", {}, el("td", {}, h(m.nome) + (m.ativo ? " " + el("span", {"class": "nota"}, t("(o modo atual)")) : ""))
-            + el("td", {}, m.escala ? t("sempre pela maior nota, com as medidas de cada dia simulado") : h(SELECOES[m.selecao][0])));
+            + el("td", {}, m.escala ? h(SELECOES[m.selecao][0]) + t(", com as medidas de cada dia simulado") : h(SELECOES[m.selecao][0])));
         }).join(""))))
       + el("p", {"class": "nota"}, t("Garantia de rodízio: {1} (no mesmo quadro). Fora da nota também valem o grupo de cada bloco de dias, os relógios fixos e não repetir o de ontem.", {1: d.max_sem_uso > 0 ? t("nenhum relógio fica mais de {1} dias sem uso", {1: d.max_sem_uso}) : t("desligada")})));
     // onde há critérios

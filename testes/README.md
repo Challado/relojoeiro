@@ -25,6 +25,10 @@ para garantir que o crescimento do conteúdo seja acomodado antes da pintura, se
 
 ## Como rodar
 
+`php testes/menos_usado.php` confere o menos usado: o critério (a fórmula e o parâmetro nas notas, com peso 0), a forma de escolha (menos
+dias de uso no total; empate, o mais tempo parado; quem nunca foi usado primeiro), a escala inteligente que escolhe a forma e os critérios
+que contam na nota (as validações, a escolha de cada critério, a escala gerada) e a migração v59 (a fórmula e o critério voltam, sem repetir).
+
 `php testes/opcoes.php` confere as opções em três níveis (sistema → usuário → coleção), todas as da tabela OPCOES: o valor que vale em
 cada nível e o que cada um herda, o conferidor único, quem pode mudar o quê, a cascata nas coleções do dono (e só nelas), o que se refaz
 quando o valor que vale muda (o "fecha às" do pulso e do sol, o fim da escala) e a recusa que desfaz tudo (o horário de uso invertido).

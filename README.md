@@ -219,6 +219,7 @@ Os critérios que vêm prontos, para todos os relógios:
 | Equilíbrio de uso | 30 | uso nos últimos 30 dias comparado com a média da coleção: quem foi pouco usado sobe |
 | Preferência | 20 | a sua nota para o relógio (0 a 100) |
 | Novidade e valor | 10 | há quanto tempo foi comprado e quanto custou (aproveitar o investimento) |
+| Menos usado | 0 | dias de uso no total comparado com a média da coleção: quem foi pouco usado desde sempre sobe. Vem com peso 0 (a nota de hoje não muda): dê peso a ele em Critérios, ou marque só ele na escala inteligente |
 
 Cada grupo, e até cada relógio, pode ter o seu próprio conjunto. O smartwatch, por exemplo, também pesa a **energia** (a carga
 agora e quantos dias ela aguenta), para não sortear um relógio que vai morrer ao meio-dia. A página **Critérios** mostra a
@@ -231,6 +232,12 @@ nota do relógio é a média dos parâmetros, pelo peso. Cada subparâmetro lê 
 pela faixa em que o valor cai; o subparâmetro sem valor (um campo vazio, um valor fora de toda faixa) fica de fora, e os outros
 dividem o peso dele. Tudo se edita na página **Critérios**, e **Restaurar os critérios iniciais** volta a estes.
 
+O parâmetro **Menos usado** mede os dias de uso no total (`menos_usado`: os dias em que o relógio foi ao pulso, `dias_de_uso`,
+contra a média da coleção): quem foi pouco usado desde sempre ganha nota alta, mesmo que tenha sido usado ontem (o *Tempo
+sem uso* olha só há quanto tempo parou; o *Equilíbrio de uso*, só os últimos 30 dias). Ele vem em todos os conjuntos, com **peso
+0**: a nota de hoje não muda até você dar peso a ele em **Critérios**. A forma de escolha **menos usado**, ao contrário, não olha
+a nota: vai direto o relógio de menos dias de uso (veja [Os modos](#os-modos-de-rodízio)).
+
 **Todos os relógios**
 
 | Parâmetro | Peso | Subparâmetro (a variável, o peso dentro do parâmetro) | As faixas: o valor → a nota |
@@ -240,6 +247,7 @@ dividem o peso dele. Tudo se edita na página **Critérios**, e **Restaurar os c
 | Preferência | 20 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novidade e valor | 10 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
 |  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+| Menos usado | 0 | Dias de uso no total, comparado com a média (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
 
 **Smartwatch**
 
@@ -253,6 +261,7 @@ dividem o peso dele. Tudo se edita na página **Critérios**, e **Restaurar os c
 | Preferência | 10 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novidade e valor | 5 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
 |  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+| Menos usado | 0 | Dias de uso no total, comparado com a média (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
 
 **Tradicional › Mecânico**
 
@@ -266,6 +275,7 @@ dividem o peso dele. Tudo se edita na página **Critérios**, e **Restaurar os c
 | Preferência | 10 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novidade e valor | 5 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
 |  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+| Menos usado | 0 | Dias de uso no total, comparado com a média (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
 
 **Tradicional › Quartzo › Pilha**
 
@@ -278,6 +288,7 @@ dividem o peso dele. Tudo se edita na página **Critérios**, e **Restaurar os c
 | Preferência | 10 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novidade e valor | 5 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
 |  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+| Menos usado | 0 | Dias de uso no total, comparado com a média (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
 
 **Tradicional › Quartzo › Solar**
 
@@ -290,6 +301,7 @@ dividem o peso dele. Tudo se edita na página **Critérios**, e **Restaurar os c
 | Preferência | 10 | Sua nota para o relógio (`preferencia`) | 0 a 20 → 0; 20 a 40 → 25; 40 a 60 → 50; 60 a 80 → 75; 80 a 100 → 100 |
 | Novidade e valor | 5 | Novidade: dias desde a compra (`dias_desde_compra`, 60) | 0 a 15 → 100; 15 a 45 → 80; 45 a 120 → 55; 120 a 365 → 40; 365 ou mais → 30 |
 |  |  | Aproveitar o investimento: valor pago (`valor_compra`, 40) | 0 a 300 → 30; 300 a 800 → 50; 800 a 1500 → 70; 1500 ou mais → 90 |
+| Menos usado | 0 | Dias de uso no total, comparado com a média (`menos_usado`) | 0 a 25 → 100; 25 a 60 → 80; 60 a 100 → 60; 100 a 140 → 35; 140 a 200 → 15; 200 ou mais → 0 |
 
 E existe uma **garantia de rodízio**: nenhum relógio passa de N dias parado (21 por padrão). Ela vale **antes** da nota: se
 algum candidato já passou do limite, ele ganha direto, o mais tempo parado primeiro. Só quando ninguém passou do limite é
@@ -322,7 +334,8 @@ faz sentido nele:
 - **Personalizado**: você escreve o roteiro (veja [O roteiro do modo](#o-roteiro-do-modo)).
 
 Nos três primeiros, o **critério de escolha** é o sorteio: pela **maior nota**, por **sorteio pela nota** (a nota vira a
-chance), **aleatório** ou por **fila** (quem está esperando há mais tempo). Com o **ciclo** ligado, um relógio só volta
+chance), **aleatório**, por **fila** (quem está esperando há mais tempo) ou pelo **menos usado** (quem tem menos dias de uso
+no total; empate, o mais tempo parado). Com o **ciclo** ligado, um relógio só volta
 depois que todos os candidatos passaram na semana. O quadro **Modo de rodízio** da página Hoje escolhe o modo, o critério e a
 garantia de rodízio; **Aplicar modo** só marca: nada do plano muda até você clicar em **Sortear de novo** (menos o que o modo
 de antes sorteou depois do fim das semanas do novo, como os dias da escala de 30 dias, que sai já na próxima montagem).
@@ -436,7 +449,7 @@ cada dia de um período (as férias, uma viagem, um mês inteiro). Ponha o come�
 - com mais de 7 dias, embaixo ficam as páginas: **‹ Anterior**, **1 2 3 …**, **Próxima ›**. O que você escolhe numa página
   fica guardado enquanto você anda pelas outras; nada muda antes de gravar;
 - o seletor de cada dia tem os relógios disponíveis, **Decida por mim**, o grupo **Sortear este dia por** (*a maior nota*,
-  *sorteio pela nota*, *aleatório* ou *fila*: o dia é sorteado ao gravar por essa forma, sem o de ontem e o de amanhã, como o
+  *sorteio pela nota*, *aleatório*, *fila* ou *menos usado*: o dia é sorteado ao gravar por essa forma, sem o de ontem e o de amanhã, como o
   Decida por mim) e **Sem relógio (dia livre)**. De partida, ele mostra o relógio que o dia já tem escolhido à mão; um dia
   livre aparece como livre; e o resto (sorteado ou ainda sem relógio), como *Decida por mim*;
 - **Gravar o rodízio manual** grava o período inteiro: os dias com relógio ficam escolhidos à mão, os de *Decida por mim* e os
@@ -464,12 +477,23 @@ Hoje, com *Decida por mim*, continua o relógio que já está no plano.
 É o modo mais completo. Em vez de sortear semana a semana, ele **planeja de 7 dias a 2 anos de uma vez**, simulando dia a dia:
 
 1. calcula a nota de cada relógio com o estado simulado daquele dia;
-2. escolhe o relógio pela maior nota (o roteiro da escala: `peso = 0`); o smartwatch fica no pulso os dias que a bateria
-   aguenta (até 7: a fórmula `dias_seguidos`);
+2. escolhe o relógio pela forma do modo (a maior nota, por padrão: o roteiro da escala, `peso = 0`); o smartwatch fica no pulso
+   os dias que a bateria aguenta (até 7: a fórmula `dias_seguidos`);
 3. simula o uso (a sessão no pulso no horário de uso) e o efeito dele na carga e na reserva de todos;
 4. confere os avisos: se o escolhido vai precisar de carga ou de corda, anota a ação no dia (*"carregar antes de usar"*) e
    simula o lançamento que a resolve;
 5. passa para o dia seguinte.
+
+**O que a escala usa no cálculo.** No modo, a escala escolhe a **forma de escolha** entre quatro: a **maior nota** (a de sempre),
+o **sorteio pela nota**, o **menos usado** (o relógio com menos dias de uso no total; empate, o mais tempo parado: todos passam
+pelo pulso, dos menos aos mais usados, e o uso simulado de cada dia já conta no dia seguinte) e a **fila** (o mais tempo sem
+uso). E, nas formas que olham a nota (a maior nota e o sorteio pela nota), marca os **critérios que contam na nota**: uma caixa
+por parâmetro dos [critérios](#a-nota-de-cada-relógio-critérios) (*Tempo sem uso*, *Equilíbrio de uso*, *Preferência*,
+*Menos usado*...); com todos marcados, ou nenhum, valem todos os de cada relógio, como sempre foi, e os pesos continuam sendo os
+de Critérios, refeitos só entre os marcados. A escala sem escolha segue pela maior nota com todos os critérios. A
+forma e os critérios valem para qualquer modo que use a nota, não só para a escala. Pela API: `selecao` (`inteligente`,
+`ponderado`, `menos_usado` ou `fifo` na escala) e `criterios[]` (os nomes dos parâmetros; lista vazia: todos) no `modos`/`salvar`;
+`recurso=cadastros` traz `criterios_disponiveis`, `formas` e, em cada modo, `criterios` e `forma`.
 
 Toda manhã o cron **replaneja a partir do estado real**. Se você usou outro relógio, esqueceu de carregar ou lançou uma
 leitura diferente da prevista, o plano se corrige sozinho. Os dias escolhidos à mão e os livres ficam; os sorteados, de hoje
@@ -2457,12 +2481,12 @@ muda vale de amanhã em diante. Quer usar outro relógio hoje assim mesmo? Marqu
 e o plano não muda.
 
 A mesma lista tem o grupo **Sortear este dia por**: *a maior nota*, *sorteio pela nota*, *aleatório, todos com a mesma chance*
-ou *fila: o mais tempo sem uso*. Só aquele dia é sorteado na hora, por essa forma, entre os relógios do bloco do modo ativo
+*fila: o mais tempo sem uso* ou *o menos usado: menos dias de uso no total*. Só aquele dia é sorteado na hora, por essa forma, entre os relógios do bloco do modo ativo
 que cobre o dia (sem bloco, entre todos os disponíveis), sem o relógio que o dia tinha; a garantia de rodízio vem na frente
 (menos no aleatório), e os dias anteriores do plano contam como uso. O dia fica *à mão*, com o motivo *"Sorteado à mão (a
 maior nota): …"*, e por isso o Sortear de novo e o cron o respeitam; **voltar a sortear** devolve o dia ao modo. Hoje, o
 sorteado vai para o pulso a partir de agora. Pela API: `recurso=rodizio`, `acao=trocar_dia`, `relogio_id=sortear:<forma>`
-(`inteligente`, `ponderado`, `aleatorio` ou `fifo`).
+(`inteligente`, `ponderado`, `aleatorio`, `fifo` ou `menos_usado`).
 
 **E se hoje eu não quiser usar relógio nenhum?**
 No quadro do relógio do dia, no alto da página Hoje, **Sem relógio hoje** (pede confirmação): o dia fica **livre**, sem

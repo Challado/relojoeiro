@@ -278,6 +278,7 @@ const ESCOPO_CONDICOES = [
     "config" => "colecao_id = {C}",
     "modo" => "colecao_id = {C}",
     "modo_bloco" => "modo_id IN (SELECT id FROM modo WHERE colecao_id = {C})",
+    "modo_criterio" => "modo_id IN (SELECT id FROM modo WHERE colecao_id = {C})",
     "modo_bloco_relogio" => "relogio_id IN ({RC})",
     "modo_bloco_dia" => "bloco_id IN (SELECT b.id FROM modo_bloco b JOIN modo m ON m.id = b.modo_id WHERE m.colecao_id = {C})",
     "plano" => "colecao_id = {C}",

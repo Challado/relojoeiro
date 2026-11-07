@@ -37,11 +37,18 @@ $saida = ["campos" => array_map(function ($c) {
         $m["semanas"] = (int)$m["semanas"];
         $m["tipo_texto"] = t(MODO_TIPOS[$m["tipo"]] ?? "Personalizado");
         $m["roteiro_efetivo"] = modo_roteiro_texto($m);
+        // os critérios que a nota do modo usa (vazio: todos) e a forma de escolha que vale
+        $m["criterios"] = array_column(linhas("SELECT nome FROM modo_criterio WHERE modo_id = ? ORDER BY nome", [(int)$m["id"]]), "nome");
+        $m["forma"] = modo_forma($m);
         $m["blocos"] = $com_id(modo_blocos($m["id"]));
         return $m;
     }, linhas("SELECT * FROM modo ORDER BY ordem, id")),
     "tipos_de_modo" => array_map(function ($k) { return ["chave" => $k, "nome" => t(MODO_TIPOS[$k])]; }, array_keys(MODO_TIPOS)),
     "roteiro_padrao" => ROTEIRO_SAIDAS,
+    // as formas de escolha (a lista da tela), as que a escala inteligente aceita e os critérios que um modo pode escolher usar
+    "formas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(formas_de_escolha()), formas_de_escolha()),
+    "formas_da_escala" => MODO_ESCALA_FORMAS,
+    "criterios_disponiveis" => criterios_nomes(),
     "modo_ativo" => modo_ativo(), "max_sem_uso" => (int)cfg("max_sem_uso"), "hoje" => hoje_da_colecao()->format("Y-m-d"), "semana_inicio" => semana_comeca() === 7 ? "domingo" : "segunda",
     "semana_ultimo_dia" => cfg("semana_ultimo_dia") === "semana_seguinte" ? "semana_seguinte" : "dia_seguinte",
     "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),

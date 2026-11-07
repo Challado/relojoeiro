@@ -1144,7 +1144,7 @@ CREATE TABLE modo (
     colecao_id   INT NOT NULL,
     nome         VARCHAR(80) NOT NULL,
     tipo         ENUM('semana','semana_fds','dia_semana','aleatorio','escala','personalizado') NOT NULL DEFAULT 'personalizado',
-    selecao      ENUM('inteligente','ponderado','aleatorio','fifo') NOT NULL DEFAULT 'ponderado',
+    selecao      ENUM('inteligente','ponderado','aleatorio','fifo','menos_usado') NOT NULL DEFAULT 'ponderado',
     ordem        INT NOT NULL DEFAULT 0,
     escala_dias  INT NULL,
     semanas      INT NOT NULL DEFAULT 1,
@@ -1170,6 +1170,16 @@ CREATE TABLE modo_bloco (
     FOREIGN KEY (modo_id) REFERENCES modo(id) ON DELETE CASCADE,
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
     CONSTRAINT ck_modo_bloco_nome CHECK (TRIM(nome) <> '')
+) ENGINE=InnoDB;
+
+-- os critérios que a nota do modo usa (v59): o nome de cada parâmetro dos critérios (Tempo sem uso, Menos usado...); sem linha, o modo
+-- usa todos os do conjunto de cada relógio. Vale na nota_criterios do roteiro do modo e na escala inteligente
+CREATE TABLE modo_criterio (
+    modo_id  INT NOT NULL,
+    nome     VARCHAR(80) NOT NULL,
+    PRIMARY KEY (modo_id, nome),
+    FOREIGN KEY (modo_id) REFERENCES modo(id) ON DELETE CASCADE,
+    CONSTRAINT ck_modo_criterio_nome CHECK (TRIM(nome) <> '')
 ) ENGINE=InnoDB;
 
 -- o relógio fixo de um bloco (opcional; saindo o relógio, o bloco volta a sortear)

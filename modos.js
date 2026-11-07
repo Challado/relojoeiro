@@ -3,7 +3,7 @@
 // escolha e, no personalizado, o roteiro escrito à mão com o "Testar em todos os relógios". Lê a API (recurso=cadastros: os
 // modos com o roteiro efetivo, os tipos, os grupos e os relógios) e grava nela (recurso=modos: salvar, ativar e excluir; o
 // teste do roteiro lê recurso=roteiro). modos.php?editar=<id>#form abre um modo para alterar; ?tipo=<tipo> começa um novo
-var SEL = {inteligente: t("Inteligente: a maior nota"), ponderado: t("Inteligente com sorteio: a nota é a chance"), aleatorio: t("Totalmente aleatório"), fifo: t("Fila: o que está há mais tempo sem uso")};
+var SEL = {inteligente: t("Inteligente: a maior nota"), ponderado: t("Inteligente com sorteio: a nota é a chance"), aleatorio: t("Totalmente aleatório"), fifo: t("Fila: o que está há mais tempo sem uso"), menos_usado: t("Menos usado: o que tem menos dias de uso no total")};
 var DIAS = ["", t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb"), t("dom")];
 var DIAS_LONGOS = ["", t("Segunda"), t("Terça"), t("Quarta"), t("Quinta"), t("Sexta"), t("Sábado"), t("Domingo")];
 var ESCALAS = [[7, t("Uma semana")], [30, t("Um mês")], [60, t("Dois meses")], [180, t("Meio ano")], [365, t("Um ano")], [730, t("Dois anos")]];
@@ -99,6 +99,21 @@ function ajudaEscolherDe(porDia) {
     + (porDia ? " " + t("Na tabela por dia da semana, \"Sem relógio\" deixa o dia livre: sem sorteio e sem ninguém no pulso.") : "")));
 }
 
+// Os critérios que contam na nota do modo: uma caixa por parâmetro dos critérios (os nomes que a API manda); com todas marcadas, ou
+// nenhuma, valem todos (o modo não guarda lista)
+function criteriosDoModo(f) {
+  var usados = f.criterios || [];
+  var nomes = dados.criterios_disponiveis || [];
+  if (nomes.length === 0) {
+    return "";
+  }
+  return el("fieldset", {"class": "criterios-do-modo"}, el("legend", {}, t("Critérios que contam na nota"))
+    + nomes.map(function (nome) {
+      return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "criterios[]", "value": nome, "checked": usados.length === 0 || usados.indexOf(nome) >= 0}) + " " + h(nome));
+    }).join("")
+    + el("p", {"class": "nota"}, t("Vale na maior nota e no sorteio pela nota. Com todos marcados, ou nenhum, valem todos os critérios de cada relógio; o peso de cada um se muda em {1}.", {1: el("a", {"href": "criterios.php"}, t("Critérios"))})));
+}
+
 // o formulário de um modo: os campos do tipo (f: o modo, ou o modelo de um novo com o tipo escolhido)
 function formModo(e, f) {
   var tipo = f.tipo;
@@ -155,7 +170,13 @@ function formModo(e, f) {
     corpo += el("label", {}, t("Critério de escolha (o sorteio) {1}", {1: el("select", {"name": "selecao"}, Object.keys(SEL).map(function (k) { return el("option", {"value": k, "selected": (f.selecao || "ponderado") === k}, h(SEL[k])); }).join(""))}))
       + ajudaNota("garantia", t("A garantia de rodízio"), t("A garantia de rodízio ({1} dias sem uso, no máximo) vale antes do critério, menos no aleatório; ela se muda no quadro Modo de rodízio da página Hoje e vale para todos os modos. A nota vem dos {2}.", {1: dados.max_sem_uso, 2: el("a", {"href": "criterios.php"}, t("critérios"))}));
   } else if (tipo === "escala") {
-    corpo += ajudaNota("criterio", t("O critério de escolha"), t("Critério de escolha: a maior nota do dia simulado (a garantia de rodízio na frente). A nota vem dos {1}.", {1: el("a", {"href": "criterios.php"}, t("critérios"))}));
+    // a escala escolhe a forma (a maior nota, o sorteio pela nota, o menos usado ou a fila) e os critérios que contam na nota
+    var formas = dados.formas_da_escala || ["inteligente"];
+    corpo += el("label", {}, t("Como a escala escolhe {1}", {1: el("select", {"name": "selecao"}, formas.map(function (k) { return el("option", {"value": k, "selected": (f.selecao || "inteligente") === k}, h(SEL[k])); }).join(""))}))
+      + ajudaNota("criterio", t("O critério de escolha"), t("Como a escala escolhe o relógio de cada dia simulado (a garantia de rodízio na frente): a maior nota, o sorteio pela nota, o menos usado (o de menos dias de uso no total; empate, o mais tempo parado) ou a fila. A nota vem dos {1}: marque abaixo os que contam no cálculo.", {1: el("a", {"href": "criterios.php"}, t("critérios"))}));
+  }
+  if (tipo !== "aleatorio" && tipo !== "personalizado") {
+    corpo += criteriosDoModo(f);
   }
   if (tipo !== "aleatorio") {
     corpo += el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ciclo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ciclo", "value": "1", "checked": f.ciclo === 1 || f.ciclo === true})
@@ -196,7 +217,16 @@ function montarBlocos(form) {
       return false;
     }
   }
+  // os critérios: todos marcados (ou nenhum) é "todos": a lista vai vazia e o modo não guarda nenhum
+  var caixas = form.querySelectorAll("input[name='criterios[]']");
   var html = "";
+  if (caixas.length > 0) {
+    var marcadas = form.querySelectorAll("input[name='criterios[]']:checked").length;
+    if (marcadas === caixas.length || marcadas === 0) {
+      caixas.forEach(function (c) { c.disabled = true; });
+      html += el("input", {"type": "hidden", "name": "criterios", "value": ""});
+    }
+  }
   blocos.forEach(function (b, k) {
     var p = "blocos[" + k + "]";
     html += el("input", {"type": "hidden", "name": p + "[nome]", "value": b.nome}) + b.dias.map(function (d) { return el("input", {"type": "hidden", "name": p + "[dias][]", "value": d}); }).join("")
@@ -233,7 +263,7 @@ function recarregarModos() {
         + el("tbody", {}, d.modos.map(function (m) {
           var esc = "";
           ESCALAS.forEach(function (x) { if (x[0] === m.escala_dias) { esc = x[1]; } });
-          var criterio = m.tipo === "escala" ? t("a maior nota") : (m.tipo === "aleatorio" ? t("todos com a mesma chance") : (m.tipo === "personalizado" ? t("pelo roteiro") : h(SEL[m.selecao])));
+          var criterio = m.tipo === "escala" ? h(SEL[m.forma] || SEL.inteligente) : (m.tipo === "aleatorio" ? t("todos com a mesma chance") : (m.tipo === "personalizado" ? t("pelo roteiro") : h(SEL[m.selecao])));
           return el("tr", {}, el("td", {}, h(m.nome) + (d.modo_ativo === m.id ? " " + el("strong", {}, t("(ativo)")) : ""))
             + el("td", {}, h(m.tipo_texto))
             + el("td", {}, criterio + (m.ciclo === 1 ? t(" · com ciclo") : ""))

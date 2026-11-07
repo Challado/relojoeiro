@@ -1114,7 +1114,7 @@ const IMPACTO_NOMES = ["usuario" => "usuários", "colecao" => "coleções", "col
     "winder_posicao_valor_item" => "valores de campo múltiplo de posição de winder", "lancamento_winder" => "sessões em posição de winder", "winder_movimento" => "movimentos de winder",
     "winder_programa" => "programas de winder", "winder_programa_passo" => "passos de programas de winder", "winder_posicao_programa" => "programas de posições de winder",
     "winder_lugar" => "lugares fixos no winder", "winder_limite_ok" => "avisos de limite do winder dispensados", "criterio_parametro" => "parâmetros de critérios", "criterio_sub" => "subparâmetros de critérios",
-    "criterio_faixa" => "faixas de critérios", "config" => "valores da configuração", "modo" => "modos de rodízio", "modo_bloco" => "blocos de modos", "modo_bloco_relogio" => "relógios fixos de blocos",
+    "criterio_faixa" => "faixas de critérios", "config" => "valores da configuração", "modo" => "modos de rodízio", "modo_bloco" => "blocos de modos", "modo_criterio" => "critérios de modos", "modo_bloco_relogio" => "relógios fixos de blocos",
     "modo_bloco_dia" => "dias de blocos", "plano" => "dias do plano", "plano_bloco" => "blocos de dias do plano", "plano_livre" => "dias livres", "evento_personalizado" => "eventos",
     "evento_relogio" => "vínculos de evento", "evento_dia" => "dias de eventos", "evento_disparo" => "disparos de eventos", "destino" => "destinos", "destino_webhook" => "webhooks",
     "destino_webhook_campo" => "campos de webhook", "destino_webhook_cabecalho" => "cabeçalhos de webhook", "destino_email" => "destinos de e-mail", "destino_webpush" => "destinos de Web Push",
@@ -1135,7 +1135,7 @@ tk("winders"); tk("valores de winder"); tk("valores de campo múltiplo de winder
 tk("valores de campo múltiplo de posição de winder"); tk("sessões em posição de winder"); tk("movimentos de winder"); tk("programas de winder");
 tk("passos de programas de winder"); tk("programas de posições de winder"); tk("lugares fixos no winder"); tk("avisos de limite do winder dispensados");
 tk("parâmetros de critérios"); tk("subparâmetros de critérios"); tk("faixas de critérios");
-tk("valores da configuração"); tk("modos de rodízio"); tk("blocos de modos"); tk("relógios fixos de blocos");
+tk("valores da configuração"); tk("modos de rodízio"); tk("blocos de modos"); tk("critérios de modos"); tk("relógios fixos de blocos");
 tk("dias de blocos"); tk("dias do plano"); tk("blocos de dias do plano"); tk("dias livres"); tk("eventos");
 tk("vínculos de evento"); tk("dias de eventos"); tk("disparos de eventos"); tk("destinos"); tk("webhooks");
 tk("campos de webhook"); tk("cabeçalhos de webhook"); tk("destinos de e-mail"); tk("destinos de Web Push");
