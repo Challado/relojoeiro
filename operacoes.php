@@ -3766,7 +3766,7 @@ function op_criterios($acao, $d)
         $nome = trim((string)($d["nome"] ?? ""));
         $peso = numero_br($d["peso"] ?? "");
         $outros = [];
-        foreach (linhas("SELECT id, peso FROM criterio_parametro WHERE " . $do_lugar, $col) as $q) {
+        foreach (linhas("SELECT id, peso FROM criterio_parametro WHERE " . $do_lugar . " ORDER BY ordem, id", $col) as $q) {
             $outros[(int)$q["id"]] = (float)$q["peso"];
         }
         if ($nome === "" || strlen($nome) > 80) {
@@ -3827,7 +3827,7 @@ function op_criterios($acao, $d)
             $escopo = escopo_chave($p);
             $col = $colunas($escopo);
             $outros = [];
-            foreach (linhas("SELECT id, peso FROM criterio_parametro WHERE id <> ? AND " . $do_lugar, [$p["id"], $col[0], $col[1]]) as $q) {
+            foreach (linhas("SELECT id, peso FROM criterio_parametro WHERE id <> ? AND " . $do_lugar . " ORDER BY ordem, id", [$p["id"], $col[0], $col[1]]) as $q) {
                 $outros[(int)$q["id"]] = (float)$q["peso"];
             }
             $conta = $regrava("criterio_parametro", $outros, 100);
@@ -3846,7 +3846,7 @@ function op_criterios($acao, $d)
         $metrica = (string)($d["variavel"] ?? ($d["metrica"] ?? ""));
         $peso = numero_br($d["peso"] ?? "");
         $outros = [];
-        foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ?", [$pid]) as $q) {
+        foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ? ORDER BY ordem, id", [$pid]) as $q) {
             $outros[(int)$q["id"]] = (float)$q["peso"];
         }
         $erros = [];
@@ -3930,7 +3930,7 @@ function op_criterios($acao, $d)
             $erros[] = t("Subparâmetro não encontrado.");
         } else {
             $outros = [];
-            foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ? AND id <> ?", [$sub["parametro_id"], $sub["id"]]) as $q) {
+            foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ? AND id <> ? ORDER BY ordem, id", [$sub["parametro_id"], $sub["id"]]) as $q) {
                 $outros[(int)$q["id"]] = (float)$q["peso"];
             }
             $conta = $regrava("criterio_sub", $outros, 100);
@@ -3976,12 +3976,12 @@ function op_criterios($acao, $d)
             $erros[] = t("{1} já está em {2}: nada mudou.", [1 => $sub["nome"], 2 => $destino["nome"]]);
         } else {
             $origem = [];
-            foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ? AND id <> ?", [$sub["parametro_id"], $sub["id"]]) as $q) {
+            foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ? AND id <> ? ORDER BY ordem, id", [$sub["parametro_id"], $sub["id"]]) as $q) {
                 $origem[(int)$q["id"]] = (float)$q["peso"];
             }
             $conta = $regrava("criterio_sub", $origem, 100);
             $no_destino = [];
-            foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ?", [$destino["id"]]) as $q) {
+            foreach (linhas("SELECT id, peso FROM criterio_sub WHERE parametro_id = ? ORDER BY ordem, id", [$destino["id"]]) as $q) {
                 $no_destino[(int)$q["id"]] = (float)$q["peso"];
             }
             $peso = count($no_destino) > 0 ? min(99.99, (float)$sub["peso"]) : 100;
