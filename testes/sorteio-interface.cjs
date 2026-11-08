@@ -4,7 +4,7 @@
 // que a explicação acompanha a escolhida e que o clique em Sortear roda o a partir do próximo período. Restaura a Configuração e o modo.
 //   BASE=http://127.0.0.1:8101/ node testes/sorteio-interface.cjs    (RELOGIOS_USUARIO, RELOGIOS_SENHA, RELOGIOS_TOKEN: os do config de teste)
 const { chromium } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
-const BASE = process.argv[2];
+const BASE = process.argv[2] || process.env.BASE;
 const TOK = process.env.RELOGIOS_TOKEN || 'token-de-teste-123';
 async function api(p, post) {
   const body = new URLSearchParams(p).toString();
