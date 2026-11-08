@@ -1,4 +1,4 @@
-<!-- origem: 7369b4fb7d25e347e57e16667185855f47ef488a -->
+<!-- origem: 670a68c1f5f26d229534da607355b545c2388079 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -313,17 +313,15 @@ les semaines avec les dates). Le plan va jusqu'au dernier jour de la dernière d
 semaine commençant le dimanche (avec une seule semaine, le dernier jour de la semaine le plan apporte aussi le premier de la
 suivante, pour le rappel de la veille), et la semaine suivante entre quand son tour arrive. Avec **Le dernier jour de la semaine, les modes par semaine construisent** sur *Toute la semaine suivante*, dans la Configuration, le dernier jour de la semaine les semaines du mode comptent déjà à partir de la semaine prochaine, qui arrive construite entière. La semaine commence le jour
 choisi dans la Configuration (**La semaine commence** : le lundi, par défaut, ou le dimanche), et le cycle, la semaine
-prochaine et la montre pour toute la semaine se comptent à partir d'elle. Avec plus d'une
-semaine, **Refaire le tirage** a aussi **la semaine prochaine** : elle sort selon le mode actuel, avec les jours qui restent
+prochaine et la montre pour toute la semaine se comptent à partir d'elle. Hors planning intelligent, dans tous les modes (même avec une seule semaine),
+**Refaire le tirage** a aussi **la semaine prochaine** : elle sort selon le mode actuel, avec les jours qui restent
 cette semaine comptés comme utilisation, comme si vous aviez déjà porté les montres du plan (l'utilisation compte dans les
 jours sans utilisation et dans la note ; la charge non, parce qu'on ne sait pas si la montre sera chargée). Chaque jour est
 choisi ainsi, avec les jours précédents du plan déjà au poignet, et c'est pourquoi la montre du lundi ne revient pas le mardi
 juste parce qu'elle semble arrêtée. Les jours choisis à la main restent. Dans le planning intelligent il n'y a pas de semaine
 prochaine : il planifie déjà sa propre période.
 
-**À partir de la prochaine période.** Dans tous les modes, **Refaire le tirage** a aussi **à partir de la prochaine période** (avec ses dates dans la liste) : il ignore ce qui est en vigueur, aujourd'hui compris, qui reste tel quel, et refait à partir du premier jour de la période suivante, selon la configuration des tirages. Hors planning intelligent, c'est la semaine prochaine (la semaine commence le jour fixé dans la Configuration) jusqu'où le mode construit le plan ; dans le planning intelligent, c'est le planning suivant, à partir du lendemain de la fin de l'actuel et avec les jours du mode (il devient celui d'aujourd'hui, et le plan d'avant reste). Ce qui reste de la période actuelle arrive à la suivante en comptant comme usage. Les jours choisis à la main et les jours libres de ce tronçon restent, sauf avec **Tout écraser**. Par l'API : `recurso=rodizio&acao=resortear_proximo` ; `recurso=hoje` renvoie le `proximo_periodo` (`inicio`, `fim`, `escala`).
-
-**La liste montre toujours toutes les options.** Celle qui ne vaut pas maintenant reste désactivée, avec le motif dans son propre texte : *« aujourd'hui compris — indisponible : désactivé dans la Configuration (Changer la montre du jour le jour même) »*, *« la semaine prochaine — indisponible : le mode n'a qu'une semaine »*, *« à partir d'aujourd'hui — indisponible : la journée d'aujourd'hui a déjà commencé au poignet »*. En activant la Configuration, ou en changeant le mode, l'option redevient choisissable.
+**La liste montre toujours toutes les options.** Celle qui ne vaut pas maintenant reste désactivée, avec le motif dans son propre texte : *« aujourd'hui compris — indisponible : désactivé dans la Configuration (Changer la montre du jour le jour même) »*, *« la semaine prochaine — indisponible : le planning intelligent planifie déjà sa propre période »*, *« à partir d'aujourd'hui — indisponible : la journée d'aujourd'hui a déjà commencé au poignet »*. En activant la Configuration, ou en changeant le mode, l'option redevient choisissable.
 
 ### Le scénario du mode {#o-roteiro-do-modo}
 

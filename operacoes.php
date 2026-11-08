@@ -4612,38 +4612,6 @@ function op_rodizio($acao, $d)
             cfg_set("proxima_semana_fim", $ini->modify("+6 days")->format("Y-m-d"));
             $msg = t("Semana de {1} a {2} montada.", [1 => $ini->format("d/m"), 2 => $ini->modify("+6 days")->format("d/m")]) . dias_guardados_texto($guardados, $sobrescrever);
         }
-    } elseif ($acao === "resortear_proximo") {
-        // a partir do próximo período, pela configuração dos sorteios (proximo_periodo): o que está valendo (hoje inclusive) fica
-        // como está, e do primeiro dia do período seguinte até o fim dele o modo sorteia de novo. Os dias escolhidos à mão e os
-        // livres desse trecho ficam, menos com sobrescrever=1. O plano roda desde hoje, para o que falta do período de agora
-        // chegar ao seguinte como uso
-        $modo_p = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]);
-        [$ini, $fim] = proximo_periodo($modo_p, $hoje);
-        $guardados = dias_guardados($ini, $fim);
-        if ($sobrescrever) {
-            $guardados = dias_guardados($ini);
-            sql("DELETE FROM plano WHERE data >= ?", [$ini->format("Y-m-d")]);
-            sql("DELETE FROM plano_livre WHERE data >= ?", [$ini->format("Y-m-d")]);
-        }
-        if ($escala) {
-            // a escala seguinte começa no dia depois do fim da que vale e tem os dias do modo: passa a ser a de agora (o plano
-            // dos dias de antes fica como está; quando ela vence, a escala seguinte vem sozinha, como sempre veio)
-            sql("DELETE FROM plano WHERE data >= ? AND origem <> 'manual'", [$ini->format("Y-m-d")]);
-            cfg_set("escala_comeco", $ini->format("Y-m-d"));
-            cfg_set("escala_fim", $fim->format("Y-m-d"));
-            cfg_set("escala_dias_gerada", (string)max(1, (int)$modo_p["escala_dias"]));
-            plano_montar($modo_p, $hoje, $ini, $fim, true);
-            cfg_set("escala_gerada", $hoje->format("Y-m-d"));
-        } else {
-            sql("DELETE FROM plano WHERE data BETWEEN ? AND ? AND origem <> 'manual'", [$ini->format("Y-m-d"), $fim->format("Y-m-d")]);
-            garantir_plano($hoje, $fim);
-            // até onde o plano foi montado: o Sortear de novo de depois refaz até lá
-            if (cfg("proxima_semana_fim") === "" || cfg("proxima_semana_fim") < $fim->format("Y-m-d")) {
-                cfg_set("proxima_semana_fim", $fim->format("Y-m-d"));
-            }
-        }
-        $msg = t("Sorteado de novo a partir do próximo período, de {1} a {2}; o período de agora fica como está.", [1 => $ini->format("d/m"), 2 => $fim->format("d/m")])
-            . dias_guardados_texto($guardados, $sobrescrever);
     }
     return resultado($erros, $msg, $retrato !== null && count($erros) === 0 && $msg !== "" ? ["mudancas" => plano_mudancas($retrato, plano_retrato($hoje))] : []);
 }

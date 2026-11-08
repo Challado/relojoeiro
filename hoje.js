@@ -191,8 +191,8 @@ function recarregarHoje() {
       + el("div", {"id": "proximos-lista"}, proximosHtml(d.proximos)));
 
     // O quadro "Modo de rodízio": fechado mostra o modo atual; aberto, escolhe o modo (Aplicar só marca), o critério de
-    // escolha e a garantia de rodízio, e sorteia de novo (a partir de amanhã, inclusive hoje ou, com mais de uma semana no
-    // modo, a próxima semana). Os blocos, as semanas e o roteiro se editam nos Modos de rodízio
+    // escolha e a garantia de rodízio, e sorteia de novo (a partir de amanhã, inclusive hoje ou a
+    // próxima semana: todas ficam na lista, e a que não vale agora fica desabilitada, com o motivo). Os blocos, as semanas e o roteiro se editam nos Modos de rodízio
     var modo = d.modo;
     var escala = modo !== null && modo.escala_dias !== null;
     // o relógio de hoje, para os textos do Sortear de novo; sem plano para hoje, o texto diz só que hoje fica como está
@@ -256,21 +256,13 @@ function recarregarHoje() {
     sorteios.push(["resortear_hoje", t("inclusive hoje"), nomeHoje !== "" ? t("Refaz também hoje: se sair outro relógio, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}) : t("Refaz também hoje: o relógio que sair passa a ser o do pulso a partir de agora."),
       nomeHoje !== "" ? t("Sortear de novo inclusive hoje? Se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}) : t("Sortear de novo inclusive hoje? O relógio que sair para hoje passa a ser o do pulso a partir de agora."),
       !d.trocar_hoje ? desligado : (hojeJa ? "" : t("o dia de hoje ainda não começou: use \"a partir de hoje\""))]);
-    // a partir do próximo período, pela configuração dos sorteios: ignora o que está valendo (hoje inclusive) e refaz do começo do
-    // período seguinte (a semana que vem até onde o modo monta, ou a escala seguinte)
-    var pp = d.proximo_periodo;
-    var ppDatas = pp ? {1: dataBr(pp.inicio, true), 2: dataBr(pp.fim, true)} : {};
-    sorteios.push(["resortear_proximo", pp ? t("a partir do próximo período ({1} a {2})", ppDatas) : t("a partir do próximo período"),
-      !pp ? "" : (pp.escala ? t("Monta a escala seguinte, de {1} a {2}, pelo modo atual, sem mexer no período de agora (hoje inclusive); os dias que ainda faltam dele contam como uso.", ppDatas)
-        : t("Refaz o plano de {1} a {2}, o próximo período pelo modo atual, sem mexer no período de agora (hoje inclusive); os dias que ainda faltam dele contam como uso.", ppDatas)),
-      !pp ? "" : t("Sortear de novo a partir do próximo período, de {1} a {2}? O período de agora fica como está.", ppDatas),
-      pp ? "" : semModo]);
     var ps = d.proxima_semana;
-    var temSemana = !escala && modo !== null && modo.semanas > 1;
+    // a próxima semana vale em qualquer modo fora da escala (que já planeja o próprio período)
+    var temSemana = !escala && modo !== null;
     sorteios.push(["proxima_semana", t("a próxima semana ({1} a {2})", {1: dataBr(ps.inicio, true), 2: dataBr(ps.fim, true)}),
       t("{1} a semana seguinte inteira, de {2} a {3}, pelo modo atual, com os dias que ainda faltam desta semana já contados como uso. Os dias escolhidos à mão ficam.", {1: ps.ja_montada ? t("Refaz") : t("Monta"), 2: semIni, 3: semFim}),
       t("{1} a semana de {2} a {3}?{4}", {1: ps.ja_montada ? t("Sortear de novo") : t("Montar"), 2: dataBr(ps.inicio, true), 3: dataBr(ps.fim, true), 4: ps.ja_montada ? t(" O que já estava montado para ela é refeito.") : ""}),
-      temSemana ? "" : (modo === null ? semModo : (escala ? t("a escala já planeja o próprio período") : t("o modo tem uma semana só: use \"a partir do próximo período\"")))]);
+      temSemana ? "" : (modo === null ? semModo : t("a escala já planeja o próprio período"))]);
     var primeira = sorteios.filter(function (x) { return x[4] === ""; })[0];
     // "Sobrescrever tudo": sai tudo o que o plano tem do começo do sorteio em diante (à mão, livre ou sorteado); a confirmação avisa
     var avisoSobrescrever = t(" Com Sobrescrever tudo marcado, sai tudo o que o plano tem desse dia em diante, inclusive os dias escolhidos à mão e os dias livres, e o modo sorteia de novo.");

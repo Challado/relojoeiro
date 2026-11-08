@@ -249,7 +249,7 @@
  *                            {"identificador", "nome", "formato", "unidade", "acao", "botao"} (o lançamento do botão)}], "plano": [os
  *                            próximos 62 dias: {"data", "relogio_id", "relogio", "acao", "motivo", "origem"}], "livres": [os dias livres
  *                            dos próximos 62 dias], "proximos": {os Próximos dias da página, uma página: como em recurso=proximos;
- *                            proximos_pagina=N escolhe a página}, "proxima_semana": {"segunda", "domingo", "ja_montada"}, "proximo_periodo": {"inicio", "fim", "escala"}, "modos":
+ *                            proximos_pagina=N escolhe a página}, "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
  *                            [{"id", "nome", "selecao", "escala_dias", "blocos": [{"id", "nome", "dias", "no_id", "um_por", "relogio_id"}]}],
  *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes" (o filtro O que fazer, sem o Encostado), "estados" (o filtro Estado),
  *                            "relogios": [{"id", "nome", "disponivel", "tipo" (o grupo), "em_uso", "estado" (uso, sessao, repouso ou
@@ -615,10 +615,7 @@
  *                             sortear:<forma>, inteligente, ponderado, aleatorio, fifo ou menos_usado: o dia é sorteado agora por essa forma,
  *                             entre os disponíveis do bloco do modo ativo que cobre o dia, sem o que o dia tinha, e fica à mão
  *                             com o motivo "Sorteado à mão (<forma>): ..."), proxima_semana (em qualquer dia: a semana
- *                             seguinte inteira, com os dias que faltam desta já contados como uso), resortear_proximo (a partir do
- *                             próximo período, sem olhar o que está valendo, hoje inclusive: sem escala, da semana que vem até onde o
- *                             modo monta o plano; na escala inteligente, a escala seguinte, do dia depois do fim da que vale; os dias
- *                             à mão e os livres do trecho ficam, menos com sobrescrever=1), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
+ *                             seguinte inteira, com os dias que faltam desta já contados como uso), periodo (de, ate: AAAA-MM-DD, de hoje até 2 anos; relogio_ids[]: um ou vários, na
  *                             ordem; dias_cada (padrão 1): os dias do período ficam escolhidos à mão, cada relógio dias_cada dias
  *                             seguidos, e depois do último volta ao primeiro), periodo_sortear (de, ate, um dos dois pode faltar: sem
  *                             o de, de amanhã; sem o ate, até o último dia do plano; os dias do período, de amanhã em diante, à mão,
@@ -641,7 +638,6 @@
  *                            Ex. usando: curl -u lucas:senha -d recurso=rodizio -d acao=usando -d relogio_id=12 http://servidor/relojoeiro/api.php
  *                            Ex. trocar_dia: curl -u lucas:senha -d recurso=rodizio -d acao=trocar_dia -d data=2026-10-09 -d relogio_id=12 http://servidor/relojoeiro/api.php
  *                            Ex. proxima_semana: curl -u lucas:senha -d recurso=rodizio -d acao=proxima_semana http://servidor/relojoeiro/api.php
- *                            Ex. resortear_proximo: curl -u lucas:senha -d recurso=rodizio -d acao=resortear_proximo http://servidor/relojoeiro/api.php
  *                            Ex. periodo: curl -u lucas:senha -d recurso=rodizio -d acao=periodo -d de=2026-12-20 -d ate=2027-01-05 -d "relogio_ids[]=12" -d "relogio_ids[]=7" -d dias_cada=2 http://servidor/relojoeiro/api.php
  *                            Ex. periodo_sortear: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_sortear -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
  *                            Ex. periodo_livre: curl -u lucas:senha -d recurso=rodizio -d acao=periodo_livre -d de=2026-12-20 -d ate=2027-01-05 http://servidor/relojoeiro/api.php
@@ -2412,11 +2408,6 @@
  *     proxima_semana.inicio          o primeiro dia da próxima semana (texto AAAA-MM-DD: a segunda-feira, ou o domingo com a semana
  *                                    começando no domingo)
  *     proxima_semana.ja_montada      verdadeiro ou falso: a próxima semana já está no plano
- *     proximo_periodo.escala         verdadeiro: o modo ativo é a escala inteligente, e o próximo período é a escala seguinte; falso: é a
- *                                    semana que vem (até onde o modo monta). O proximo_periodo vem nulo sem modo ativo
- *     proximo_periodo.fim            o último dia do próximo período (texto AAAA-MM-DD): até onde o resortear_proximo sorteia de novo
- *     proximo_periodo.inicio         o primeiro dia do próximo período (texto AAAA-MM-DD): o resortear_proximo começa nele e deixa como
- *                                    está o que vale antes, hoje inclusive
  *     semana_inicio                  o dia em que a semana do rodízio começa (a Configuração, semana_inicio): segunda ou domingo
  *     trocar_hoje                    verdadeiro: o relógio de hoje se troca no próprio dia (a Configuração, trocar_hoje); falso, o padrão:
  *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o

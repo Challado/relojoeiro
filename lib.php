@@ -5497,26 +5497,6 @@ function horizonte_do_modo($modo, $hoje)
     return $fim->modify("+" . (($semanas - 1) * 7) . " days");
 }
 
-// O próximo período do rodízio: o que vem depois do que está valendo, pela configuração dos sorteios, sem olhar o ativo.
-// Sem escala, é a semana que vem (a semana começa no dia da Configuração semana_inicio) e vai até onde o modo monta o plano
-// (as semanas do modo; ou até onde a próxima semana já foi montada, se for mais longe). Na escala inteligente, é a escala
-// seguinte: começa no dia depois do fim da que vale (escala_fim) e tem os dias do modo (escala_dias, pelo escala_periodo).
-// Devolve [primeiro dia, último dia] (DateTimeImmutable).
-function proximo_periodo($modo, $hoje)
-{
-    if ($modo && $modo["escala_dias"] !== null) {
-        $fim_atual = cfg("escala_fim") !== "" ? DateTimeImmutable::createFromFormat("!Y-m-d", cfg("escala_fim")) : false;
-        $ini = $fim_atual && $fim_atual > $hoje ? $fim_atual->modify("+1 day") : $hoje->modify("+1 day");
-        return [$ini, escala_fim_de($ini, $modo["escala_dias"])];
-    }
-    $ini = semana_fim($hoje)->modify("+1 day");
-    $fim = max($ini->modify("+6 days"), horizonte_do_modo($modo ?: ["semanas" => 1], $hoje));
-    if (cfg("proxima_semana_fim") !== "" && cfg("proxima_semana_fim") > $fim->format("Y-m-d")) {
-        $fim = new DateTimeImmutable(substr((string)cfg("proxima_semana_fim"), 0, 10));
-    }
-    return [$ini, $fim];
-}
-
 // Os dias que o sorteio não mexe, de $de em diante (até $ate, se vier): os escolhidos à mão e os livres; ["mao" => N,
 // "livres" => N] (o Sortear de novo diz quantos ficaram, ou quantos saíram com sobrescrever)
 function dias_guardados($de, $ate = null)

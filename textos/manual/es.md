@@ -1,4 +1,4 @@
-<!-- origem: 7369b4fb7d25e347e57e16667185855f47ef488a -->
+<!-- origem: 670a68c1f5f26d229534da607355b545c2388079 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -308,16 +308,14 @@ las semanas con las fechas). El plan llega hasta el último día de la última d
 empezando el domingo (con una sola semana, el último día de la semana el plan trae también el primero de la siguiente, para
 el aviso de la víspera), y la semana siguiente entra cuando le llega el turno. Con **El último día de la semana, los modos por semana arman** en *La semana siguiente entera*, en la Configuración, el último día de la semana las semanas del modo ya cuentan desde la semana que viene, y viene armada entera. La semana empieza el día elegido en la
 Configuración (**La semana empieza**: el lunes, el predeterminado, o el domingo), y el ciclo, la próxima semana y el reloj
-para toda la semana cuentan desde ella. Con más de una semana,
+para toda la semana cuentan desde ella. Fuera de la escala, en cualquier modo (incluso con una sola semana),
 **Sortear de nuevo** tiene también **la próxima semana**: sale con el modo actual, con los días que aún faltan de esta semana
 contados como uso, como si ya hubiera usado los relojes del plan (el uso cuenta en los días sin uso y en la nota; la carga no,
 porque no se sabe si el reloj se va a cargar). Cada día se elige así, con los anteriores del plan ya en la muñeca, y por eso el
 reloj del lunes no vuelve el martes solo por parecer parado. Los días elegidos a mano se quedan. En la escala inteligente no hay
 próxima semana: ya planifica su propio período.
 
-**Desde el próximo período.** En cualquier modo, **Sortear de nuevo** también tiene **desde el próximo período** (con sus fechas en la lista): ignora lo que está vigente, hoy incluido, que se queda como está, y rehace desde el primer día del período siguiente, según la configuración de los sorteos. Fuera de la escala, es la semana que viene (la semana empieza el día fijado en la Configuración) hasta donde el modo arma el plan; en la escala inteligente, es la escala siguiente, desde el día después del fin de la vigente y con los días del modo (pasa a ser la de ahora, y el plan anterior se queda). Lo que falta del período de ahora llega al siguiente contando como uso. Los días elegidos a mano y los libres de ese tramo se quedan, salvo con **Sobrescribir todo**. Por la API: `recurso=rodizio&acao=resortear_proximo`; `recurso=hoje` trae el `proximo_periodo` (`inicio`, `fim`, `escala`).
-
-**La lista muestra siempre todas las opciones.** La que no vale ahora queda deshabilitada, con el motivo en su propio texto: *"incluso hoy — no disponible: desactivado en la Configuración (Cambiar el reloj de hoy el mismo día)"*, *"la próxima semana — no disponible: el modo tiene una sola semana"*, *"a partir de hoy — no disponible: el día de hoy ya empezó en la muñeca"*. Al activar la Configuración, o al cambiar el modo, la opción vuelve a poder elegirse.
+**La lista muestra siempre todas las opciones.** La que no vale ahora queda deshabilitada, con el motivo en su propio texto: *"incluso hoy — no disponible: desactivado en la Configuración (Cambiar el reloj de hoy el mismo día)"*, *"la próxima semana — no disponible: la escala ya planifica su propio período"*, *"a partir de hoy — no disponible: el día de hoy ya empezó en la muñeca"*. Al activar la Configuración, o al cambiar el modo, la opción vuelve a poder elegirse.
 
 ### El guion del modo {#o-roteiro-do-modo}
 

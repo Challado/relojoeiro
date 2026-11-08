@@ -543,39 +543,6 @@ ler("plano sobrescrito", ["recurso" => "plano", "dias" => 10]);
 escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(8), "ate" => $em(9), "dias" => [$em(8) => "livre", $em(9) => (string)$rel["pilha"]]]);
 escrever(["recurso" => "rodizio", "acao" => "proxima_semana", "sobrescrever" => "1"]);
 ler("próxima semana sobrescrita", ["recurso" => "plano", "dias" => 16]);
-// a partir do próximo período (a semana que vem até onde o modo monta): o de agora, hoje inclusive, fica como está; o proximo_periodo
-// da página Hoje diz de onde até onde
-ler("hoje com o próximo período", ["recurso" => "hoje", "incluir" => "proximo_periodo,dia"]);
-$plano_de = function () {
-    $m_p = [];
-    foreach (chamar("GET", ["recurso" => "plano", "dias" => 40])["json"]["plano"] ?? [] as $p_p) {
-        $m_p[$p_p["data"]] = (int)$p_p["relogio_id"];
-    }
-    return $m_p;
-};
-$antes_p = $plano_de();
-$periodo_p = chamar("GET", ["recurso" => "hoje", "incluir" => "proximo_periodo"])["json"]["proximo_periodo"] ?? null;
-escrever(["recurso" => "rodizio", "acao" => "resortear_proximo"]);
-$depois_p = $plano_de();
-// o período de agora (antes do primeiro dia do próximo), hoje inclusive, fica como estava; o próximo vem inteiro no plano
-$mudou_p = [];
-$vagos_p = [];
-foreach ($antes_p as $dia_p => $rel_p) {
-    if ($periodo_p !== null && $dia_p < $periodo_p["inicio"] && ($depois_p[$dia_p] ?? null) !== $rel_p) {
-        $mudou_p[] = $dia_p;
-    }
-}
-for ($d_p = $periodo_p["inicio"] ?? "9999"; $periodo_p !== null && $d_p <= $periodo_p["fim"]; $d_p = date("Y-m-d", strtotime($d_p . " +1 day"))) {
-    if (!isset($depois_p[$d_p]) && !in_array($d_p, chamar("GET", ["recurso" => "plano", "dias" => 40])["json"]["livres"] ?? [], true)) {
-        $vagos_p[] = $d_p;
-    }
-}
-if ($periodo_p === null || $periodo_p["escala"] || count($mudou_p) > 0 || count($vagos_p) > 0) {
-    $falhas[] = "resortear_proximo: o período de agora devia ficar como estava e o próximo ficar montado (" . json_encode($periodo_p) . "); mudaram: " . implode(", ", $mudou_p) . "; sem plano: " . implode(", ", $vagos_p);
-}
-ler("plano com o próximo período sorteado de novo", ["recurso" => "plano", "dias" => 30]);
-escrever(["recurso" => "rodizio", "acao" => "resortear_proximo", "sobrescrever" => "1"]);
-ler("plano com o próximo período sobrescrito", ["recurso" => "plano", "dias" => 30]);
 escrever(["recurso" => "modos", "acao" => "salvar", "id" => $inteligente, "nome" => "Escala inteligente", "selecao" => "inteligente", "escala_dias" => 45,
     "blocos" => [["nome" => "Todo dia", "dias" => [1, 2, 3, 4, 5, 6, 7], "no_id" => 0, "um_por" => "dia", "relogio_id" => 0]]]);
 escrever(["recurso" => "modos", "acao" => "ativar", "id" => $inteligente]);
@@ -1967,25 +1934,6 @@ foreach ([[30, null, "salvar o modo com 30 dias"], [30, "resortear", "sortear de
     }
 }
 ler("escala de 7, 30 e 7 dias de novo", ["recurso" => "plano", "dias" => 45]);
-// a partir do próximo período na escala (de 7 dias, a de agora): monta a escala seguinte, do dia depois do fim da que vale, e ela passa a
-// ser a de agora; o plano de antes fica, e todo dia até o novo fim tem relógio
-$fim_antes_e = $fim_escala();
-$periodo_e = chamar("GET", ["recurso" => "hoje", "incluir" => "proximo_periodo"])["json"]["proximo_periodo"] ?? null;
-escrever(["recurso" => "rodizio", "acao" => "resortear_proximo"]);
-$fim_depois_e = $fim_escala();
-$lido_e = chamar("GET", ["recurso" => "plano", "dias" => 45])["json"];
-$tem_e = array_merge(array_column($lido_e["plano"] ?? [], "data"), $lido_e["livres"] ?? []);
-$vagos_e = [];
-for ($k = 1; $em($k) <= $fim_depois_e && $k <= 44; $k++) {
-    if (!in_array($em($k), $tem_e, true)) {
-        $vagos_e[] = $em($k);
-    }
-}
-if ($periodo_e === null || empty($periodo_e["escala"]) || $periodo_e["inicio"] !== date("Y-m-d", strtotime($fim_antes_e . " +1 day")) || $fim_depois_e !== $periodo_e["fim"] || count($vagos_e) > 0) {
-    $falhas[] = "escala: o resortear_proximo devia montar a escala seguinte de " . json_encode($periodo_e) . " (fim antes " . $fim_antes_e . ", depois " . $fim_depois_e . ")"
-        . (count($vagos_e) > 0 ? "; dias sem plano: " . implode(", ", array_slice($vagos_e, 0, 5)) : "");
-}
-ler("plano com a escala seguinte", ["recurso" => "plano", "dias" => 45]);
 // o primeiro dia da escala (a Configuração escala_inicio): hoje, o de hoje é sempre o 1º dia (a escala de 7 vai até daqui a
 // 6, a qualquer hora); amanha (o padrão), de amanhã quando o dia de hoje já começou no pulso. Mudar refaz a escala na próxima
 // montagem, e o Sortear de novo segue a escolha; outro valor é recusado
