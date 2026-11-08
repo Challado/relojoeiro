@@ -1,4 +1,4 @@
-<!-- origem: 1cfdeca2cc722e27eb784b6a411a24990e59a3f9 -->
+<!-- origem: 7369b4fb7d25e347e57e16667185855f47ef488a -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -322,6 +322,8 @@ juste parce qu'elle semble arrêtée. Les jours choisis à la main restent. Dans
 prochaine : il planifie déjà sa propre période.
 
 **À partir de la prochaine période.** Dans tous les modes, **Refaire le tirage** a aussi **à partir de la prochaine période** (avec ses dates dans la liste) : il ignore ce qui est en vigueur, aujourd'hui compris, qui reste tel quel, et refait à partir du premier jour de la période suivante, selon la configuration des tirages. Hors planning intelligent, c'est la semaine prochaine (la semaine commence le jour fixé dans la Configuration) jusqu'où le mode construit le plan ; dans le planning intelligent, c'est le planning suivant, à partir du lendemain de la fin de l'actuel et avec les jours du mode (il devient celui d'aujourd'hui, et le plan d'avant reste). Ce qui reste de la période actuelle arrive à la suivante en comptant comme usage. Les jours choisis à la main et les jours libres de ce tronçon restent, sauf avec **Tout écraser**. Par l'API : `recurso=rodizio&acao=resortear_proximo` ; `recurso=hoje` renvoie le `proximo_periodo` (`inicio`, `fim`, `escala`).
+
+**La liste montre toujours toutes les options.** Celle qui ne vaut pas maintenant reste désactivée, avec le motif dans son propre texte : *« aujourd'hui compris — indisponible : désactivé dans la Configuration (Changer la montre du jour le jour même) »*, *« la semaine prochaine — indisponible : le mode n'a qu'une semaine »*, *« à partir d'aujourd'hui — indisponible : la journée d'aujourd'hui a déjà commencé au poignet »*. En activant la Configuration, ou en changeant le mode, l'option redevient choisissable.
 
 ### Le scénario du mode {#o-roteiro-do-modo}
 

@@ -184,6 +184,16 @@ Pelo `paridade.sh`, sobre o banco do cenário: `testes/paridade.sh --rolagem sql
 tamanho: `node testes/rolagem.cjs "menu" "cel-"`. O resultado esperado é `A rolagem confere: ...`; quando trava, diz o tamanho,
 a página e o que não deu para alcançar.
 
+# Conferência da lista do Sortear de novo
+
+O `testes/sorteio-interface.cjs` abre a página Hoje no navegador, sobre o servidor do cenário, e confere a lista do **Sortear de novo**:
+todas as opções ficam nela (*a partir de hoje*, *a partir de amanhã*, *inclusive hoje*, *a partir do próximo período* e *a próxima semana*), e a
+que não vale agora fica **desabilitada**, com o motivo no próprio texto e no `title` (*"inclusive hoje — indisponível: desligado na
+Configuração..."*). Cobre quatro situações (o trocar o relógio de hoje no próprio dia desligado e ligado, um modo de duas semanas e a escala
+inteligente), que a explicação abaixo acompanha a opção escolhida e que o clique em **Sortear** roda o *a partir do próximo período*; no fim,
+restaura a Configuração e o modo. Roda no `testes/paridade.sh --layout sqlite` (o job "Layout das telas"); sozinho:
+`BASE=http://127.0.0.1:8101/ node testes/sorteio-interface.cjs`. O resultado esperado é `falhas: 0`.
+
 # Conferência dos botões de ajuda (o ⓘ)
 
 O ⓘ que abre a explicação fica **colado ao que explica**: na mesma linha do texto do rótulo (ou do campo), a no máximo 24px,

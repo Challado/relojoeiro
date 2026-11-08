@@ -1,4 +1,4 @@
-<!-- origem: 1cfdeca2cc722e27eb784b6a411a24990e59a3f9 -->
+<!-- origem: 7369b4fb7d25e347e57e16667185855f47ef488a -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -322,6 +322,8 @@ already on the wrist, which is why Monday's watch does not come back on Tuesday 
 by hand stay. On the smart schedule there is no next week: it already plans its own period.
 
 **From the next period.** In any mode, **Draw again** also has **from the next period** (with its dates in the list): it ignores what is in effect now, today included, which stays as it is, and redraws from the first day of the following period, by the draw settings. Outside the smart schedule, it is next week (the week starts on the day set in the Settings) up to where the mode builds the plan; on the smart schedule, it is the next schedule, from the day after the end of the current one and with the mode's days (it becomes the current one, and the earlier plan stays). What is left of the current period reaches the next one counting as use. The days chosen by hand and the free ones in that stretch stay, except with **Overwrite everything**. Through the API: `recurso=rodizio&acao=resortear_proximo`; `recurso=hoje` brings the `proximo_periodo` (`inicio`, `fim`, `escala`).
+
+**The list always shows every option.** The one that does not apply now stays disabled, with the reason in its own text: *"including today — unavailable: turned off in the Settings (Change today's watch on the same day)"*, *"the next week — unavailable: the mode has only one week"*, *"from today — unavailable: today has already started on the wrist"*. Turning the setting on, or changing the mode, makes the option available again.
 
 ### The mode's script {#o-roteiro-do-modo}
 

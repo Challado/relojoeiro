@@ -366,6 +366,8 @@ próxima semana: ya planifica su propio período.
 
 **Desde el próximo período.** En cualquier modo, **Sortear de nuevo** también tiene **desde el próximo período** (con sus fechas en la lista): ignora lo que está vigente, hoy incluido, que se queda como está, y rehace desde el primer día del período siguiente, según la configuración de los sorteos. Fuera de la escala, es la semana que viene (la semana empieza el día fijado en la Configuración) hasta donde el modo arma el plan; en la escala inteligente, es la escala siguiente, desde el día después del fin de la vigente y con los días del modo (pasa a ser la de ahora, y el plan anterior se queda). Lo que falta del período de ahora llega al siguiente contando como uso. Los días elegidos a mano y los libres de ese tramo se quedan, salvo con **Sobrescribir todo**. Por la API: `recurso=rodizio&acao=resortear_proximo`; `recurso=hoje` trae el `proximo_periodo` (`inicio`, `fim`, `escala`).
 
+**La lista muestra siempre todas las opciones.** La que no vale ahora queda deshabilitada, con el motivo en su propio texto: *"incluso hoy — no disponible: desactivado en la Configuración (Cambiar el reloj de hoy el mismo día)"*, *"la próxima semana — no disponible: el modo tiene una sola semana"*, *"a partir de hoy — no disponible: el día de hoy ya empezó en la muñeca"*. Al activar la Configuración, o al cambiar el modo, la opción vuelve a poder elegirse.
+
 ### El guion del modo
 
 Por debajo, todo modo es un **guion**: cinco líneas que el motor de fórmulas calcula para cada reloj disponible, al comienzo de

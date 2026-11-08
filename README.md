@@ -377,6 +377,11 @@ de antes fica). O que falta do período de agora chega ao seguinte contando como
 trecho ficam, menos com **Sobrescrever tudo**. Pela API: `recurso=rodizio&acao=resortear_proximo`; o `recurso=hoje` traz o
 `proximo_periodo` (`inicio`, `fim`, `escala`).
 
+**A lista mostra sempre todas as opções.** A que não vale agora fica desabilitada, com o motivo no próprio texto: *"inclusive
+hoje — indisponível: desligado na Configuração (Trocar o relógio de hoje no próprio dia)"*, *"a próxima semana — indisponível: o
+modo tem uma semana só"*, *"a partir de hoje — indisponível: o dia de hoje já começou no pulso"*. Ligando a Configuração, ou
+mudando o modo, a opção volta a poder ser escolhida.
+
 ### O roteiro do modo
 
 Por baixo, todo modo é um **roteiro**: cinco linhas que o motor de fórmulas calcula para cada relógio disponível, no começo

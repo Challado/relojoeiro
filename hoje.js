@@ -242,43 +242,46 @@ function recarregarHoje() {
       + el("p", {"class": "nota", "data-nao-manual": true}, t("Aplicar só marca o modo (e grava o critério e a garantia): o plano gravado continua como está, e o modo vale para os próximos sorteios. Para refazer o plano com ele, use \"Sortear de novo\", embaixo. Os modos, as semanas e o roteiro se cadastram em {1}.", {1: el("a", {"href": "modos.php"}, t("Modos de rodízio"))})));
     // sortear de novo: as ações possíveis agora, com a explicação e a confirmação de cada uma
     var ateQuando = escala ? t("o fim da escala") : (d.proxima_semana && d.proxima_semana.ja_montada ? t("o fim da próxima semana") : semFim);
+    // Todas as opções ficam na lista; a que não vale agora fica desabilitada, com o motivo no próprio texto (e no title): [valor, texto,
+    // explicação, confirmação, motivo ("" quando vale agora)]
+    var semModo = t("sem modo de rodízio ativo");
+    var desligado = t("desligado na Configuração (Trocar o relógio de hoje no próprio dia)");
     var sorteios = [];
-    if (d.comecou || !d.trocar_hoje) {
-      // o relógio de hoje fica (já começou no pulso, ou a Configuração não troca o de hoje no próprio dia)
-      sorteios.push(["resortear", t("a partir de amanhã"), nomeHoje !== "" ? t("Refaz o plano de amanhã até {1} pelo modo atual; hoje continua o {2}.", {1: ateQuando, 2: nomeHoje}) : t("Refaz o plano de amanhã até {1} pelo modo atual; hoje fica como está.", {1: ateQuando}),
-        nomeHoje !== "" ? t("Sortear de novo a partir de amanhã? Hoje continua o {1}.", {1: nomeHoje}) : t("Sortear de novo a partir de amanhã? Hoje fica como está."), true]);
-      if (d.trocar_hoje) {
-        sorteios.push(["resortear_hoje", t("inclusive hoje"), nomeHoje !== "" ? t("Refaz também hoje: se sair outro relógio, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}) : t("Refaz também hoje: o relógio que sair passa a ser o do pulso a partir de agora."),
-          nomeHoje !== "" ? t("Sortear de novo inclusive hoje? Se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}) : t("Sortear de novo inclusive hoje? O relógio que sair para hoje passa a ser o do pulso a partir de agora."), true]);
-      }
-    } else {
-      sorteios.push(["resortear", t("a partir de hoje"), t("Refaz o plano de hoje até {1} pelo modo atual (o dia ainda não começou no pulso).", {1: ateQuando}), t("Sortear de novo a partir de hoje?"), true]);
-    }
+    var hojeJa = d.comecou;
+    sorteios.push(["resortear", t("a partir de hoje"), t("Refaz o plano de hoje até {1} pelo modo atual (o dia ainda não começou no pulso).", {1: ateQuando}), t("Sortear de novo a partir de hoje?"),
+      hojeJa ? t("o dia de hoje já começou no pulso") : (!d.trocar_hoje ? desligado : "")]);
+    sorteios.push(["resortear", t("a partir de amanhã"), nomeHoje !== "" ? t("Refaz o plano de amanhã até {1} pelo modo atual; hoje continua o {2}.", {1: ateQuando, 2: nomeHoje}) : t("Refaz o plano de amanhã até {1} pelo modo atual; hoje fica como está.", {1: ateQuando}),
+      nomeHoje !== "" ? t("Sortear de novo a partir de amanhã? Hoje continua o {1}.", {1: nomeHoje}) : t("Sortear de novo a partir de amanhã? Hoje fica como está."),
+      hojeJa || !d.trocar_hoje ? "" : t("o dia de hoje ainda não começou: \"a partir de hoje\" já refaz também amanhã")]);
+    sorteios.push(["resortear_hoje", t("inclusive hoje"), nomeHoje !== "" ? t("Refaz também hoje: se sair outro relógio, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}) : t("Refaz também hoje: o relógio que sair passa a ser o do pulso a partir de agora."),
+      nomeHoje !== "" ? t("Sortear de novo inclusive hoje? Se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora, e o {1} sai.", {1: nomeHoje}) : t("Sortear de novo inclusive hoje? O relógio que sair para hoje passa a ser o do pulso a partir de agora."),
+      !d.trocar_hoje ? desligado : (hojeJa ? "" : t("o dia de hoje ainda não começou: use \"a partir de hoje\""))]);
     // a partir do próximo período, pela configuração dos sorteios: ignora o que está valendo (hoje inclusive) e refaz do começo do
     // período seguinte (a semana que vem até onde o modo monta, ou a escala seguinte)
-    if (d.proximo_periodo) {
-      var pp = d.proximo_periodo;
-      var ppDatas = {1: dataBr(pp.inicio, true), 2: dataBr(pp.fim, true)};
-      sorteios.push(["resortear_proximo", t("a partir do próximo período ({1} a {2})", ppDatas),
-        pp.escala ? t("Monta a escala seguinte, de {1} a {2}, pelo modo atual, sem mexer no período de agora (hoje inclusive); os dias que ainda faltam dele contam como uso.", ppDatas)
-          : t("Refaz o plano de {1} a {2}, o próximo período pelo modo atual, sem mexer no período de agora (hoje inclusive); os dias que ainda faltam dele contam como uso.", ppDatas),
-        t("Sortear de novo a partir do próximo período, de {1} a {2}? O período de agora fica como está.", ppDatas), true]);
-    }
-    if (!escala && modo !== null && modo.semanas > 1) {
-      var ps = d.proxima_semana;
-      sorteios.push(["proxima_semana", t("a próxima semana ({1} a {2})", {1: dataBr(ps.inicio, true), 2: dataBr(ps.fim, true)}),
-        t("{1} a semana seguinte inteira, de {2} a {3}, pelo modo atual, com os dias que ainda faltam desta semana já contados como uso. Os dias escolhidos à mão ficam.", {1: ps.ja_montada ? t("Refaz") : t("Monta"), 2: semIni, 3: semFim}),
-        t("{1} a semana de {2} a {3}?{4}", {1: ps.ja_montada ? t("Sortear de novo") : t("Montar"), 2: dataBr(ps.inicio, true), 3: dataBr(ps.fim, true), 4: ps.ja_montada ? t(" O que já estava montado para ela é refeito.") : ""}), true]);
-    }
+    var pp = d.proximo_periodo;
+    var ppDatas = pp ? {1: dataBr(pp.inicio, true), 2: dataBr(pp.fim, true)} : {};
+    sorteios.push(["resortear_proximo", pp ? t("a partir do próximo período ({1} a {2})", ppDatas) : t("a partir do próximo período"),
+      !pp ? "" : (pp.escala ? t("Monta a escala seguinte, de {1} a {2}, pelo modo atual, sem mexer no período de agora (hoje inclusive); os dias que ainda faltam dele contam como uso.", ppDatas)
+        : t("Refaz o plano de {1} a {2}, o próximo período pelo modo atual, sem mexer no período de agora (hoje inclusive); os dias que ainda faltam dele contam como uso.", ppDatas)),
+      !pp ? "" : t("Sortear de novo a partir do próximo período, de {1} a {2}? O período de agora fica como está.", ppDatas),
+      pp ? "" : semModo]);
+    var ps = d.proxima_semana;
+    var temSemana = !escala && modo !== null && modo.semanas > 1;
+    sorteios.push(["proxima_semana", t("a próxima semana ({1} a {2})", {1: dataBr(ps.inicio, true), 2: dataBr(ps.fim, true)}),
+      t("{1} a semana seguinte inteira, de {2} a {3}, pelo modo atual, com os dias que ainda faltam desta semana já contados como uso. Os dias escolhidos à mão ficam.", {1: ps.ja_montada ? t("Refaz") : t("Monta"), 2: semIni, 3: semFim}),
+      t("{1} a semana de {2} a {3}?{4}", {1: ps.ja_montada ? t("Sortear de novo") : t("Montar"), 2: dataBr(ps.inicio, true), 3: dataBr(ps.fim, true), 4: ps.ja_montada ? t(" O que já estava montado para ela é refeito.") : ""}),
+      temSemana ? "" : (modo === null ? semModo : (escala ? t("a escala já planeja o próprio período") : t("o modo tem uma semana só: use \"a partir do próximo período\"")))]);
+    var primeira = sorteios.filter(function (x) { return x[4] === ""; })[0];
     // "Sobrescrever tudo": sai tudo o que o plano tem do começo do sorteio em diante (à mão, livre ou sorteado); a confirmação avisa
     var avisoSobrescrever = t(" Com Sobrescrever tudo marcado, sai tudo o que o plano tem desse dia em diante, inclusive os dias escolhidos à mão e os dias livres, e o modo sorteia de novo.");
     var formSorteio = el("form", {"data-recurso": "rodizio", "class": "sortear-de-novo", "data-nao-manual": true, "data-aviso-sobrescrever": avisoSobrescrever,
       "onsubmit": "var o = this.acao.options[this.acao.selectedIndex]; return confirm(o.getAttribute('data-confirma') + (this.sobrescrever.checked ? this.getAttribute('data-aviso-sobrescrever') : ''))"},
       el("label", {"class": "campo-principal", "for": "acao-sorteio"}, t("Sortear de novo"))
       + el("div", {"class": "linha-sorteio"}, el("select", {"name": "acao", "id": "acao-sorteio"}, sorteios.map(function (s) {
-        return el("option", {"value": s[0], "disabled": !s[4], "data-explica": s[2], "data-confirma": s[3]}, h(s[1]));
+        return s[4] === "" ? el("option", {"value": s[0], "data-explica": s[2], "data-confirma": s[3]}, h(s[1]))
+          : el("option", {"value": s[0], "disabled": true, "title": s[4], "data-explica": s[4], "data-confirma": ""}, h(t("{1} — indisponível: {2}", {1: s[1], 2: s[4]})));
       }).join("")) + el("button", {"class": "leve"}, t("Sortear")))
-      + el("p", {"class": "nota", "data-explica-sorteio": true}, h(sorteios[0][2]))
+      + el("p", {"class": "nota", "data-explica-sorteio": true}, h(primeira[2]))
       + el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "sobrescrever", "value": "1"}) + " " + t("Sobrescrever tudo"))
       + ajudaNota("apagar-sorteio", t("Apagar ao sortear de novo"), t("Marcada, sai tudo o que o plano tem do começo do sorteio em diante: os dias escolhidos à mão, os dias livres e os sorteados; depois o modo monta tudo de novo. Desmarcada, os dias à mão e os livres ficam como estão.")));
     // remontado, o quadro volta fechado, como no sistema antigo depois de aplicar

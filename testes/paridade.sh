@@ -209,6 +209,15 @@ if [ $AJUDA -eq 1 ]; then
   if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/ajuda" SO="ajuda-solta,ajuda-sem-nome" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/ajuda/agrupado.txt:"; sed 's/^/    /' "$PASTA/ajuda/agrupado.txt" 2>/dev/null | head -60; fi
 fi
 
+if [ $LAYOUT -eq 1 ]; then
+  echo "Conferência da lista do Sortear de novo no $REF:"
+  if BASE="http://127.0.0.1:$PORTA0/" node testes/sorteio-interface.cjs > "$PASTA/sorteio.txt" 2>&1; then
+    echo "    $(tail -1 "$PASTA/sorteio.txt")"
+  else
+    FALHOU=1; sed 's/^/    /' "$PASTA/sorteio.txt" | head -40
+  fi
+fi
+
 if [ $ROLAGEM -eq 1 ]; then
   echo "Conferência da rolagem no $REF:"
   if BASE="http://127.0.0.1:$PORTA0/" node testes/rolagem.cjs > "$PASTA/rolagem.txt" 2>&1; then
