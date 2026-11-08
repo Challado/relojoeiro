@@ -2054,8 +2054,9 @@ body.com-ajuda { overflow: hidden; }
 button.ajuda-linha {
   display: inline-flex; align-items: center; gap: .3rem; min-height: 0; margin: .3rem 0; padding: .15rem .1rem; border: 0; background: none;
   color: var(--safira); font-size: .85rem; text-align: left; cursor: pointer;
-  /* sempre numa linha só dela, também dentro de uma linha de formulário (flex) ou de uma grade */
-  flex: 0 0 100%; grid-column: 1 / -1; justify-content: flex-start; width: 100%;
+  /* sempre numa linha só dela, também dentro de uma linha de formulário (flex em linha) ou de uma grade. A largura inteira, e não o
+     flex-basis em porcentagem: numa coluna flex (a garantia de rodízio) o 100% do basis é a ALTURA da caixa e o botão pisava no que vem depois */
+  flex: 0 0 auto; grid-column: 1 / -1; justify-content: flex-start; width: 100%;
 }
 button.ajuda-linha:hover { text-decoration: underline; }
 .ajuda-linha-i { display: inline-flex; align-items: center; justify-content: center; width: 1.1rem; height: 1.1rem; border: 1px solid var(--aco-escuro); border-radius: 50%; font-size: .72rem; font-weight: 600; }

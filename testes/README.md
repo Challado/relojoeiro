@@ -135,6 +135,10 @@ O `testes/layout.cjs` abre todas as telas num navegador de verdade (o Chromium, 
 - a etiqueta com fundo ou borda partida em duas linhas, e o botão com o texto partido ("Abrir" numa linha, "foto" na outra);
 - o texto cortado, e o conteúdo (um texto que não quebra, uma etiqueta) que passa da caixa do próprio elemento;
 - irmãos que ficam um por cima do outro;
+- **texto por cima de texto, ou por cima de um botão ou campo** (`texto-sobreposto`): o conteúdo que vaza da caixa e cai sobre o que
+  vem depois sem ser vizinho dele (o botão "ⓘ A garantia de rodízio" que pisava no "Aplicar modo", no celular). O texto é medido já
+  recortado pela caixa que o corta (a célula com reticências não conta), e ficam de fora o que é fixo, sticky ou absoluto de
+  propósito (menus, gaveta). O autoteste do detector pega o texto e o botão que pisam no que vem antes e aceita o texto cortado;
 - o painel que rola na vertical (o painel do relógio ao lado da lista) e, por dentro, ficou mais largo que ele. Dentro dele, o
   conteúdo é conferido como o resto: só uma área que rola **só de lado** (uma tabela larga numa `.rolagem`) pode passar da
   largura de propósito.

@@ -236,7 +236,72 @@ function examinar(seletorRaiz) {
       }
     }
   }
-  // 6. linhas de texto que se sobrepõem a outros elementos de texto (por exemplo, valor por cima da tabela do lado): folhas
+  // 6. texto por cima de texto, ou por cima de um botão ou campo, que não são pai nem filho um do outro (o conteúdo que vaza da caixa
+  // e cai sobre o que vem depois: o botão com flex-basis em porcentagem numa coluna, por exemplo). Só o que rola junto com a página:
+  // fica de fora o que é fixo, sticky ou absoluto (menus, gaveta, rótulos sobrepostos de propósito) e o que está cortado pela caixa
+  {
+    // o retângulo recortado pelas caixas que cortam o que passa delas (overflow hidden, clip, auto, scroll: o próprio elemento, se for o
+    // caso, e os de fora); null quando nada sobra à vista. O texto com reticências, por exemplo, só vale até a borda da célula
+    const recorta = (e, r, doProprio) => {
+      let c = { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      for (let a = doProprio ? e : e.parentElement; a && a !== document.body; a = a.parentElement) {
+        const ca = getComputedStyle(a);
+        if (/(hidden|auto|scroll|clip)/.test(ca.overflowX + ca.overflowY)) {
+          const ra = a.getBoundingClientRect();
+          c = { left: Math.max(c.left, ra.left), right: Math.min(c.right, ra.right), top: Math.max(c.top, ra.top), bottom: Math.min(c.bottom, ra.bottom) };
+          if (c.right - c.left < 3 || c.bottom - c.top < 3) return null;
+        }
+      }
+      return c;
+    };
+    const flutua = (e) => {
+      for (let a = e; a && a !== document.body; a = a.parentElement) {
+        const ps = getComputedStyle(a).position;
+        if (ps === 'fixed' || ps === 'sticky' || ps === 'absolute') return true;
+      }
+      return false;
+    };
+    const itens = [];
+    const percorre = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+    for (let no = percorre.nextNode(); no; no = percorre.nextNode()) {
+      const pai = no.parentElement;
+      if (!no.textContent.trim() || !pai || !visivel(pai) || ['SCRIPT', 'STYLE', 'OPTION', 'SELECT', 'TEXTAREA'].includes(pai.tagName) || flutua(pai)) continue;
+      const rg = document.createRange();
+      rg.selectNodeContents(no);
+      for (const q of rg.getClientRects()) {
+        const rc = q.width < 3 || q.height < 3 ? null : recorta(pai, q, true);
+        if (!rc) continue;
+        itens.push({ e: pai, r: { left: rc.left, right: rc.right, top: rc.top + scrollY, bottom: rc.bottom + scrollY }, texto: true });
+      }
+    }
+    // as caixas dos botões e campos (o texto de dentro deles é do próprio botão)
+    for (const c of raiz.querySelectorAll('button, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea')) {
+      if (!visivel(c) || flutua(c)) continue;
+      const rc = recorta(c, c.getBoundingClientRect(), false);
+      if (!rc) continue;
+      itens.push({ e: c, r: { left: rc.left, right: rc.right, top: rc.top + scrollY, bottom: rc.bottom + scrollY }, texto: false });
+    }
+    itens.sort((a, b) => a.r.top - b.r.top);
+    const parentesco = (a, b) => a === b || a.contains(b) || b.contains(a);
+    const vistos6 = new Set();
+    for (let i = 0; i < itens.length; i++) {
+      const a = itens[i];
+      for (let j = i + 1; j < itens.length && itens[j].r.top < a.r.bottom - 2; j++) {
+        const b = itens[j];
+        if (!a.texto && !b.texto) continue;
+        if (parentesco(a.e, b.e)) continue;
+        const x = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+        const y = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        const menor = Math.min(a.r.bottom - a.r.top, b.r.bottom - b.r.top);
+        if (x > 4 && y > Math.max(4, menor * .35)) {
+          const chave = nomear(a.e) + '|' + nomear(b.e);
+          if (vistos6.has(chave)) continue;
+          vistos6.add(chave);
+          probs.push({ tipo: 'texto-sobreposto', det: Math.round(x) + 'x' + Math.round(y) + 'px', quem: nomear(a.e) + '  ⟷  ' + nomear(b.e) });
+        }
+      }
+    }
+  }
   return probs;
 }
 
@@ -363,6 +428,15 @@ async function conferirDetector(b) {
     if (!soltos.some(x => x.quem.includes('label#ruim')) || !soltos.some(x => x.quem.includes('p#so')) || soltos.some(x => x.quem.includes('label#bom'))
       || soltas.filter(x => x.tipo === 'ajuda-sem-nome').length !== 1) {
       throw new Error('O detector deve pegar o ⓘ embaixo do campo, o sozinho e o sem nome, e aceitar o colado ao rótulo.');
+    }
+    // texto por cima de texto ou de botão: o que pisa no que vem depois (pego); o texto cortado com reticências, por mais largo que seja,
+    // não (aceito)
+    await p.setContent('<p id="primeira" style="margin:0">A garantia de rodízio explicada aqui</p><p id="nota" style="margin:-10px 0 0">A nota vem dos critérios</p>'
+      + '<button id="aplicar" style="margin-top:-12px">Aplicar modo</button>'
+      + '<table id="cortada"><tr><td style="width:60px;max-width:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Cronógrafos automáticos muito compridos</td><td>Em uso</td></tr></table>');
+    const sobrepostos = (await p.evaluate(examinar)).filter(x => x.tipo === 'texto-sobreposto');
+    if (!sobrepostos.some(x => /nota/.test(x.quem)) || !sobrepostos.some(x => /Aplicar/.test(x.quem)) || sobrepostos.some(x => /cortada/.test(x.quem) || /Cronógrafos/.test(x.quem))) {
+      throw new Error('O detector deve pegar o texto e o botão que pisam no que vem antes e aceitar o texto cortado com reticências: ' + JSON.stringify(sobrepostos.map(x => x.quem)));
     }
   } finally {
     await c.close();
