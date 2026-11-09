@@ -1037,6 +1037,63 @@ ler("ficha com o timegrapher", ["recurso" => "ficha", "relogio" => $rel["manual"
 escrever(["recurso" => "timegrapher", "acao" => "excluir", "id" => $tg1], false);
 escrever(["recurso" => "timegrapher", "acao" => "excluir", "id" => $tg1, "confirmar" => 1]);
 
+// o construtor de colunas: o dicionário de fontes (as tabelas do banco ligadas ao relógio, com as funções), as colunas cadastradas no
+// modo guiado (soma, média, menor, maior e contagem sobre as medições do timegrapher, a data da primeira e da última, a mão de obra
+// dos serviços, uma coluna da tabela dos relógios) e no expert (com moeda, casas e símbolo), as recusas, o teste num relógio, o valor na
+// tabela da página Hoje (só das que aparecem na escolha das colunas), a ordem e a exclusão. Os quatro bancos têm de dar os mesmos valores
+ler("colunas sem nenhuma", ["recurso" => "colunas"]);
+$col = [];
+foreach ([["Marcha média", "marcha", "media", ["casas" => 1]], ["Marcha somada", "marcha", "soma", []], ["Menor marcha", "marcha", "menor", []], ["Maior marcha", "marcha", "maior", []],
+    ["Primeira medição", "quando", "menor", []], ["Última medição", "quando", "maior", []], ["Medições", "id", "conta", []]] as [$nome_c, $campo_c, $fun_c, $mais_c]) {
+    $col[$nome_c] = escrever(array_merge(["recurso" => "colunas", "acao" => "salvar", "id" => 0, "nome" => $nome_c, "modo" => "guiado", "tabela" => "timegrapher", "campo" => $campo_c, "funcao" => $fun_c], $mais_c));
+}
+$col["Mão de obra"] = escrever(["recurso" => "colunas", "acao" => "salvar", "id" => 0, "nome" => "Mão de obra", "modo" => "guiado", "tabela" => "servico", "campo" => "mao_de_obra", "funcao" => "soma", "formato" => "moeda"]);
+$col["Dias de uso"] = escrever(["recurso" => "colunas", "acao" => "salvar", "id" => 0, "nome" => "Quanto usei", "modo" => "guiado", "tabela" => "relogio", "campo" => "tempo_de_uso"]);
+$col["Custo"] = escrever(["recurso" => "colunas", "acao" => "salvar", "id" => 0, "nome" => "Custo por medição", "modo" => "expert", "expressao" => "SE(fonte_timegrapher_id_conta > 0; fonte_servico_mao_de_obra_soma / fonte_timegrapher_id_conta; 0)", "formato" => "moeda", "simbolo" => "US$", "casas" => 3, "padrao" => 1]);
+foreach ([["nome" => "", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "soma"],
+    ["nome" => "marcha MÉDIA", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "soma"],
+    ["nome" => "Fonte errada", "modo" => "guiado", "tabela" => "nao_existe", "campo" => "x", "funcao" => "soma"],
+    ["nome" => "Soma de data", "modo" => "guiado", "tabela" => "servico", "campo" => "data", "funcao" => "soma"],
+    ["nome" => "Casas demais", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "soma", "casas" => 9],
+    ["nome" => "Símbolo solto", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "soma", "formato" => "inteiro", "simbolo" => "R$"],
+    ["nome" => "Variável solta", "modo" => "expert", "expressao" => "variavel_que_nao_existe + 1"],
+    ["nome" => "Total numa coluna", "modo" => "expert", "expressao" => "SOMA(carga)"],
+    ["nome" => "Escrita errada", "modo" => "expert", "expressao" => "1 +"],
+    ["nome" => "Modo estranho", "modo" => "talvez"]] as $ruim_c) {
+    escrever(array_merge(["recurso" => "colunas", "acao" => "salvar", "id" => 0], $ruim_c), false);
+}
+escrever(["recurso" => "colunas", "acao" => "salvar", "id" => $col["Marcha média"], "identificador" => "outro"], false);
+escrever(["recurso" => "colunas", "acao" => "salvar", "id" => $col["Marcha média"], "nome" => "Marcha média (s/dia)"]);
+escrever(["recurso" => "colunas", "acao" => "descer", "id" => $col["Marcha média"]]);
+escrever(["recurso" => "colunas", "acao" => "subir", "id" => $col["Marcha média"]]);
+ler("colunas cadastradas", ["recurso" => "colunas"]);
+ler("colunas teste guiado", ["recurso" => "colunas", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "media", "relogio" => $rel["manual"]]);
+ler("colunas teste guiado do campo", ["recurso" => "colunas", "tabela" => "servico", "campo" => "mao_de_obra", "funcao" => "soma", "formato" => "moeda", "casas" => 0, "simbolo" => "€", "relogio" => $rel["auto"]]);
+ler("colunas teste expert", ["recurso" => "colunas", "expressao" => "fonte_timegrapher_id_conta * 2 + 1", "formato" => "inteiro", "relogio" => $rel["manual"]]);
+ler("colunas teste com erro", ["recurso" => "colunas", "expressao" => "variavel_que_nao_existe"]);
+escrever(["recurso" => "config", "acao" => "salvar", "colunas_hoje" => "nome,c_marcha_media,c_marcha_somada,c_menor_marcha,c_maior_marcha,c_primeira_medicao,c_ultima_medicao,c_medicoes,c_mao_de_obra,c_custo_por_medicao,uso"]);
+$hoje_c = ler("hoje com as colunas cadastradas", ["recurso" => "hoje"]);
+$achou_c = false;
+foreach ($hoje_c["relogios"] ?? [] as $r_c) {
+    if ((int)$r_c["id"] === (int)$rel["manual"] && (int)($r_c["colunas_extras"]["c_medicoes"]["valor"] ?? 0) > 0 && isset($r_c["colunas_extras"]["c_custo_por_medicao"]["texto"])) {
+        $achou_c = true;
+    }
+}
+if (!$achou_c) {
+    $falhas[] = "colunas cadastradas: o relógio do timegrapher devia ter o valor das colunas na tabela da página Hoje: " . json_encode($hoje_c["colunas"] ?? null, JSON_UNESCAPED_UNICODE);
+}
+escrever(["recurso" => "config", "acao" => "salvar", "colunas_hoje" => ""]);
+escrever(["recurso" => "colunas", "acao" => "excluir", "id" => $col["Última medição"]], false);
+escrever(["recurso" => "colunas", "acao" => "excluir", "id" => $col["Última medição"], "confirmar" => 1]);
+ler("colunas depois de excluir", ["recurso" => "colunas"]);
+// o que o cenário cria, o cenário tira: as telas que vêm depois (as colunas da página Hoje, a lista do painel Colunas) partem da tabela de sempre
+foreach ($col as $id_c) {
+    if ($id_c !== $col["Última medição"]) {
+        escrever(["recurso" => "colunas", "acao" => "excluir", "id" => $id_c, "confirmar" => 1]);
+    }
+}
+ler("colunas ao fim do cenário", ["recurso" => "colunas"]);
+
 // o Tirar do sol sozinho (sol_auto_fim): desligado, o "fecha às" do tipo No sol fica vazio (a sessão só fecha pelo Tirar do
 // sol) e a hora continua guardada; ligado de novo, volta a hora
 $fecha_sol = function ($nome) {

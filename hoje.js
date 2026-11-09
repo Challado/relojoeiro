@@ -367,16 +367,29 @@ function recarregarHoje() {
     document.getElementById("tabela-relogios").classList.toggle("sem-encostado", !d.encostado_ativo);
     opcoesDoFiltro("fazer", d.avisos_nomes);
     var ano = String(new Date().getFullYear());
+    // as colunas cadastradas que aparecem, para as células das linhas (a ordem delas fica com colunasAplicar)
+    var colunasCadastradas = (d.colunas || []).filter(function (c) { return c.cadastrada && c.visivel; });
     var linhas = lista.map(function (x) {
       var m = x.manutencao;
       var e = x.encostado;
       var atrasado = m && m.momento > 0 && m.momento * 1000 <= Date.now();
       var encAtrasado = e && e.estado !== "ok";
-      return el("tr", {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-marca": x.marca === null ? "" : x.marca, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
+      // as colunas cadastradas (Cadastros › Colunas) que aparecem: o valor cru no tr (a ordenação) e a célula com o texto já formatado
+      var attrsCad = {};
+      var celulasCad = "";
+      colunasCadastradas.forEach(function (c) {
+        var ex = (x.colunas_extras || {})[c.chave];
+        attrsCad["data-" + c.chave] = ex && ex.valor !== null && ex.valor !== undefined ? ex.valor : "";
+        var texto = ex ? h(ex.texto) : "—";
+        celulasCad += el("td", {"data-col": c.chave, "data-rotulo": c.titulo, "class": c.numero ? "col-num" : ""}, c.formato === "duracao" || c.formato === "moeda" ? texto.replace(/ /g, "&nbsp;") : texto);
+      });
+      var attrsLinha = {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-marca": x.marca === null ? "" : x.marca, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
         "data-carga": x.carga === null ? "" : x.carga, "data-ultimo": x.ultimo, "data-uso": x.uso, "data-manut": m ? m.data : "", "data-em": m && m.momento > 0 ? m.momento : "", "data-fazer": m ? m.nome : "",
         "data-encostado": e && e.momento > 0 ? e.momento : "", "data-encostado-estado": !e ? "" : (e.estado === "ok" ? "prazo" : "sim"),
         "data-compra": x.compra.data || "", "data-valor": x.compra.valor === null ? "" : x.compra.valor,
-        "class": ((x.de_hoje ? "de-hoje " : "") + (x.com_aviso ? "pendente " : "") + (x.disponivel ? "" : "indisponivel ") + (x.id === sel ? "selecionado" : "")).trim()},
+        "class": ((x.de_hoje ? "de-hoje " : "") + (x.com_aviso ? "pendente " : "") + (x.disponivel ? "" : "indisponivel ") + (x.id === sel ? "selecionado" : "")).trim()};
+      Object.keys(attrsCad).forEach(function (k) { attrsLinha[k] = attrsCad[k]; });
+      return el("tr", attrsLinha,
         el("td", {"data-col": "codigo", "class": "col-codigo", "data-rotulo": t("Código")}, String(x.id))
         + el("td", {"data-col": "nome", "class": "col-nome"}, el("div", {"class": "nome-rel"}, (x.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + x.id + "&v=" + x.foto, "alt": ""}) : el("span", {"class": "sem-mini"}, ""))
           + el("a", {"href": "index.php?r=" + x.id, "title": x.nome}, h(x.nome))))
@@ -395,7 +408,8 @@ function recarregarHoje() {
         + el("td", {"data-col": "fazer", "class": m ? "fazer" : "", "data-rotulo": t("O que fazer")}, m ? h(m.nome) : "—")
         + el("td", {"data-col": "encostado", "class": "col-encostado" + (encAtrasado ? " atrasado" : ""), "data-rotulo": t("Encostado"), "data-momento": e && e.momento > 0 ? e.momento : null}, e ? h(e.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
         + el("td", {"data-col": "compra", "data-rotulo": t("Comprado em")}, x.compra.data ? dataBr(x.compra.data) : "—")
-        + el("td", {"data-col": "valor", "class": "col-valor", "data-rotulo": t("Valor")}, x.compra.valor !== null ? t("R$ ") + reais(x.compra.valor) : "—"));
+        + el("td", {"data-col": "valor", "class": "col-valor", "data-rotulo": t("Valor")}, x.compra.valor !== null ? t("R$ ") + reais(x.compra.valor) : "—")
+        + celulasCad);
     }).join("");
     // o botão da página Desejos, com quantos estão na lista de desejos e fora da coleção (só quando há algum)
     var desejos = document.getElementById("link-desejos");

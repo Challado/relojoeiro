@@ -1717,8 +1717,8 @@ marque as que quer ver e ponha na ordem com **▲** e **▼**; **Salvar colunas*
 rodapé seguem a lista, e a coluna escondida perde a ordenação e o filtro que tinha), e **Herdar** volta a valer a lista do nível
 de cima. A coluna **Relógio** não se esconde. A mesma escolha existe em três níveis, como as outras opções: o **padrão do
 sistema** (Configuração › Sistema), a **preferência do usuário** (Minha conta, para as coleções de que é dono) e a **escolha da
-coleção** (Configuração, ou o botão Colunas); o mais específico vale, vazio herda, e sem escolha em nenhum nível aparecem todas,
-na ordem de sempre. Pela API: a opção `colunas_hoje` (as chaves separadas por vírgula, na ordem que você quer, ex.
+coleção** (Configuração, ou o botão Colunas); o mais específico vale, vazio herda, e sem escolha em nenhum nível aparecem as de
+sempre, na ordem de sempre, e as suas que você marcou como **Aparece na tabela sem ninguém escolher** (veja **Colunas suas**). Pela API: a opção `colunas_hoje` (as chaves separadas por vírgula, na ordem que você quer, ex.
 `nome,uso,marca`) em `config/salvar`, em `conta/alterar` (`opcoes[colunas_hoje]`) e em `config/salvar` do master
 (`padroes[colunas_hoje]`); o `recurso=hoje` traz `colunas` (todas, as que valem primeiro, com `chave`, `titulo`, `visivel`,
 `posicao` e `fixa`), `colunas_escolha`, `colunas_herdado` e `colunas_origem_herdado`.
@@ -1730,6 +1730,29 @@ conta), por extenso em dias, horas, minutos e segundos, só com as partes que n�
 usado*, *até 1 hora*, *de 1 hora a 1 dia*, *de 1 a 7 dias* e *mais de 7 dias*. Nos **Totais**, um total pode ir embaixo dessa coluna,
 com a variável `tempo_de_uso` (em segundos: `SOMA(tempo_de_uso)`, `MEDIA(tempo_de_uso)`) e o formato **Tempo** (`duracao`), que
 escreve os segundos assim (*2d 9h 14m*). Pela API, cada relógio de `recurso=hoje` traz `uso` (segundos) e `uso_texto`.
+
+**Colunas suas (o construtor de colunas).** Além das 14 de sempre, você monta as colunas que quiser em **Cadastros › Colunas**,
+como quem monta um `SELECT`: escolhe **de onde vem** o valor, **a função** que junta os registros do relógio e **como ele
+aparece**. No modo **guiado** são três escolhas: a **fonte** (a própria tabela dos relógios, um **campo do cadastro** dos
+relógios ou uma **tabela do banco ligada ao relógio**: os lançamentos, os serviços, as manutenções, as medições do timegrapher, os
+testes de reserva, os documentos, o plano e as fotos), o **campo** (cada um aparece com a descrição do que guarda, e o sistema
+sabe o tipo: inteiro, decimal, data...) e a **função**: **Soma**, **Média**, **Menor** (ou mais antigo), **Maior** (ou mais recente)
+e **Contagem** (só as que o tipo aceita: de uma data, só menor, maior e contagem), como o `SUM`, o `AVG`, o `MIN`, o `MAX` e o `COUNT`
+de um `SELECT ... GROUP BY relógio`. Exemplos: a **soma da mão de obra** dos serviços de cada relógio, a **média da marcha** das
+medições do timegrapher, a **data do último serviço**, **quantos documentos** o relógio tem. No modo **expert** você escreve a
+expressão (a mesma dos relatórios e dos totais: os campos, as fórmulas, as colunas da tabela, `SE`, `DIAS_DESDE`..., e as variáveis
+`fonte_<tabela>_<campo>_<função>`, como `fonte_servico_mao_de_obra_soma / fonte_timegrapher_id_conta`), e dá para misturar fontes. Nos dois
+modos a expressão fica gravada e o **Testar num relógio** mostra o valor antes de criar.
+
+O **formato** é o tradutor do valor: **Número**, **Inteiro**, **Com 2 casas**, **Dinheiro**, **Porcentagem**, **Data**, **Dias**,
+**Tempo** (*1d 4h 30m*) ou **Texto**; com **Casas decimais** (de 0 a 6; vazio, o padrão do formato) e, no dinheiro, o **Símbolo da moeda**
+(*R$*, *US$*, *€*...). Vazio, o formato é o que combina com a fonte (uma data sai como data, uma contagem como inteiro, a soma de reais como
+dinheiro). A coluna ganha o **nome** que você der, e a chave `c_<identificador>` (o identificador sai do nome e não muda depois):
+ela entra no botão **Colunas**, na Configuração, em Minha conta e em Sistema como qualquer outra, com cabeçalho, **busca no texto** e
+**ordem por número** (os vazios por último). Só as colunas que aparecem são calculadas. Marque **Aparece na tabela sem ninguém
+escolher** para ela valer de início. As colunas ficam na ordem do cadastro (**↑** e **↓**), valem para as coleções que usam a árvore
+e saem da escolha quando você as exclui. Pela API: `recurso=colunas` (a lista, o **dicionário de fontes** e o teste) e, na escrita,
+`salvar`, `subir`, `descer` e `excluir`; o `recurso=hoje` traz o valor de cada uma em `relogios[].colunas_extras`.
 
 **O menu** junta as páginas por assunto: **Hoje**, **Avisos** e **Hora certa** soltos (os de todo dia); **Rodízio**
 (Plano, Modos de rodízio, Critérios de escolha), **Coleção** (Galeria, Ficha, Acessórios, Winders, Programas, Movimentos, Desejos, Estatísticas, Totais, Grupos), **Sistema**
@@ -1784,7 +1807,7 @@ ponto da árvore. A subtela fechada também fica fechada naquele aparelho.
 | **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
-| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as marcas (a aba **Marcas**: veja [As marcas](#as-marcas)), os relatórios cadastrados (a aba **Relatórios**: veja [Os relatórios cadastrados](#os-relatórios-cadastrados)), as divisórias da ficha (a aba **Divisórias**: veja [As divisórias da ficha](#as-divisórias-da-ficha)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
+| **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), as colunas da tabela dos relógios (a aba **Colunas**: veja **Colunas suas**, em A mesma informação em todos os tamanhos), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as marcas (a aba **Marcas**: veja [As marcas](#as-marcas)), os relatórios cadastrados (a aba **Relatórios**: veja [Os relatórios cadastrados](#os-relatórios-cadastrados)), as divisórias da ficha (a aba **Divisórias**: veja [As divisórias da ficha](#as-divisórias-da-ficha)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, o modo da interface, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push), o **envio dos seus e-mails** (pelo servidor do sistema ou pelo seu: o Gmail, o Outlook) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |

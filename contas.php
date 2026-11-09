@@ -477,7 +477,7 @@ function arvore_copiar($raiz, $dono_id, $nome)
         foreach (linhas("SELECT * FROM campo_secao WHERE no_id IN (" . $nos . ") ORDER BY id") as $x) {
             $m["campo_secao"][(int)$x["id"]] = linha_copiar("campo_secao", $x, ["no_id" => $m["no"][(int)$x["no_id"]]]);
         }
-        foreach (["campo", "lancamento_tipo", "formula", "documento_categoria", "total", "calibre", "marca", "relatorio"] as $t) {
+        foreach (["campo", "lancamento_tipo", "formula", "documento_categoria", "total", "calibre", "marca", "relatorio", "coluna"] as $t) {
             $m[$t] = [];
             foreach (linhas("SELECT * FROM " . $t . " WHERE no_id IN (" . $nos . ") ORDER BY id") as $x) {
                 $troca = ["no_id" => $m["no"][(int)$x["no_id"]]];

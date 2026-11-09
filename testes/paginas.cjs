@@ -54,6 +54,7 @@ module.exports = [
   { nome: 'cadastros-secoes-editar', url: 'cadastros.php?aba=secoes&editar=3' },
   { nome: 'cadastros-unidades', url: 'cadastros.php?aba=unidades' },
   { nome: 'cadastros-unidades-editar', url: 'cadastros.php?aba=unidades&editar=21' },
+  { nome: 'cadastros-colunas', url: 'cadastros.php?aba=colunas' },
   { nome: 'cadastros-relatorios', url: 'cadastros.php?aba=relatorios' },
   { nome: 'cadastros-relatorios-editar', url: 'cadastros.php?aba=relatorios&editar=1' },
   { nome: 'modos', url: 'modos.php' },

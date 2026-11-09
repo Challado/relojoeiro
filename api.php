@@ -188,6 +188,19 @@
  *                            "site", "observacao", "relogios": [{"id", "nome"}]}]}. O relógio aponta para uma (marca_id na gravação),
  *                            e o nome dela aparece na coluna Marca da página Hoje, na ficha, na galeria e nas fórmulas (marca).
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=marcas"
+ *   recurso=colunas          as colunas cadastradas da tabela dos relógios (Cadastros › Colunas) e o que o construtor delas precisa:
+ *                            {"colunas": [{"id", "chave" (c_<identificador>), "identificador", "nome", "modo" (guiado ou expert), "tabela",
+ *                            "campo", "funcao", "expressao" (a conta de cada relógio, gravada nos dois modos), "formato", "formato_nome",
+ *                            "casas", "simbolo", "padrao", "ordem"}], "tabelas": o dicionário de fontes (as tabelas do banco ligadas ao
+ *                            relógio: lançamentos, serviços, manutenções, timegrapher, testes de reserva, documentos, plano e fotos; cada
+ *                            uma com os campos, o tipo, a descrição, a unidade e as funções que o tipo aceita: soma, média, menor, maior e
+ *                            contagem, como num SELECT ... GROUP BY relogio_id, e a variável de fórmula fonte_<tabela>_<campo>_<função>
+ *                            de cada uma), "relogio" (as colunas da tabela dos relógios que valem como fonte), "campos" (os campos do
+ *                            cadastro dos relógios), "funcoes", "formatos" e "funcoes_expressao" (as do modo expert)}. Com tabela, campo e
+ *                            funcao (guiado) ou expressao (expert), mais formato, casas e simbolo, o teste da coluna num relógio
+ *                            (relogio=<id>; sem ele, o primeiro), sem gravar: "teste": {"tipo": "valor"|"erro", "erro", "expressao",
+ *                            "formato", "relogio_id", "relogio", "valor", "texto"}.
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=colunas&tabela=servico&campo=mao_de_obra&funcao=soma&formato=moeda"
  *   recurso=relatorios       sem tipo, o catálogo dos relatórios (o grupo, o nome, a descrição e os parâmetros de cada um), os
  *                            relógios e o cadastro (os relatórios cadastrados, com a definição, e as opções); com tipo, o relatório
  *                            pronto (o título, o resumo, as seções; csv=1: a planilha). Os cadastrados são o tipo r<id>, no grupo
@@ -501,6 +514,16 @@
  *                            Ex. salvar: curl -u lucas:senha -d recurso=marcas -d acao=salvar -d id=0 -d nome=Seiko -d "pais=Japão" http://servidor/relojoeiro/api.php
  *                            Ex. juntar: curl -u lucas:senha -d recurso=marcas -d acao=juntar -d id=7 -d em_id=2 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=marcas -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=colunas           salvar (id: 0 cria; nome (até 80, sem repetir outra da árvore, sem diferença de maiúsculas), identificador
+ *                             (a chave da coluna na escolha das colunas, c_<identificador>: a-z, 0-9 e _, até 38; vazio: sai do nome; não
+ *                             muda depois de criada), modo (guiado ou expert), tabela, campo e funcao (guiado: a fonte do dicionário;
+ *                             funcao só nas tabelas do banco), expressao (expert: a conta de cada relógio, a mesma dos relatórios),
+ *                             formato (numero, inteiro, decimal, moeda, porcentagem, data, dias, duracao ou texto; vazio: o que combina
+ *                             com a fonte), casas (0 a 6), simbolo (a moeda, só no formato moeda), padrao (1: aparece na tabela da página
+ *                             Hoje sem ninguém escolher); só muda o que vier), subir e descer (id), excluir (id: a coluna sai também da
+ *                             escolha das colunas)
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=colunas -d acao=salvar -d id=0 -d "nome=Mão de obra" -d modo=guiado -d tabela=servico -d campo=mao_de_obra -d funcao=soma -d formato=moeda -d padrao=1 http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=colunas -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=sql               executar (só o master; comando: um comando SQL no dialeto do MySQL, traduzido para o banco em
  *                             uso, um por vez; limite: as linhas do SELECT, 1 a 5000, padrão 200). Valem SELECT, INSERT e
  *                             ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>; UPDATE e DELETE só com a aprovação na
@@ -2477,6 +2500,19 @@
  *     colunas[].posicao              o lugar dela da esquerda para a direita (1, 2...); 0 quando está escondida
  *     colunas[].titulo               o nome da coluna, no idioma do pedido
  *     colunas[].visivel              (verdadeiro ou falso) a coluna está à mostra
+ *     colunas[].cadastrada           (verdadeiro ou falso) a coluna é uma das cadastradas (Cadastros › Colunas, a chave começa com c_)
+ *     colunas[].formato              só nas cadastradas: o formato do valor (numero, inteiro, decimal, moeda, porcentagem, data, dias,
+ *                                    duracao ou texto)
+ *     colunas[].numero               só nas cadastradas: (verdadeiro ou falso) o valor é número (a tela ordena como número e alinha à
+ *                                    direita)
+ *     relogios[].colunas_extras      o valor das colunas cadastradas que estão à mostra (as escondidas não são calculadas), pela chave da
+ *                                    coluna
+ *     relogios[].colunas_extras.<chave>
+ *                                    uma coluna cadastrada neste relógio
+ *     relogios[].colunas_extras.<chave>.valor
+ *                                    o valor cru (número ou texto); null: vazio
+ *     relogios[].colunas_extras.<chave>.texto
+ *                                    o valor no formato da coluna; um traço quando vazio
  *     colunas_escolha                o que a coleção escolheu para as colunas (as chaves separadas por vírgula); vazio: não escolheu e
  *                                    herda
  *     colunas_herdado                a lista que a coleção herda quando não escolhe: a do dono, senão a do sistema, senão todas na ordem de
@@ -2496,6 +2532,85 @@
  *     totais.relogios                quantos relógios há
  *     totais.valor                   a soma do valor pago (valor_compra) de todos, em R$ (os sem valor contam 0)
  *     uso_inicio                     a hora em que o relógio do dia vai para o pulso (HH:MM)
+ *   recurso=colunas
+ *     colunas                        as colunas cadastradas da tabela dos relógios, na ordem do cadastro
+ *     colunas[]                      uma coluna cadastrada
+ *     colunas[].id                   o número da coluna
+ *     colunas[].chave                a chave da coluna na escolha das colunas (a opção colunas_hoje) e no data-col das células: c_ e o
+ *                                    identificador
+ *     colunas[].identificador        o identificador, que não muda depois de criada
+ *     colunas[].nome                 o nome, que é o título da coluna na tabela
+ *     colunas[].modo                 guiado (a fonte, o campo e a função) ou expert (a expressão escrita)
+ *     colunas[].tabela               no guiado, a fonte: relogio, campos ou uma tabela do dicionário; null no expert
+ *     colunas[].campo                no guiado, o campo da fonte; null no expert
+ *     colunas[].funcao               no guiado sobre uma tabela do banco, a função (soma, media, menor, maior, conta); null nos outros
+ *     colunas[].expressao            a conta de cada relógio, que fica gravada nos dois modos (no guiado, a variável
+ *                                    fonte_tabela_campo_função, ou o campo)
+ *     colunas[].formato              como o valor sai (numero, inteiro, decimal, moeda, porcentagem, data, dias, duracao ou texto)
+ *     colunas[].formato_nome         o nome do formato, no idioma do pedido
+ *     colunas[].casas                as casas decimais (0 a 6); null: o padrão do formato
+ *     colunas[].simbolo              o símbolo da moeda; null: R$
+ *     colunas[].padrao               (verdadeiro ou falso) aparece na tabela da página Hoje sem ninguém escolher as colunas
+ *     colunas[].ordem                o lugar no cadastro (de 10 em 10)
+ *     tabelas                        o dicionário de fontes: as tabelas do banco ligadas ao relógio
+ *     tabelas[]                      uma tabela do dicionário
+ *     tabelas[].tabela               o nome da tabela (o valor de tabela no modo guiado)
+ *     tabelas[].descricao            o que a tabela guarda, no idioma do pedido
+ *     tabelas[].campos               os campos da tabela que podem virar coluna
+ *     tabelas[].campos[]             um campo
+ *     tabelas[].campos[].chave       o nome do campo (o valor de campo)
+ *     tabelas[].campos[].tipo        inteiro, decimal, data, datahora, sim_nao, texto ou registro (o registro inteiro, só para contar)
+ *     tabelas[].campos[].descricao   o que o campo guarda, no idioma do pedido
+ *     tabelas[].campos[].unidade     a unidade do campo (R$, bar, s/dia...); vazio: sem
+ *     tabelas[].campos[].funcoes     as funções que o tipo do campo aceita
+ *     tabelas[].campos[].funcoes[]   uma função
+ *     tabelas[].campos[].funcoes[].chave
+ *                                    soma, media, menor, maior ou conta (o valor de funcao)
+ *     tabelas[].campos[].funcoes[].nome
+ *                                    o nome da função, no idioma do pedido
+ *     tabelas[].campos[].funcoes[].variavel
+ *                                    a variável de fórmula desta tabela, campo e função (fonte_tabela_campo_função), que vale nas colunas
+ *                                    do modo expert, nos totais e nos relatórios
+ *     tabelas[].campos[].funcoes[].tipo_resultado
+ *                                    o tipo do que a função devolve (a contagem é sempre inteira; as datas continuam datas)
+ *     tabelas[].campos[].funcoes[].formato
+ *                                    o formato que combina com o resultado, quando a coluna não escolhe
+ *     relogio                        as colunas da tabela dos relógios que valem como fonte (tabela=relogio), sem função
+ *     relogio[]                      uma coluna da tabela dos relógios
+ *     relogio[].campo                o nome (o valor de campo)
+ *     relogio[].descricao            o que ela mostra, no idioma do pedido
+ *     relogio[].unidade              a unidade; vazio: sem
+ *     relogio[].formato              o formato que combina com ela
+ *     campos                         os campos do cadastro dos relógios que valem como fonte (tabela=campos), sem função
+ *     campos[]                       um campo do cadastro
+ *     campos[].campo                 o identificador do campo (o valor de campo)
+ *     campos[].nome                  o nome do campo
+ *     campos[].tipo                  o tipo do campo (inteiro, decimal, sim_nao, data, lista ou texto)
+ *     campos[].unidade               a unidade do campo; vazio: sem
+ *     campos[].formato               o formato que combina com o tipo
+ *     funcoes                        as funções que juntam os registros do relógio
+ *     funcoes[]                      uma função
+ *     funcoes[].chave                soma, media, menor, maior ou conta
+ *     funcoes[].nome                 o nome, no idioma do pedido
+ *     funcoes[].descricao            o que a função faz
+ *     formatos                       os formatos que uma coluna aceita
+ *     formatos[]                     um formato
+ *     formatos[].chave               a chave do formato (o valor de formato)
+ *     formatos[].nome                o nome do formato, no idioma do pedido
+ *     funcoes_expressao              as funções do motor que o modo expert pode usar (as de total, que olham todos os relógios, não valem
+ *                                    numa coluna)
+ *     funcoes_expressao[]            uma função do motor
+ *     funcoes_expressao[].nome       o nome da função
+ *     funcoes_expressao[].descricao  o que ela faz
+ *     teste                          só com expressao ou tabela no pedido: o teste da coluna num relógio, sem gravar
+ *     teste.tipo                     valor (deu certo) ou erro (a expressão ou a fonte tem problema)
+ *     teste.erro                     só no tipo erro: o que está errado
+ *     teste.expressao                a expressão calculada (no guiado, a que a fonte escolhida gera)
+ *     teste.formato                  o formato usado
+ *     teste.relogio_id               o número do relógio do teste
+ *     teste.relogio                  o nome do relógio do teste
+ *     teste.valor                    o valor calculado; null: vazio
+ *     teste.texto                    o valor no formato da coluna
  *   recurso=marcas
  *     marcas                         as marcas da árvore, pelo nome
  *     marcas[]                       uma marca
@@ -8044,6 +8159,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/precisao.php";
 } elseif ($recurso === "calibres") {
     require __DIR__ . "/api/calibres.php";
+} elseif ($recurso === "colunas") {
+    require __DIR__ . "/api/colunas.php";
 } elseif ($recurso === "marcas") {
     require __DIR__ . "/api/marcas.php";
 } elseif ($recurso === "unidades") {
@@ -8145,7 +8262,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "colunas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

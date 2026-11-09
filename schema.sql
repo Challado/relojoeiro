@@ -493,6 +493,33 @@ CREATE TABLE relatorio (
     CONSTRAINT ck_relatorio_opcoes CHECK (decrescente IN (0, 1) AND relogios IN ('colecao','todos','desejados') AND (limite IS NULL OR limite > 0))
 ) ENGINE=InnoDB;
 
+-- as colunas cadastradas da tabela dos relógios (Cadastros › Colunas), da árvore como os totais: o nome, de onde vem o valor (modo
+-- guiado: a tabela, o campo e a função do dicionário de fontes; modo expert: a expressão escrita), a expressão que fica gravada
+-- nos dois, o formato (as casas e o símbolo da moeda), se aparece sem ninguém escolher e a ordem
+CREATE TABLE coluna (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    no_id          INT NOT NULL,
+    identificador  VARCHAR(40) NOT NULL,
+    nome           VARCHAR(80) NOT NULL,
+    modo           VARCHAR(10) NOT NULL DEFAULT 'guiado',
+    tabela         VARCHAR(40) NULL,
+    campo          VARCHAR(60) NULL,
+    funcao         VARCHAR(10) NULL,
+    expressao      TEXT NOT NULL,
+    formato        VARCHAR(12) NOT NULL DEFAULT 'numero',
+    casas          TINYINT NULL,
+    simbolo        VARCHAR(8) NULL,
+    padrao         TINYINT NOT NULL DEFAULT 0,
+    ordem          INT NOT NULL DEFAULT 0,
+    UNIQUE (no_id, identificador),
+    INDEX (no_id),
+    FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
+    CONSTRAINT ck_coluna_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> '' AND TRIM(expressao) <> ''),
+    CONSTRAINT ck_coluna_modo CHECK (modo IN ('guiado', 'expert')),
+    CONSTRAINT ck_coluna_casas CHECK (casas IS NULL OR (casas >= 0 AND casas <= 6)),
+    CONSTRAINT ck_coluna_padrao CHECK (padrao IN (0, 1))
+) ENGINE=InnoDB;
+
 -- as marcas (Casio, Seiko, Orient...), da árvore como o cadastro: o nome, o país, o site e a observação; o relógio aponta
 -- para uma (relogio_marca), que some sozinha quando um dos dois sai
 CREATE TABLE marca (

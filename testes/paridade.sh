@@ -216,6 +216,12 @@ if [ $LAYOUT -eq 1 ]; then
   else
     FALHOU=1; sed 's/^/    /' "$PASTA/colunas.txt" | head -40
   fi
+  echo "Conferência do construtor de colunas no $REF:"
+  if BASE="http://127.0.0.1:$PORTA0/" node testes/construtor-interface.cjs > "$PASTA/construtor.txt" 2>&1; then
+    echo "    $(tail -1 "$PASTA/construtor.txt")"
+  else
+    FALHOU=1; sed 's/^/    /' "$PASTA/construtor.txt" | head -40
+  fi
   echo "Conferência da lista do Sortear de novo no $REF:"
   if BASE="http://127.0.0.1:$PORTA0/" node testes/sorteio-interface.cjs > "$PASTA/sorteio.txt" 2>&1; then
     echo "    $(tail -1 "$PASTA/sorteio.txt")"

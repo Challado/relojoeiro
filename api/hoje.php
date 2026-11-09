@@ -56,7 +56,10 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
             "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—", "foto" => $fotos[(int)$r["id"]] ?? null];
         continue;
     }
-    $rels[] = tabela_linha($r, $agora, ["nos" => $n, "hoje" => $hoje, "dia" => $dia, "pendentes" => $pendentes_h, "fotos" => $fotos, "uso" => $uso_h]);
+    $linha_h = tabela_linha($r, $agora, ["nos" => $n, "hoje" => $hoje, "dia" => $dia, "pendentes" => $pendentes_h, "fotos" => $fotos, "uso" => $uso_h]);
+    // as colunas cadastradas que aparecem, por chave: um objeto mesmo sem nenhuma (vazio sairia como lista)
+    $linha_h["colunas_extras"] = (object)$linha_h["colunas_extras"];
+    $rels[] = $linha_h;
 }
 // o destaque no alto da página (a Configuração): o relógio do dia ou o que está no pulso agora; cada relógio diz se é ele
 $destaque_h = destaque_da_pagina_hoje($rels, $dia);
@@ -114,7 +117,7 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     // aparecem (a opção colunas_hoje: a coleção, o dono ou o sistema), e as escondidas depois
     "colunas" => colunas_da_pagina("hoje"),
     // o que a coleção escolheu (vazio: herda), a lista que ela herda (a do dono, senão a do sistema, senão todas) e de onde vem
-    "colunas_escolha" => cfg_cru("colunas_hoje"), "colunas_herdado" => (function ($h) { return $h[0] !== "" ? $h[0] : implode(",", COLUNAS_HOJE); })(opcao_herdada("colunas_hoje")),
+    "colunas_escolha" => cfg_cru("colunas_hoje"), "colunas_herdado" => (function ($h) { return $h[0] !== "" ? $h[0] : implode(",", colunas_padrao("hoje")); })(opcao_herdada("colunas_hoje")),
     "colunas_origem_herdado" => opcao_herdada("colunas_hoje")[0] !== "" ? opcao_herdada("colunas_hoje")[1] : "padrao",
     "modos" => $modos_h,
     "grupos" => array_map(function ($o) use ($n) { return ["id" => $o[0], "nome" => $n[$o[0]]["nome"], "profundidade" => $o[1], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),

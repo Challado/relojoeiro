@@ -789,6 +789,149 @@ function op_totais($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// As colunas cadastradas da tabela dos relógios (Cadastros › Colunas; da árvore, presas à raiz dela). Ações: salvar (id: 0 ou
+// ausente cria; nome, até 80, sem repetir outra; identificador, a chave estável (a-z, 0-9 e _, até 38; vazio: sai do nome; não muda
+// depois de criada); modo: guiado (tabela, campo e funcao: a fonte e a função do dicionário de fontes, ver recurso=colunas) ou
+// expert (expressao: a conta de cada relógio, a mesma dos relatórios); formato (numero, inteiro, decimal, moeda, porcentagem, data,
+// dias, duracao ou texto; vazio: o que combina com a fonte), casas (0 a 6; vazio: o padrão do formato), simbolo (a moeda, até 8;
+// só no formato moeda; vazio: R$), padrao (1: aparece sem ninguém escolher); só muda o que vier), excluir (id), subir e descer (id).
+// A coluna entra na escolha da página Hoje com a chave c_<identificador>
+// ---------------------------------------------------------------------------------------------------------------------
+function op_colunas($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    if (!colunas_tabela_existe()) {
+        return resultado([t("As colunas cadastradas ainda não existem: aplique a migração v61 em Configuração.")], "");
+    }
+    $atual = $id > 0 ? linha("SELECT * FROM coluna WHERE id = ?", [$id]) : null;
+    if ($id > 0 && !$atual) {
+        $erros[] = t("Coluna não encontrada.");
+    } elseif (in_array($acao, ["excluir", "subir", "descer"], true) && !$atual) {
+        $erros[] = t("Coluna não encontrada.");
+    } elseif ($acao === "salvar") {
+        $pega = function ($k, $padrao) use ($d, $atual) {
+            return array_key_exists($k, $d) ? $d[$k] : ($atual !== null && array_key_exists($k, $atual) ? $atual[$k] : $padrao);
+        };
+        $nome = trim((string)$pega("nome", ""));
+        $modo = (string)$pega("modo", "guiado");
+        $tabela = trim((string)$pega("tabela", ""));
+        $campo = trim((string)$pega("campo", ""));
+        $funcao = trim((string)$pega("funcao", ""));
+        $expr = trim((string)$pega("expressao", ""));
+        $formato = trim((string)$pega("formato", ""));
+        $casas_txt = trim((string)$pega("casas", ""));
+        $simbolo = trim((string)$pega("simbolo", ""));
+        $padrao = (string)$pega("padrao", "0") === "1" ? 1 : 0;
+        $ident = trim((string)($d["identificador"] ?? ""));
+        if ($nome === "" || mb_strlen($nome, "UTF-8") > 80) {
+            $erros[] = t("Dê um nome à coluna (até 80 caracteres).");
+        } else {
+            foreach (linhas("SELECT id, nome FROM coluna WHERE id <> ?", [$id]) as $o) {
+                if (mb_strtolower(trim($o["nome"]), "UTF-8") === mb_strtolower($nome, "UTF-8")) {
+                    $erros[] = t("Já existe uma coluna com o nome {1}.", [1 => $nome]);
+                }
+            }
+        }
+        // o identificador: a chave da coluna na escolha da página Hoje (c_<identificador>); fixo depois de criada
+        if ($atual) {
+            if ($ident !== "" && $ident !== $atual["identificador"]) {
+                $erros[] = t("O identificador de uma coluna não muda depois de criada (ele é a chave dela na escolha das colunas).");
+            }
+            $ident = $atual["identificador"];
+        } else {
+            if ($ident === "") {
+                $ident = trim(preg_replace("/[^a-z0-9]+/", "_", strtolower(sem_acentos(mb_strtolower($nome, "UTF-8")))), "_");
+                $ident = substr($ident === "" || ctype_digit($ident[0]) ? "x" . $ident : $ident, 0, 38);
+            }
+            if (!preg_match("/^[a-z][a-z0-9_]{0,37}$/", $ident)) {
+                $erros[] = t("Identificador: letras minúsculas sem acento, números e _, começando por letra (até 38).");
+            } elseif (valor("SELECT COUNT(*) FROM coluna WHERE identificador = ?", [$ident]) > 0) {
+                $erros[] = t("Já existe uma coluna com o identificador {1}.", [1 => $ident]);
+            }
+        }
+        if ($modo === "guiado") {
+            if ($tabela === "") {
+                $erros[] = t("Escolha a fonte: a tabela (relogio, campos ou uma do dicionário de fontes).");
+            } else {
+                [$e_g, $expr_g] = coluna_expressao_guiada($tabela, $campo, $funcao === "" ? null : $funcao);
+                $erros = array_merge($erros, $e_g);
+                $expr = $expr_g ?? $expr;
+            }
+            if (!in_array($tabela, ["relogio", "campos"], true)) {
+                // a função só vale nas tabelas do dicionário
+            } else {
+                $funcao = "";
+            }
+        } elseif ($modo === "expert") {
+            $tabela = $campo = $funcao = "";
+            if ($expr === "") {
+                $erros[] = t("Escreva a expressão da coluna.");
+            } else {
+                foreach (relatorio_expressao_validar($expr) as $e) {
+                    $erros[] = t("Expressão: {1}.", [1 => $e]);
+                }
+            }
+        } else {
+            $erros[] = t("Modo: guiado ou expert.");
+        }
+        if ($formato === "") {
+            $formato = $modo === "guiado" && count($erros) === 0 ? coluna_formato_sugerido($tabela, $campo, $funcao === "" ? null : $funcao) : "numero";
+        }
+        if (!isset(coluna_formatos()[$formato])) {
+            $erros[] = t("Formato: {1}.", [1 => implode(", ", array_keys(coluna_formatos()))]);
+        }
+        $casas = null;
+        if ($casas_txt !== "") {
+            if (!ctype_digit($casas_txt) || (int)$casas_txt > 6) {
+                $erros[] = t("Casas decimais: um número de 0 a 6, ou vazio (o padrão do formato).");
+            } else {
+                $casas = (int)$casas_txt;
+            }
+        }
+        if ($simbolo !== "" && ($formato !== "moeda" || mb_strlen($simbolo, "UTF-8") > 8)) {
+            $erros[] = $formato !== "moeda" ? t("O símbolo só vale no formato moeda.") : t("Símbolo da moeda: até 8 caracteres.");
+        }
+        if (count($erros) === 0) {
+            $simbolo = $simbolo === "" ? null : $simbolo;
+            if ($atual) {
+                sql("UPDATE coluna SET nome = ?, modo = ?, tabela = ?, campo = ?, funcao = ?, expressao = ?, formato = ?, casas = ?, simbolo = ?, padrao = ? WHERE id = ?",
+                    [$nome, $modo, $tabela === "" ? null : $tabela, $campo === "" ? null : $campo, $funcao === "" ? null : $funcao, $expr, $formato, $casas, $simbolo, $padrao, $id]);
+                $msg = t("Coluna {1} salva.", [1 => $nome]);
+            } else {
+                $ordem = (int)(valor("SELECT MAX(ordem) FROM coluna") ?? 0) + 10;
+                sql("INSERT INTO coluna (no_id, identificador, nome, modo, tabela, campo, funcao, expressao, formato, casas, simbolo, padrao, ordem) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [no_raiz(), $ident, $nome, $modo, $tabela === "" ? null : $tabela, $campo === "" ? null : $campo, $funcao === "" ? null : $funcao, $expr, $formato, $casas, $simbolo, $padrao, $ordem]);
+                $id = ultimo_id();
+                $msg = t("Coluna {1} criada.", [1 => $nome]);
+            }
+            $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
+        }
+    } elseif ($acao === "excluir") {
+        sql("DELETE FROM coluna WHERE id = ?", [$id]);
+        $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Coluna {1} excluída.", [1 => $atual["nome"]]);
+    } elseif ($acao === "subir" || $acao === "descer") {
+        // a ordem refeita de 10 em 10, e a coluna troca de lugar com a vizinha
+        $ids = array_map("intval", array_column(linhas("SELECT id FROM coluna ORDER BY ordem, id"), "id"));
+        $pos = array_search($id, $ids, true);
+        $outro = $acao === "subir" ? $pos - 1 : $pos + 1;
+        if ($outro >= 0 && $outro < count($ids)) {
+            [$ids[$pos], $ids[$outro]] = [$ids[$outro], $ids[$pos]];
+        }
+        foreach ($ids as $i => $x) {
+            sql("UPDATE coluna SET ordem = ? WHERE id = ?", [($i + 1) * 10, $x]);
+        }
+        $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
+        $msg = t("Ordem das colunas salva.");
+    } else {
+        $erros[] = t("Ação desconhecida: {1}.", [1 => $acao]);
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Os relatórios cadastrados (a aba Relatórios dos Cadastros; da árvore, presos à raiz dela). Ações: salvar (id: 0 ou
 // ausente cria; nome, até 120, sem repetir outro sem diferença de maiúsculas nem de espaços; descricao, até 4000; colunas: um JSON [{titulo, expressao, formato, total}] ou os campos
 // colunas[i][titulo], colunas[i][expressao], colunas[i][formato] e colunas[i][total]; filtro, ordenar e agrupar: as

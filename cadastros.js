@@ -1,8 +1,8 @@
 // Cadastros: os dados da API (recurso=cadastros; a aba Totais, recurso=totais; a aba Calibres, recurso=calibres; a aba
 // Marcas, recurso=marcas; a aba Unidades, recurso=unidades; a aba Relatórios, recurso=relatorios), uma aba por vez (cadastros.php?aba=campos&editar=3), com as
 // gravações pela API (recurso=campos, secoes, lancamento_tipos, formulas, totais, relatorios, calibres, marcas, unidades e documento_categorias), o testar das fórmulas (recurso=calcular), o dos totais (recurso=totais, expressao=) e o dos relatórios (recurso=relatorios, tipo=avulso). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
-var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), relatorios: t("Relatórios"), calibres: t("Calibres"), marcas: t("Marcas"), documentos: t("Categorias de documentos"), listas: t("Listas")};
-var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", relatorios: "relatorios", calibres: "calibres", marcas: "marcas", documentos: "documento_categorias", listas: "listas"};
+var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), colunas: t("Colunas"), relatorios: t("Relatórios"), calibres: t("Calibres"), marcas: t("Marcas"), documentos: t("Categorias de documentos"), listas: t("Listas")};
+var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", colunas: "colunas", relatorios: "relatorios", calibres: "calibres", marcas: "marcas", documentos: "documento_categorias", listas: "listas"};
 var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
@@ -74,6 +74,9 @@ function cabecaCadastros() {
       [t("As somas da coleção inteira"), cad("totais")]],
     totais: [[t("A conta de um total"), t("aqui")], [t("Onde os totais aparecem"), t("o rodapé da tabela de {1} e a página {2}", {1: lugar("index.php", t("Hoje")), 2: lugar("totais.php", t("Coleção › Totais"))})],
       [t("As fórmulas de cada relógio, que os totais somam"), cad("formulas")]],
+    colunas: [[t("O campo do banco, a função e o formato de uma coluna da tabela dos relógios"), t("aqui: Editar, na linha da coluna")],
+      [t("Quais colunas aparecem, e em que ordem"), t("o botão Colunas da tabela de {1}, ou {2}", {1: lugar("index.php", t("Hoje")), 2: lugar("configuracao.php", t("Configuração"))})],
+      [t("Os campos que viram coluna sem função"), cad("campos")], [t("A conta de uma coluna do modo expert"), cad("formulas")]],
     relatorios: [[t("As colunas, o filtro, a ordem e o agrupamento de um relatório"), t("aqui: Editar, na linha do relatório")],
       [t("Gerar, imprimir e baixar a planilha"), lugar("relatorios.php", t("Relatórios"))], [t("As fórmulas que as colunas usam"), cad("formulas")],
       [t("As somas da coleção inteira"), cad("totais")]],
@@ -116,6 +119,9 @@ function subtelas(itens, grupoDe, tabela, contar) {
 function recarregarCadastros() {
   if (aba === "totais") {
     return recarregarTotais();
+  }
+  if (aba === "colunas") {
+    return recarregarColunas();
   }
   if (aba === "relatorios") {
     return recarregarRelatorios();
@@ -367,6 +373,164 @@ function recarregarTotais() {
       + el("details", {}, el("summary", {}, t("As variáveis da tabela")) + el("ul", {"class": "nota"}, d.variaveis.map(function (x) { return el("li", {}, el("strong", {}, h(x.nome)) + ": " + h(x.descricao)); }).join("")));
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
+  });
+}
+
+// a aba Colunas: as colunas da tabela dos relógios que a pessoa monta (a lista, na ordem, e o formulário). No modo guiado ela escolhe a
+// fonte (a tabela dos relógios, um campo do cadastro ou uma tabela do banco ligada ao relógio, do dicionário da API), o campo e a
+// função que junta os registros do relógio (soma, média, menor, maior, contagem), como num SELECT ... GROUP BY; no modo expert escreve a
+// expressão. O formato diz como o valor sai (casas decimais, o símbolo da moeda, tempo, data...); o Testar mostra o valor num relógio
+var colunasDic = null;
+function colunaFonteNome(d, x) {
+  if (x.modo === "expert") {
+    return el("span", {"class": "formula"}, h(x.expressao));
+  }
+  var tabela = x.tabela === "relogio" ? t("A tabela dos relógios") : (x.tabela === "campos" ? t("Campo do cadastro") : "");
+  if (x.tabela !== "relogio" && x.tabela !== "campos") {
+    d.tabelas.forEach(function (tb) { if (tb.tabela === x.tabela) { tabela = tb.descricao; } });
+  }
+  var fn = "";
+  if (x.funcao) {
+    d.funcoes.forEach(function (f) { if (f.chave === x.funcao) { fn = f.nome; } });
+  }
+  return h(tabela) + " › " + el("strong", {}, h(x.campo)) + (fn !== "" ? " · " + h(fn) : "");
+}
+// as opções do menu Campo da fonte escolhida
+function colunaOpcoesCampo(d, tabela, escolhido) {
+  var itens = [];
+  if (tabela === "relogio") {
+    itens = d.relogio.map(function (c) { return {chave: c.campo, texto: c.campo + (c.unidade ? " (" + c.unidade + ")" : "")}; });
+  } else if (tabela === "campos") {
+    itens = d.campos.map(function (c) { return {chave: c.campo, texto: c.nome + " (" + c.campo + ")"}; });
+  } else {
+    d.tabelas.forEach(function (tb) {
+      if (tb.tabela === tabela) {
+        itens = tb.campos.map(function (c) { return {chave: c.chave, texto: c.descricao}; });
+      }
+    });
+  }
+  return el("option", {"value": ""}, t("Escolha o campo")) + itens.map(function (c) { return el("option", {"value": c.chave, "selected": c.chave === escolhido}, h(c.texto)); }).join("");
+}
+// as funções que o campo aceita (só nas tabelas do banco: a tabela dos relógios e os campos do cadastro não têm função)
+function colunaOpcoesFuncao(d, tabela, campo, escolhida) {
+  var fs = [];
+  d.tabelas.forEach(function (tb) {
+    if (tb.tabela === tabela) {
+      tb.campos.forEach(function (c) { if (c.chave === campo) { fs = c.funcoes; } });
+    }
+  });
+  return fs.map(function (f) { return el("option", {"value": f.chave, "selected": f.chave === escolhida}, h(f.nome)); }).join("");
+}
+function colunaFormatoSugerido(d, tabela, campo, funcao) {
+  var res = "";
+  if (tabela === "relogio") {
+    d.relogio.forEach(function (c) { if (c.campo === campo) { res = c.formato; } });
+  } else if (tabela === "campos") {
+    d.campos.forEach(function (c) { if (c.campo === campo) { res = c.formato; } });
+  } else {
+    d.tabelas.forEach(function (tb) {
+      if (tb.tabela === tabela) {
+        tb.campos.forEach(function (c) { c.funcoes.forEach(function (f) { if (c.chave === campo && f.chave === funcao) { res = f.formato; } }); });
+      }
+    });
+  }
+  return res;
+}
+// mostra ou esconde o que depende do modo, da fonte e do formato, e refaz os menus de campo e de função quando a fonte ou o campo mudam
+function colunaAjustar(form, quem) {
+  var d = colunasDic;
+  if (!d) {
+    return;
+  }
+  var modo = form.modo.value;
+  var tabela = form.tabela.value;
+  var comFuncao = modo === "guiado" && tabela !== "" && tabela !== "relogio" && tabela !== "campos";
+  if (quem === "tabela") {
+    form.campo.innerHTML = colunaOpcoesCampo(d, tabela, "");
+  }
+  if (quem === "tabela" || quem === "campo") {
+    form.funcao.innerHTML = colunaOpcoesFuncao(d, tabela, form.campo.value, "");
+  }
+  var sug = colunaFormatoSugerido(d, tabela, form.campo.value, form.funcao.value || null);
+  var rotulo = form.querySelector("[data-formato-sugerido]");
+  if (rotulo) {
+    var nome = "";
+    d.formatos.forEach(function (f) { if (f.chave === sug) { nome = f.nome; } });
+    rotulo.textContent = modo === "guiado" && nome !== "" ? t("Em branco: {1}", {1: nome}) : "";
+  }
+  Array.prototype.forEach.call(form.querySelectorAll("[data-modo]"), function (b) { b.hidden = b.getAttribute("data-modo") !== modo; });
+  var fn = form.querySelector("[data-so-funcao]");
+  if (fn) {
+    fn.hidden = !comFuncao;
+  }
+  var moeda = form.querySelector("[data-so-moeda]");
+  if (moeda) {
+    moeda.hidden = form.formato.value !== "moeda";
+  }
+  var desc = form.querySelector("[data-descricao-campo]");
+  if (desc) {
+    var texto = "";
+    if (tabela === "relogio") {
+      d.relogio.forEach(function (c) { if (c.campo === form.campo.value) { texto = c.descricao; } });
+    } else if (tabela !== "" && tabela !== "campos") {
+      d.tabelas.forEach(function (tb) {
+        if (tb.tabela === tabela) {
+          tb.campos.forEach(function (c) { if (c.chave === form.campo.value) { texto = c.descricao; } });
+        }
+      });
+    }
+    desc.textContent = texto;
+  }
+}
+function recarregarColunas() {
+  return api({recurso: "colunas"}).then(function (d) {
+    colunasDic = d;
+    var e = null;
+    d.colunas.forEach(function (x) { if (x.id === editar) { e = x; } });
+    var f = e || {modo: "guiado", tabela: "", campo: "", funcao: "", expressao: "", formato: "", casas: null, simbolo: "", padrao: false};
+    var res = cabecaCadastros();
+    if (recado !== "") {
+      res += recado;
+      recado = "";
+    }
+    var tabelas = [["relogio", t("A tabela dos relógios (as colunas que ela já tem)")], ["campos", t("Os campos do cadastro dos relógios")]].concat(d.tabelas.map(function (tb) { return [tb.tabela, tb.descricao]; }));
+    var sec = el("h2", {}, t("Colunas"))
+      + ajudaNota("colunas", t("As colunas cadastradas"), t("Uma coluna cadastrada é uma conta feita em cada relógio e mostrada na tabela da página Hoje, ao lado das colunas de sempre. No modo guiado você escolhe de onde vem o valor: uma coluna da tabela dos relógios, um campo do cadastro ou um campo de uma tabela do banco ligada ao relógio (os serviços, as manutenções, as medições do timegrapher, os lançamentos...) e a função que junta os registros do relógio: a soma, a média, o menor, o maior ou a contagem, como num SELECT com GROUP BY. No modo expert você escreve a expressão (a mesma dos relatórios). O formato diz como o valor sai: as casas decimais, o símbolo da moeda, o tempo (1d 4h 30m), a data. Para mostrar a coluna, use o botão Colunas da tabela, ou marque aqui Aparece na tabela sem ninguém escolher."))
+      + (d.colunas.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma coluna cadastrada ainda. Monte a primeira abaixo."))
+        : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Nome")) + el("th", {}, t("De onde vem")) + el("th", {}, t("Formato"))
+          + el("th", {}, t("Aparece de início")) + el("th", {}, "")))
+          + el("tbody", {}, d.colunas.map(function (x, i) {
+            return el("tr", {}, el("td", {}, h(x.nome) + " " + el("small", {"class": "nota"}, h(x.chave))) + el("td", {}, colunaFonteNome(d, x))
+              + el("td", {}, h(x.formato_nome) + (x.casas !== null ? " " + el("small", {}, t("casas: {1}", {1: x.casas})) : "") + (x.simbolo ? " " + el("small", {}, h(x.simbolo)) : ""))
+              + el("td", {}, x.padrao ? "✓" : "")
+              + el("td", {"class": "acoes-linha"}, (i > 0 ? botaoLinha("subir", x.id, "", null, el("button", {"class": "leve discreto", "title": t("Subir")}, "↑")) : "")
+                + (i < d.colunas.length - 1 ? botaoLinha("descer", x.id, "", null, el("button", {"class": "leve discreto", "title": t("Descer")}, "↓")) : "")
+                + " " + linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"))));
+          }).join("")))))
+      + el("h3", {"id": "form"}, e ? t("Alterar a coluna {1}", {1: h(e.nome)}) : t("Nova coluna"))
+      + el("form", {"data-recurso": "colunas", "class": "form-grade", "id": "form-coluna"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
+        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(e ? e.nome : ""), "required": true, "maxlength": "80"})}))
+        + el("label", {}, t("Como montar {1}", {1: el("select", {"name": "modo"}, [["guiado", t("Guiado: escolher o campo, a função e o formato")], ["expert", t("Expert: escrever a expressão")]].map(function (o) {
+          return el("option", {"value": o[0], "selected": f.modo === o[0]}, o[1]); }).join(""))}))
+        + el("label", {"data-modo": "guiado"}, t("Fonte {1}", {1: el("select", {"name": "tabela"}, el("option", {"value": ""}, t("Escolha a fonte"))
+          + tabelas.map(function (o) { return el("option", {"value": o[0], "selected": f.tabela === o[0]}, h(o[1])); }).join(""))}))
+        + el("label", {"data-modo": "guiado"}, t("Campo {1}", {1: el("select", {"name": "campo"}, colunaOpcoesCampo(d, f.tabela || "", f.campo || ""))}))
+        + el("label", {"data-modo": "guiado", "data-so-funcao": true}, t("Função {1}", {1: el("select", {"name": "funcao"}, colunaOpcoesFuncao(d, f.tabela || "", f.campo || "", f.funcao || ""))}))
+        + el("p", {"class": "nota", "data-modo": "guiado", "data-descricao-campo": true, "style": "grid-column: 1 / -1"}, "")
+        + el("label", {"data-modo": "expert", "style": "grid-column: 1 / -1"}, t("Expressão {1}", {1: el("textarea", {"name": "expressao", "class": "formula", "rows": "3"}, h(vazio(f.modo === "expert" ? f.expressao : "")))}))
+        + el("label", {}, t("Formato {1}", {1: el("select", {"name": "formato"}, el("option", {"value": ""}, t("O que combina com a fonte"))
+          + d.formatos.map(function (o) { return el("option", {"value": o.chave, "selected": f.formato === o.chave}, h(o.nome)); }).join(""))}) + " " + el("small", {"class": "nota", "data-formato-sugerido": true}, ""))
+        + el("label", {}, t("Casas decimais {1}", {1: el("input", {"name": "casas", "type": "number", "min": "0", "max": "6", "value": f.casas === null || f.casas === undefined ? "" : f.casas, "placeholder": t("o padrão do formato")})}))
+        + el("label", {"data-so-moeda": true}, t("Símbolo da moeda {1}", {1: el("input", {"name": "simbolo", "maxlength": "8", "value": vazio(f.simbolo), "placeholder": t("R$")})}))
+        + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "padrao", "value": "0"}) + el("input", {"type": "checkbox", "name": "padrao", "value": "1", "checked": !!f.padrao}) + " " + t("Aparece na tabela sem ninguém escolher"))
+        + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + " " + el("button", {"type": "button", "class": "leve", "id": "testar-coluna"}, t("Testar num relógio"))
+          + (e ? " " + el("a", {"href": "cadastros.php?aba=colunas"}, t("cancelar")) : "")))
+      + el("div", {"id": "teste-coluna", "aria-live": "polite"}, "")
+      + el("details", {}, el("summary", {}, t("As colunas da tabela dos relógios que o modo expert pode usar")) + el("p", {"class": "nota"}, t("Vale o que vale numa expressão de relatório: os campos e as fórmulas pelo identificador, as colunas da tabela dos relógios e as funções do motor. Cada campo do banco do dicionário vira uma variável fonte_tabela_campo_função, como fonte_servico_mao_de_obra_soma."))
+        + el("ul", {"class": "nota"}, d.relogio.map(function (x) { return el("li", {}, el("strong", {}, h(x.campo)) + ": " + h(x.descricao)); }).join("")));
+    res += el("section", {"class": "cartao-config"}, sec);
+    document.getElementById("cadastros").innerHTML = res;
+    colunaAjustar(document.getElementById("form-coluna"), "");
   });
 }
 
@@ -682,7 +846,32 @@ document.addEventListener("click", function (ev) {
 });
 
 // o Testar dos totais: a expressão do formulário calculada em todos os relógios pela API, sem gravar
+document.addEventListener("change", function (ev) {
+  var form = ev.target.form;
+  // (form.id seria o campo escondido "id" do formulário, não o atributo)
+  if (form && form.getAttribute("id") === "form-coluna") {
+    colunaAjustar(form, ev.target.name);
+  }
+});
 document.addEventListener("click", function (ev) {
+  if (ev.target.id === "testar-coluna") {
+    var fc = ev.target.form;
+    var caixa_c = document.getElementById("teste-coluna");
+    var pedido = {recurso: "colunas", modo: fc.modo.value, formato: fc.formato.value, casas: fc.casas.value, simbolo: fc.simbolo.value};
+    if (fc.modo.value === "guiado") {
+      pedido.tabela = fc.tabela.value;
+      pedido.campo = fc.campo.value;
+      pedido.funcao = fc.funcao.value;
+    } else {
+      pedido.expressao = fc.expressao.value;
+    }
+    api(pedido).then(function (r) {
+      caixa_c.innerHTML = r.teste.tipo === "erro" ? el("p", {"class": "acao"}, h(r.teste.erro))
+        : el("div", {"class": "quadro-total"}, el("h2", {}, t("Dá, em {1}", {1: h(r.teste.relogio)})) + el("p", {}, el("strong", {}, h(r.teste.texto))) + el("p", {"class": "nota formula"}, h(r.teste.expressao)));
+    }).catch(function (e) {
+      caixa_c.innerHTML = el("p", {"class": "acao"}, h(e.message));
+    });
+  }
   if (ev.target.id === "testar-total") {
     var form = ev.target.form;
     var caixa = document.getElementById("teste-total");

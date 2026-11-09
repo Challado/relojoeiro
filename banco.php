@@ -229,6 +229,7 @@ const ESCOPO_CONDICOES = [
     "relogio_calibre" => "relogio_id IN ({RC})",
     "marca" => "no_id IN ({NR})",
     "relatorio" => "no_id IN ({NR})",
+    "coluna" => "no_id IN ({NR})",
     "relogio_marca" => "relogio_id IN ({RC})",
     "aviso" => "no_id IN ({NR})",
     "documento_categoria" => "no_id IN ({NR})",

@@ -269,6 +269,12 @@ function opcoes_lista($nivel, $uid = null)
     $tx = opcoes_textos();
     $lista = [];
     foreach (OPCOES as $chave => [$grupo, $tipo, $padrao, $min, $max, $valores]) {
+        // a lista de colunas: as do catálogo (as fixas e as cadastradas da árvore) e, sem escolha em nenhum nível, as que aparecem de início
+        $padrao_lista = null;
+        if ($tipo === "lista") {
+            $valores = colunas_catalogo(colunas_pagina_da_opcao($chave));
+            $padrao_lista = implode(",", colunas_padrao(colunas_pagina_da_opcao($chave)));
+        }
         if ($nivel === "colecao") {
             $proprio = cfg_cru($chave);
             [$herdado, $origem_h] = opcao_herdada($chave);
@@ -285,7 +291,7 @@ function opcoes_lista($nivel, $uid = null)
         }
         // a lista sem escolha em nenhum nível vale inteira, na ordem de sempre: é o que a tela mostra como herdado
         if ($tipo === "lista" && $herdado === "") {
-            $herdado = implode(",", $valores);
+            $herdado = $padrao_lista;
         }
         $lista[] = ["chave" => $chave, "grupo" => $grupo, "tipo" => $tipo, "titulo" => $tx["titulos"][$chave], "minimo" => $min, "maximo" => $max,
             "valores" => $valores === null ? null : array_map(function ($v) use ($tx, $chave) { return ["valor" => $v, "texto" => $tx["valores"][$chave][$v] ?? $v]; }, $valores),

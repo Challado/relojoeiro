@@ -121,12 +121,29 @@
       if (f.valor === "acima1500" && !(v !== null && v > 1500)) {
         ok = false;
       }
+      // as colunas cadastradas (chave c_...): o que se digita está no texto da célula; uma que já não existe na tabela não filtra
+      Object.keys(f).forEach(function (k) {
+        if (k.indexOf("c_") !== 0 || !f[k] || !tabela.querySelector("th[data-col=" + k + "]")) {
+          return;
+        }
+        var td = tr.querySelector("td[data-col=" + k + "]");
+        // o texto das células de duração e de moeda usa espaço que não quebra: quem digita um espaço comum também acha
+        if (!td || td.textContent.replace(/\u00a0/g, " ").toLowerCase().indexOf(f[k].replace(/\u00a0/g, " ").toLowerCase()) < 0) {
+          ok = false;
+        }
+      });
       return ok;
     };
 
     // valor usado na ordenação: vazios sempre por último
     var valor = function (tr, col) {
       var v = "";
+      if (col.indexOf("c_") === 0) {
+        // uma coluna cadastrada: o valor cru que o tr guarda (número, se a coluna é de número); vazio por último
+        var cab = tabela.querySelector("[data-ordena=" + col + "]");
+        var bruto = tr.dataset[col];
+        return bruto === undefined || bruto === "" ? null : (cab && cab.dataset.tipoOrdem === "num" ? Number(bruto) : String(bruto).toLowerCase());
+      }
       if (col === "codigo" || col === "ultimo") {
         v = Number(tr.dataset[col]);
       } else if (col === "estado") {
@@ -273,7 +290,7 @@
       });
     };
 
-    tabela.querySelectorAll("[data-ordena]").forEach(function (b) {
+    var ligarOrdena = function (b) {
       b.addEventListener("click", function () {
         if (st.col === b.dataset.ordena) {
           st.desc = !st.desc;
@@ -284,16 +301,17 @@
         guardar();
         aplicar();
       });
-    });
-
-    tabela.querySelectorAll("[data-filtro]").forEach(function (campo) {
+    };
+    var ligarFiltro = function (campo) {
       campo.value = st.f[campo.dataset.filtro] || "";
       campo.addEventListener(campo.tagName === "SELECT" ? "change" : "input", function () {
         st.f[campo.dataset.filtro] = campo.value;
         guardar();
         aplicar();
       });
-    });
+    };
+    tabela.querySelectorAll("[data-ordena]").forEach(ligarOrdena);
+    tabela.querySelectorAll("[data-filtro]").forEach(ligarFiltro);
 
     var limpar = document.getElementById("limpar-filtros");
     if (limpar) {
@@ -367,10 +385,58 @@
     // As colunas que valem (o motor de colunas, api.js colunasAplicar): a lista vem da API a cada leitura; a coluna escondida perde a
     // ordenação e o filtro que tinha (um filtro numa coluna que ninguém vê esconderia relógios sem explicação)
     var colunasAtuais = null;
+    // As colunas cadastradas (Cadastros › Colunas, chave c_...) aparecem no cabeçalho, no filtro e no rodapé como as de sempre: a
+    // célula de cada coluna que aparece é criada aqui (se faltar) e a de uma que saiu ou que se escondeu é tirada. O filtro é um campo
+    // de busca no texto da célula; o cabeçalho ordena (número ou texto, pelo formato da coluna)
+    var montarCadastradas = function (colunas) {
+      var cad = colunas.filter(function (c) { return c.cadastrada; });
+      var vivas = cad.filter(function (c) { return c.visivel; }).map(function (c) { return c.chave; });
+      Array.prototype.forEach.call(tabela.querySelectorAll("th[data-col^=c_], thead tr.filtros td[data-col^=c_], tfoot tr.totais-rodape td[data-col^=c_]"), function (c) {
+        if (vivas.indexOf(c.getAttribute("data-col")) < 0) {
+          c.parentNode.removeChild(c);
+        }
+      });
+      Object.keys(st.f).forEach(function (k) {
+        if (k.indexOf("c_") === 0 && vivas.indexOf(k) < 0) {
+          delete st.f[k];
+        }
+      });
+      if (st.col.indexOf("c_") === 0 && vivas.indexOf(st.col) < 0) {
+        st.col = "";
+        st.desc = false;
+      }
+      var cabecalho = tabela.querySelector("thead tr:not(.filtros)");
+      var filtros = tabela.querySelector("thead tr.filtros");
+      var rodape = tabela.querySelector("tfoot tr.totais-rodape");
+      cad.filter(function (c) { return c.visivel; }).forEach(function (c) {
+        if (cabecalho && !cabecalho.querySelector("th[data-col=" + c.chave + "]")) {
+          var th = document.createElement("th");
+          th.setAttribute("data-col", c.chave);
+          th.innerHTML = el("button", {"type": "button", "data-ordena": c.chave, "data-tipo-ordem": c.numero ? "num" : "txt"}, h(c.titulo) + " <span></span>");
+          cabecalho.appendChild(th);
+          ligarOrdena(th.querySelector("button"));
+        }
+        if (filtros && !filtros.querySelector("td[data-col=" + c.chave + "]")) {
+          var tdf = document.createElement("td");
+          tdf.setAttribute("data-col", c.chave);
+          tdf.setAttribute("data-rotulo", c.titulo);
+          tdf.innerHTML = el("input", {"data-filtro": c.chave, "aria-label": t("Filtrar por {1}", {1: c.titulo}), "placeholder": t("buscar")});
+          filtros.appendChild(tdf);
+          ligarFiltro(tdf.querySelector("input"));
+        }
+        if (rodape && !rodape.querySelector("td[data-col=" + c.chave + "]")) {
+          var tdr = document.createElement("td");
+          tdr.setAttribute("data-col", c.chave);
+          tdr.setAttribute("data-rotulo", c.titulo);
+          rodape.appendChild(tdr);
+        }
+      });
+    };
     var aplicarColunas = function () {
       if (!colunasAtuais || typeof colunasAplicar !== "function") {
         return;
       }
+      montarCadastradas(colunasAtuais);
       colunasAplicar(tabela, colunasAtuais);
       colunasAtuais.filter(function (c) { return !c.visivel; }).forEach(function (c) {
         if (st.col === c.chave) {

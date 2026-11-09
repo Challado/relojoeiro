@@ -50,6 +50,10 @@ jobs:
         run: php testes/menos_usado.php
       - name: Colunas da tabela dos relógios e o tempo de uso
         run: php testes/colunas.php
+      - name: Fontes de dados das colunas (o dicionário de campos do banco)
+        run: php testes/fontes.php
+      - name: Construtor de colunas (guiado e expert)
+        run: php testes/construtor.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

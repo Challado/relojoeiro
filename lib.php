@@ -1279,6 +1279,7 @@ $MIGRACOES = [
     "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem"],
     "v59" => ["migracao_v59.sql", tk("o menos usado: a forma de escolha (o relógio com menos dias de uso no total) e o critério Menos usado nas notas; a escala inteligente escolhe a forma e os critérios que usa no cálculo"), "modo_criterio", "migracao_v59_dados"],
     "v60" => ["migracao_v60.sql", tk("a coluna Tempo de uso na tabela dos relógios (o tempo no pulso somado, em dias, horas, minutos e segundos), com o formato de total Tempo e a variável tempo_de_uso; e a escolha das colunas da tabela da página Hoje, em três níveis (padrão do sistema, preferência do usuário e escolha da coleção)"), "sistema.chave=migracao_v60", "migracao_v60_dados"],
+    "v61" => ["migracao_v61.sql", tk("o construtor de colunas da tabela dos relógios (Cadastros › Colunas): colunas suas, escolhendo o campo do banco, a função (soma, média, menor, maior, contagem) e o formato (casas decimais, moeda, tempo, data), ou escrevendo a expressão; elas entram na escolha das colunas da página Hoje"), "coluna"],
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
 ];
 
@@ -3457,6 +3458,9 @@ function variavel_valor($ident, &$ctx)
     } elseif (isset($ctx["tabela"]) && array_key_exists($ident, $ctx["tabela"])) {
         // nos totais: o que a coluna da tabela dos relógios mostra (codigo, nome, tipo, estado, carga...)
         $res = $ctx["tabela"][$ident];
+    } elseif (isset(fontes_variaveis()[$ident])) {
+        // uma fonte de dados (fontes.php): a soma, a média, o menor, o maior ou a contagem de um campo dos registros do relógio
+        $res = fonte_valor($ident, (int)$ctx["r"]["id"]);
     } elseif ($ident === "nota_criterios") {
         if (!isset($ctx["pilha"]["nota_criterios"])) {
             $ctx["pilha"]["nota_criterios"] = true;
@@ -3644,7 +3648,7 @@ function tabela_linha($r, $agora, $extra = [])
     $val = valores_do_relogio((int)$r["id"]);
     $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
             AND t.marcha IS NULL ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
-    return ["id" => (int)$r["id"], "nome" => $r["nome"], "marca" => marca_do_relogio((int)$r["id"])["nome"] ?? null, "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
+    $res_l = ["id" => (int)$r["id"], "nome" => $r["nome"], "marca" => marca_do_relogio((int)$r["id"])["nome"] ?? null, "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
         "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
         "em_manutencao" => ($mn_h = manutencao_aberta((int)$r["id"])) !== null ? $mn_h["oficina"] : null,
         "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? ($mn_h !== null ? t("Em manutenção") : (posse_de($r) === "emprestado" ? posse_texto($r) : t("Indisponível"))) : $v["estado_texto"],
@@ -3660,6 +3664,9 @@ function tabela_linha($r, $agora, $extra = [])
             "garantia_ate" => $val["garantia_ate"] ?? null],
         "leitura" => $leitura ? ["inicio" => $leitura["inicio"], "valor" => (float)$leitura["valor"], "unidade" => $leitura["unidade"]] : null,
         "de_hoje" => $dia !== null && (int)$dia["relogio_id"] === (int)$r["id"], "com_aviso" => isset($pendentes[(int)$r["id"]]), "foto" => $fotos[(int)$r["id"]] ?? null];
+    // as colunas cadastradas (colunas.php) que aparecem: o valor e o texto de cada uma; os totais não precisam delas
+    $res_l["colunas_extras"] = ($extra["sem_colunas"] ?? false) ? [] : colunas_valores_da_linha($res_l, $r, $agora, $val);
+    return $res_l;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -3758,7 +3765,7 @@ function total_validar($expressao)
     } catch (ErroFormula $e) {
         return [t("erro de escrita: {1}", [1 => $e->getMessage()])];
     }
-    $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), array_keys($VARIAVEIS_TABELA), array_keys($VARIAVEIS_MOTOR));
+    $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), array_keys($VARIAVEIS_TABELA), array_keys($VARIAVEIS_MOTOR), array_keys(fontes_variaveis()));
     // $no: o nó; $nivel: "conjunto" (fora de uma função de total) ou "relogio" (dentro); $topo: é a expressão inteira
     $andar = function ($no, $nivel, $topo) use (&$andar, &$erros, $conhecidas, $FUNCOES_TOTAIS) {
         if ($no[0] === "v") {
@@ -3835,7 +3842,7 @@ function totais_relogios($ids = null, $quais = "colecao")
     $agora = time();
     $chave = (int)colecao_atual() . "|" . $quais . "|" . ($ids === null ? "*" : implode(",", $ids)) . "|" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
     if (!isset($cache[$chave])) {
-        $extra = ["nos" => nos_todos(), "hoje" => hoje_da_colecao(), "dia" => null, "uso" => uso_total_mapa($agora)];
+        $extra = ["nos" => nos_todos(), "hoje" => hoje_da_colecao(), "dia" => null, "uso" => uso_total_mapa($agora), "sem_colunas" => true];
         $res = [];
         foreach (linhas("SELECT * FROM relogio ORDER BY nome, id") as $r) {
             // quais: colecao (os da coleção: na coleção e emprestados), desejados (a lista de desejos) ou todos
@@ -4084,7 +4091,7 @@ function total_rotulo($chave)
 
 // Um número de um total no formato dele: número (inteiro quando é, senão até 2 casas), inteiro, decimal (2 casas), moeda,
 // porcentagem, data (os dias das fórmulas), dias e duração (segundos); o vazio sai "—"; um texto sai como está
-function total_texto($v, $formato)
+function total_texto($v, $formato, $opcoes = [])
 {
     if ($v === null || $v === "") {
         return "—";
@@ -4093,17 +4100,20 @@ function total_texto($v, $formato)
         return (string)$v;
     }
     $v = (float)$v;
+    // as opções de uma coluna cadastrada: casas (as casas decimais) e simbolo (a moeda: R$, US$, €...)
+    $casas = isset($opcoes["casas"]) && $opcoes["casas"] !== null && $opcoes["casas"] !== "" ? max(0, min(6, (int)$opcoes["casas"])) : null;
     if ($formato === "inteiro") {
         return numero_txt(round($v), 0);
     }
     if ($formato === "decimal") {
-        return numero_txt($v, 2);
+        return numero_txt($v, $casas ?? 2);
     }
     if ($formato === "moeda") {
-        return dinheiro_txt($v);
+        $simbolo = isset($opcoes["simbolo"]) && trim((string)$opcoes["simbolo"]) !== "" ? trim((string)$opcoes["simbolo"]) : "R$";
+        return $simbolo . " " . numero_txt($v, $casas ?? 2);
     }
     if ($formato === "porcentagem") {
-        return numero_txt(round($v), 0) . "%";
+        return numero_txt($casas === null ? round($v) : $v, $casas ?? 0) . "%";
     }
     if ($formato === "data") {
         return data_txt(gmdate("Y-m-d", (int)(floor($v) * 86400)));
@@ -4114,6 +4124,9 @@ function total_texto($v, $formato)
     }
     if ($formato === "duracao") {
         return duracao_uso_txt($v);
+    }
+    if ($casas !== null) {
+        return numero_txt($v, $casas);
     }
     return abs($v - round($v)) < 1e-9 ? numero_txt(round($v), 0) : numero_txt($v, 2, 0);
 }
@@ -4199,7 +4212,7 @@ function relatorio_expressao_validar($expressao)
         return [t("erro de escrita: {1}", [1 => $e->getMessage()])];
     }
     $erros = [];
-    $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), array_keys($VARIAVEIS_TABELA), array_keys($VARIAVEIS_MOTOR));
+    $conhecidas = array_merge(array_keys(campos_todos()), array_keys(formulas_todas()), array_keys($VARIAVEIS_TABELA), array_keys($VARIAVEIS_MOTOR), array_keys(fontes_variaveis()));
     foreach ($refs["variaveis"] as $v) {
         if (!in_array($v, $conhecidas, true)) {
             $erros[] = t("variável desconhecida: {1} (não é campo, fórmula nem coluna da tabela)", [1 => $v]);
@@ -11528,6 +11541,7 @@ function backup_restaurar_tudo($arquivo)
 // as coleções (o escopo do pedido, o modelo.json, os segredos, a configuração do sistema, a migração v25)
 require_once __DIR__ . "/colecoes.php";
 // as opções em três níveis (sistema → usuário → coleção): a tabela OPCOES e o que o cfg() herda
+require_once __DIR__ . "/fontes.php";
 require_once __DIR__ . "/colunas.php";
 require_once __DIR__ . "/opcoes.php";
 // os alertas (os destinos das mensagens, as agendas, o e-mail, o Web Push)

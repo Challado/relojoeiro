@@ -534,6 +534,8 @@ form.calibre-campos select { max-width: 100%; }
 /* títulos compridos em duas linhas */
 #tabela-relogios thead th { white-space: normal; vertical-align: bottom; }
 #tabela-relogios thead th button { white-space: normal; text-align: left; line-height: 1.2; }
+/* o título de uma coluna cadastrada (c_...) não quebra: as de sempre quebram onde o <br> manda, e o nome que a pessoa escolhe fica numa linha só */
+#tabela-relogios thead th[data-col^="c_"] button { white-space: nowrap; }
 #tabela-relogios .col-codigo { width: 2.4rem; }
 #tabela-relogios td, #tabela-relogios th { padding-left: .35rem; padding-right: .35rem; }
 #tabela-relogios .estado { padding: .1rem .45rem; font-size: .76rem; }
