@@ -1366,6 +1366,21 @@ a.botao:hover { filter: brightness(1.08); }
 .par-campo .controle .opcao { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; min-width: 0; width: 100%; }
 .par-campo .controle .opcao input, .par-campo .controle .opcao select { flex: 1 1 8rem; width: auto; min-width: 0; }
 .par-campo .controle .opcao .herdado { flex-basis: 100%; overflow-wrap: anywhere; }
+/* a lista que se escolhe e se põe na ordem (as colunas de uma tabela): as caixas de marcar, os botões ▲ ▼ e o Herdar */
+.lista-ordenavel { display: flex; flex-direction: column; gap: .4rem; width: 100%; min-width: 0; }
+.lista-ordenavel ul { list-style: none; margin: 0; padding: .3rem; display: flex; flex-direction: column; gap: .15rem; max-height: 24rem; overflow-y: auto; border: 1px solid var(--aco); border-radius: 8px; background: var(--papel); }
+.lista-ordenavel li { display: flex; align-items: center; gap: .3rem; }
+.lista-ordenavel li label { flex: 1 1 auto; display: flex; align-items: center; gap: .4rem; min-width: 0; margin: 0; font-size: .95rem; color: var(--tinta); }
+.lista-ordenavel li button { flex: none; min-height: 0; padding: .1rem .5rem; }
+.lista-ordenavel .lista-rodape { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.lista-ordenavel .lista-rodape small { flex: 1 1 10rem; }
+/* o motor de colunas (api.js, colunasAplicar): a coluna escondida não ocupa lugar, em nenhuma linha */
+#tabela-relogios [data-col][hidden] { display: none !important; }
+/* o seletor das colunas da tabela dos relógios, no alto dela */
+.painel-colunas { margin: 0 0 .8rem; padding: .8rem 1rem; border: 1px solid var(--aco-escuro); border-radius: 10px; background: var(--papel); display: flex; flex-direction: column; gap: .6rem; max-width: 34rem; }
+.painel-colunas[hidden] { display: none; }
+.painel-colunas .acoes { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.painel-colunas p { margin: 0; }
 .par-campo.check .controle { align-items: center; }
 .par-campo.check input[type=checkbox] { width: 1.15rem; height: 1.15rem; margin: 0; }
 .par-campo.largo { grid-template-columns: minmax(0, 1fr); gap: .3rem; }
@@ -1510,7 +1525,7 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 }
 #tabela-relogios.em-cartoes tr.filtros td { display: block; padding: 0; border: 0; background: none; }
 #tabela-relogios.em-cartoes tr.filtros td.col-em { display: none; }
-#tabela-relogios.em-cartoes tr.filtros td:nth-child(2) { order: -1; }
+#tabela-relogios.em-cartoes tr.filtros td[data-col=nome] { order: -1; }
 #tabela-relogios.em-cartoes tr.filtros td[data-rotulo]::before { content: attr(data-rotulo); display: block; margin-bottom: .1rem; font-size: .75rem; color: var(--cinza); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #tabela-relogios.em-cartoes tr.filtros input.curto { width: 100%; }
 /* cada relógio: a foto e o nome na linha de cima; embaixo os campos em colunas iguais, alinhados de um cartão para o outro */
@@ -1545,6 +1560,9 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 #tabela-relogios.em-cartoes .mini-total td { display: table-cell; padding: 0 .3rem; border-bottom: 1px solid #eef1f4; }
 #tabela-relogios.em-cartoes .mini-total tbody td { background: #fff; }
 #tabela-relogios.em-cartoes .mini-total tfoot td { border-top: 2px solid var(--tinta); border-bottom: 1px solid var(--aco-escuro); }
+/* o total do rodapé numa célula estreita do cartão (celular): um texto comprido ("2d 9h 33m 15s", o Tempo de uso somado) quebra em vez de alargar a célula */
+#tabela-relogios.em-cartoes .mini-total caption { width: 0; min-width: 100%; }
+#tabela-relogios.em-cartoes .mini-total td.num { white-space: normal; overflow-wrap: anywhere; height: auto; line-height: 1.25; padding-top: .1rem; padding-bottom: .1rem; }
 #tabela-relogios.em-cartoes tbody td.col-nome::before { content: none; }
 /* no celular, duas colunas: cada par de campos lado a lado */
 @container (max-width: 559px) {

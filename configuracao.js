@@ -373,6 +373,9 @@ function recarregarConfig(aplicadas, manterPosicao) {
           + campoOpcao(oc.plano_por_pagina, "plano_por_pagina", null, ajudaRef("mostrar"))
           + campoOpcao(oc.atualizar_segundos, "atualizar_segundos", null, ex("atualizar", t("Intervalo de atualização"), t("De quantos em quantos segundos a Hoje (com o painel), a Ficha, o Plano, os Totais e o Histórico leem tudo de novo sozinhos, sem recarregar a página (a carga, a autonomia, a última leitura, os avisos, os contadores). ")
               + t("De 1 a 86400; 0 desliga; padrão 60. Nunca por cima de quem está digitando ou tem algo mudado e não gravado.")))
+          // as colunas da tabela dos relógios da página Hoje (o motor de colunas): quais e em que ordem
+          + campoOpcao(oc.colunas_hoje, "colunas_hoje", "largo", ex("colunas", t("Colunas da tabela dos relógios"), t("Quais colunas a tabela da página Hoje mostra e em que ordem: marque as que quer ver e ponha na ordem com ▲ e ▼ (a Relógio sempre aparece). ")
+              + t("Herdar volta a valer a lista do nível acima (a de Minha conta ou a do sistema; sem nenhuma, todas, na ordem de sempre). Na própria página Hoje, o botão Colunas faz a mesma escolha.")))
           + parCampo(t("Endereço do sistema (a âncora {link})"), d.sistema.pode_mudar ? el("input", {"name": "url_sistema", "value": d.sistema.url_sistema, "placeholder": t("http://servidor/relogios")})
             : el("span", {}, d.sistema.url_sistema !== "" ? h(d.sistema.url_sistema) : t("(o do pedido; só o master muda)")), "largo")
           + parCampo(t("Rodadas do cron antes de matar a travada (0 nunca mata)"), d.sistema.pode_mudar ? numero("cron_espera_rodadas", String(d.sistema.cron_espera_rodadas), "0", "1440")

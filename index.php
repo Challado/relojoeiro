@@ -25,43 +25,48 @@ topo("Relógio de hoje", "index.php");
       <div class="titulo-secao">
         <div class="titulo-e-conta"><h2><?= t("Relógios") ?></h2> <span id="conta-relogios"></span></div>
         <div class="botoes">
+          <button type="button" class="leve" id="colunas-abrir" aria-expanded="false" aria-controls="painel-colunas"><?= t("Colunas") ?></button>
           <button type="button" class="leve" id="limpar-filtros"><?= t("Limpar filtros") ?></button>
           <a href="desejos.php" class="botao leve" id="link-desejos" hidden><?= t("Desejos") ?></a>
           <a href="index.php?novo=1" class="botao" data-novo><?= t("Novo relógio") ?></a>
         </div>
       </div>
+      <!-- as colunas da tabela (o motor de colunas: hoje.js monta a lista com as colunas que a API entrega e grava a escolha da coleção) -->
+      <div class="painel-colunas" id="painel-colunas" hidden></div>
       <div class="rolagem" id="rolagem-relogios">
       <table class="relogios" id="tabela-relogios">
         <thead>
           <tr>
-            <th class="col-codigo"><button type="button" data-ordena="codigo" data-tipo-ordem="num"><?= t("Código") ?> <span></span></button></th>
-            <th><button type="button" data-ordena="nome"><?= t("Relógio") ?> <span></span></button></th>
-            <th class="col-marca"><button type="button" data-ordena="marca"><?= t("Marca") ?> <span></span></button></th>
-            <th><button type="button" data-ordena="tipo"><?= t("Tipo") ?> <span></span></button></th>
-            <th><button type="button" data-ordena="estado" data-tipo-ordem="num"><?= t("Estado") ?> <span></span></button></th>
-            <th><button type="button" data-ordena="carga" data-tipo-ordem="num"><?= t("Carga") ?> <span></span></button></th>
-            <th><button type="button" data-ordena="ultimo" data-tipo-ordem="num"><?= t("Última vez<br> usado") ?> <span></span></button></th>
-            <th><button type="button" data-ordena="manut"><?= t("Próxima<br> manutenção") ?> <span></span></button></th>
-            <th class="col-em"><button type="button" data-ordena="em" data-tipo-ordem="num"><?= t("Em") ?> <span></span></button></th>
-            <th><button type="button" data-ordena="fazer"><?= t("O que<br> fazer") ?> <span></span></button></th>
-            <th class="col-encostado"><button type="button" data-ordena="encostado" data-tipo-ordem="num"><?= t("Encostado") ?> <span></span></button></th>
-            <th><button type="button" data-ordena="compra"><?= t("Comprado<br> em") ?> <span></span></button></th>
-            <th class="col-valor"><button type="button" data-ordena="valor" data-tipo-ordem="num"><?= t("Valor") ?> <span></span></button></th>
+            <th class="col-codigo" data-col="codigo"><button type="button" data-ordena="codigo" data-tipo-ordem="num"><?= t("Código") ?> <span></span></button></th>
+            <th data-col="nome"><button type="button" data-ordena="nome"><?= t("Relógio") ?> <span></span></button></th>
+            <th class="col-marca" data-col="marca"><button type="button" data-ordena="marca"><?= t("Marca") ?> <span></span></button></th>
+            <th data-col="tipo"><button type="button" data-ordena="tipo"><?= t("Tipo") ?> <span></span></button></th>
+            <th data-col="estado"><button type="button" data-ordena="estado" data-tipo-ordem="num"><?= t("Estado") ?> <span></span></button></th>
+            <th data-col="carga"><button type="button" data-ordena="carga" data-tipo-ordem="num"><?= t("Carga") ?> <span></span></button></th>
+            <th data-col="ultimo"><button type="button" data-ordena="ultimo" data-tipo-ordem="num"><?= t("Última vez<br> usado") ?> <span></span></button></th>
+            <th data-col="uso"><button type="button" data-ordena="uso" data-tipo-ordem="num"><?= t("Tempo<br> de uso") ?> <span></span></button></th>
+            <th data-col="manut"><button type="button" data-ordena="manut"><?= t("Próxima<br> manutenção") ?> <span></span></button></th>
+            <th class="col-em" data-col="em"><button type="button" data-ordena="em" data-tipo-ordem="num"><?= t("Em") ?> <span></span></button></th>
+            <th data-col="fazer"><button type="button" data-ordena="fazer"><?= t("O que<br> fazer") ?> <span></span></button></th>
+            <th class="col-encostado" data-col="encostado"><button type="button" data-ordena="encostado" data-tipo-ordem="num"><?= t("Encostado") ?> <span></span></button></th>
+            <th data-col="compra"><button type="button" data-ordena="compra"><?= t("Comprado<br> em") ?> <span></span></button></th>
+            <th class="col-valor" data-col="valor"><button type="button" data-ordena="valor" data-tipo-ordem="num"><?= t("Valor") ?> <span></span></button></th>
           </tr>
           <tr class="filtros">
-            <td data-rotulo="<?= te("Código") ?>"><input data-filtro="codigo" aria-label="<?= te("Filtrar por código") ?>" placeholder="<?= te("nº") ?>" class="curto"></td>
-            <td data-rotulo="<?= te("Relógio") ?>"><input data-filtro="nome" aria-label="<?= te("Filtrar por nome") ?>" placeholder="<?= te("buscar") ?>"></td>
-            <td class="col-marca" data-rotulo="<?= te("Marca") ?>"><select data-filtro="marca" aria-label="<?= te("Filtrar por marca") ?>"><option value=""><?= t("Todas") ?></option></select></td>
-            <td data-rotulo="<?= te("Tipo") ?>"><select data-filtro="tipo" aria-label="<?= te("Filtrar por tipo") ?>"><option value=""><?= t("Todos") ?></option></select></td>
-            <td data-rotulo="<?= te("Estado") ?>"><select data-filtro="estado" aria-label="<?= te("Filtrar por estado") ?>"><option value=""><?= t("Todos") ?></option></select></td>
-            <td data-rotulo="<?= te("Carga") ?>"><select data-filtro="carga" aria-label="<?= te("Filtrar por carga") ?>"><option value=""><?= t("Todas") ?></option><option value="20">≤ 20%</option><option value="50">≤ 50%</option></select></td>
-            <td data-rotulo="<?= te("Última vez usado") ?>"><select data-filtro="ultimo" aria-label="<?= te("Filtrar pela última vez usado") ?>"><option value=""><?= t("Todos") ?></option><option value="7"><?= t("7 dias") ?></option><option value="mais7"><?= t("+7 dias") ?></option><option value="nunca"><?= t("nunca") ?></option></select></td>
-            <td data-rotulo="<?= te("Próxima manutenção") ?>"><select data-filtro="manut" aria-label="<?= te("Filtrar pela próxima manutenção") ?>"><option value=""><?= t("Todas") ?></option><option value="0"><?= t("até hoje") ?></option><option value="7"><?= t("7 dias") ?></option><option value="30"><?= t("30 dias") ?></option></select></td>
-            <td class="col-em"></td>
-            <td data-rotulo="<?= te("O que fazer") ?>"><select data-filtro="fazer" aria-label="<?= te("Filtrar pelo que fazer") ?>"><option value=""><?= t("Todos") ?></option></select></td>
-            <td class="col-encostado" data-rotulo="<?= te("Encostado") ?>"><select data-filtro="encostado" aria-label="<?= te("Filtrar por encostado") ?>"><option value=""><?= t("Todos") ?></option><option value="sim"><?= t("Encostados") ?></option><option value="prazo"><?= t("Dentro do prazo") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
-            <td data-rotulo="<?= te("Comprado em") ?>"><select data-filtro="compra" aria-label="<?= te("Filtrar pela data da compra") ?>"><option value=""><?= t("Todas") ?></option><option value="30"><?= t("30 dias") ?></option><option value="90"><?= t("90 dias") ?></option><option value="ano"><?= t("este ano") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
-            <td data-rotulo="<?= te("Valor") ?>"><select data-filtro="valor" aria-label="<?= te("Filtrar pelo valor") ?>"><option value=""><?= t("Todos") ?></option><option value="ate500">≤ 500</option><option value="500a1500">500–1.500</option><option value="acima1500"><?= t("&gt; 1.500") ?></option><option value="sem"><?= t("sem valor") ?></option></select></td>
+            <td data-col="codigo" data-rotulo="<?= te("Código") ?>"><input data-filtro="codigo" aria-label="<?= te("Filtrar por código") ?>" placeholder="<?= te("nº") ?>" class="curto"></td>
+            <td data-col="nome" data-rotulo="<?= te("Relógio") ?>"><input data-filtro="nome" aria-label="<?= te("Filtrar por nome") ?>" placeholder="<?= te("buscar") ?>"></td>
+            <td data-col="marca" class="col-marca" data-rotulo="<?= te("Marca") ?>"><select data-filtro="marca" aria-label="<?= te("Filtrar por marca") ?>"><option value=""><?= t("Todas") ?></option></select></td>
+            <td data-col="tipo" data-rotulo="<?= te("Tipo") ?>"><select data-filtro="tipo" aria-label="<?= te("Filtrar por tipo") ?>"><option value=""><?= t("Todos") ?></option></select></td>
+            <td data-col="estado" data-rotulo="<?= te("Estado") ?>"><select data-filtro="estado" aria-label="<?= te("Filtrar por estado") ?>"><option value=""><?= t("Todos") ?></option></select></td>
+            <td data-col="carga" data-rotulo="<?= te("Carga") ?>"><select data-filtro="carga" aria-label="<?= te("Filtrar por carga") ?>"><option value=""><?= t("Todas") ?></option><option value="20">≤ 20%</option><option value="50">≤ 50%</option></select></td>
+            <td data-col="ultimo" data-rotulo="<?= te("Última vez usado") ?>"><select data-filtro="ultimo" aria-label="<?= te("Filtrar pela última vez usado") ?>"><option value=""><?= t("Todos") ?></option><option value="7"><?= t("7 dias") ?></option><option value="mais7"><?= t("+7 dias") ?></option><option value="nunca"><?= t("nunca") ?></option></select></td>
+            <td data-col="uso" data-rotulo="<?= te("Tempo de uso") ?>"><select data-filtro="uso" aria-label="<?= te("Filtrar pelo tempo de uso") ?>"><option value=""><?= t("Todos") ?></option><option value="nunca"><?= t("Nunca usado") ?></option><option value="ate1h"><?= t("até 1 hora") ?></option><option value="1ha1d"><?= t("de 1 hora a 1 dia") ?></option><option value="1da7d"><?= t("de 1 a 7 dias") ?></option><option value="mais7d"><?= t("mais de 7 dias") ?></option></select></td>
+            <td data-col="manut" data-rotulo="<?= te("Próxima manutenção") ?>"><select data-filtro="manut" aria-label="<?= te("Filtrar pela próxima manutenção") ?>"><option value=""><?= t("Todas") ?></option><option value="0"><?= t("até hoje") ?></option><option value="7"><?= t("7 dias") ?></option><option value="30"><?= t("30 dias") ?></option></select></td>
+            <td data-col="em" class="col-em"></td>
+            <td data-col="fazer" data-rotulo="<?= te("O que fazer") ?>"><select data-filtro="fazer" aria-label="<?= te("Filtrar pelo que fazer") ?>"><option value=""><?= t("Todos") ?></option></select></td>
+            <td data-col="encostado" class="col-encostado" data-rotulo="<?= te("Encostado") ?>"><select data-filtro="encostado" aria-label="<?= te("Filtrar por encostado") ?>"><option value=""><?= t("Todos") ?></option><option value="sim"><?= t("Encostados") ?></option><option value="prazo"><?= t("Dentro do prazo") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
+            <td data-col="compra" data-rotulo="<?= te("Comprado em") ?>"><select data-filtro="compra" aria-label="<?= te("Filtrar pela data da compra") ?>"><option value=""><?= t("Todas") ?></option><option value="30"><?= t("30 dias") ?></option><option value="90"><?= t("90 dias") ?></option><option value="ano"><?= t("este ano") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
+            <td data-col="valor" data-rotulo="<?= te("Valor") ?>"><select data-filtro="valor" aria-label="<?= te("Filtrar pelo valor") ?>"><option value=""><?= t("Todos") ?></option><option value="ate500">≤ 500</option><option value="500a1500">500–1.500</option><option value="acima1500"><?= t("&gt; 1.500") ?></option><option value="sem"><?= t("sem valor") ?></option></select></td>
           </tr>
         </thead>
         <tbody></tbody>
@@ -69,21 +74,22 @@ topo("Relógio de hoje", "index.php");
           <!-- os totais do rodapé (recurso=totais, parte=rodape): embaixo de cada coluna, os totais dela, calculados nos relógios
                que o filtro deixa à mostra (o tabela.js pede de novo a cada filtro) -->
           <tr class="totais-rodape" id="totais-rodape" hidden>
-            <td class="col-codigo" data-coluna="codigo" data-rotulo="<?= te("Código") ?>"></td>
-            <td data-coluna="nome" data-rotulo="<?= te("Relógio") ?>"></td>
-            <td class="col-marca" data-coluna="marca" data-rotulo="<?= te("Marca") ?>"></td>
-            <td data-coluna="tipo" data-rotulo="<?= te("Tipo") ?>"></td>
-            <td data-coluna="estado" data-rotulo="<?= te("Estado") ?>"></td>
-            <td data-coluna="carga" data-rotulo="<?= te("Carga") ?>"></td>
-            <td data-coluna="ultimo" data-rotulo="<?= te("Última vez usado") ?>"></td>
-            <td data-coluna="manut" data-rotulo="<?= te("Próxima manutenção") ?>"></td>
-            <td class="col-em" data-coluna="em" data-rotulo="<?= te("Em") ?>"></td>
-            <td data-coluna="fazer" data-rotulo="<?= te("O que fazer") ?>"></td>
-            <td class="col-encostado" data-coluna="encostado" data-rotulo="<?= te("Encostado") ?>"></td>
-            <td data-coluna="compra" data-rotulo="<?= te("Comprado em") ?>"></td>
-            <td class="col-valor" data-coluna="valor" data-rotulo="<?= te("Valor") ?>"></td>
+            <td class="col-codigo" data-col="codigo" data-coluna="codigo" data-rotulo="<?= te("Código") ?>"></td>
+            <td data-col="nome" data-coluna="nome" data-rotulo="<?= te("Relógio") ?>"></td>
+            <td class="col-marca" data-col="marca" data-coluna="marca" data-rotulo="<?= te("Marca") ?>"></td>
+            <td data-col="tipo" data-coluna="tipo" data-rotulo="<?= te("Tipo") ?>"></td>
+            <td data-col="estado" data-coluna="estado" data-rotulo="<?= te("Estado") ?>"></td>
+            <td data-col="carga" data-coluna="carga" data-rotulo="<?= te("Carga") ?>"></td>
+            <td data-col="ultimo" data-coluna="ultimo" data-rotulo="<?= te("Última vez usado") ?>"></td>
+            <td data-col="uso" data-coluna="uso" data-rotulo="<?= te("Tempo de uso") ?>"></td>
+            <td data-col="manut" data-coluna="manut" data-rotulo="<?= te("Próxima manutenção") ?>"></td>
+            <td class="col-em" data-col="em" data-coluna="em" data-rotulo="<?= te("Em") ?>"></td>
+            <td data-col="fazer" data-coluna="fazer" data-rotulo="<?= te("O que fazer") ?>"></td>
+            <td class="col-encostado" data-col="encostado" data-coluna="encostado" data-rotulo="<?= te("Encostado") ?>"></td>
+            <td data-col="compra" data-coluna="compra" data-rotulo="<?= te("Comprado em") ?>"></td>
+            <td class="col-valor" data-col="valor" data-coluna="valor" data-rotulo="<?= te("Valor") ?>"></td>
           </tr>
-          <tr class="totais-mais"><td colspan="13"><a href="totais.php" class="botao leve" id="ver-totais"><?= t("Ver todos os totais") ?></a> <a href="cadastros.php?aba=totais" class="nota"><?= t("montar os totais") ?></a> <span class="nota" id="totais-recado"></span></td></tr>
+          <tr class="totais-mais"><td colspan="14" data-colspan-colunas><a href="totais.php" class="botao leve" id="ver-totais"><?= t("Ver todos os totais") ?></a> <a href="cadastros.php?aba=totais" class="nota"><?= t("montar os totais") ?></a> <span class="nota" id="totais-recado"></span></td></tr>
         </tfoot>
       </table>
       </div>

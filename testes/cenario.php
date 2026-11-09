@@ -1300,6 +1300,25 @@ escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 5]);
 // a caixa Avisar quando um relógio fica encostado: desligada, o aviso some da Hoje (e da Configuração: encostado_ativo = 0)
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_ativo" => 0]);
 ler("hoje sem o encostado", ["recurso" => "hoje"]);
+// as colunas da tabela da página Hoje (o motor de colunas, a opção colunas_hoje em três níveis): todas na ordem de sempre; a escolha da
+// coleção (a ordem é a da lista, as outras ficam escondidas); a lista sem a Relógio, com uma coluna que não existe e com uma repetida é
+// recusada; o padrão do sistema vale na coleção sem escolha; e de volta a todas
+$cols_h = "colunas,colunas_escolha,colunas_herdado,colunas_origem_herdado";
+ler("hoje com todas as colunas", ["recurso" => "hoje", "incluir" => $cols_h]);
+escrever(["recurso" => "config", "acao" => "salvar", "colunas_hoje" => "nome,uso,marca"]);
+ler("hoje com as colunas escolhidas", ["recurso" => "hoje", "incluir" => $cols_h]);
+ler("config com as colunas escolhidas", ["recurso" => "config", "incluir" => "opcoes"]);
+foreach (["uso,marca", "nome,nao_existe", "nome,uso,uso"] as $ruim_c) {
+    escrever(["recurso" => "config", "acao" => "salvar", "colunas_hoje" => $ruim_c], false);
+}
+escrever(["recurso" => "config", "acao" => "salvar", "colunas_hoje" => ""]);
+escrever(["recurso" => "config", "acao" => "salvar", "padroes" => ["colunas_hoje" => "nome,carga,valor"]]);
+ler("hoje com as colunas do sistema", ["recurso" => "hoje", "incluir" => $cols_h]);
+escrever(["recurso" => "config", "acao" => "salvar", "padroes" => ["colunas_hoje" => ""]]);
+ler("hoje de volta a todas as colunas", ["recurso" => "hoje", "incluir" => $cols_h]);
+// um total no rodapé embaixo do Tempo de uso, no formato Tempo (a soma dos tempos de uso)
+escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Tempo de uso somado", "coluna" => "uso", "expressao" => "SOMA(tempo_de_uso)", "formato" => "duracao", "rodape" => "1", "pagina" => "1"]);
+ler("totais com o tempo de uso", ["recurso" => "totais", "parte" => "rodape"]);
 ler("config sem o encostado", ["recurso" => "config"]);
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_ativo" => 1]);
 // a cópia dos documentos no banco pela Configuração da coleção (todos, nenhum, vazio); valor errado recusa

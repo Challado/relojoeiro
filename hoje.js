@@ -68,6 +68,53 @@ function opcoesDoFiltro(nome, itens, todos) {
 }
 
 // lê a página inteira da API e monta os blocos
+// As colunas da tabela dos relógios que a API entregou na última leitura (o painel Colunas monta a lista delas ao abrir)
+var colunasHoje = null;
+// O painel Colunas: a lista das colunas, com a caixa de marcar e os botões ▲ ▼, e o Salvar (grava a escolha desta coleção: a opção
+// colunas_hoje, pela configuração) e o Herdar (esvazia a escolha: valem as do usuário ou do sistema)
+function montarPainelColunas() {
+  var painel = document.getElementById("painel-colunas");
+  if (!painel || !colunasHoje) {
+    return;
+  }
+  var visiveis = colunasHoje.lista.filter(function (c) { return c.visivel; }).map(function (c) { return c.chave; });
+  porHtml(painel, el("form", {"data-recurso": "config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+    + el("p", {"class": "nota"}, t("Marque as colunas da tabela e ponha na ordem com ▲ e ▼. A escolha vale para esta coleção."))
+    + listaOrdenavel({nome: "colunas_hoje", itens: colunasHoje.lista.map(function (c) { return {valor: c.chave, texto: c.titulo}; }),
+      fixos: colunasHoje.lista.filter(function (c) { return c.fixa; }).map(function (c) { return c.chave; }),
+      escolha: visiveis.join(","), herdado: colunasHoje.herdado, origem: colunasHoje.escolha === "" ? colunasHoje.origem : ""})
+    + el("div", {"class": "acoes"}, el("button", {}, t("Salvar colunas")) + el("button", {"type": "button", "class": "leve", "data-colunas-fechar": true}, t("Fechar")))));
+}
+document.addEventListener("click", function (ev) {
+  var painel = document.getElementById("painel-colunas");
+  var abrir = document.getElementById("colunas-abrir");
+  if (!painel || !abrir || !ev.target.closest) {
+    return;
+  }
+  if (ev.target.closest("#colunas-abrir")) {
+    var abre = painel.hidden;
+    if (abre) {
+      montarPainelColunas();
+    }
+    painel.hidden = !abre;
+    abrir.setAttribute("aria-expanded", abre ? "true" : "false");
+  } else if (ev.target.closest("[data-colunas-fechar]")) {
+    painel.hidden = true;
+    abrir.setAttribute("aria-expanded", "false");
+  }
+});
+// gravou: o painel fecha (a página remonta a tabela com as colunas novas)
+document.addEventListener("submit", function (ev) {
+  var painel = document.getElementById("painel-colunas");
+  if (painel && ev.target.closest && ev.target.closest("#painel-colunas")) {
+    painel.hidden = true;
+    var abrir = document.getElementById("colunas-abrir");
+    if (abrir) {
+      abrir.setAttribute("aria-expanded", "false");
+    }
+  }
+});
+
 function recarregarHoje() {
   return api({recurso: "hoje", proximos_pagina: paginaProximos}).then(function (d) {
     ajudaGrupo("pagina", t("Hoje"));
@@ -326,27 +373,29 @@ function recarregarHoje() {
       var atrasado = m && m.momento > 0 && m.momento * 1000 <= Date.now();
       var encAtrasado = e && e.estado !== "ok";
       return el("tr", {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-marca": x.marca === null ? "" : x.marca, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
-        "data-carga": x.carga === null ? "" : x.carga, "data-ultimo": x.ultimo, "data-manut": m ? m.data : "", "data-em": m && m.momento > 0 ? m.momento : "", "data-fazer": m ? m.nome : "",
+        "data-carga": x.carga === null ? "" : x.carga, "data-ultimo": x.ultimo, "data-uso": x.uso, "data-manut": m ? m.data : "", "data-em": m && m.momento > 0 ? m.momento : "", "data-fazer": m ? m.nome : "",
         "data-encostado": e && e.momento > 0 ? e.momento : "", "data-encostado-estado": !e ? "" : (e.estado === "ok" ? "prazo" : "sim"),
         "data-compra": x.compra.data || "", "data-valor": x.compra.valor === null ? "" : x.compra.valor,
         "class": ((x.de_hoje ? "de-hoje " : "") + (x.com_aviso ? "pendente " : "") + (x.disponivel ? "" : "indisponivel ") + (x.id === sel ? "selecionado" : "")).trim()},
-        el("td", {"class": "col-codigo", "data-rotulo": t("Código")}, String(x.id))
-        + el("td", {"class": "col-nome"}, el("div", {"class": "nome-rel"}, (x.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + x.id + "&v=" + x.foto, "alt": ""}) : el("span", {"class": "sem-mini"}, ""))
+        el("td", {"data-col": "codigo", "class": "col-codigo", "data-rotulo": t("Código")}, String(x.id))
+        + el("td", {"data-col": "nome", "class": "col-nome"}, el("div", {"class": "nome-rel"}, (x.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + x.id + "&v=" + x.foto, "alt": ""}) : el("span", {"class": "sem-mini"}, ""))
           + el("a", {"href": "index.php?r=" + x.id, "title": x.nome}, h(x.nome))))
-        + el("td", {"class": "col-marca", "data-rotulo": t("Marca")}, x.marca !== null ? h(x.marca) : "—")
-        + el("td", {"data-rotulo": t("Tipo")}, h(x.tipo))
-        + el("td", {"data-rotulo": t("Estado")}, el("span", {"class": "estado estado-" + (x.estado)}, h(x.estado_texto)))
-        + el("td", {"data-rotulo": t("Carga")}, x.carga !== null
+        + el("td", {"data-col": "marca", "class": "col-marca", "data-rotulo": t("Marca")}, x.marca !== null ? h(x.marca) : "—")
+        + el("td", {"data-col": "tipo", "data-rotulo": t("Tipo")}, h(x.tipo))
+        + el("td", {"data-col": "estado", "data-rotulo": t("Estado")}, el("span", {"class": "estado estado-" + (x.estado)}, h(x.estado_texto)))
+        + el("td", {"data-col": "carga", "data-rotulo": t("Carga")}, x.carga !== null
           ? el("div", {"class": "carga-cel" + (x.carga <= 20 ? " baixa" : ""), "title": x.carga_de}, el("div", {"class": "carga-linha"}, el("span", {"class": "barra"}, el("span", {"style": "width: " + (x.carga) + "%"}, ""))
             + " " + el("strong", {}, x.carga + "%")))
           : el("small", {"class": "sem-carga"}, h(x.carga_de)))
-        + el("td", {"data-rotulo": t("Última vez usado")}, h(x.ultimo_txt))
-        + el("td", {"data-rotulo": t("Próxima manutenção")}, m ? (m.data === d.data ? "hoje" : dataBr(m.data)) : "—")
-        + el("td", {"class": "col-em" + (atrasado ? " atrasado" : ""), "data-rotulo": t("Em"), "data-momento": m && m.momento > 0 ? m.momento : null}, m ? h(m.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
-        + el("td", {"class": m ? "fazer" : "", "data-rotulo": t("O que fazer")}, m ? h(m.nome) : "—")
-        + el("td", {"class": "col-encostado" + (encAtrasado ? " atrasado" : ""), "data-rotulo": t("Encostado"), "data-momento": e && e.momento > 0 ? e.momento : null}, e ? h(e.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
-        + el("td", {"data-rotulo": t("Comprado em")}, x.compra.data ? dataBr(x.compra.data) : "—")
-        + el("td", {"class": "col-valor", "data-rotulo": t("Valor")}, x.compra.valor !== null ? t("R$ ") + reais(x.compra.valor) : "—"));
+        + el("td", {"data-col": "ultimo", "data-rotulo": t("Última vez usado")}, h(x.ultimo_txt))
+        // o tempo de uso total (a API manda o texto pronto: "1d 4h 30m"; sem uso, "—"); as partes não quebram a linha
+        + el("td", {"data-col": "uso", "class": "col-uso", "data-rotulo": t("Tempo de uso")}, x.uso > 0 ? h(x.uso_texto).replace(/ /g, "&nbsp;") : "—")
+        + el("td", {"data-col": "manut", "data-rotulo": t("Próxima manutenção")}, m ? (m.data === d.data ? "hoje" : dataBr(m.data)) : "—")
+        + el("td", {"data-col": "em", "class": "col-em" + (atrasado ? " atrasado" : ""), "data-rotulo": t("Em"), "data-momento": m && m.momento > 0 ? m.momento : null}, m ? h(m.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
+        + el("td", {"data-col": "fazer", "class": m ? "fazer" : "", "data-rotulo": t("O que fazer")}, m ? h(m.nome) : "—")
+        + el("td", {"data-col": "encostado", "class": "col-encostado" + (encAtrasado ? " atrasado" : ""), "data-rotulo": t("Encostado"), "data-momento": e && e.momento > 0 ? e.momento : null}, e ? h(e.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
+        + el("td", {"data-col": "compra", "data-rotulo": t("Comprado em")}, x.compra.data ? dataBr(x.compra.data) : "—")
+        + el("td", {"data-col": "valor", "class": "col-valor", "data-rotulo": t("Valor")}, x.compra.valor !== null ? t("R$ ") + reais(x.compra.valor) : "—"));
     }).join("");
     // o botão da página Desejos, com quantos estão na lista de desejos e fora da coleção (só quando há algum)
     var desejos = document.getElementById("link-desejos");
@@ -355,7 +404,9 @@ function recarregarHoje() {
       desejos.textContent = [d.totais.desejados > 0 ? t("Desejos ({1})", {1: d.totais.desejados}) : "", d.totais.fora > d.totais.desejados ? t("Fora da coleção ({1})", {1: d.totais.fora - d.totais.desejados}) : ""]
         .filter(function (item) { return item !== ""; }).join(" · ");
     }
-    window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "13"}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""));
+    // as colunas que valem (o motor de colunas: a opção colunas_hoje; api.js colunasAplicar, pelo tabela.js) e o que o painel Colunas mostra
+    colunasHoje = {lista: d.colunas, escolha: d.colunas_escolha, herdado: d.colunas_herdado, origem: d.colunas_origem_herdado};
+    window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "14", "data-colspan-colunas": true}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""), d.colunas);
   });
 }
 

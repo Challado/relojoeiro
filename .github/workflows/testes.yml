@@ -48,6 +48,8 @@ jobs:
         run: php testes/opcoes.php
       - name: Menos usado e a escala que escolhe a forma e os critérios
         run: php testes/menos_usado.php
+      - name: Colunas da tabela dos relógios e o tempo de uso
+        run: php testes/colunas.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

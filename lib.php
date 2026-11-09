@@ -1278,12 +1278,25 @@ $MIGRACOES = [
     "v56" => ["migracao_v56.sql", tk("o rodízio em três níveis: padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração"), "sistema.chave=migracao_v56", "migracao_v56_dados"],
     "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem"],
     "v59" => ["migracao_v59.sql", tk("o menos usado: a forma de escolha (o relógio com menos dias de uso no total) e o critério Menos usado nas notas; a escala inteligente escolhe a forma e os critérios que usa no cálculo"), "modo_criterio", "migracao_v59_dados"],
+    "v60" => ["migracao_v60.sql", tk("a coluna Tempo de uso na tabela dos relógios (o tempo no pulso somado, em dias, horas, minutos e segundos), com o formato de total Tempo e a variável tempo_de_uso; e a escolha das colunas da tabela da página Hoje, em três níveis (padrão do sistema, preferência do usuário e escolha da coleção)"), "sistema.chave=migracao_v60", "migracao_v60_dados"],
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
 ];
 
 // O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
 // parâmetro de critério "Menos usado", com peso 0 (a nota de hoje não muda até dar peso a ele), em cada conjunto de critérios da
 // árvore (um por grupo ou por relógio que tem critérios). Uma instalação nova já tem tudo (o modelo)
+// A regra da coluna dos totais aceita o Tempo de uso (nos quatro bancos); o formato Tempo vem do SQL (o ENUM). Uma instalação nova já
+// tem os dois (o schema.sql)
+function migracao_v60_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            banco_regra("total", "ck_total_coluna", "coluna IS NULL OR coluna IN ('codigo','nome','marca','tipo','estado','carga','ultimo','uso','manut','em','fazer','encostado','compra','valor')");
+        });
+    }
+    sis_set("migracao_v60", "1");
+}
+
 function migracao_v59_dados($nova = false)
 {
     if ($nova) {
@@ -3611,7 +3624,7 @@ function formula_validar($ident, $expressao)
     return $erros;
 }
 
-// Uma linha da tabela dos relógios da página Hoje (recurso=hoje, relogios[]): o estado, a carga, a última vez usado, a próxima
+// Uma linha da tabela dos relógios da página Hoje (recurso=hoje, relogios[]): o estado, a carga, a última vez usado, o tempo de uso, a próxima
 // manutenção, o Encostado e a compra de um relógio da coleção. $extra: nos (nos_todos()), hoje (o dia da coleção), dia (o
 // plano de hoje), pendentes (os ids com aviso de hoje) e fotos (id => atualizada); o que faltar sai do banco (os totais
 // usam só a linha)
@@ -3622,6 +3635,8 @@ function tabela_linha($r, $agora, $extra = [])
     $dia = array_key_exists("dia", $extra) ? $extra["dia"] : plano_do_dia($hoje->format("Y-m-d"));
     $pendentes = $extra["pendentes"] ?? [];
     $fotos = $extra["fotos"] ?? [];
+    // o tempo de uso total, em segundos: o mapa de todos os relógios (uma consulta só) vem pronto de quem monta a tabela
+    $uso_s = (int)(($extra["uso"] ?? uso_total_mapa($agora))[(int)$r["id"]] ?? 0);
     $v = visao_relogio($r, $agora);
     // o estado na tabela: o indisponível parado aparece como indisponível (o emprestado, como emprestado); no pulso ou numa
     // sessão, o que ele está fazendo
@@ -3636,6 +3651,7 @@ function tabela_linha($r, $agora, $extra = [])
         "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
         "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
         "ultimo_txt" => $v["em_uso"] ? t("agora · {1}", [1 => date("H:i", $agora)]) : ($v["ultimo"] > 0 ? data_txt($v["ultimo"], true, date("Y", $v["ultimo"]) === date("Y", $agora)) : t("nunca")),
+        "uso" => $uso_s, "uso_texto" => duracao_uso_txt($uso_s),
         "situacao" => $v["situacao"], "manutencao" => $v["prox"] ? ["nome" => $v["prox"]["nome"], "data" => max($hoje->format("Y-m-d"), substr($v["prox"]["data"], 0, 10)),
             "momento" => $v["prox_momento"], "falta" => $v["prox_falta"]] : null,
         "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
@@ -3695,27 +3711,28 @@ $VARIAVEIS_TABELA = [
     "posse" => [tk("a posse: Na coleção ou Emprestado"), ""],
     "servicos" => [tk("quantos serviços e diagnósticos o relógio tem"), ""],
     "custo_servicos" => [tk("quanto os serviços do relógio custaram, somados (a mão de obra mais as peças; vazio: nenhum com custo)"), "R$"],
+    "tempo_de_uso" => [tk("o tempo de uso total do relógio, em segundos: as sessões no pulso somadas, sem contar duas vezes a mesma hora (a coluna Tempo de uso; 0: nunca usado)"), "s"],
 ];
 
 // As colunas da tabela dos relógios onde um total pode ir (a chave é a do cabeçalho da página Hoje), na ordem dela
 const TOTAL_COLUNAS = ["codigo" => "Código", "nome" => "Relógio", "marca" => "Marca", "tipo" => "Tipo", "estado" => "Estado", "carga" => "Carga", "ultimo" => "Última vez usado",
-    "manut" => "Próxima manutenção", "em" => "Em", "fazer" => "O que fazer", "encostado" => "Encostado", "compra" => "Comprado em", "valor" => "Valor"];
+    "uso" => "Tempo de uso", "manut" => "Próxima manutenção", "em" => "Em", "fazer" => "O que fazer", "encostado" => "Encostado", "compra" => "Comprado em", "valor" => "Valor"];
 // Como os números de um total saem: número (inteiro quando é, senão até 2 casas), inteiro, decimal (2 casas), moeda (R$),
-// porcentagem, data e dias
+// porcentagem, data, dias e duração (segundos em dias, horas, minutos e segundos)
 const TOTAL_FORMATOS = ["numero" => "Número", "inteiro" => "Inteiro", "decimal" => "Com 2 casas", "moeda" => "Dinheiro (R$)", "porcentagem" => "Porcentagem (%)",
-    "data" => "Data", "dias" => "Dias"];
+    "data" => "Data", "dias" => "Dias", "duracao" => "Tempo (1d 4h 30m)"];
 
 // Os nomes das colunas e dos formatos, no idioma do pedido
 function total_colunas_nomes()
 {
     return ["codigo" => t("Código"), "nome" => t("Relógio"), "marca" => t("Marca"), "tipo" => t("Tipo"), "estado" => t("Estado"), "carga" => t("Carga"), "ultimo" => t("Última vez usado"),
-        "manut" => t("Próxima manutenção"), "em" => t("Em"), "fazer" => t("O que fazer"), "encostado" => t("Encostado"), "compra" => t("Comprado em"), "valor" => t("Valor")];
+        "uso" => t("Tempo de uso"), "manut" => t("Próxima manutenção"), "em" => t("Em"), "fazer" => t("O que fazer"), "encostado" => t("Encostado"), "compra" => t("Comprado em"), "valor" => t("Valor")];
 }
 
 function total_formatos_nomes()
 {
     return ["numero" => t("Número"), "inteiro" => t("Inteiro"), "decimal" => t("Com 2 casas"), "moeda" => t("Dinheiro (R$)"), "porcentagem" => t("Porcentagem (%)"),
-        "data" => t("Data"), "dias" => t("Dias")];
+        "data" => t("Data"), "dias" => t("Dias"), "duracao" => t("Tempo (1d 4h 30m)")];
 }
 
 // Lê a expressão de um total (o leitor das fórmulas, aceitando as funções de total)
@@ -3804,7 +3821,7 @@ function tabela_variaveis($linha, $r, $agora)
         "ultimo_uso" => $linha["em_uso"] ? dias_de($agora) : ((int)$linha["ultimo"] > 0 ? dias_de((int)$linha["ultimo"]) : null),
         "manutencao_data" => $linha["manutencao"] ? $em_dias($linha["manutencao"]["data"]) : null, "manutencao_nome" => $linha["manutencao"]["nome"] ?? null,
         "encostado_data" => $linha["encostado"] ? $em_dias($linha["encostado"]["data"]) : null, "avisos" => count(avisos_do_relogio($r, $agora)),
-        "posse" => $linha["posse_texto"], "servicos" => count(servicos_das_contas()[(int)$r["id"]] ?? []), "custo_servicos" => (function ($ss) {
+        "posse" => $linha["posse_texto"], "tempo_de_uso" => (int)$linha["uso"], "servicos" => count(servicos_das_contas()[(int)$r["id"]] ?? []), "custo_servicos" => (function ($ss) {
             $cs = array_values(array_filter(array_column($ss, "custo"), function ($c) { return $c !== null; }));
             return count($cs) > 0 ? round(array_sum($cs), 2) : null;
         })(servicos_das_contas()[(int)$r["id"]] ?? [])];
@@ -3818,7 +3835,7 @@ function totais_relogios($ids = null, $quais = "colecao")
     $agora = time();
     $chave = (int)colecao_atual() . "|" . $quais . "|" . ($ids === null ? "*" : implode(",", $ids)) . "|" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
     if (!isset($cache[$chave])) {
-        $extra = ["nos" => nos_todos(), "hoje" => hoje_da_colecao(), "dia" => null];
+        $extra = ["nos" => nos_todos(), "hoje" => hoje_da_colecao(), "dia" => null, "uso" => uso_total_mapa($agora)];
         $res = [];
         foreach (linhas("SELECT * FROM relogio ORDER BY nome, id") as $r) {
             // quais: colecao (os da coleção: na coleção e emprestados), desejados (a lista de desejos) ou todos
@@ -4066,7 +4083,7 @@ function total_rotulo($chave)
 }
 
 // Um número de um total no formato dele: número (inteiro quando é, senão até 2 casas), inteiro, decimal (2 casas), moeda,
-// porcentagem, data (os dias das fórmulas) e dias; o vazio sai "—"; um texto sai como está
+// porcentagem, data (os dias das fórmulas), dias e duração (segundos); o vazio sai "—"; um texto sai como está
 function total_texto($v, $formato)
 {
     if ($v === null || $v === "") {
@@ -4094,6 +4111,9 @@ function total_texto($v, $formato)
     if ($formato === "dias") {
         $n = (int)round($v);
         return $n === 1 ? t("1 dia") : t("{1} dias", [1 => numero_txt($n, 0)]);
+    }
+    if ($formato === "duracao") {
+        return duracao_uso_txt($v);
     }
     return abs($v - round($v)) < 1e-9 ? numero_txt(round($v), 0) : numero_txt($v, 2, 0);
 }
@@ -8862,6 +8882,59 @@ function horas_no_pulso($rid, $de, $ate)
     return $h;
 }
 
+// O tempo de uso total de cada relógio, em segundos, até $agora: as sessões no pulso somadas, sem contar duas vezes a mesma hora
+// (as duas abertas juntas) e a aberta até agora; as que ainda nem começaram não contam. Uma consulta para todos os relógios da
+// coleção (rid => segundos; quem nunca foi ao pulso não aparece)
+function uso_total_mapa($agora)
+{
+    $mapa = [];
+    $ate_aqui = [];
+    foreach (linhas("SELECT l.relogio_id, l.inicio, l.fim, tp.fecha_as FROM lancamento l JOIN lancamento_tipo tp ON tp.id = l.tipo_id WHERE tp.identificador = 'pulso'
+        AND l.inicio < ? ORDER BY l.relogio_id, l.inicio, l.id", [date("Y-m-d H:i:s", $agora)]) as $sp) {
+        $rid = (int)$sp["relogio_id"];
+        $a = max($ate_aqui[$rid] ?? 0, strtotime($sp["inicio"]));
+        $fim = $sp["fim"] === null ? null : strtotime($sp["fim"]);
+        if ($fim === null && $sp["fecha_as"] !== null) {
+            $fim = max(strtotime($sp["inicio"]), instante(dia_da_colecao(strtotime($sp["inicio"])), $sp["fecha_as"]));
+        }
+        $b = min($agora, $fim ?? $agora);
+        if ($b > $a) {
+            $mapa[$rid] = ($mapa[$rid] ?? 0) + ($b - $a);
+            $ate_aqui[$rid] = $b;
+        }
+    }
+    return $mapa;
+}
+
+// Um tempo em segundos em dias, horas, minutos e segundos, só as partes que não são zero: "1d 4h 30m", "13h 30m", "30m", "1m 5s";
+// 24 horas viram um dia; sem tempo nenhum, "—"
+function duracao_uso_txt($seg)
+{
+    $seg = max(0, (int)round((float)$seg));
+    if ($seg === 0) {
+        return "—";
+    }
+    $d = intdiv($seg, 86400);
+    $h = intdiv($seg % 86400, 3600);
+    $m = intdiv($seg % 3600, 60);
+    $s = $seg % 60;
+    // cada unidade com o texto dela por extenso no código (as letras são do idioma: dias, horas, minutos e segundos)
+    $partes = [];
+    if ($d > 0) {
+        $partes[] = t("{1}d", [1 => $d]);
+    }
+    if ($h > 0) {
+        $partes[] = t("{1}h", [1 => $h]);
+    }
+    if ($m > 0) {
+        $partes[] = t("{1}m", [1 => $m]);
+    }
+    if ($s > 0) {
+        $partes[] = t("{1}s", [1 => $s]);
+    }
+    return implode(" ", $partes);
+}
+
 // Os trechos no pulso de um relógio entre $de e $ate (instantes), cortados nas bordas: [[início, fim], ...]
 function periodos_no_pulso($rid, $de, $ate)
 {
@@ -11455,6 +11528,7 @@ function backup_restaurar_tudo($arquivo)
 // as coleções (o escopo do pedido, o modelo.json, os segredos, a configuração do sistema, a migração v25)
 require_once __DIR__ . "/colecoes.php";
 // as opções em três níveis (sistema → usuário → coleção): a tabela OPCOES e o que o cfg() herda
+require_once __DIR__ . "/colunas.php";
 require_once __DIR__ . "/opcoes.php";
 // os alertas (os destinos das mensagens, as agendas, o e-mail, o Web Push)
 require_once __DIR__ . "/alertas.php";

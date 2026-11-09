@@ -39,7 +39,7 @@ function numeros_iguais($x, $y, $chave)
     // em relação ao outro nesta leitura (FOLGA_ATRASO: a sessão aberta da linha do tempo cresce enquanto o cenário roda, e
     // no banco mais lento os passos até a leitura levam mais tempo)
     $folga = 120 + ($GLOBALS["FOLGA_ATRASO"] ?? 0);
-    if (preg_match("/segundos|_seg\$|timestamp|restante|autonomia|duracao|_ms\$|ultimo\$/", (string)$chave) === 1 && abs($x - $y) <= $folga) {
+    if (preg_match("/segundos|_seg\$|timestamp|restante|autonomia|duracao|_ms\$|ultimo\$|^uso\$|tempo_de_uso/", (string)$chave) === 1 && abs($x - $y) <= $folga) {
         return true;
     }
     // os minutos desde a última rodada do cron (cron_estado.minutos): a mesma folga, em minutos inteiros
@@ -246,7 +246,7 @@ function comparar($x, $y, $caminho, $chave)
     // um prazo relativo no texto ("vence em 5d" e "vence em 4d 23h", "em 12h 58min" e "em 13h"): calculado com segundos de
     // diferença, cruza o arredondamento; e, no mesmo texto, a data pode ter virado o minuto ("13:16" e "13:17"), por isso os
     // outros números também contam como iguais
-    $prazo = function ($t) { return preg_replace("/\\d+/", "#", preg_replace("/\\d+(a|m|d|h|min)( \\d+(a|m|d|h|min))*\\b/u", "<prazo>", $t)); };
+    $prazo = function ($t) { return preg_replace("/\\d+/", "#", preg_replace("/\\d+(a|m|d|h|min|s)( \\d+(a|m|d|h|min|s))*\\b/u", "<prazo>", $t)); };
     if (is_string($x) && is_string($y) && $prazo($x) === $prazo($y)) {
         $leves[] = [$caminho, "prazo no texto", $x, $y];
         return;

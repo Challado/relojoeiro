@@ -11,7 +11,8 @@
 // rodízio e o passar o relógio de ontem para hoje, que têm a coluna própria no usuário (lib.php); e o que só pode ficar no
 // config.php (o banco, as chaves, as pastas, o e-mail).
 // chave => [grupo, tipo, padrão de fábrica, mínimo, máximo, valores (enum)]
-//   tipo: hora (HH:MM), sim_nao (1 ou 0), inteiro (min a max), decimal (min a max), enum (um dos valores)
+//   tipo: hora (HH:MM), sim_nao (1 ou 0), inteiro (min a max), decimal (min a max), enum (um dos valores), lista (várias chaves dos
+//   valores, separadas por vírgula, na ordem que a pessoa quer, sem repetir: as colunas de uma tabela, colunas.php)
 //   grupo: rotina (Rotina do dia), limites (Limites e contas), telas (Telas)
 // O padrão de fábrica é o que vale quando nenhum nível escolheu. gasto_motor e documentos_copia têm o valor "individual"
 // (conforme o relógio, o grupo e o arquivo): o cfg() o devolve como vazio, o que o código sempre entendeu assim
@@ -49,6 +50,7 @@ const OPCOES = [
     "proximos_por_pagina" => ["telas", "inteiro", "7", 1, 366, null],
     "plano_por_pagina" => ["telas", "inteiro", "31", 1, 366, null],
     "atualizar_segundos" => ["telas", "inteiro", "60", 0, 86400, null],
+    "colunas_hoje" => ["telas", "lista", "", null, null, COLUNAS_HOJE],
 ];
 
 // O que o cfg() devolve no lugar do valor guardado (o "individual" é o vazio de sempre)
@@ -93,6 +95,7 @@ function opcoes_textos()
             "proximos_por_pagina" => t("Próximos dias (página Hoje): mostrar até (dias por página)"),
             "plano_por_pagina" => t("Plano: mostrar até (dias por página)"),
             "atualizar_segundos" => t("Intervalo de atualização das páginas (segundos; 0 desliga)"),
+            "colunas_hoje" => t("Colunas da tabela dos relógios (página Hoje): quais e em que ordem"),
         ],
         "valores" => [
             "semana_inicio" => ["segunda" => t("Na segunda-feira"), "domingo" => t("No domingo")],
@@ -109,6 +112,7 @@ function opcoes_textos()
             "calibre_campos" => ["movimento" => t("Só os campos do movimento"), "todos" => t("Todos os campos do cadastro")],
             "relojinho_modo" => ["hora" => t("Normal: cada hora tem o seu"), "aleatorio" => t("Aleatório: sorteia um a cada hora (pode repetir)"),
                 "sem_repeticao" => t("Aleatório sem repetição: os 24 embaralhados, cada um uma vez por dia")],
+            "colunas_hoje" => colunas_titulos("hoje"),
             "hora_relogio" => ["ambos" => t("Analógico e digital (um ao lado do outro)"), "analogico" => t("Analógico"), "digital" => t("Digital"),
                 "anadigi" => t("Anadigi (o visor digital dentro do analógico)")],
         ],
@@ -185,6 +189,10 @@ function opcao_conferir($chave, $valor)
         return [t("Opção desconhecida: {1}.", [1 => $chave]), null];
     }
     [, $tipo, , $min, $max, $valores] = OPCOES[$chave];
+    // a lista (as colunas de uma tabela): o conferidor do motor de colunas, que aceita "a,b,c" ou uma lista
+    if ($tipo === "lista") {
+        return colunas_conferir(colunas_pagina_da_opcao($chave), $valor);
+    }
     $v = is_array($valor) ? null : trim((string)$valor);
     if ($v === "") {
         return [null, ""];
@@ -275,8 +283,13 @@ function opcoes_lista($nivel, $uid = null)
         if ($chave === "sol_fim" && $herdado === "") {
             $herdado = $nivel === "colecao" && isset(lancamento_tipos()["sol"]) ? sol_fim_hora() : "18:00";
         }
+        // a lista sem escolha em nenhum nível vale inteira, na ordem de sempre: é o que a tela mostra como herdado
+        if ($tipo === "lista" && $herdado === "") {
+            $herdado = implode(",", $valores);
+        }
         $lista[] = ["chave" => $chave, "grupo" => $grupo, "tipo" => $tipo, "titulo" => $tx["titulos"][$chave], "minimo" => $min, "maximo" => $max,
             "valores" => $valores === null ? null : array_map(function ($v) use ($tx, $chave) { return ["valor" => $v, "texto" => $tx["valores"][$chave][$v] ?? $v]; }, $valores),
+            "fixos" => $tipo === "lista" ? COLUNAS_PAGINAS[colunas_pagina_da_opcao($chave)][2] : null,
             "padrao" => $padrao, "escolha" => $proprio, "herdado" => $herdado, "origem_herdado" => $origem_h,
             "efetivo" => $proprio !== "" ? $proprio : $herdado, "origem" => $proprio !== "" ? $nivel : $origem_h];
     }

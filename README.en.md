@@ -173,7 +173,7 @@ Totals also belong to the formula engine, but they look at **all the watches sho
 table on the Today page leaves). They are in the **Totals** tab of the **Definitions** page: each total has the table
 **column** where it goes (or none), the **name**, the **expression**, the boxes **Show in the totals footer** and **Show on
 the totals page**, the **width** of its box on the page (narrow or wide) and the **format** of the numbers (number, whole
-number, with 2 decimals, money, percentage, date or days). Only the totals of a column go to the footer, under it; the
+number, with 2 decimals, money, percentage, date, days or time, which writes seconds as *1d 4h 30m*). Only the totals of a column go to the footer, under it; the
 others, as many as you want, stay only on the **totals page** (menu **Collection**, or **See all totals** under the table,
 which takes the same filter). Several totals in the same column go one under the other, in the order of the list (↑ ↓), and
 **Test on all watches** shows the result before saving.
@@ -190,7 +190,7 @@ which takes the same filter). Several totals in the same column go one under the
 
 Inside them works everything that works in a formula (the fields, the formulas, `SE`, `DIAS_DESDE`...), calculated on each
 watch, and also what each column of the table shows: `codigo`, `nome`, `marca`, `tipo`, `estado`, `disponivel`, `em_uso`, `carga`,
-`ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (how many alerts it has) and `posse`. Outside
+`ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (how many alerts it has), `posse` and `tempo_de_uso` (the total wear time, in seconds). Outside
 them, only numbers, texts and the functions that don't need a watch (`SE`, `MIN`, `ARREDONDA`, the arithmetic). The new
 functions `MES(data)`, `ANO(data)` and `MES_ANO(data)` serve to group by month and by year, and also work in formulas.
 Examples:
@@ -1517,6 +1517,7 @@ Cards fill the available spaces according to screen width and content height. Th
 | **Next days: show up to** (`proximos_por_pagina`) and **Plan: show up to** (`plano_por_pagina`) | how many days the **Next days** on the Today page and the **Day by day** on the Plan page show at a time (from 1 to 366). Beyond that, the page navigator appears below: **<** (previous), the numbers (the first, the last and up to two on each side of the current one, with … in the gaps) and **>** (next); resting the mouse on it, the tip says *Previous*, *Next* or *Page N*. Default: 7 and 31. |
 | **Page refresh interval** (`atualizar_segundos`) | how often, in seconds, **Today** (with the watch open in the panel), the **Watch page**, the **Plan**, the **Totals** and the **History** read everything again by themselves, without reloading: from 1 to 86400; **0** turns it off; empty, 60. Negative or above that, Settings refuses it. See [The pages refresh by themselves](#the-pages-refresh-by-themselves). |
 | **Time zone (whoever has not chosen another in My account)** (`fuso`) | the collection's time zone: that of whoever has not chosen their own in **My account**, and that of its cron, messages and calendars (see [The time zone](#the-time-zone)). Empty: the system's (the `FUSO` of `config.php`). |
+| **Watches table columns** (`colunas_hoje`) | which columns the **Today** page table shows and in what order: a list with a tick box and the ▲ and ▼ buttons (the **Watch** column cannot be hidden); **Inherit** empties the collection's choice, and the one in **My account** or the system's applies; with none, all of them, in the usual order. The **Columns** button on the Today page itself makes the same choice. See [The table columns](#the-screens). |
 | **Exact time clock** (`hora_relogio`) | the dial of the **Exact time** page: *Analog and digital (side by side)* (the default), *Analog*, *Digital* or *Ana-digi (the digital display inside the analog one)*. |
 | **Default language** (`idioma`) | the collection's language: the one of the screens for whoever hasn't chosen their own (in the menu selector or in **My account**; see [The languages](#the-languages)) and the one of the messages and calendars without a language of their own: Portuguese, English, Chinese, Hindi, Spanish or French. Default: the one of whoever created the collection. |
 | **Open the watch on the Today page** (`painel_modo`) | **Next to the list** (`lado`): the clicked watch opens in a panel on the right, and the list stays in view. **In a large floating window** (`flutuante`): it opens in the middle of the screen, over the page, with the background darkened and the boxes side by side; it closes with the ×, Esc or a click outside. On the phone, both cover the whole screen. Default: next to the list. |
@@ -1700,15 +1701,19 @@ closes the panel.</sub>
 | from 901 to 1199 px (tablet lying down, small notebook) | the menu in the bar; the watch opened "next to the list" slides over from the right, with the background darkened, instead of squeezing the list |
 | 1200 px or more (computer) | the panel next to the list (or the floating window, according to Settings) |
 
-**The same information on all of them.** The watch table always has the 13 columns (code, watch, brand, type, state, charge, last
-worn, next service, in, what to do, idle, bought on and value), the 12 filters and sorting by any column, on the computer, the tablet
+**The same information on all of them.** The watch table always has the same columns (by default, all 14: code, watch, brand, type, state, charge, last
+worn, wear time, next service, in, what to do, idle, bought on and value, or the ones you choose: see **The table columns**), each one's filters and sorting by any column, on the computer, the tablet
 and the phone; nothing is hidden for lack of space (the only exception is on purpose: with the **Warn when a watch becomes
 idle** box unchecked in Settings, the Idle column and its filter disappear at every size). When the whole table fits the width it really has (with or without the
 panel open next to it), it appears as a table, and a cell's text wraps only if it needs to. When it doesn't fit, each watch
-becomes a card with the same 12 fields, in the same order, each with the column name above it (in two columns on the phone, in
+becomes a card with the same fields, in the same order, each with the column name above it (in two columns on the phone, in
 five on the tablet), the headings become the **Sort by** buttons and all the filters stay, with the name above. The switch is
 measured with the real data (a long name or a large value count), not by the width of the screen. The **Next days** also show
 all the days of the schedule on any screen.
+
+**The table columns.** The **Columns** button, at the top of the watches table on the Today page, opens a list with all the columns: tick the ones you want to see and put them in order with **▲** and **▼**; **Save columns** applies to the collection (header, filters, rows and footer follow the list, and a hidden column loses the sorting and filter it had), and **Inherit** goes back to the list of the level above. The **Watch** column cannot be hidden. The same choice exists on three levels, like the other options: the **system default** (Settings › System), the **user's preference** (My account, for the collections they own) and the **collection's choice** (Settings, or the Columns button); the most specific one wins, empty inherits, and with no choice at any level all of them appear, in the usual order. Through the API: the `colunas_hoje` option (the keys separated by commas, in the order you want, e.g. `nome,uso,marca`) in `config/salvar`, in `conta/alterar` (`opcoes[colunas_hoje]`) and in the master's `config/salvar` (`padroes[colunas_hoje]`); `recurso=hoje` brings `colunas` (all of them, the ones that apply first, with `chave`, `titulo`, `visivel`, `posicao` and `fixa`), `colunas_escolha`, `colunas_herdado` and `colunas_origem_herdado`.
+
+**Wear time.** The **Wear time** column, right after **Last worn**, shows how long the watch has already been on the wrist, adding up all the wrist sessions (two open together count only once, the open one counts up to now, and what has not even started does not count), in words in days, hours, minutes and seconds, with only the parts that are not zero: *1d 4h 30m*, *13h 30m*, *30m*, *1m 5s* (24 hours become a day; one that never went to the wrist shows *—*). It sorts by the seconds (those with no use last) and filters by *Never worn*, *up to 1 hour*, *1 hour to 1 day*, *1 to 7 days* and *more than 7 days*. In the **Totals**, a total can go under that column, with the `tempo_de_uso` variable (in seconds: `SOMA(tempo_de_uso)`, `MEDIA(tempo_de_uso)`) and the **Time** format (`duracao`), which writes the seconds like this (*2d 9h 14m*). Through the API, each watch in `recurso=hoje` brings `uso` (seconds) and `uso_texto`.
 
 **The menu** gathers the pages by subject: **Today**, **Alerts** and **Exact time** on their own (the everyday ones); **Rotation**
 (Plan, Rotation modes, Selection criteria), **Collection** (Gallery, Watch page, Accessories, Winders, Programs, Movements, Wishlist, Statistics, Totals, Groups), **System**

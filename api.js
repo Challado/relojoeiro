@@ -1089,10 +1089,16 @@ function textoOpcao(o, valor) {
   if (o.tipo === "sim_nao") {
     return valor === "1" ? t("Ligado") : t("Desligado");
   }
+  if (o.tipo === "lista") {
+    return valor.split(",").map(function (c) { return textoOpcao({valores: o.valores}, c); }).join(", ");
+  }
   var v = (o.valores || []).filter(function (i) { return i.valor === valor; })[0];
   return v ? v.texto : valor;
 }
 function campoOpcao(o, nome, tipo, explica) {
+  if (o.tipo === "lista") {
+    return parCampo(o.titulo, el("span", {"class": "opcao"}, listaOrdenavel({nome: nome, itens: o.valores, fixos: o.fixos || [], escolha: o.escolha, herdado: o.herdado, origem: o.origem_herdado})), "largo", explica);
+  }
   var herdado = h(textoOpcao(o, o.herdado));
   var origem = origemOpcao(o.origem_herdado);
   var controle;
@@ -1112,6 +1118,114 @@ function campoOpcao(o, nome, tipo, explica) {
   }
   return parCampo(o.titulo, el("span", {"class": "opcao"}, controle), tipo, explica);
 }
+// Uma lista de itens que a pessoa escolhe e põe na ordem que quer (as colunas de uma tabela): cada item tem a caixa de marcar, o
+// nome e os botões ▲ ▼; os marcados, na ordem em que estão na lista, são o valor (as chaves separadas por vírgula, num campo
+// escondido de nome opts.nome); os fixos não se desmarcam. escolha: o que o nível guardou ("" herda: aparece a lista herdada, e o
+// campo vai vazio até a pessoa mudar algo); herdado: o que vale quando não escolhe (as chaves, com a origem); o botão Herdar
+// volta a lista ao herdado e esvazia o campo. itens: [{valor, texto}]; fixos: as chaves que não se desmarcam
+function listaOrdenavel(opts) {
+  var herdados = opts.herdado ? opts.herdado.split(",") : [];
+  var marcados = (opts.escolha !== "" ? opts.escolha : opts.herdado || "").split(",").filter(function (c) { return c !== ""; });
+  var ordem = marcados.concat(opts.itens.map(function (i) { return i.valor; }).filter(function (c) { return marcados.indexOf(c) < 0; }));
+  var texto = {};
+  opts.itens.forEach(function (i) { texto[i.valor] = i.texto; });
+  var linhas = ordem.map(function (c) {
+    var fixo = (opts.fixos || []).indexOf(c) >= 0;
+    return el("li", {"data-valor": c}, el("label", {}, el("input", {"type": "checkbox", "checked": marcados.indexOf(c) >= 0, "disabled": fixo}) + " " + h(texto[c] || c))
+      + el("button", {"type": "button", "class": "leve", "data-lista-sobe": true, "aria-label": t("Subir {1}", {1: texto[c] || c}), "title": t("Subir")}, "▲")
+      + el("button", {"type": "button", "class": "leve", "data-lista-desce": true, "aria-label": t("Descer {1}", {1: texto[c] || c}), "title": t("Descer")}, "▼"));
+  }).join("");
+  return el("span", {"class": "lista-ordenavel", "data-herdado": opts.herdado || "", "data-fixos": (opts.fixos || []).join(",")},
+    el("input", {"type": "hidden", "name": opts.nome, "value": opts.escolha})
+    + el("ul", {}, linhas)
+    + el("span", {"class": "lista-rodape"}, el("button", {"type": "button", "class": "leve", "data-lista-herdar": true}, t("Herdar"))
+      + el("small", {"class": "nota herdado"}, opts.origem ? t("Sem escolha, vale a lista {1}", {1: origemOpcao(opts.origem)}) : "")));
+}
+// o valor de uma lista ordenável: os marcados, na ordem da tela
+function listaOrdenavelValor(lista) {
+  return Array.prototype.filter.call(lista.querySelectorAll("li"), function (li) { return li.querySelector("input[type=checkbox]").checked; })
+    .map(function (li) { return li.getAttribute("data-valor"); }).join(",");
+}
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest ? ev.target.closest("[data-lista-sobe], [data-lista-desce], [data-lista-herdar]") : null;
+  var lista = b ? b.closest(".lista-ordenavel") : null;
+  if (!lista) {
+    return;
+  }
+  var campo = lista.querySelector("input[type=hidden]");
+  var ul = lista.querySelector("ul");
+  if (b.hasAttribute("data-lista-herdar")) {
+    // volta ao herdado: a ordem dele, só os dele marcados, e o campo vazio
+    var herdados = lista.getAttribute("data-herdado").split(",");
+    var itens = Array.prototype.slice.call(ul.children);
+    itens.sort(function (a, c) {
+      var ia = herdados.indexOf(a.getAttribute("data-valor"));
+      var ic = herdados.indexOf(c.getAttribute("data-valor"));
+      return (ia < 0 ? 1e6 : ia) - (ic < 0 ? 1e6 : ic);
+    }).forEach(function (li) {
+      li.querySelector("input[type=checkbox]").checked = herdados.indexOf(li.getAttribute("data-valor")) >= 0;
+      ul.appendChild(li);
+    });
+    campo.value = "";
+  } else {
+    var li = b.closest("li");
+    if (b.hasAttribute("data-lista-sobe") && li.previousElementSibling) {
+      ul.insertBefore(li, li.previousElementSibling);
+    } else if (b.hasAttribute("data-lista-desce") && li.nextElementSibling) {
+      ul.insertBefore(li.nextElementSibling, li);
+    }
+    campo.value = listaOrdenavelValor(lista);
+  }
+  campo.dispatchEvent(new Event("input", {bubbles: true}));
+  campo.dispatchEvent(new Event("change", {bubbles: true}));
+});
+document.addEventListener("change", function (ev) {
+  var lista = ev.target.type === "checkbox" && ev.target.closest ? ev.target.closest(".lista-ordenavel") : null;
+  if (lista) {
+    var campo = lista.querySelector("input[type=hidden]");
+    campo.value = listaOrdenavelValor(lista);
+    campo.dispatchEvent(new Event("input", {bubbles: true}));
+  }
+});
+
+// O motor de colunas: deixa as células de uma tabela com as colunas que valem, na ordem em que valem. colunas: o que a API entrega
+// (hoje.colunas: [{chave, visivel, posicao}]); cada célula (do cabeçalho, da linha de filtros, das linhas e do rodapé) tem o data-col
+// da coluna. As à mostra vêm primeiro, na ordem; as escondidas ficam no fim da linha, com o atributo hidden (a tabela não as mostra
+// e a ordenação e os filtros delas são desligados por quem os controla: tabela.js). As linhas de uma célula só (a de "nenhum
+// relógio", o "ver todos os totais") levam o data-colspan-colunas: o colspan acompanha o número de colunas à mostra
+function colunasAplicar(tabela, colunas) {
+  var ordem = colunas.filter(function (c) { return c.visivel; }).sort(function (a, c) { return a.posicao - c.posicao; }).map(function (c) { return c.chave; });
+  var escondidas = colunas.filter(function (c) { return !c.visivel; }).map(function (c) { return c.chave; });
+  Array.prototype.forEach.call(tabela.querySelectorAll("tr"), function (tr) {
+    var celulas = {};
+    var n = 0;
+    Array.prototype.forEach.call(tr.children, function (c) {
+      var k = c.getAttribute("data-col");
+      if (k) {
+        celulas[k] = c;
+        n++;
+      }
+    });
+    if (n === 0) {
+      return;
+    }
+    ordem.forEach(function (k) {
+      if (celulas[k]) {
+        celulas[k].hidden = false;
+        tr.appendChild(celulas[k]);
+      }
+    });
+    escondidas.forEach(function (k) {
+      if (celulas[k]) {
+        celulas[k].hidden = true;
+        tr.appendChild(celulas[k]);
+      }
+    });
+  });
+  Array.prototype.forEach.call(tabela.querySelectorAll("[data-colspan-colunas]"), function (td) { td.colSpan = Math.max(1, ordem.length); });
+  return ordem;
+}
+
 // Os campos de uma lista de opções, em grupos; prefixo: o nome do conjunto na gravação (opcoes[<chave>], padroes[<chave>]);
 // vazio, o nome é a própria chave (a Configuração da coleção)
 function camposOpcoes(lista, prefixo) {

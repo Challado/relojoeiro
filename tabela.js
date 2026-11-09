@@ -81,6 +81,23 @@
       if (comEncostado && f.encostado === "sem" && tr.dataset.encostadoEstado !== "") {
         ok = false;
       }
+      // o tempo de uso total (segundos): nunca usado, até 1 hora, de 1 hora a 1 dia, de 1 a 7 dias, mais de 7 dias
+      var uso = Number(tr.dataset.uso) || 0;
+      if (f.uso === "nunca" && uso !== 0) {
+        ok = false;
+      }
+      if (f.uso === "ate1h" && !(uso > 0 && uso <= 3600)) {
+        ok = false;
+      }
+      if (f.uso === "1ha1d" && !(uso > 3600 && uso <= 86400)) {
+        ok = false;
+      }
+      if (f.uso === "1da7d" && !(uso > 86400 && uso <= 7 * 86400)) {
+        ok = false;
+      }
+      if (f.uso === "mais7d" && !(uso > 7 * 86400)) {
+        ok = false;
+      }
       var compra = tr.dataset.compra ? new Date(tr.dataset.compra + "T00:00:00").getTime() : 0;
       if (f.compra === "sem" && compra !== 0) {
         ok = false;
@@ -116,6 +133,9 @@
         v = Number(tr.dataset.estado) * 100000 + Number(tr.dataset.codigo);
       } else if (col === "carga" || col === "valor" || col === "em" || col === "encostado") {
         v = tr.dataset[col] === "" ? null : Number(tr.dataset[col]);
+      } else if (col === "uso") {
+        // o sem uso vai por último, como os outros vazios
+        v = Number(tr.dataset.uso) > 0 ? Number(tr.dataset.uso) : null;
       } else if (col === "nome") {
         v = tr.dataset.nome.toLowerCase();
       } else {
@@ -319,7 +339,7 @@
 
     // linhas montadas com os dados da API (ao abrir e depois de cada lançamento, sem recarregar a página): troca as
     // linhas e reaplica a ordem e os filtros que estavam escolhidos (as opções dos filtros podem ter chegado agora)
-    // As 13 colunas sempre, em qualquer tela: quando a tabela inteira não cabe na largura que tem (celular, tablet, o
+    // As colunas à mostra sempre, em qualquer tela: quando a tabela inteira não cabe na largura que tem (celular, tablet, o
     // painel aberto ao lado), cada relógio vira um cartão com todos os campos (estilo.css, .em-cartoes). A conta é com
     // todos os relógios à mostra, para um filtro não trocar a forma da lista; tudo no mesmo quadro, sem piscar
     var rolagem = document.getElementById("rolagem-relogios");
@@ -344,8 +364,35 @@
       }).observe(rolagem);
     }
 
-    window.trocarLinhasDaTabela = function (html) {
+    // As colunas que valem (o motor de colunas, api.js colunasAplicar): a lista vem da API a cada leitura; a coluna escondida perde a
+    // ordenação e o filtro que tinha (um filtro numa coluna que ninguém vê esconderia relógios sem explicação)
+    var colunasAtuais = null;
+    var aplicarColunas = function () {
+      if (!colunasAtuais || typeof colunasAplicar !== "function") {
+        return;
+      }
+      colunasAplicar(tabela, colunasAtuais);
+      colunasAtuais.filter(function (c) { return !c.visivel; }).forEach(function (c) {
+        if (st.col === c.chave) {
+          st.col = "";
+          st.desc = false;
+        }
+        if (st.f[c.chave]) {
+          st.f[c.chave] = "";
+        }
+        var campo = tabela.querySelector("[data-filtro=" + c.chave + "]");
+        if (campo) {
+          campo.value = "";
+        }
+      });
+      guardar();
+    };
+    window.trocarLinhasDaTabela = function (html, colunas) {
+      if (colunas) {
+        colunasAtuais = colunas;
+      }
       porHtml(corpo, html);
+      aplicarColunas();
       original = Array.prototype.slice.call(corpo.querySelectorAll("tr[data-id]"));
       tabela.querySelectorAll("[data-filtro]").forEach(function (campo) {
         campo.value = st.f[campo.dataset.filtro] || "";

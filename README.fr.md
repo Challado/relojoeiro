@@ -179,7 +179,7 @@ Les totaux appartiennent aussi au moteur de formules, mais ils regardent **toute
 que laisse le filtre du tableau de la page Aujourd'hui). Ils sont dans l'onglet **Totaux** de la page **Définitions** :
 chaque total a la **colonne** du tableau où il va (ou aucune), le **nom**, l'**expression**, les cases **Afficher dans le
 pied des totaux** et **Afficher sur la page des totaux**, la **largeur** de son cadre sur la page (étroit ou large) et le
-**format** des nombres (nombre, entier, avec 2 décimales, argent, pourcentage, date ou jours). Seuls les totaux d'une colonne
+**format** des nombres (nombre, entier, avec 2 décimales, argent, pourcentage, date, jours ou durée, qui écrit les secondes comme *1j 4h 30min*). Seuls les totaux d'une colonne
 vont dans le pied, sous elle ; les autres, autant que vous voulez, restent seulement sur la **page des totaux** (menu
 **Collection**, ou **Voir tous les totaux** sous le tableau, qui garde le même filtre). Plusieurs totaux dans la même
 colonne vont l'un sous l'autre, dans l'ordre de la liste (↑ ↓), et **Tester sur toutes les montres** montre le résultat
@@ -197,8 +197,8 @@ avant d'enregistrer.
 
 À l'intérieur, tout ce qui marche dans une formule marche (les champs, les formules, `SE`, `DIAS_DESDE`...), calculé sur
 chaque montre, ainsi que ce que montre chaque colonne du tableau : `codigo`, `nome`, `marca`, `tipo`, `estado`, `disponivel`,
-`em_uso`, `carga`, `ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (combien d'alertes elle a)
-et `posse`. À l'extérieur, seulement des nombres, des textes et les fonctions qui n'ont pas besoin d'une montre (`SE`,
+`em_uso`, `carga`, `ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (combien d'alertes elle a),
+`posse` et `tempo_de_uso` (la durée de port totale, en secondes). À l'extérieur, seulement des nombres, des textes et les fonctions qui n'ont pas besoin d'une montre (`SE`,
 `MIN`, `ARREDONDA`, les calculs). Les nouvelles fonctions `MES(data)`, `ANO(data)` et `MES_ANO(data)` servent à regrouper
 par mois et par année, et marchent aussi dans les formules. Exemples :
 
@@ -1561,6 +1561,7 @@ Les cartes remplissent les espaces disponibles selon la largeur de l’écran et
 | **Prochains jours : afficher jusqu'à** (`proximos_por_pagina`) et **Plan : afficher jusqu'à** (`plano_por_pagina`) | combien de jours affichent à la fois les **Prochains jours** de la page Aujourd'hui et le **Jour par jour** de la page Plan (de 1 à 366). Au-delà, le paginateur apparaît en dessous : **<** (précédent), les numéros (le premier, le dernier et jusqu'à deux de chaque côté de l'actuel, avec … dans les trous) et **>** (suivant) ; en posant la souris dessus, l'info-bulle dit *Précédent*, *Suivant* ou *Page N*. Par défaut : 7 et 31. |
 | **Intervalle de mise à jour des pages** (`atualizar_segundos`) | toutes les combien de secondes **Aujourd'hui** (avec la montre ouverte dans le panneau), la **Fiche**, le **Plan**, les **Totaux** et l'**Historique** relisent tout seuls, sans recharger : de 1 à 86400 ; **0** désactive ; vide, 60. Négatif ou au-delà, la Configuration refuse. Voir [Les pages se mettent à jour seules](#les-pages-se-mettent-à-jour-seules). |
 | **Fuseau horaire (qui n'en a pas choisi un autre dans Mon compte)** (`fuso`) | le fuseau horaire de la collection : celui de qui n'a pas choisi le sien dans **Mon compte**, et celui de son cron, de ses messages et de ses agendas (voir [Le fuseau horaire](#le-fuseau-horaire)). Vide : celui du système (le `FUSO` du `config.php`). |
+| **Colonnes du tableau des montres** (`colunas_hoje`) | quelles colonnes le tableau de la page **Aujourd'hui** affiche et dans quel ordre : une liste avec case à cocher et les boutons ▲ et ▼ (la **Montre** ne se masque pas) ; **Hériter** vide le choix de la collection, et celui de **Mon compte** ou du système s'applique ; sans aucun, toutes, dans l'ordre habituel. Le bouton **Colonnes** de la page Aujourd'hui elle-même fait le même choix. Voir [Les colonnes du tableau](#les-écrans). |
 | **Horloge de l'Heure exacte** (`hora_relogio`) | le cadran de la page **Heure exacte** : *Analogique et numérique (côte à côte)* (par défaut), *Analogique*, *Numérique* ou *Ana-digi (l'affichage numérique dans l'analogique)*. |
 | **Langue par défaut** (`idioma`) | la langue de la collection : celle des écrans pour qui n'a pas choisi la sienne (dans le sélecteur du menu ou dans **Mon compte** ; voir [Les langues](#les-langues)) et celle des messages et des agendas sans langue propre : portugais, anglais, chinois, hindi, espagnol ou français. Par défaut : celle de qui a créé la collection. |
 | **Ouvrir la montre sur la page Aujourd'hui** (`painel_modo`) | **À côté de la liste** (`lado`) : la montre cliquée s'ouvre dans un panneau à droite, et la liste reste visible. **Dans une grande fenêtre flottante** (`flutuante`) : elle s'ouvre au milieu de l'écran, par-dessus la page, avec le fond assombri et les cadres côte à côte ; elle se ferme avec le ×, Échap ou un clic à l'extérieur. Sur le téléphone, les deux occupent tout l'écran. Par défaut : à côté de la liste. |
@@ -1750,17 +1751,21 @@ s'ouvre en plein écran ; le « retour » de l'appareil ferme le panneau.</sub>
 | de 901 à 1199 px (tablette en paysage, petit portable) | le menu dans la barre ; la montre ouverte « à côté de la liste » glisse depuis la droite, avec le fond assombri, au lieu de comprimer la liste |
 | 1200 px ou plus (ordinateur) | le panneau à côté de la liste (ou la fenêtre flottante, selon la Configuration) |
 
-**Les mêmes informations partout.** Le tableau des montres a toujours les 13 colonnes (code, montre, marque, type, état, charge,
-dernier port, prochain entretien, dans, quoi faire, délaissée, achetée le et valeur), les 12 filtres et le tri par n'importe quelle
+**Les mêmes informations partout.** Le tableau des montres a toujours les mêmes colonnes (par défaut, les 14 : code, montre, marque, type, état, charge,
+dernier port, durée de port, prochain entretien, dans, quoi faire, délaissée, achetée le et valeur, ou celles que vous choisissez : voir **Les colonnes du tableau**), les filtres de chacune et le tri par n'importe quelle
 colonne, sur l'ordinateur, la tablette et le téléphone ; rien n'est caché faute de place (la seule exception est voulue : avec
 la case **Alerter quand une montre est délaissée** décochée dans la Configuration, la colonne Délaissée et son filtre
 disparaissent à toutes les tailles). Quand tout le tableau tient dans la
 largeur dont il dispose réellement (avec ou sans le panneau ouvert à côté), il apparaît sous forme de tableau, et le texte
-d'une cellule ne passe à la ligne que si nécessaire. Quand il ne tient pas, chaque montre devient une carte avec les mêmes 12
+d'une cellule ne passe à la ligne que si nécessaire. Quand il ne tient pas, chaque montre devient une carte avec les mêmes
 champs, dans le même ordre, chacun avec le nom de la colonne au-dessus (sur deux colonnes sur le téléphone, sur cinq sur la
 tablette), les en-têtes deviennent les boutons **Trier par** et tous les filtres restent, avec le nom au-dessus. Le
 basculement se mesure avec les données réelles (un nom long ou une grande valeur comptent), pas avec la largeur de l'écran.
 Les **Prochains jours** montrent aussi tous les jours de la programmation sur n'importe quel écran.
+
+**Les colonnes du tableau.** Le bouton **Colonnes**, en haut du tableau des montres de la page Aujourd'hui, ouvre une liste avec toutes les colonnes : cochez celles que vous voulez voir et mettez-les dans l'ordre avec **▲** et **▼** ; **Enregistrer les colonnes** vaut pour la collection (l'en-tête, les filtres, les lignes et le pied suivent la liste, et la colonne masquée perd le tri et le filtre qu'elle avait), et **Hériter** fait de nouveau valoir la liste du niveau au-dessus. La colonne **Montre** ne se masque pas. Le même choix existe à trois niveaux, comme les autres options : le **défaut du système** (Configuration › Système), la **préférence de l'utilisateur** (Mon compte, pour les collections dont il est propriétaire) et le **choix de la collection** (Configuration, ou le bouton Colonnes) ; le plus spécifique l'emporte, vide hérite, et sans choix à aucun niveau toutes apparaissent, dans l'ordre habituel. Par l'API : l'option `colunas_hoje` (les clés séparées par des virgules, dans l'ordre voulu, p. ex. `nome,uso,marca`) dans `config/salvar`, dans `conta/alterar` (`opcoes[colunas_hoje]`) et dans le `config/salvar` du master (`padroes[colunas_hoje]`) ; `recurso=hoje` renvoie `colunas` (toutes, celles qui valent d'abord, avec `chave`, `titulo`, `visivel`, `posicao` et `fixa`), `colunas_escolha`, `colunas_herdado` et `colunas_origem_herdado`.
+
+**La durée de port.** La colonne **Durée de port**, juste après **Dernière fois portée**, montre combien de temps la montre est déjà restée au poignet, en additionnant toutes les sessions au poignet (deux ouvertes ensemble comptent une seule fois, l'ouverte compte jusqu'à maintenant, et ce qui n'a même pas commencé ne compte pas), en toutes lettres en jours, heures, minutes et secondes, avec seulement les parties qui ne sont pas zéro : *1j 4h 30min*, *13h 30min*, *30min*, *1min 5s* (24 heures deviennent un jour ; celle qui n'est jamais allée au poignet affiche *—*). Elle trie par les secondes (celles sans port en dernier) et filtre par *Jamais portée*, *jusqu'à 1 heure*, *de 1 heure à 1 jour*, *de 1 à 7 jours* et *plus de 7 jours*. Dans les **Totaux**, un total peut aller sous cette colonne, avec la variable `tempo_de_uso` (en secondes : `SOMA(tempo_de_uso)`, `MEDIA(tempo_de_uso)`) et le format **Durée** (`duracao`), qui écrit les secondes ainsi (*2j 9h 14min*). Par l'API, chaque montre de `recurso=hoje` renvoie `uso` (secondes) et `uso_texto`.
 
 **Le menu** regroupe les pages par sujet : **Aujourd'hui**, **Alertes** et **Heure exacte** seuls (ceux de tous les jours) ;
 **Rotation** (Plan, Modes de rotation, Critères de choix), **Collection** (Galerie, Fiche, Accessoires, Remontoirs, Programmes, Mouvements, Souhaits, Statistiques,

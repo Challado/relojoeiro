@@ -358,13 +358,13 @@ CREATE TABLE total (
     rodape     TINYINT NOT NULL DEFAULT 0,
     pagina     TINYINT NOT NULL DEFAULT 1,
     largura    ENUM('estreito','largo') NOT NULL DEFAULT 'estreito',
-    formato    ENUM('numero','inteiro','decimal','moeda','porcentagem','data','dias') NOT NULL DEFAULT 'numero',
+    formato    ENUM('numero','inteiro','decimal','moeda','porcentagem','data','dias','duracao') NOT NULL DEFAULT 'numero',
     ordem      INT NOT NULL DEFAULT 0,
     INDEX (no_id),
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
     CONSTRAINT ck_total_textos CHECK (TRIM(nome) <> '' AND TRIM(expressao) <> ''),
     CONSTRAINT ck_total_lugares CHECK (rodape IN (0, 1) AND pagina IN (0, 1) AND (rodape = 0 OR coluna IS NOT NULL)),
-    CONSTRAINT ck_total_coluna CHECK (coluna IS NULL OR coluna IN ('codigo','nome','marca','tipo','estado','carga','ultimo','manut','em','fazer','encostado','compra','valor'))
+    CONSTRAINT ck_total_coluna CHECK (coluna IS NULL OR coluna IN ('codigo','nome','marca','tipo','estado','carga','ultimo','uso','manut','em','fazer','encostado','compra','valor'))
 ) ENGINE=InnoDB;
 
 -- os avisos: uma versão por grupo, como as fórmulas; o tipo de lançamento que resolve o aviso é opcional (saindo o tipo,

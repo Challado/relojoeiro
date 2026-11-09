@@ -30,8 +30,10 @@ function entrar_opcoes($u)
 function outro_valor($chave)
 {
     [, $tipo, $padrao, $min, $max, $valores] = OPCOES[$chave];
+    // a lista (as colunas): a primeira, a segunda e a terceira chave, em ordens diferentes (e a Relógio, que é fixa, sempre junto)
     $candidatos = $tipo === "hora" ? ["08:15", "09:45", "10:30"] : ($tipo === "sim_nao" ? ["0", "1"] : ($tipo === "enum" ? $valores
-        : array_map("strval", array_unique([$min, $min + 1, $min + 2, $max - 1, $max]))));
+        : ($tipo === "lista" ? ["nome,uso,marca", "nome,valor", "nome,carga,codigo"]
+        : array_map("strval", array_unique([$min, $min + 1, $min + 2, $max - 1, $max])))));
     foreach ($candidatos as $c) {
         if ((string)$c !== (string)$padrao && opcao_conferir($chave, $c)[0] === null) {
             return (string)$c;
@@ -65,6 +67,7 @@ try {
         exigir_opcoes(isset($tx["grupos"][$grupo]) && ($tx["titulos"][$k] ?? "") !== "", "Falta o texto de " . $k . ".");
         exigir_opcoes($padrao === "" || opcao_conferir($k, $padrao)[0] === null, "O padrão de fábrica de " . $k . " não passa no conferidor.");
         exigir_opcoes($tipo !== "enum" || (in_array($padrao, $valores, true) && count($valores) === count($tx["valores"][$k] ?? [])), "Faltam os textos dos valores de " . $k . ".");
+        exigir_opcoes($tipo !== "lista" || (count($valores) > 0 && count($valores) === count($tx["valores"][$k] ?? []) && array_keys($tx["valores"][$k]) === $valores), "Faltam os títulos dos itens da lista " . $k . ".");
         exigir_opcoes(($modelo[$k] ?? "") === "", "O modelo.json dá valor a " . $k . ": a coleção nova não herdaria.");
         exigir_opcoes(cfg_cru($k) === "", "A coleção nova guardou " . $k . ".");
         exigir_opcoes(cfg($k) === vale($padrao, $k), "O padrão de fábrica de " . $k . " não vale na coleção nova.");

@@ -1,4 +1,4 @@
-<!-- origem: 670a68c1f5f26d229534da607355b545c2388079 -->
+<!-- origem: 5990f3cb548fae62028aacb8457367e192c9135d -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -125,7 +125,7 @@ Los totales también son del motor de fórmulas, pero miran **todos los relojes 
 de la tabla de la página Hoy). Están en la pestaña **Totales** de la página **Definiciones**: cada total tiene la **columna**
 de la tabla donde va (o ninguna), el **nombre**, la **expresión**, las casillas **Mostrar en el pie de totales** y **Mostrar
 en la página de totales**, el **ancho** del cuadro en la página (estrecho o ancho) y el **formato** de los números (número,
-entero, con 2 decimales, dinero, porcentaje, fecha o días). Solo los totales de una columna van al pie, debajo de ella; los
+entero, con 2 decimales, dinero, porcentaje, fecha, días o tiempo, que escribe los segundos como *1d 4h 30m*). Solo los totales de una columna van al pie, debajo de ella; los
 otros, cuantos quieras, quedan solo en la **página de totales** (menú **Colección**, o **Ver todos los totales** debajo de la
 tabla, que lleva el mismo filtro). Varios totales en la misma columna van uno debajo del otro, en el orden de la lista
 (↑ ↓), y **Probar en todos los relojes** muestra el resultado antes de guardar.
@@ -142,7 +142,7 @@ tabla, que lleva el mismo filtro). Varios totales en la misma columna van uno de
 
 Dentro de ellas vale todo lo que vale en una fórmula (los campos, las fórmulas, `SE`, `DIAS_DESDE`...), calculado en cada
 reloj, y también lo que muestra cada columna de la tabla: `codigo`, `nome`, `marca`, `tipo`, `estado`, `disponivel`, `em_uso`,
-`carga`, `ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (cuántos avisos tiene) y `posse`.
+`carga`, `ultimo_uso`, `manutencao_data`, `manutencao_nome`, `encostado_data`, `avisos` (cuántos avisos tiene), `posse` y `tempo_de_uso` (el tiempo de uso total, en segundos).
 Fuera de ellas, solo números, textos y las funciones que no necesitan un reloj (`SE`, `MIN`, `ARREDONDA`, las cuentas). Las
 funciones nuevas `MES(data)`, `ANO(data)` y `MES_ANO(data)` sirven para agrupar por mes y por año, y valen también en las
 fórmulas. Ejemplos:
@@ -1461,6 +1461,7 @@ Los cuadros ocupan los espacios disponibles según la anchura de la pantalla y l
 | **Próximos días: mostrar hasta** (`proximos_por_pagina`) y **Plan: mostrar hasta** (`plano_por_pagina`) | cuántos días muestran a la vez los **Próximos días** de la página Hoy y el **Día a día** de la página Plan (de 1 a 366). Pasado eso, aparece el paginador debajo: **<** (anterior), los números (el primero, el último y hasta dos a cada lado del actual, con … en los huecos) y **>** (siguiente); al detener el ratón encima, la ayuda dice *Anterior*, *Siguiente* o *Página N*. Predeterminado: 7 y 31. |
 | **Intervalo de actualización de las páginas** (`atualizar_segundos`) | cada cuántos segundos **Hoy** (con el reloj abierto en el panel), la **Ficha**, el **Plan**, los **Totales** y el **Historial** leen todo de nuevo solos, sin recargar: de 1 a 86400; **0** lo apaga; vacío, 60. Negativo o por encima de eso, la Configuración lo rechaza. Vea [Las páginas se actualizan solas](#as-páginas-se-atualizam-sozinhas). |
 | **Huso horario (quien no eligió otro en Mi cuenta)** (`fuso`) | el huso horario de la colección: el de quien no eligió el suyo en **Mi cuenta**, y el del cron, los mensajes y las agendas de ella (vea [El huso horario](#o-fuso-horário)). Vacío: el del sistema (el `FUSO` del `config.php`). |
+| **Columnas de la tabla de relojes** (`colunas_hoje`) | qué columnas muestra la tabla de la página **Hoy** y en qué orden: una lista con casilla de marcar y los botones ▲ y ▼ (la **Reloj** no se esconde); **Heredar** vacía la elección de la colección, y vale la de **Mi cuenta** o la del sistema; sin ninguna, todas, en el orden de siempre. El botón **Columnas** de la propia página Hoy hace la misma elección. Vea [Las columnas de la tabla](#las-pantallas). |
 | **Reloj de la Hora exacta** (`hora_relogio`) | la esfera de la página **Hora exacta**: *Analógico y digital (uno al lado del otro)* (el predeterminado), *Analógico*, *Digital* o *Anadigi (el visor digital dentro del analógico)*. |
 | **Idioma predeterminado** (`idioma`) | el idioma de la colección: el de las pantallas para quien no eligió el suyo (en el selector del menú o en **Mi cuenta**; vea [Los idiomas](#os-idiomas)) y el de los mensajes y los calendarios sin idioma propio: portugués, inglés, chino, hindi, español o francés. Por defecto: el de quien creó la colección. |
 | **Abrir el reloj en la página Hoy** (`painel_modo`) | **Al lado de la lista** (`lado`): el reloj pulsado se abre en un panel a la derecha, y la lista sigue a la vista. **En una ventana flotante, grande** (`flutuante`): se abre en el centro de la pantalla, sobre la página, con el fondo oscurecido y los cuadros lado a lado; se cierra con la ×, Esc o un clic fuera. En el móvil, los dos ocupan toda la pantalla. Predeterminado: al lado de la lista. |
@@ -1610,17 +1611,21 @@ completa; el "atrás" del aparato cierra el panel.</sub>
 | de 901 a 1199 px (tableta en horizontal, portátil pequeño) | el menú en la barra; el reloj abierto "al lado de la lista" se desliza desde la derecha, con el fondo oscurecido, en lugar de apretar la lista |
 | 1200 px o más (ordenador) | el panel al lado de la lista (o la ventana flotante, según la Configuración) |
 
-**La misma información en todos.** La tabla de relojes siempre tiene las 13 columnas (código, reloj, marca, tipo, estado, carga,
-último uso, próximo mantenimiento, en, qué hacer, arrinconado, comprado el y valor), los 12 filtros y la ordenación por cualquier columna, en
+**La misma información en todos.** La tabla de relojes siempre tiene las mismas columnas (por defecto, las 14: código, reloj, marca, tipo, estado, carga,
+último uso, tiempo de uso, próximo mantenimiento, en, qué hacer, arrinconado, comprado el y valor, o las que elijas: vea **Las columnas de la tabla**), los filtros de cada una y la ordenación por cualquier columna, en
 el ordenador, la tableta y el móvil; nada se esconde por falta de espacio (la única excepción es a propósito: con la casilla
 **Avisar cuando un reloj queda arrinconado** desmarcada en la Configuración, la columna Arrinconado y su filtro desaparecen en
 todos los tamaños). Cuando la tabla entera cabe en el ancho que
 realmente tiene (con o sin el panel abierto al lado), aparece como tabla, y el texto de una celda solo se parte si hace falta.
-Cuando no cabe, cada reloj se vuelve una tarjeta con los mismos 12 campos, en el mismo orden, cada uno con el nombre de la
+Cuando no cabe, cada reloj se vuelve una tarjeta con los mismos campos, en el mismo orden, cada uno con el nombre de la
 columna encima (en dos columnas en el móvil, en cinco en la tableta), los encabezados se vuelven los botones **Ordenar por** y
 todos los filtros se quedan, con el nombre encima. El cambio se mide con los datos reales (un nombre largo o un valor grande
 cuentan), no por el ancho de la pantalla. Los **Próximos días** también muestran todos los días de la programación en
 cualquier pantalla.
+
+**Las columnas de la tabla.** El botón **Columnas**, arriba de la tabla de relojes de la página Hoy, abre una lista con todas las columnas: marque las que quiere ver y póngalas en orden con **▲** y **▼**; **Guardar columnas** vale para la colección (encabezado, filtros, filas y pie siguen la lista, y la columna escondida pierde la ordenación y el filtro que tenía), y **Heredar** vuelve a valer la lista del nivel de arriba. La columna **Reloj** no se esconde. La misma elección existe en tres niveles, como las otras opciones: el **estándar del sistema** (Configuración › Sistema), la **preferencia del usuario** (Mi cuenta, para las colecciones de las que es dueño) y la **elección de la colección** (Configuración, o el botón Columnas); la más específica vale, vacío hereda, y sin elección en ningún nivel aparecen todas, en el orden de siempre. Por la API: la opción `colunas_hoje` (las claves separadas por comas, en el orden que quiera, p. ej. `nome,uso,marca`) en `config/salvar`, en `conta/alterar` (`opcoes[colunas_hoje]`) y en el `config/salvar` del master (`padroes[colunas_hoje]`); el `recurso=hoje` trae `colunas` (todas, las que valen primero, con `chave`, `titulo`, `visivel`, `posicao` y `fixa`), `colunas_escolha`, `colunas_herdado` y `colunas_origem_herdado`.
+
+**El tiempo de uso.** La columna **Tiempo de uso**, justo después de la **Última vez usado**, muestra cuánto tiempo estuvo ya el reloj en la muñeca, sumando todas las sesiones de la muñeca (dos abiertas juntas cuentan una sola vez, la que está abierta cuenta hasta ahora, y lo que ni empezó no cuenta), por extenso en días, horas, minutos y segundos, solo con las partes que no son cero: *1d 4h 30m*, *13h 30m*, *30m*, *1m 5s* (24 horas pasan a ser un día; el que nunca fue a la muñeca muestra *—*). Ordena por los segundos (los sin uso al final) y filtra por *Nunca usado*, *hasta 1 hora*, *de 1 hora a 1 día*, *de 1 a 7 días* y *más de 7 días*. En los **Totales**, un total puede ir debajo de esa columna, con la variable `tempo_de_uso` (en segundos: `SOMA(tempo_de_uso)`, `MEDIA(tempo_de_uso)`) y el formato **Tiempo** (`duracao`), que escribe los segundos así (*2d 9h 14m*). Por la API, cada reloj de `recurso=hoje` trae `uso` (segundos) y `uso_texto`.
 
 **El menú** agrupa las páginas por tema: **Hoy**, **Avisos** y **Hora exacta** sueltos (los de todos los días); **Rotación**
 (Plan, Modos de rotación, Criterios de elección), **Colección** (Galería, Ficha, Accesorios, Winders, Programas, Movimientos, Deseos, Estadísticas, Totales, Grupos), **Sistema**

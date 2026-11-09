@@ -249,13 +249,13 @@
  *                            {"identificador", "nome", "formato", "unidade", "acao", "botao"} (o lançamento do botão)}], "plano": [os
  *                            próximos 62 dias: {"data", "relogio_id", "relogio", "acao", "motivo", "origem"}], "livres": [os dias livres
  *                            dos próximos 62 dias], "proximos": {os Próximos dias da página, uma página: como em recurso=proximos;
- *                            proximos_pagina=N escolhe a página}, "proxima_semana": {"segunda", "domingo", "ja_montada"}, "modos":
+ *                            proximos_pagina=N escolhe a página}, "proxima_semana": {"segunda", "domingo", "ja_montada"}, "colunas": [{"chave", "titulo", "visivel", "posicao", "fixa"}] (as colunas da tabela, as que valem primeiro: a opção colunas_hoje), "colunas_escolha", "colunas_herdado", "colunas_origem_herdado", "modos":
  *                            [{"id", "nome", "selecao", "escala_dias", "blocos": [{"id", "nome", "dias", "no_id", "um_por", "relogio_id"}]}],
  *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes" (o filtro O que fazer, sem o Encostado), "estados" (o filtro Estado),
  *                            "relogios": [{"id", "nome", "disponivel", "tipo" (o grupo), "em_uso", "estado" (uso, sessao, repouso ou
  *                            indisponivel), "estado_texto" ("Em uso", "No sol", "No carregador", "Em repouso", "Indisponível"),
  *                            "estado_ordem", "agora" ("No sol desde 09:12"), "carga" (%), "carga_de" (de onde
- *                            vem), "ultimo" (a última vez no pulso, em segundos), "ultimo_txt", "situacao": [linhas], "manutencao":
+ *                            vem), "ultimo" (a última vez no pulso, em segundos), "ultimo_txt", "uso" (o tempo de uso total, em segundos), "uso_texto" ("1d 4h 30m"), "situacao": [linhas], "manutencao":
  *                            {"nome", "data", "momento", "falta"} (o aviso de manutenção mais perto, sem o Encostado), "encostado":
  *                            {"data", "momento", "falta", "estado"} (o aviso Encostado; null sem data), "compra": {"data", "valor", "loja", "garantia_ate"},
  *                            "leitura": {"inicio", "valor", "unidade"} (a última), "de_hoje", "destaque" (é o do destaque no alto), "com_aviso",
@@ -513,7 +513,7 @@
  *   recurso=relatorios        salvar (id: 0 cria; nome (até 120, sem repetir na árvore, sem diferença de maiúsculas nem de
  *                             espaços), descricao, colunas (até 30: JSON [{"titulo", "expressao", "formato", "total"}] ou os
  *                             campos colunas[i][...]; a expressão é calculada em cada relógio, como uma fórmula, com as variáveis
- *                             da tabela; formato: texto, numero, inteiro, decimal, moeda, porcentagem, data ou dias; total: soma,
+ *                             da tabela; formato: texto, numero, inteiro, decimal, moeda, porcentagem, data, dias ou duracao; total: soma,
  *                             media, menor, maior, conta ou vazio), filtro, ordenar, decrescente (1 ou 0), agrupar, relogios
  *                             (colecao, desejados ou todos), limite (1 a 100000; vazio: todas); só muda o que vier; a resposta
  *                             traz o tipo r<id>), excluir (id)
@@ -1153,6 +1153,10 @@
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
  *     config.atualizar_segundos      de quantos em quantos segundos as páginas (Hoje com o painel, Ficha, Plano, Totais e Histórico) leem
  *                                    tudo de novo sozinhas: 1 a 86400; 0, não leem; vazio: 60
+ *     config.colunas_hoje            as colunas da tabela dos relógios da página Hoje e a ordem delas: as chaves separadas por vírgula
+ *                                    (codigo, nome, marca, tipo, estado, carga, ultimo, uso, manut, em, fazer, encostado, compra, valor; a
+ *                                    nome é fixa), vazio herda o dono da coleção e depois o sistema; sem escolha em nenhum nível, todas, na
+ *                                    ordem de sempre
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
@@ -2462,7 +2466,27 @@
  *     relogios[].marca               a marca do relógio (o nome no cadastro das marcas: a coluna Marca); null: sem marca
  *     relogios[].tipo                o grupo do relógio (o nome)
  *     relogios[].ultimo              a última vez no pulso (número inteiro: instante Unix (segundos desde 01/01/1970 UTC); 0: nunca)
+ *     colunas                        as colunas da tabela dos relógios (o motor de colunas): todas as que existem, as que valem primeiro,
+ *                                    na ordem em que aparecem (a opção colunas_hoje: a coleção, o dono ou o sistema), e as escondidas
+ *                                    depois, na ordem de sempre
+ *     colunas[]                      uma coluna da tabela dos relógios
+ *     colunas[].chave                a chave da coluna: a mesma do cabeçalho e das células (data-col) e a que a ordenação, o filtro e os
+ *                                    totais usam (codigo, nome, marca, tipo, estado, carga, ultimo, uso, manut, em, fazer, encostado,
+ *                                    compra, valor)
+ *     colunas[].fixa                 (verdadeiro ou falso) a coluna que não se esconde: a Relógio
+ *     colunas[].posicao              o lugar dela da esquerda para a direita (1, 2...); 0 quando está escondida
+ *     colunas[].titulo               o nome da coluna, no idioma do pedido
+ *     colunas[].visivel              (verdadeiro ou falso) a coluna está à mostra
+ *     colunas_escolha                o que a coleção escolheu para as colunas (as chaves separadas por vírgula); vazio: não escolheu e
+ *                                    herda
+ *     colunas_herdado                a lista que a coleção herda quando não escolhe: a do dono, senão a do sistema, senão todas na ordem de
+ *                                    sempre
+ *     colunas_origem_herdado         de onde vem a lista herdada: usuario, sistema ou padrao (o padrão de fábrica: todas)
  *     relogios[].ultimo_txt          a mesma por extenso ("agora · 14:32", "25/09 21:53", "nunca")
+ *     relogios[].uso                 o tempo de uso total, em segundos (número inteiro): as sessões no pulso somadas, sem contar duas vezes
+ *                                    a mesma hora e a aberta até agora; 0: nunca usado
+ *     relogios[].uso_texto           o mesmo por extenso, só as partes que não são zero ("1d 4h 30m", "13h 30m", "30m", "1m 5s"; 24 horas
+ *                                    viram um dia); "—" sem uso
  *     totais                         os totais da coleção inteira (a tabela da página Hoje soma só os relógios que os filtros dela deixam à
  *                                    mostra)
  *     totais.disponiveis             quantos estão disponíveis para o rodízio
@@ -3889,6 +3913,9 @@
  *     opcoes.opcoes[].padrao         o padrão de fábrica: o que vale quando nenhum nível escolheu
  *     opcoes.opcoes[].escolha        o que este nível escolheu (vazio: não escolheu, herda)
  *     opcoes.opcoes[].herdado        o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     opcoes.opcoes[].fixos          o que não se desmarca nem se esconde numa opção do tipo lista (as chaves; null nos outros tipos): na
+ *                                    colunas_hoje, a Relógio
+ *     opcoes.opcoes[].fixos[]        uma chave que não se esconde
  *     opcoes.opcoes[].origem_herdado de onde vem o herdado: usuario, sistema ou padrao
  *     opcoes.opcoes[].efetivo        o que vale neste nível (a escolha, senão o herdado)
  *     opcoes.opcoes[].origem         de onde vem o que vale: colecao, usuario, sistema ou padrao
@@ -4002,6 +4029,10 @@
  *     config.plano_por_pagina        o "Mostrar até" do dia a dia da página Plano: quantos dias por página (1 a 366; vazio: 31)
  *     config.atualizar_segundos      de quantos em quantos segundos as páginas (Hoje com o painel, Ficha, Plano, Totais e Histórico) leem
  *                                    tudo de novo sozinhas: 1 a 86400; 0, não leem; vazio: 60
+ *     config.colunas_hoje            as colunas da tabela dos relógios da página Hoje e a ordem delas: as chaves separadas por vírgula
+ *                                    (codigo, nome, marca, tipo, estado, carga, ultimo, uso, manut, em, fazer, encostado, compra, valor; a
+ *                                    nome é fixa), vazio herda o dono da coleção e depois o sistema; sem escolha em nenhum nível, todas, na
+ *                                    ordem de sempre
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
@@ -4093,6 +4124,10 @@
  *                                    o que este nível escolheu (vazio: não escolheu, herda)
  *     sistema.padroes.opcoes[].herdado
  *                                    o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     sistema.padroes.opcoes[].fixos o que não se desmarca nem se esconde numa opção do tipo lista (as chaves; null nos outros tipos): na
+ *                                    colunas_hoje, a Relógio
+ *     sistema.padroes.opcoes[].fixos[]
+ *                                    uma chave que não se esconde
  *     sistema.padroes.opcoes[].origem_herdado
  *                                    de onde vem o herdado: usuario, sistema ou padrao
  *     sistema.padroes.opcoes[].efetivo
@@ -4749,14 +4784,15 @@
  *     totais[]                       os totais, na ordem do cadastro
  *     totais[].id                    o número do total
  *     totais[].coluna                a chave da coluna da tabela dos relógios onde ele vai no rodapé (codigo, nome, marca, tipo, estado,
- *                                    carga, ultimo, manut, em, fazer, encostado, compra, valor); null: nenhuma
+ *                                    carga, ultimo, uso, manut, em, fazer, encostado, compra, valor); null: nenhuma
  *     totais[].coluna_nome           o nome da coluna, no idioma do pedido; null: nenhuma
  *     totais[].nome                  o nome do total (o título da tabelinha e do quadro)
  *     totais[].expressao             a expressão de total
  *     totais[].rodape                verdadeiro: aparece no rodapé da tabela, embaixo da coluna
  *     totais[].pagina                verdadeiro: aparece na página de totais
  *     totais[].largura               o quadro na página de totais: estreito ou largo (a linha inteira)
- *     totais[].formato               como os números saem: numero, inteiro, decimal, moeda, porcentagem, data ou dias
+ *     totais[].formato               como os números saem: numero, inteiro, decimal, moeda, porcentagem, data, dias ou duracao (segundos em
+ *                                    dias, horas, minutos e segundos: "1d 4h 30m")
  *     totais[].ordem                 a posição na ordem (de 10 em 10)
  *     totais[].resultado             o total calculado nos relógios
  *     totais[].resultado.tipo        valor (um número ou texto), tabela (AGRUPADO e FAIXAS: as linhas e o total), relogio (QUEM_MAIOR e
@@ -6892,6 +6928,9 @@
  *     opcoes.opcoes[].padrao         o padrão de fábrica: o que vale quando nenhum nível escolheu
  *     opcoes.opcoes[].escolha        o que este nível escolheu (vazio: não escolheu, herda)
  *     opcoes.opcoes[].herdado        o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     opcoes.opcoes[].fixos          o que não se desmarca nem se esconde numa opção do tipo lista (as chaves; null nos outros tipos): na
+ *                                    colunas_hoje, a Relógio
+ *     opcoes.opcoes[].fixos[]        uma chave que não se esconde
  *     opcoes.opcoes[].origem_herdado de onde vem o herdado: usuario, sistema ou padrao
  *     opcoes.opcoes[].efetivo        o que vale neste nível (a escolha, senão o herdado)
  *     opcoes.opcoes[].origem         de onde vem o que vale: colecao, usuario, sistema ou padrao
