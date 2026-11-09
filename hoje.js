@@ -83,7 +83,8 @@ function montarPainelColunas() {
     + listaOrdenavel({nome: "colunas_hoje", itens: colunasHoje.lista.map(function (c) { return {valor: c.chave, texto: c.titulo}; }),
       fixos: colunasHoje.lista.filter(function (c) { return c.fixa; }).map(function (c) { return c.chave; }),
       escolha: visiveis.join(","), herdado: colunasHoje.herdado, origem: colunasHoje.escolha === "" ? colunasHoje.origem : ""})
-    + el("div", {"class": "acoes"}, el("button", {}, t("Salvar colunas")) + el("button", {"type": "button", "class": "leve", "data-colunas-fechar": true}, t("Fechar")))));
+    + el("div", {"class": "acoes"}, el("button", {}, t("Salvar colunas")) + el("button", {"type": "button", "class": "leve", "data-colunas-fechar": true}, t("Fechar")))
+    + el("p", {"class": "nota"}, el("a", {"href": "cadastros.php?aba=colunas", "data-criar-colunas": true}, t("Criar ou editar colunas (campos do banco, funções, formato)")))));
 }
 document.addEventListener("click", function (ev) {
   var painel = document.getElementById("painel-colunas");

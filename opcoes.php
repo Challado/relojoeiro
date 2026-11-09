@@ -50,7 +50,7 @@ const OPCOES = [
     "proximos_por_pagina" => ["telas", "inteiro", "7", 1, 366, null],
     "plano_por_pagina" => ["telas", "inteiro", "31", 1, 366, null],
     "atualizar_segundos" => ["telas", "inteiro", "60", 0, 86400, null],
-    "colunas_hoje" => ["telas", "lista", "", null, null, COLUNAS_HOJE],
+    "colunas_hoje" => ["telas", "lista", "", null, null, null],
 ];
 
 // O que o cfg() devolve no lugar do valor guardado (o "individual" é o vazio de sempre)
@@ -295,7 +295,7 @@ function opcoes_lista($nivel, $uid = null)
         }
         $lista[] = ["chave" => $chave, "grupo" => $grupo, "tipo" => $tipo, "titulo" => $tx["titulos"][$chave], "minimo" => $min, "maximo" => $max,
             "valores" => $valores === null ? null : array_map(function ($v) use ($tx, $chave) { return ["valor" => $v, "texto" => $tx["valores"][$chave][$v] ?? $v]; }, $valores),
-            "fixos" => $tipo === "lista" ? COLUNAS_PAGINAS[colunas_pagina_da_opcao($chave)][2] : null,
+            "fixos" => $tipo === "lista" ? colunas_fixas(colunas_pagina_da_opcao($chave)) : null,
             "padrao" => $padrao, "escolha" => $proprio, "herdado" => $herdado, "origem_herdado" => $origem_h,
             "efetivo" => $proprio !== "" ? $proprio : $herdado, "origem" => $proprio !== "" ? $nivel : $origem_h];
     }

@@ -21,7 +21,8 @@ async function api(p, post) {
     await api({ recurso: 'config', acao: 'salvar', colunas_hoje: '' }, true);
     // os relógios e as medições do timegrapher que a conta de teste usa (três no primeiro relógio; os outros ficam sem)
     // colunas que já existiam (o teste conta só as dele): quantas, e quantas aparecem de início
-    const previas = (await api({ recurso: 'colunas' })).colunas;
+    const todasAntes = (await api({ recurso: 'colunas' })).colunas;
+    const previas = todasAntes.filter((x) => !x.sistema);
     const previasVisiveis = previas.filter((x) => x.padrao).length;
     const hoje = await api({ recurso: 'hoje' });
     const rid = hoje.relogios[0].id;
@@ -75,7 +76,8 @@ async function api(p, post) {
       await p.waitForSelector('#painel-colunas:not([hidden]) .lista-ordenavel li');
       const itens = await p.$$eval('#painel-colunas li', (ls) => ls.map((l) => ({ v: l.getAttribute('data-valor'), t: l.textContent, marcado: l.querySelector('input').checked })));
       const item = itens.find((i) => i.v === 'c_teste_custo');
-      exigir(item && item.marcado && /Teste custo/.test(item.t) && itens.length === 14 + previas.length + 2, onde + 'o painel lista as 14 de sempre e as 2 cadastradas, marcadas: ' + JSON.stringify(itens.map((i) => i.v)));
+      exigir(item && item.marcado && /Teste custo/.test(item.t) && itens.length === todasAntes.length + 2, onde + 'o painel lista as 14 de sempre e as 2 cadastradas, marcadas: ' + JSON.stringify(itens.map((i) => i.v)));
+      exigir(await p.$eval('#painel-colunas a[data-criar-colunas]', (x) => x.getAttribute('href')) === 'cadastros.php?aba=colunas', onde + 'o painel Colunas leva a Cadastros › Colunas (criar e editar)');
       await p.click('#painel-colunas li[data-valor=c_teste_custo] input');
       await p.click('#painel-colunas button:not([type=button])');
       await p.waitForFunction(() => !document.querySelector('#tabela-relogios th[data-col=c_teste_custo]'));

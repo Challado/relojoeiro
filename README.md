@@ -1731,7 +1731,7 @@ usado*, *até 1 hora*, *de 1 hora a 1 dia*, *de 1 a 7 dias* e *mais de 7 dias*. 
 com a variável `tempo_de_uso` (em segundos: `SOMA(tempo_de_uso)`, `MEDIA(tempo_de_uso)`) e o formato **Tempo** (`duracao`), que
 escreve os segundos assim (*2d 9h 14m*). Pela API, cada relógio de `recurso=hoje` traz `uso` (segundos) e `uso_texto`.
 
-**Colunas suas (o construtor de colunas).** Além das 14 de sempre, você monta as colunas que quiser em **Cadastros › Colunas**,
+**Colunas suas (o construtor de colunas).** Toda coluna da tabela mora em **Cadastros › Colunas**: as 14 de sempre já estão lá, como **colunas do sistema** (o desenho delas é pronto, então só mudam de lugar, com as setas **↑** e **↓**, e de aparecer de início; não se excluem, e a **Relógio** aparece sempre), e nada nasce fora do cadastro: uma coleção nova já nasce com elas. Além das de sempre, você monta as colunas que quiser ali mesmo,
 como quem monta um `SELECT`: escolhe **de onde vem** o valor, **a função** que junta os registros do relógio e **como ele
 aparece**. No modo **guiado** são três escolhas: a **fonte** (a própria tabela dos relógios, um **campo do cadastro** dos
 relógios ou uma **tabela do banco ligada ao relógio**: os lançamentos, os serviços, as manutenções, as medições do timegrapher, os
@@ -1751,7 +1751,7 @@ dinheiro). A coluna ganha o **nome** que você der, e a chave `c_<identificador>
 ela entra no botão **Colunas**, na Configuração, em Minha conta e em Sistema como qualquer outra, com cabeçalho, **busca no texto** e
 **ordem por número** (os vazios por último). Só as colunas que aparecem são calculadas. Marque **Aparece na tabela sem ninguém
 escolher** para ela valer de início. As colunas ficam na ordem do cadastro (**↑** e **↓**), valem para as coleções que usam a árvore
-e saem da escolha quando você as exclui. Pela API: `recurso=colunas` (a lista, o **dicionário de fontes** e o teste) e, na escrita,
+e saem da escolha quando você as exclui. No painel do botão **Colunas** há o link **Criar ou editar colunas**, que leva direto a esta aba. Pela API: `recurso=colunas` (a lista, o **dicionário de fontes** e o teste) e, na escrita,
 `salvar`, `subir`, `descer` e `excluir`; o `recurso=hoje` traz o valor de cada uma em `relogios[].colunas_extras`.
 
 **O menu** junta as páginas por assunto: **Hoje**, **Avisos** e **Hora certa** soltos (os de todo dia); **Rodízio**

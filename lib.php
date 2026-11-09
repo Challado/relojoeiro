@@ -1280,6 +1280,7 @@ $MIGRACOES = [
     "v59" => ["migracao_v59.sql", tk("o menos usado: a forma de escolha (o relógio com menos dias de uso no total) e o critério Menos usado nas notas; a escala inteligente escolhe a forma e os critérios que usa no cálculo"), "modo_criterio", "migracao_v59_dados"],
     "v60" => ["migracao_v60.sql", tk("a coluna Tempo de uso na tabela dos relógios (o tempo no pulso somado, em dias, horas, minutos e segundos), com o formato de total Tempo e a variável tempo_de_uso; e a escolha das colunas da tabela da página Hoje, em três níveis (padrão do sistema, preferência do usuário e escolha da coleção)"), "sistema.chave=migracao_v60", "migracao_v60_dados"],
     "v61" => ["migracao_v61.sql", tk("o construtor de colunas da tabela dos relógios (Cadastros › Colunas): colunas suas, escolhendo o campo do banco, a função (soma, média, menor, maior, contagem) e o formato (casas decimais, moeda, tempo, data), ou escrevendo a expressão; elas entram na escolha das colunas da página Hoje"), "coluna"],
+    "v62" => ["migracao_v62.sql", tk("as colunas de sempre da tabela dos relógios (código, relógio, marca, tipo, estado, carga, última vez usado, tempo de uso, próxima manutenção, em, o que fazer, encostado, comprado em e valor) passam a morar no cadastro de colunas (Cadastros › Colunas), como colunas do sistema: só mudam de lugar e de aparecer de início; toda coluna nova nasce ali, e uma árvore nova já nasce com as de sempre"), "sistema.chave=migracao_v62", "migracao_v62_dados"],
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
 ];
 
@@ -1288,6 +1289,25 @@ $MIGRACOES = [
 // árvore (um por grupo ou por relógio que tem critérios). Uma instalação nova já tem tudo (o modelo)
 // A regra da coluna dos totais aceita o Tempo de uso (nos quatro bancos); o formato Tempo vem do SQL (o ENUM). Uma instalação nova já
 // tem os dois (o schema.sql)
+// As 14 colunas de sempre viram colunas do sistema em cada árvore que já existia, na frente das que a pessoa montou (a ordem delas
+// sobe 1000: as de sistema ficam de 10 a 140). Uma instalação nova já tem tudo (o modelo, ao criar a árvore)
+function migracao_v62_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+                $rid = (int)$raiz["id"];
+                if ((int)valor("SELECT COUNT(*) FROM coluna WHERE no_id = ? AND sistema = 1", [$rid]) > 0) {
+                    continue;
+                }
+                sql("UPDATE coluna SET ordem = ordem + 1000 WHERE no_id = ?", [$rid]);
+                colunas_do_modelo($rid);
+            }
+        });
+    }
+    sis_set("migracao_v62", "1");
+}
+
 function migracao_v60_dados($nova = false)
 {
     if (!$nova) {

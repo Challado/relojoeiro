@@ -64,6 +64,8 @@ try {
     $tx = opcoes_textos();
     $modelo = modelo_ler()["config"];
     foreach (OPCOES as $k => [$grupo, $tipo, $padrao, $min, $max, $valores]) {
+        // a lista de colunas: os valores são as colunas do cadastro (colunas.php), não uma lista fixa
+        $valores = $tipo === "lista" ? colunas_catalogo(colunas_pagina_da_opcao($k)) : $valores;
         exigir_opcoes(isset($tx["grupos"][$grupo]) && ($tx["titulos"][$k] ?? "") !== "", "Falta o texto de " . $k . ".");
         exigir_opcoes($padrao === "" || opcao_conferir($k, $padrao)[0] === null, "O padrão de fábrica de " . $k . " não passa no conferidor.");
         exigir_opcoes($tipo !== "enum" || (in_array($padrao, $valores, true) && count($valores) === count($tx["valores"][$k] ?? [])), "Faltam os textos dos valores de " . $k . ".");

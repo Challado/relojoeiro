@@ -493,9 +493,10 @@ CREATE TABLE relatorio (
     CONSTRAINT ck_relatorio_opcoes CHECK (decrescente IN (0, 1) AND relogios IN ('colecao','todos','desejados') AND (limite IS NULL OR limite > 0))
 ) ENGINE=InnoDB;
 
--- as colunas cadastradas da tabela dos relógios (Cadastros › Colunas), da árvore como os totais: o nome, de onde vem o valor (modo
--- guiado: a tabela, o campo e a função do dicionário de fontes; modo expert: a expressão escrita), a expressão que fica gravada
--- nos dois, o formato (as casas e o símbolo da moeda), se aparece sem ninguém escolher e a ordem
+-- as colunas da tabela dos relógios (Cadastros › Colunas), da árvore como os totais: TODAS, as de sempre (sistema = 1, do modelo.json; fixa: a
+-- Relógio, que não se esconde) e as montadas pela pessoa. O nome, de onde vem o valor (modo guiado: a tabela, o campo e a função do
+-- dicionário de fontes; modo expert: a expressão escrita), a expressão que fica gravada nos dois, o formato (as casas e o símbolo da
+-- moeda), se aparece sem ninguém escolher e a ordem
 CREATE TABLE coluna (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     no_id          INT NOT NULL,
@@ -511,13 +512,16 @@ CREATE TABLE coluna (
     simbolo        VARCHAR(8) NULL,
     padrao         TINYINT NOT NULL DEFAULT 0,
     ordem          INT NOT NULL DEFAULT 0,
+    sistema        TINYINT NOT NULL DEFAULT 0,
+    fixa           TINYINT NOT NULL DEFAULT 0,
     UNIQUE (no_id, identificador),
     INDEX (no_id),
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
     CONSTRAINT ck_coluna_textos CHECK (TRIM(identificador) <> '' AND TRIM(nome) <> '' AND TRIM(expressao) <> ''),
     CONSTRAINT ck_coluna_modo CHECK (modo IN ('guiado', 'expert')),
     CONSTRAINT ck_coluna_casas CHECK (casas IS NULL OR (casas >= 0 AND casas <= 6)),
-    CONSTRAINT ck_coluna_padrao CHECK (padrao IN (0, 1))
+    CONSTRAINT ck_coluna_padrao CHECK (padrao IN (0, 1)),
+    CONSTRAINT ck_coluna_sistema CHECK (sistema IN (0, 1) AND fixa IN (0, 1))
 ) ENGINE=InnoDB;
 
 -- as marcas (Casio, Seiko, Orient...), da árvore como o cadastro: o nome, o país, o site e a observação; o relógio aponta

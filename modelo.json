@@ -3907,6 +3907,148 @@
             "formato": "moeda"
         }
     ],
+    "colunas": [
+        {
+            "identificador": "codigo",
+            "nome": "Código",
+            "tabela": "relogio",
+            "campo": "codigo",
+            "expressao": "codigo",
+            "formato": "inteiro",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "nome",
+            "nome": "Relógio",
+            "tabela": "relogio",
+            "campo": "nome",
+            "expressao": "nome",
+            "formato": "texto",
+            "fixa": 1,
+            "padrao": 1
+        },
+        {
+            "identificador": "marca",
+            "nome": "Marca",
+            "tabela": "relogio",
+            "campo": "marca",
+            "expressao": "marca",
+            "formato": "texto",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "tipo",
+            "nome": "Tipo",
+            "tabela": "relogio",
+            "campo": "tipo",
+            "expressao": "tipo",
+            "formato": "texto",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "estado",
+            "nome": "Estado",
+            "tabela": "relogio",
+            "campo": "estado",
+            "expressao": "estado",
+            "formato": "texto",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "carga",
+            "nome": "Carga",
+            "tabela": "relogio",
+            "campo": "carga",
+            "expressao": "carga",
+            "formato": "porcentagem",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "ultimo",
+            "nome": "Última vez usado",
+            "tabela": "relogio",
+            "campo": "ultimo_uso",
+            "expressao": "ultimo_uso",
+            "formato": "data",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "uso",
+            "nome": "Tempo de uso",
+            "tabela": "relogio",
+            "campo": "tempo_de_uso",
+            "expressao": "tempo_de_uso",
+            "formato": "duracao",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "manut",
+            "nome": "Próxima manutenção",
+            "tabela": "relogio",
+            "campo": "manutencao_data",
+            "expressao": "manutencao_data",
+            "formato": "data",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "em",
+            "nome": "Em",
+            "tabela": "relogio",
+            "campo": "manutencao_data",
+            "expressao": "manutencao_data",
+            "formato": "dias",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "fazer",
+            "nome": "O que fazer",
+            "tabela": "relogio",
+            "campo": "manutencao_nome",
+            "expressao": "manutencao_nome",
+            "formato": "texto",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "encostado",
+            "nome": "Encostado",
+            "tabela": "relogio",
+            "campo": "encostado_data",
+            "expressao": "encostado_data",
+            "formato": "data",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "compra",
+            "nome": "Comprado em",
+            "tabela": "campos",
+            "campo": "data_compra",
+            "expressao": "data_compra",
+            "formato": "data",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
+            "identificador": "valor",
+            "nome": "Valor",
+            "tabela": "campos",
+            "campo": "valor_compra",
+            "expressao": "valor_compra",
+            "formato": "moeda",
+            "fixa": 0,
+            "padrao": 1
+        }
+    ],
     "config": {
         "rodizio_ativo": "",
         "recupera_ontem": "",

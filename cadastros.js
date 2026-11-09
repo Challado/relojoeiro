@@ -382,6 +382,9 @@ function recarregarTotais() {
 // expressão. O formato diz como o valor sai (casas decimais, o símbolo da moeda, tempo, data...); o Testar mostra o valor num relógio
 var colunasDic = null;
 function colunaFonteNome(d, x) {
+  if (x.sistema) {
+    return el("span", {"class": "nota"}, t("Padrão do sistema: o desenho dela é pronto"));
+  }
   if (x.modo === "expert") {
     return el("code", {"class": "formula"}, h(x.expressao));
   }
@@ -482,12 +485,25 @@ function colunaAjustar(form, quem) {
     desc.textContent = texto;
   }
 }
+// o formulário de uma coluna do sistema (as de sempre): só se aparece sem ninguém escolher (a fixa aparece sempre); o lugar, nas setas da lista
+function colunaFormularioSistema(e) {
+  return el("h3", {"id": "form"}, t("A coluna {1}", {1: h(e.nome)}))
+    + el("form", {"data-recurso": "colunas", "class": "form-grade", "id": "form-coluna-sistema"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e.id})
+      + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, t("É uma coluna do sistema: o desenho dela já vem pronto na tabela, então ela só muda de lugar (as setas da lista) e de aparecer na tabela sem ninguém escolher."))
+      + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "padrao", "value": e.fixa ? "1" : "0"}) + el("input", {"type": "checkbox", "name": "padrao", "value": "1", "checked": e.padrao, "disabled": e.fixa})
+        + " " + t("Aparece na tabela sem ninguém escolher") + (e.fixa ? " " + el("small", {"class": "nota"}, t("(a Relógio aparece sempre)")) : ""))
+      + el("div", {"class": "botoes"}, el("button", {}, t("Salvar")) + " " + el("a", {"href": "cadastros.php?aba=colunas"}, t("cancelar"))));
+}
 function recarregarColunas() {
   return api({recurso: "colunas"}).then(function (d) {
     colunasDic = d;
     var e = null;
     d.colunas.forEach(function (x) { if (x.id === editar) { e = x; } });
-    var f = e || {modo: "guiado", tabela: "", campo: "", funcao: "", expressao: "", formato: "", casas: null, simbolo: "", padrao: false};
+    // a do sistema abre o formulário curto dela (colunaFormularioSistema); o da nova coluna fica vazio
+    var f = e && !e.sistema ? e : {modo: "guiado", tabela: "", campo: "", funcao: "", expressao: "", formato: "", casas: null, simbolo: "", padrao: false};
+    if (e && e.sistema) {
+      e = {id: e.id, nome: e.nome, sistema: true, fixa: e.fixa, padrao: e.padrao, chave: e.chave, formato_nome: e.formato_nome};
+    }
     var res = cabecaCadastros();
     if (recado !== "") {
       res += recado;
@@ -505,11 +521,12 @@ function recarregarColunas() {
               + el("td", {}, x.padrao ? "✓" : "")
               + el("td", {"class": "acoes-linha"}, (i > 0 ? botaoLinha("subir", x.id, "", null, el("button", {"class": "leve discreto", "title": t("Subir")}, "↑")) : "")
                 + (i < d.colunas.length - 1 ? botaoLinha("descer", x.id, "", null, el("button", {"class": "leve discreto", "title": t("Descer")}, "↓")) : "")
-                + " " + linkEditar(x.id) + " " + botaoLinha("excluir", x.id, t("Excluir"))));
+                + " " + linkEditar(x.id) + (x.sistema ? "" : " " + botaoLinha("excluir", x.id, t("Excluir")))));
           }).join("")))))
-      + el("h3", {"id": "form"}, e ? t("Alterar a coluna {1}", {1: h(e.nome)}) : t("Nova coluna"))
-      + el("form", {"data-recurso": "colunas", "class": "form-grade", "id": "form-coluna"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e ? e.id : 0})
-        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(e ? e.nome : ""), "required": true, "maxlength": "80"})}))
+      + (e && e.sistema ? colunaFormularioSistema(e) : "")
+      + el("h3", {"id": "form"}, e && !e.sistema ? t("Alterar a coluna {1}", {1: h(e.nome)}) : t("Nova coluna"))
+      + el("form", {"data-recurso": "colunas", "class": "form-grade", "id": "form-coluna"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e && !e.sistema ? e.id : 0})
+        + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(e && !e.sistema ? e.nome : ""), "required": true, "maxlength": "80"})}))
         + el("label", {}, t("Como montar {1}", {1: el("select", {"name": "modo"}, [["guiado", t("Guiado: escolher o campo, a função e o formato")], ["expert", t("Expert: escrever a expressão")]].map(function (o) {
           return el("option", {"value": o[0], "selected": f.modo === o[0]}, o[1]); }).join(""))}))
         + el("label", {"data-modo": "guiado"}, t("Fonte {1}", {1: el("select", {"name": "tabela"}, el("option", {"value": ""}, t("Escolha a fonte"))
@@ -523,8 +540,8 @@ function recarregarColunas() {
         + el("label", {}, t("Casas decimais {1}", {1: el("input", {"name": "casas", "type": "number", "min": "0", "max": "6", "value": f.casas === null || f.casas === undefined ? "" : f.casas, "placeholder": t("o padrão do formato")})}))
         + el("label", {"data-so-moeda": true}, t("Símbolo da moeda {1}", {1: el("input", {"name": "simbolo", "maxlength": "8", "value": vazio(f.simbolo), "placeholder": t("R$")})}))
         + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "padrao", "value": "0"}) + el("input", {"type": "checkbox", "name": "padrao", "value": "1", "checked": !!f.padrao}) + " " + t("Aparece na tabela sem ninguém escolher"))
-        + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + " " + el("button", {"type": "button", "class": "leve", "id": "testar-coluna"}, t("Testar num relógio"))
-          + (e ? " " + el("a", {"href": "cadastros.php?aba=colunas"}, t("cancelar")) : "")))
+        + el("div", {"class": "botoes"}, el("button", {}, e && !e.sistema ? t("Salvar") : t("Criar")) + " " + el("button", {"type": "button", "class": "leve", "id": "testar-coluna"}, t("Testar num relógio"))
+          + (e && !e.sistema ? " " + el("a", {"href": "cadastros.php?aba=colunas"}, t("cancelar")) : "")))
       + el("div", {"id": "teste-coluna", "aria-live": "polite"}, "")
       + el("details", {}, el("summary", {}, t("As colunas da tabela dos relógios que o modo expert pode usar")) + el("p", {"class": "nota"}, t("Vale o que vale numa expressão de relatório: os campos e as fórmulas pelo identificador, as colunas da tabela dos relógios e as funções do motor. Cada campo do banco do dicionário vira uma variável fonte_tabela_campo_função, como fonte_servico_mao_de_obra_soma."))
         + el("ul", {"class": "nota"}, d.relogio.map(function (x) { return el("li", {}, el("code", {}, h(x.campo)) + ": " + h(x.descricao)); }).join("")));

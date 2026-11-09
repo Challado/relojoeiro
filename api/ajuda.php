@@ -384,11 +384,11 @@ $saida = [
             "excluir" => ["campos" => t('confirmar=1; id'), "exemplo" => t('curl -u lucas:senha -d recurso=relatorios -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php')],
         ],
         "colunas" => [
-            "salvar" => ["campos" => t('id (0 cria), nome (até 80, sem repetir outra coluna da árvore, sem diferença de maiúsculas), identificador (a chave da coluna na escolha das colunas, c_<identificador>: letras minúsculas sem acento, números e _, até 38; vazio: sai do nome; não muda depois de criada), modo (guiado ou expert), tabela, campo e funcao (no guiado: a fonte do dicionário de recurso=colunas; a funcao só nas tabelas do banco), expressao (no expert: a conta de cada relógio, a mesma dos relatórios), formato (numero, inteiro, decimal, moeda, porcentagem, data, dias, duracao ou texto; vazio: o que combina com a fonte), casas (0 a 6), simbolo (a moeda, só no formato moeda; até 8), padrao (1: aparece na tabela da página Hoje sem ninguém escolher); só muda o que vier'),
+            "salvar" => ["campos" => t('id (0 cria), nome (até 80, sem repetir outra coluna da árvore, sem diferença de maiúsculas), identificador (a chave da coluna na escolha das colunas, c_<identificador>: letras minúsculas sem acento, números e _, até 38; vazio: sai do nome; não muda depois de criada), modo (guiado ou expert), tabela, campo e funcao (no guiado: a fonte do dicionário de recurso=colunas; a funcao só nas tabelas do banco), expressao (no expert: a conta de cada relógio, a mesma dos relatórios), formato (numero, inteiro, decimal, moeda, porcentagem, data, dias, duracao ou texto; vazio: o que combina com a fonte), casas (0 a 6), simbolo (a moeda, só no formato moeda; até 8), padrao (1: aparece na tabela da página Hoje sem ninguém escolher); só muda o que vier. Numa coluna do sistema (sistema=true em recurso=colunas) só vale padrao (a fixa, a Relógio, tem de aparecer): o resto é recusado'),
                 "exemplo" => t('curl -u lucas:senha -d recurso=colunas -d acao=salvar -d id=0 -d "nome=Mão de obra" -d modo=guiado -d tabela=servico -d campo=mao_de_obra -d funcao=soma -d formato=moeda -d padrao=1 http://servidor/relojoeiro/api.php')],
             "subir" => ["campos" => t('id: a coluna troca de lugar com a de cima no cadastro'), "exemplo" => t('curl -u lucas:senha -d recurso=colunas -d acao=subir -d id=3 http://servidor/relojoeiro/api.php')],
             "descer" => ["campos" => t('id: a coluna troca de lugar com a de baixo no cadastro'), "exemplo" => t('curl -u lucas:senha -d recurso=colunas -d acao=descer -d id=3 http://servidor/relojoeiro/api.php')],
-            "excluir" => ["campos" => t('confirmar=1; id: a coluna sai do cadastro e da escolha das colunas da página Hoje'), "exemplo" => t('curl -u lucas:senha -d recurso=colunas -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php')],
+            "excluir" => ["campos" => t('confirmar=1; id: a coluna sai do cadastro e da escolha das colunas da página Hoje (as do sistema não se excluem: tire padrao delas para não aparecerem de início)'), "exemplo" => t('curl -u lucas:senha -d recurso=colunas -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php')],
         ],
         "marcas" => [
             "salvar" => ["campos" => t('id (0 cria), nome (até 80, sem repetir outra marca da árvore, sem diferença de maiúsculas nem de espaços), pais (até 80), site (http:// ou https://, até 500), observacao (até 4000); só muda o que vier'), "exemplo" => t('curl -u lucas:senha -d recurso=marcas -d acao=salvar -d id=0 -d nome=Seiko -d "pais=Japão" -d site=https://www.seikowatches.com http://servidor/relojoeiro/api.php')],
@@ -1704,7 +1704,7 @@ $saida = [
             "uso_inicio" => t('a hora em que o relógio do dia vai para o pulso (HH:MM)'),
         ],
         "colunas" => [
-            "colunas" => t('as colunas cadastradas da tabela dos relógios, na ordem do cadastro'),
+            "colunas" => t('as colunas da tabela dos relógios, na ordem do cadastro: as de sempre (do sistema) e as que a pessoa montou'),
             "colunas[]" => t('uma coluna cadastrada'),
             "colunas[].id" => t('o número da coluna'),
             "colunas[].chave" => t('a chave da coluna na escolha das colunas (a opção colunas_hoje) e no data-col das células: c_ e o identificador'),
@@ -1721,6 +1721,8 @@ $saida = [
             "colunas[].simbolo" => t('o símbolo da moeda; null: R$'),
             "colunas[].padrao" => t('(verdadeiro ou falso) aparece na tabela da página Hoje sem ninguém escolher as colunas'),
             "colunas[].ordem" => t('o lugar no cadastro (de 10 em 10)'),
+            "colunas[].sistema" => t('(verdadeiro ou falso) uma das colunas de sempre (código, relógio, marca...), criadas no cadastro pelo modelo: o desenho dela é pronto, e só mudam de lugar e de aparecer de início; não se excluem'),
+            "colunas[].fixa" => t('(verdadeiro ou falso) a coluna que não se esconde (a Relógio)'),
             "tabelas" => t('o dicionário de fontes: as tabelas do banco ligadas ao relógio'),
             "tabelas[]" => t('uma tabela do dicionário'),
             "tabelas[].tabela" => t('o nome da tabela (o valor de tabela no modo guiado)'),

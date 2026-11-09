@@ -160,6 +160,24 @@ function totais_do_modelo($raiz, $tr)
     }
 }
 
+// As colunas de sempre da tabela dos relógios (modelo.json, colunas) numa árvore ($raiz: a raiz dela), como colunas do sistema, na ordem. As que
+// a árvore já tem (o mesmo identificador) ficam como estão; antes da migração v62 a tabela não sabe o que é coluna do sistema e não se cria nada.
+// Sem escopo (quem chama já está fora dele)
+function colunas_do_modelo($raiz)
+{
+    if (!colunas_modelo_pronto()) {
+        return;
+    }
+    foreach (array_values(modelo_ler()["colunas"] ?? []) as $i => $x) {
+        if ((int)valor("SELECT COUNT(*) FROM coluna WHERE no_id = ? AND identificador = ?", [(int)$raiz, $x["identificador"]]) > 0) {
+            continue;
+        }
+        sql("INSERT INTO coluna (no_id, identificador, nome, modo, tabela, campo, funcao, expressao, formato, casas, simbolo, padrao, ordem, sistema, fixa)
+            VALUES (?, ?, ?, 'guiado', ?, ?, NULL, ?, ?, NULL, NULL, ?, ?, 1, ?)",
+            [(int)$raiz, $x["identificador"], $x["nome"], $x["tabela"], $x["campo"], $x["expressao"], $x["formato"], (int)$x["padrao"], ($i + 1) * 10, (int)$x["fixa"]]);
+    }
+}
+
 // As unidades do modelo (modelo.json, unidades) numa árvore ($raiz: a raiz dela), com o nome no idioma ($tr): as bases
 // primeiro, depois as que se convertem nelas e, por fim, a unidade em que cada uma também aparece. A que a árvore já tem
 // (o mesmo símbolo) fica como está. Sem escopo (quem chama já está fora dele)
@@ -371,6 +389,7 @@ function arvore_criar($dono_id, $nome, $lingua, $com_modelo)
             sql("INSERT INTO formula (identificador, nome, expressao, unidade, no_id) VALUES (?, ?, ?, ?, ?)", [$f["identificador"], $tr($f["nome"]), $f["expressao"], $f["unidade"], $grupo($f["grupo"])]);
         }
         totais_do_modelo($raiz, $tr);
+        colunas_do_modelo($raiz);
         foreach ($m["avisos"] as $a) {
             sql("INSERT INTO aviso (identificador, nome, expressao, antecedencia_dias, texto, ativo, no_id, escala, simula_valor, simula_horas, agenda, condicao, resolve_tipo_id, na_hora)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [$a["identificador"], $tr($a["nome"]), $a["expressao"], $a["antecedencia_dias"], $tr($a["texto"]), (int)$a["ativo"],

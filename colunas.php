@@ -1,27 +1,28 @@
 <?php
-// O motor de colunas: quais colunas uma tabela mostra e em que ordem. Hoje serve a tabela dos relógios da página Hoje; o catálogo
-// de cada tabela (COLUNAS_PAGINAS) diz as colunas que existem, na ordem de sempre, e o que a pessoa escolhe é uma lista de chaves
-// (as que ficam à mostra, na ordem em que aparecem), guardada como uma opção em três níveis (opcoes.php: o padrão do sistema, o
-// do usuário e a escolha da coleção; vazio herda; sem escolha em nenhum nível, todas, na ordem de sempre). A lista é só o que
-// aparece: o que a coluna calcula (a ordenação, o filtro, os totais do rodapé) não muda. Quem desenha a tabela (o api.js,
-// colunasAplicar) recebe da API as colunas na ordem em que valem; escondida, a coluna não ocupa lugar e o filtro dela se desliga.
+// O motor de colunas: quais colunas uma tabela mostra e em que ordem. Hoje serve a tabela dos relógios da página Hoje. TODA coluna
+// mora na tabela coluna (da árvore, Cadastros › Colunas): as de sempre (código, relógio, marca, tipo, estado, carga, última vez
+// usado, tempo de uso, próxima manutenção, em, o que fazer, encostado, comprado em e valor) nascem lá como colunas do sistema
+// (sistema = 1, do modelo.json: uma árvore nova já nasce com elas, e a migração v62 criou nas que já existiam), e as que a pessoa monta
+// (guiadas ou expert) vêm depois. Nada nasce fora do cadastro: o código não tem lista de colunas.
 //
-// Além das colunas de sempre (fixas, do código), a tabela da página Hoje tem as colunas cadastradas (Cadastros › Colunas, a tabela
-// coluna, da árvore): cada uma é uma conta por relógio (a expressão), com o formato dela, e entra no catálogo com a chave c_<identificador>.
-// Sem escolha em nenhum nível, aparecem as de sempre e as cadastradas com "aparece sem ninguém escolher".
+// A coluna do sistema tem o desenho dela pronto na tela (o estado, a barra de carga, a contagem do Em), então só muda de lugar na
+// ordem e de aparecer de início ou não; a que a pessoa monta é uma conta por relógio (a expressão) com o formato dela e entra no
+// catálogo com a chave c_<identificador>. A chave da coluna do sistema é o identificador dela (codigo, nome, marca...).
 //
-// O catálogo da tabela dos relógios é o das colunas onde um total pode ir (TOTAL_COLUNAS, lib.php): a chave é a do cabeçalho.
-// COLUNAS_PAGINAS: página => [a opção que guarda a escolha, as chaves, na ordem de sempre, as que não se escondem]
+// O que a pessoa escolhe é uma lista de chaves (as que ficam à mostra, na ordem em que aparecem), guardada como uma opção em três
+// níveis (opcoes.php: o padrão do sistema, o do usuário e a escolha da coleção; vazio herda); sem escolha em nenhum nível aparecem as
+// marcadas "aparece sem ninguém escolher", na ordem do cadastro. A lista é só o que aparece: o que a coluna calcula (a ordenação, o filtro, os totais do
+// rodapé) não muda. Quem desenha a tabela (o api.js, colunasAplicar) recebe da API as colunas na ordem em que valem; escondida,
+// a coluna não ocupa lugar e o filtro dela se desliga.
+// COLUNAS_PAGINAS: página => a opção que guarda a escolha
 const COLUNAS_PAGINAS = [
-    "hoje" => ["colunas_hoje", ["codigo", "nome", "marca", "tipo", "estado", "carga", "ultimo", "uso", "manut", "em", "fazer", "encostado", "compra", "valor"], ["nome"]],
+    "hoje" => "colunas_hoje",
 ];
-// as chaves da tabela dos relógios, para a opção (opcoes.php) saber os valores que aceita
-const COLUNAS_HOJE = COLUNAS_PAGINAS["hoje"][1];
 
-// O prefixo da chave de uma coluna cadastrada na lista de colunas (c_custo_servico)
+// O prefixo da chave de uma coluna montada pela pessoa na lista de colunas (c_custo_servico)
 const COLUNA_PREFIXO = "c_";
 
-// A tabela das colunas cadastradas já existe? (antes da migração v61 não: o catálogo fica só com as de sempre). Só o "sim" é guardado
+// A tabela das colunas já existe? (antes da migração v61 não). Só o "sim" é guardado
 function colunas_tabela_existe()
 {
     static $existe = false;
@@ -31,62 +32,81 @@ function colunas_tabela_existe()
     return $existe;
 }
 
-// As colunas cadastradas da árvore, na ordem do cadastro: cada uma com a chave da lista (c_<identificador>). Guardado por requisição e
-// por coleção; COLUNAS_VERSAO muda quando alguém grava
-function colunas_cadastradas()
+// A tabela das colunas já sabe o que é uma coluna do sistema (a migração v62)? Só o "sim" é guardado
+function colunas_modelo_pronto()
+{
+    static $pronto = false;
+    if (!$pronto) {
+        $pronto = colunas_tabela_existe() && in_array("sistema", sem_escopo(function () { return sql_colunas_da_tabela("coluna"); }), true);
+    }
+    return $pronto;
+}
+
+// Uma linha da tabela coluna como a conta e a tela usam: a chave da lista (a do sistema é o identificador, a montada leva c_)
+function colunas_linha($x)
+{
+    $sistema = (int)($x["sistema"] ?? 0) === 1;
+    return ["id" => (int)$x["id"], "chave" => ($sistema ? "" : COLUNA_PREFIXO) . $x["identificador"], "identificador" => $x["identificador"], "nome" => $x["nome"],
+        "modo" => $x["modo"], "tabela" => $x["tabela"], "campo" => $x["campo"], "funcao" => $x["funcao"], "expressao" => $x["expressao"],
+        "formato" => $x["formato"], "casas" => $x["casas"] === null ? null : (int)$x["casas"], "simbolo" => $x["simbolo"], "padrao" => (int)$x["padrao"] === 1,
+        "ordem" => (int)$x["ordem"], "sistema" => $sistema, "fixa" => (int)($x["fixa"] ?? 0) === 1];
+}
+
+// Todas as colunas da árvore, na ordem do cadastro: as do sistema e as montadas. Guardado por requisição e por coleção; COLUNAS_VERSAO
+// muda quando alguém grava. Enquanto a migração v62 não vem, as do sistema saem do modelo.json (as mesmas que ela vai criar)
+function colunas_todas()
 {
     static $cache = [];
     $k = (int)colecao_atual() . "|" . ($GLOBALS["COLUNAS_VERSAO"] ?? 0);
     if (!isset($cache[$k])) {
         $cache = [];
-        $cache[$k] = [];
-        if (colunas_tabela_existe()) {
-            foreach (linhas("SELECT * FROM coluna ORDER BY ordem, id") as $x) {
-                $cache[$k][] = ["id" => (int)$x["id"], "chave" => COLUNA_PREFIXO . $x["identificador"], "identificador" => $x["identificador"], "nome" => $x["nome"],
-                    "modo" => $x["modo"], "tabela" => $x["tabela"], "campo" => $x["campo"], "funcao" => $x["funcao"], "expressao" => $x["expressao"],
-                    "formato" => $x["formato"], "casas" => $x["casas"] === null ? null : (int)$x["casas"], "simbolo" => $x["simbolo"], "padrao" => (int)$x["padrao"] === 1,
-                    "ordem" => (int)$x["ordem"]];
+        $linhas = colunas_tabela_existe() ? linhas("SELECT * FROM coluna ORDER BY ordem, id") : [];
+        $lista = array_map("colunas_linha", $linhas);
+        if (!colunas_modelo_pronto() || count(array_filter($lista, function ($c) { return $c["sistema"]; })) === 0) {
+            $do_modelo = [];
+            foreach (array_values(modelo_ler()["colunas"] ?? []) as $i => $x) {
+                $do_modelo[] = colunas_linha(["id" => 0, "identificador" => $x["identificador"], "nome" => $x["nome"], "modo" => "guiado", "tabela" => $x["tabela"],
+                    "campo" => $x["campo"], "funcao" => null, "expressao" => $x["expressao"], "formato" => $x["formato"], "casas" => null, "simbolo" => null,
+                    "padrao" => (int)$x["padrao"], "ordem" => ($i + 1) * 10, "sistema" => 1, "fixa" => (int)$x["fixa"]]);
             }
+            $lista = array_merge($do_modelo, $lista);
         }
+        $cache[$k] = $lista;
     }
     return $cache[$k];
 }
 
-// O catálogo de uma página: as chaves das colunas de sempre e, depois, as das cadastradas (só a página Hoje tem cadastradas)
+// As colunas que a pessoa montou (as do sistema não entram): são as que têm conta por relógio, os totais e a edição inteira
+function colunas_cadastradas()
+{
+    return array_values(array_filter(colunas_todas(), function ($c) { return !$c["sistema"]; }));
+}
+
+// O catálogo de uma página: as chaves de todas as colunas, na ordem do cadastro
 function colunas_catalogo($pagina)
 {
-    $lista = COLUNAS_PAGINAS[$pagina][1];
-    if ($pagina === "hoje") {
-        foreach (colunas_cadastradas() as $c) {
-            $lista[] = $c["chave"];
-        }
-    }
-    return $lista;
+    return $pagina === "hoje" ? array_column(colunas_todas(), "chave") : [];
 }
 
-// As colunas que aparecem quando ninguém escolheu: as de sempre e as cadastradas que aparecem sem ninguém escolher
+// As colunas que aparecem quando ninguém escolheu: as marcadas "aparece sem ninguém escolher", na ordem do cadastro
 function colunas_padrao($pagina)
 {
-    $lista = COLUNAS_PAGINAS[$pagina][1];
-    if ($pagina === "hoje") {
-        foreach (colunas_cadastradas() as $c) {
-            if ($c["padrao"]) {
-                $lista[] = $c["chave"];
-            }
-        }
-    }
-    return $lista;
+    return $pagina === "hoje" ? array_column(array_filter(colunas_todas(), function ($c) { return $c["padrao"]; }), "chave") : [];
 }
 
-// Os títulos das colunas de uma página, chave => texto, no idioma do pedido (as cadastradas têm o nome que a pessoa deu)
+// As colunas que não se escondem (a Relógio)
+function colunas_fixas($pagina)
+{
+    return $pagina === "hoje" ? array_values(array_column(array_filter(colunas_todas(), function ($c) { return $c["fixa"]; }), "chave")) : [];
+}
+
+// Os títulos das colunas de uma página, chave => texto, no idioma do pedido (a do sistema, pelo dicionário; a montada tem o nome que
+// a pessoa deu)
 function colunas_titulos($pagina)
 {
-    if ($pagina !== "hoje") {
-        return [];
-    }
-    $t = total_colunas_nomes();
-    foreach (colunas_cadastradas() as $c) {
-        $t[$c["chave"]] = $c["nome"];
+    $t = [];
+    foreach ($pagina === "hoje" ? colunas_todas() : [] as $c) {
+        $t[$c["chave"]] = $c["sistema"] ? t($c["nome"]) : $c["nome"];
     }
     return $t;
 }
@@ -94,7 +114,7 @@ function colunas_titulos($pagina)
 // A página de uma opção de colunas (colunas_hoje: hoje); null quando a opção não é de colunas
 function colunas_pagina_da_opcao($chave)
 {
-    foreach (COLUNAS_PAGINAS as $pagina => [$opcao]) {
+    foreach (COLUNAS_PAGINAS as $pagina => $opcao) {
         if ($opcao === $chave) {
             return $pagina;
         }
@@ -107,7 +127,8 @@ function colunas_pagina_da_opcao($chave)
 // têm de estar
 function colunas_conferir($pagina, $valor)
 {
-    [$opcao, , $fixas] = COLUNAS_PAGINAS[$pagina];
+    $opcao = COLUNAS_PAGINAS[$pagina];
+    $fixas = colunas_fixas($pagina);
     $todas = colunas_catalogo($pagina);
     $itens = is_array($valor) ? $valor : explode(",", (string)$valor);
     $itens = array_values(array_filter(array_map(function ($x) { return trim((string)$x); }, $itens), function ($x) { return $x !== ""; }));
@@ -133,10 +154,11 @@ function colunas_conferir($pagina, $valor)
 
 // As colunas que valem numa página, na ordem em que aparecem (as chaves): o que a coleção escolheu, senão o dono, senão o
 // sistema (o cfg() já herda), senão as que aparecem de início (colunas_padrao). Uma lista guardada com uma coluna que não existe mais
-// (uma versão de antes, uma coluna cadastrada que saiu) perde essa coluna, e as fixas voltam
+// (uma versão de antes, uma coluna montada que saiu) perde essa coluna, e as fixas voltam
 function colunas_efetivas($pagina)
 {
-    [$opcao, , $fixas] = COLUNAS_PAGINAS[$pagina];
+    $opcao = COLUNAS_PAGINAS[$pagina];
+    $fixas = colunas_fixas($pagina);
     $todas = colunas_catalogo($pagina);
     $guardada = array_values(array_filter(explode(",", (string)cfg($opcao)), function ($c) use ($todas) { return in_array($c, $todas, true); }));
     if (count($guardada) === 0) {
@@ -151,26 +173,27 @@ function colunas_efetivas($pagina)
 }
 
 // As colunas de uma página para a API: todas as do catálogo, as que valem primeiro, na ordem, e depois as escondidas, na ordem do
-// catálogo; cada uma com a chave, o título, se está à mostra, a posição (1, 2...; 0: escondida), se é fixa e se é cadastrada (com o
-// formato e se o valor é número, para a tela alinhar e ordenar)
+// catálogo; cada uma com a chave, o título, se está à mostra, a posição (1, 2...; 0: escondida), se é fixa, se é montada pela pessoa
+// (cadastrada: a tela cria a coluna sozinha) e, nas montadas, o formato e se o valor é número, para a tela alinhar e ordenar
 function colunas_da_pagina($pagina)
 {
-    [, , $fixas] = COLUNAS_PAGINAS[$pagina];
     $todas = colunas_catalogo($pagina);
+    $fixas = colunas_fixas($pagina);
     $titulos = colunas_titulos($pagina);
     $efetivas = colunas_efetivas($pagina);
-    $cad = [];
-    foreach ($pagina === "hoje" ? colunas_cadastradas() : [] as $c) {
-        $cad[$c["chave"]] = $c;
+    $por_chave = [];
+    foreach ($pagina === "hoje" ? colunas_todas() : [] as $c) {
+        $por_chave[$c["chave"]] = $c;
     }
     $lista = [];
     foreach (array_merge($efetivas, array_values(array_diff($todas, $efetivas))) as $k) {
         $pos = array_search($k, $efetivas, true);
+        $c = $por_chave[$k] ?? null;
         $x = ["chave" => $k, "titulo" => $titulos[$k] ?? $k, "visivel" => $pos !== false, "posicao" => $pos === false ? 0 : $pos + 1, "fixa" => in_array($k, $fixas, true),
-            "cadastrada" => isset($cad[$k])];
-        if (isset($cad[$k])) {
-            $x["formato"] = $cad[$k]["formato"];
-            $x["numero"] = !in_array($cad[$k]["formato"], ["texto"], true);
+            "cadastrada" => $c !== null && !$c["sistema"]];
+        if ($x["cadastrada"]) {
+            $x["formato"] = $c["formato"];
+            $x["numero"] = $c["formato"] !== "texto";
         }
         $lista[] = $x;
     }

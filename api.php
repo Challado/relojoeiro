@@ -191,7 +191,8 @@
  *   recurso=colunas          as colunas cadastradas da tabela dos relógios (Cadastros › Colunas) e o que o construtor delas precisa:
  *                            {"colunas": [{"id", "chave" (c_<identificador>), "identificador", "nome", "modo" (guiado ou expert), "tabela",
  *                            "campo", "funcao", "expressao" (a conta de cada relógio, gravada nos dois modos), "formato", "formato_nome",
- *                            "casas", "simbolo", "padrao", "ordem"}], "tabelas": o dicionário de fontes (as tabelas do banco ligadas ao
+ *                            "casas", "simbolo", "padrao", "ordem", "sistema", "fixa"}] (as colunas de sempre, código, relógio, marca...,
+ *                            são colunas do sistema, criadas no cadastro pelo modelo; as que a pessoa monta vêm depois), "tabelas": o dicionário de fontes (as tabelas do banco ligadas ao
  *                            relógio: lançamentos, serviços, manutenções, timegrapher, testes de reserva, documentos, plano e fotos; cada
  *                            uma com os campos, o tipo, a descrição, a unidade e as funções que o tipo aceita: soma, média, menor, maior e
  *                            contagem, como num SELECT ... GROUP BY relogio_id, e a variável de fórmula fonte_<tabela>_<campo>_<função>
@@ -520,8 +521,8 @@
  *                             funcao só nas tabelas do banco), expressao (expert: a conta de cada relógio, a mesma dos relatórios),
  *                             formato (numero, inteiro, decimal, moeda, porcentagem, data, dias, duracao ou texto; vazio: o que combina
  *                             com a fonte), casas (0 a 6), simbolo (a moeda, só no formato moeda), padrao (1: aparece na tabela da página
- *                             Hoje sem ninguém escolher); só muda o que vier), subir e descer (id), excluir (id: a coluna sai também da
- *                             escolha das colunas)
+ *                             Hoje sem ninguém escolher); só muda o que vier; numa coluna do sistema só vale padrao), subir e descer (id),
+ *                             excluir (id: a coluna sai também da escolha das colunas; as do sistema não se excluem)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=colunas -d acao=salvar -d id=0 -d "nome=Mão de obra" -d modo=guiado -d tabela=servico -d campo=mao_de_obra -d funcao=soma -d formato=moeda -d padrao=1 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=colunas -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=sql               executar (só o master; comando: um comando SQL no dialeto do MySQL, traduzido para o banco em
@@ -2533,7 +2534,8 @@
  *     totais.valor                   a soma do valor pago (valor_compra) de todos, em R$ (os sem valor contam 0)
  *     uso_inicio                     a hora em que o relógio do dia vai para o pulso (HH:MM)
  *   recurso=colunas
- *     colunas                        as colunas cadastradas da tabela dos relógios, na ordem do cadastro
+ *     colunas                        as colunas da tabela dos relógios, na ordem do cadastro: as de sempre (do sistema) e as que a pessoa
+ *                                    montou
  *     colunas[]                      uma coluna cadastrada
  *     colunas[].id                   o número da coluna
  *     colunas[].chave                a chave da coluna na escolha das colunas (a opção colunas_hoje) e no data-col das células: c_ e o
@@ -2552,6 +2554,9 @@
  *     colunas[].simbolo              o símbolo da moeda; null: R$
  *     colunas[].padrao               (verdadeiro ou falso) aparece na tabela da página Hoje sem ninguém escolher as colunas
  *     colunas[].ordem                o lugar no cadastro (de 10 em 10)
+ *     colunas[].sistema              (verdadeiro ou falso) uma das colunas de sempre (código, relógio, marca...), criadas no cadastro pelo
+ *                                    modelo: o desenho dela é pronto, e só mudam de lugar e de aparecer de início; não se excluem
+ *     colunas[].fixa                 (verdadeiro ou falso) a coluna que não se esconde (a Relógio)
  *     tabelas                        o dicionário de fontes: as tabelas do banco ligadas ao relógio
  *     tabelas[]                      uma tabela do dicionário
  *     tabelas[].tabela               o nome da tabela (o valor de tabela no modo guiado)

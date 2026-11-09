@@ -802,14 +802,31 @@ function op_colunas($acao, $d)
     $erros = [];
     $msg = "";
     $id = (int)($d["id"] ?? 0);
-    if (!colunas_tabela_existe()) {
-        return resultado([t("As colunas cadastradas ainda não existem: aplique a migração v61 em Configuração.")], "");
+    if (!colunas_modelo_pronto()) {
+        return resultado([t("As colunas cadastradas ainda não existem: aplique a migração v62 em Configuração.")], "");
     }
     $atual = $id > 0 ? linha("SELECT * FROM coluna WHERE id = ?", [$id]) : null;
     if ($id > 0 && !$atual) {
         $erros[] = t("Coluna não encontrada.");
     } elseif (in_array($acao, ["excluir", "subir", "descer"], true) && !$atual) {
         $erros[] = t("Coluna não encontrada.");
+    } elseif ($acao === "salvar" && $atual && (int)$atual["sistema"] === 1) {
+        // uma coluna do sistema (as de sempre): só muda se aparece sem ninguém escolher (a fixa, a Relógio, tem de aparecer) e o lugar (subir e descer)
+        foreach (["identificador", "nome", "modo", "tabela", "campo", "funcao", "expressao", "formato", "casas", "simbolo"] as $k) {
+            if (array_key_exists($k, $d) && trim((string)$d[$k]) !== trim((string)($atual[$k] ?? ""))) {
+                $erros[] = t("A coluna {1} é do sistema: só muda se aparece sem ninguém escolher e o lugar dela na ordem.", [1 => t($atual["nome"])]);
+                break;
+            }
+        }
+        $padrao_s = array_key_exists("padrao", $d) ? ((string)$d["padrao"] === "1" ? 1 : 0) : (int)$atual["padrao"];
+        if ($padrao_s === 0 && (int)$atual["fixa"] === 1) {
+            $erros[] = t("A coluna {1} não se esconde: ela aparece sempre.", [1 => t($atual["nome"])]);
+        }
+        if (count($erros) === 0) {
+            sql("UPDATE coluna SET padrao = ? WHERE id = ?", [$padrao_s, $id]);
+            $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
+            $msg = t("Coluna {1} salva.", [1 => t($atual["nome"])]);
+        }
     } elseif ($acao === "salvar") {
         $pega = function ($k, $padrao) use ($d, $atual) {
             return array_key_exists($k, $d) ? $d[$k] : ($atual !== null && array_key_exists($k, $atual) ? $atual[$k] : $padrao);
@@ -908,6 +925,8 @@ function op_colunas($acao, $d)
             }
             $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
         }
+    } elseif ($acao === "excluir" && (int)$atual["sistema"] === 1) {
+        $erros[] = t("A coluna {1} é do sistema e não se exclui: tire a marca de aparecer sem ninguém escolher para ela sair da tabela de início.", [1 => t($atual["nome"])]);
     } elseif ($acao === "excluir") {
         sql("DELETE FROM coluna WHERE id = ?", [$id]);
         $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;

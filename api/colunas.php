@@ -1,5 +1,5 @@
 <?php
-// recurso=colunas: as colunas cadastradas da tabela dos relógios (Cadastros › Colunas) e o que o construtor delas precisa: o
+// recurso=colunas: as colunas da tabela dos relógios (Cadastros › Colunas: as de sempre, do sistema, e as que a pessoa monta) e o que o construtor delas precisa: o
 // dicionário de fontes (as tabelas do banco ligadas ao relógio, cada campo com o tipo e a descrição e as funções que aceita), as
 // colunas da tabela dos relógios e os campos do cadastro que dão uma coluna sem função, as funções, os formatos e as variáveis do
 // modo expert. Com expressao (modo expert) ou tabela, campo e funcao (modo guiado), mais formato, casas e simbolo, mostra o teste
@@ -12,11 +12,12 @@ if (!defined("RELOJOEIRO_API")) {
 
 $formatos_c = coluna_formatos();
 $saida = [
+    // todas, na ordem do cadastro: as de sempre (sistema) e as montadas
     "colunas" => array_map(function ($c) use ($formatos_c) {
-        return ["id" => $c["id"], "chave" => $c["chave"], "identificador" => $c["identificador"], "nome" => $c["nome"], "modo" => $c["modo"], "tabela" => $c["tabela"],
+        return ["id" => $c["id"], "chave" => $c["chave"], "identificador" => $c["identificador"], "nome" => $c["sistema"] ? t($c["nome"]) : $c["nome"], "modo" => $c["modo"], "tabela" => $c["tabela"],
             "campo" => $c["campo"], "funcao" => $c["funcao"], "expressao" => $c["expressao"], "formato" => $c["formato"], "formato_nome" => $formatos_c[$c["formato"]] ?? $c["formato"],
-            "casas" => $c["casas"], "simbolo" => $c["simbolo"], "padrao" => $c["padrao"], "ordem" => $c["ordem"]];
-    }, colunas_cadastradas()),
+            "casas" => $c["casas"], "simbolo" => $c["simbolo"], "padrao" => $c["padrao"], "ordem" => $c["ordem"], "sistema" => $c["sistema"], "fixa" => $c["fixa"]];
+    }, colunas_todas()),
     "tabelas" => fontes_dicionario(),
     // a tabela dos relógios: cada coluna dela (a variável, o que é, a unidade e o formato que combina)
     "relogio" => array_map(function ($k) { return ["campo" => $k, "descricao" => t($GLOBALS["VARIAVEIS_TABELA"][$k][0]), "unidade" => $GLOBALS["VARIAVEIS_TABELA"][$k][1], "formato" => coluna_formato_sugerido("relogio", $k, null)]; },
