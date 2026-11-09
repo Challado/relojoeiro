@@ -383,7 +383,7 @@ function recarregarTotais() {
 var colunasDic = null;
 function colunaFonteNome(d, x) {
   if (x.modo === "expert") {
-    return el("span", {"class": "formula"}, h(x.expressao));
+    return el("code", {"class": "formula"}, h(x.expressao));
   }
   var tabela = x.tabela === "relogio" ? t("A tabela dos relógios") : (x.tabela === "campos" ? t("Campo do cadastro") : "");
   if (x.tabela !== "relogio" && x.tabela !== "campos") {
@@ -393,7 +393,7 @@ function colunaFonteNome(d, x) {
   if (x.funcao) {
     d.funcoes.forEach(function (f) { if (f.chave === x.funcao) { fn = f.nome; } });
   }
-  return h(tabela) + " › " + el("strong", {}, h(x.campo)) + (fn !== "" ? " · " + h(fn) : "");
+  return h(tabela) + " › " + el("code", {}, h(x.campo)) + (fn !== "" ? " · " + h(fn) : "");
 }
 // as opções do menu Campo da fonte escolhida
 function colunaOpcoesCampo(d, tabela, escolhido) {
@@ -500,7 +500,7 @@ function recarregarColunas() {
         : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Nome")) + el("th", {}, t("De onde vem")) + el("th", {}, t("Formato"))
           + el("th", {}, t("Aparece de início")) + el("th", {}, "")))
           + el("tbody", {}, d.colunas.map(function (x, i) {
-            return el("tr", {}, el("td", {}, h(x.nome) + " " + el("small", {"class": "nota"}, h(x.chave))) + el("td", {}, colunaFonteNome(d, x))
+            return el("tr", {}, el("td", {}, h(x.nome) + " " + el("code", {"class": "nota"}, h(x.chave))) + el("td", {}, colunaFonteNome(d, x))
               + el("td", {}, h(x.formato_nome) + (x.casas !== null ? " " + el("small", {}, t("casas: {1}", {1: x.casas})) : "") + (x.simbolo ? " " + el("small", {}, h(x.simbolo)) : ""))
               + el("td", {}, x.padrao ? "✓" : "")
               + el("td", {"class": "acoes-linha"}, (i > 0 ? botaoLinha("subir", x.id, "", null, el("button", {"class": "leve discreto", "title": t("Subir")}, "↑")) : "")
@@ -527,7 +527,7 @@ function recarregarColunas() {
           + (e ? " " + el("a", {"href": "cadastros.php?aba=colunas"}, t("cancelar")) : "")))
       + el("div", {"id": "teste-coluna", "aria-live": "polite"}, "")
       + el("details", {}, el("summary", {}, t("As colunas da tabela dos relógios que o modo expert pode usar")) + el("p", {"class": "nota"}, t("Vale o que vale numa expressão de relatório: os campos e as fórmulas pelo identificador, as colunas da tabela dos relógios e as funções do motor. Cada campo do banco do dicionário vira uma variável fonte_tabela_campo_função, como fonte_servico_mao_de_obra_soma."))
-        + el("ul", {"class": "nota"}, d.relogio.map(function (x) { return el("li", {}, el("strong", {}, h(x.campo)) + ": " + h(x.descricao)); }).join("")));
+        + el("ul", {"class": "nota"}, d.relogio.map(function (x) { return el("li", {}, el("code", {}, h(x.campo)) + ": " + h(x.descricao)); }).join("")));
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
     colunaAjustar(document.getElementById("form-coluna"), "");
@@ -867,7 +867,7 @@ document.addEventListener("click", function (ev) {
     }
     api(pedido).then(function (r) {
       caixa_c.innerHTML = r.teste.tipo === "erro" ? el("p", {"class": "acao"}, h(r.teste.erro))
-        : el("div", {"class": "quadro-total"}, el("h2", {}, t("Dá, em {1}", {1: h(r.teste.relogio)})) + el("p", {}, el("strong", {}, h(r.teste.texto))) + el("p", {"class": "nota formula"}, h(r.teste.expressao)));
+        : el("div", {"class": "quadro-total"}, el("h2", {}, t("Dá, em {1}", {1: h(r.teste.relogio)})) + el("p", {}, el("strong", {}, h(r.teste.texto))) + el("p", {"class": "nota"}, el("code", {"class": "formula"}, h(r.teste.expressao))));
     }).catch(function (e) {
       caixa_c.innerHTML = el("p", {"class": "acao"}, h(e.message));
     });
