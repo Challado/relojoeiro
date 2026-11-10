@@ -685,7 +685,7 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .hoje form.sem-relogio button { border: 1px solid var(--aco-escuro); background: #fff; color: var(--tinta); font-size: .85rem; padding: .3rem .8rem; }
 .hoje form.sem-relogio button:hover { border-color: var(--safira); color: var(--safira); }
 .hoje .trocar-dia { margin-top: .4rem; }
-.hoje h1, .hoje .data { overflow-wrap: anywhere; hyphens: auto; }
+.hoje h1, .hoje .data { overflow-wrap: break-word; hyphens: auto; }
 @container coluna-hoje (max-width: 62rem) {
   .hoje.com-relogio { grid-template-columns: minmax(0, 1fr) 9rem; }
   .hoje.com-relogio .hoje-info { grid-column: 1 / -1; grid-row: 2; }
@@ -728,12 +728,12 @@ table.lista-historico td small { color: var(--cinza); margin-left: .3rem; }
   /* celular: a tabela fica na largura da tela e tudo quebra a linha quando precisa (nada cortado, sem barra lateral) */
   main.pagina-historico table.lista-historico { table-layout: fixed; width: 100%; min-width: 0; }
   main.pagina-historico table.lista-historico th, main.pagina-historico table.lista-historico td {
-    white-space: normal; overflow-wrap: anywhere; padding: .35rem .3rem; font-size: .82rem;
+    white-space: normal; overflow-wrap: break-word; padding: .35rem .25rem; font-size: .8rem;
   }
   main.pagina-historico table.lista-historico .estado { white-space: normal; overflow-wrap: normal; border-radius: .8rem; padding: .1rem .4rem; font-size: .74rem; }
-  main.pagina-historico table.lista-historico th:nth-child(1), main.pagina-historico table.lista-historico th:nth-child(2) { width: 25%; }
-  main.pagina-historico table.lista-historico th:nth-child(3) { width: 18%; }
-  main.pagina-historico table.lista-historico th:nth-child(4) { width: 32%; }
+  main.pagina-historico table.lista-historico th:nth-child(1), main.pagina-historico table.lista-historico th:nth-child(2) { width: 28%; }
+  main.pagina-historico table.lista-historico th:nth-child(3) { width: 17%; }
+  main.pagina-historico table.lista-historico th:nth-child(4) { width: 27%; }
   .cabeca-historico img { width: 4rem; height: 4rem; }
 }
 
@@ -874,7 +874,7 @@ main.ajuda h2, main.ajuda h3, main.ajuda h4 { scroll-margin-top: 1rem; }
 main.ajuda p, main.ajuda li { max-width: 46rem; }
 main.ajuda code { font-family: ui-monospace, Consolas, monospace; font-size: .86em; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 4px; padding: 0 .25em; }
 /* um trecho de código comprido e sem espaço (uma URL de exemplo) quebra a linha em vez de passar da tela */
-main.ajuda :not(pre) > code { overflow-wrap: anywhere; }
+main.ajuda :not(pre) > code { overflow-wrap: break-word; }
 main.ajuda pre { font-family: ui-monospace, Consolas, monospace; font-size: .85rem; background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 8px; padding: .8rem 1rem; overflow-x: auto; }
 main.ajuda img { max-width: 100%; height: auto; border: 1px solid var(--aco-escuro); border-radius: 8px; margin-top: .5rem; }
 main.ajuda a { color: var(--safira); }
@@ -1109,7 +1109,7 @@ body.com-visor { overflow: hidden; }
 .foto-acoes button, .foto-acoes .botao-arquivo { white-space: nowrap; }
 .ficha-identidade { min-width: 0; }
 .ficha-identidade .data { color: var(--cinza); margin: .2rem 0 0; font-size: .9rem; }
-.ficha-identidade h1 { margin: .2rem 0 .6rem; overflow-wrap: anywhere; }
+.ficha-identidade h1 { margin: .2rem 0 .6rem; overflow-wrap: break-word; }
 .ficha-identidade .observacao { margin: 0 0 .6rem; font-size: .92rem; line-height: 1.4; color: var(--cinza); }
 /* o texto comprido recolhido (textoRecolhivel, no api.js): o começo com "…" e o botão redondo "+"; aberto, o texto inteiro e o
    "−". O sinal vem do aria-expanded, e na impressão sai o texto inteiro, sem o botão */
@@ -1181,7 +1181,7 @@ table.tabela-dados.tecnico th { text-align: left; font-weight: 500; color: var(-
 /* o rótulo no alto da linha, com a mesma folga e a mesma linha embaixo do valor (a última linha, sem linha) */
 table.tabela-dados.tecnico th { vertical-align: top; padding-top: .42rem; padding-bottom: .42rem; border-bottom-color: var(--aco); }
 table.tabela-dados.tecnico tbody tr:last-child th { border-bottom: 0; }
-table.tabela-dados.tecnico td { white-space: normal; overflow-wrap: anywhere; }
+table.tabela-dados.tecnico td { white-space: normal; overflow-wrap: break-word; }
 table.tabela-dados.tecnico tr.fora td strong { color: var(--ambar, #8a5a00); }
 p.confianca { margin: .2rem 0 .6rem; font-size: .82rem; }
 p.confianca-alta { color: #1e6b2e; }
@@ -1247,8 +1247,9 @@ table.tabela-dados table.par th { background: #f6f8fa; color: var(--cinza); font
 table.tabela-dados table.par td { font-variant-numeric: tabular-nums; }
 table.tabela-dados table.par td::before { content: none; }
 table.tabela-dados.medicoes button { white-space: nowrap; }
+/* (nas células de tabela é break-word, nunca anywhere: o anywhere deixa a coluna encolher abaixo de uma data e parte "10/11/2026" ao meio) */
 /* um valor de texto (a observação, uma fórmula que dá texto) quebra a linha dentro da coluna, sem invadir a tabela do lado */
-table.tabela-dados td.valor.texto { white-space: normal; overflow-wrap: anywhere; min-width: 8rem; }
+table.tabela-dados td.valor.texto { white-space: normal; overflow-wrap: break-word; min-width: 8rem; }
 .dados-grade > div { min-width: 0; }
 table.tabela-dados td.versao { color: var(--cinza); font-size: .8rem; }
 table.tabela-dados td small { display: block; color: var(--cinza); font-size: .76rem; }
@@ -1445,7 +1446,7 @@ td.acoes-linha { width: 1%; }
 td.ident { white-space: nowrap; }
 /* o Vale para do campo de winder ou de posição traz o jeito de usar nas fórmulas (WINDER_POSICAO("pos_tpd")), sem espaço:
    no celular ele quebra onde precisar */
-td.vale-para { overflow-wrap: anywhere; }
+td.vale-para { overflow-wrap: break-word; }
 
 /* ---------- formulários em grade (Novo campo, Novo tipo...): cada campo com o título em cima, todos da mesma largura e
    alinhados pelo alto; o texto longo e os botões na linha inteira ---------- */
@@ -1548,8 +1549,8 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 #tabela-relogios.em-cartoes .nome-rel img, #tabela-relogios.em-cartoes .nome-rel .sem-mini { width: 36px; height: 36px; border-radius: 7px; }
 #tabela-relogios.em-cartoes > tfoot > tr { display: block; }
 #tabela-relogios.em-cartoes > tfoot > tr > td { display: flex; justify-content: space-between; gap: .6rem; padding: .55rem .8rem; }
-/* os totais em cartões: as colunas com total lado a lado, na grade dos cartões, com o nome da coluna em cima */
-#tabela-relogios.em-cartoes > tfoot > tr.totais-rodape:not([hidden]) { display: grid; grid-template-columns: repeat(var(--colunas), minmax(0, 1fr)); gap: .6rem .8rem; padding: .7rem .8rem; background: #eef1f4; border-top: 2px solid var(--tinta); }
+/* os totais em cartões: as colunas com total lado a lado, com o nome da coluna em cima; cada uma com pelo menos 8,5rem (o "R$ 25.700,50" tem que caber, não importa quantas colunas os cartões usem) */
+#tabela-relogios.em-cartoes > tfoot > tr.totais-rodape:not([hidden]) { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr)); gap: .6rem .8rem; padding: .7rem .8rem; background: #eef1f4; border-top: 2px solid var(--tinta); }
 #tabela-relogios.em-cartoes > tfoot > tr.totais-rodape > td { display: block; padding: 0; border: 0; min-width: 0; text-align: left; }
 #tabela-relogios.em-cartoes > tfoot > tr.totais-rodape > td:empty { display: none; }
 #tabela-relogios.em-cartoes > tfoot > tr.totais-rodape > td[data-rotulo]::before { content: attr(data-rotulo); display: block; margin-bottom: .1rem; font-size: .72rem; color: var(--cinza); }
@@ -1563,9 +1564,10 @@ a.hoje-foto, a.hoje-foto * { text-decoration: none; }
 #tabela-relogios.em-cartoes .mini-total td { display: table-cell; padding: 0 .3rem; border-bottom: 1px solid #eef1f4; }
 #tabela-relogios.em-cartoes .mini-total tbody td { background: #fff; }
 #tabela-relogios.em-cartoes .mini-total tfoot td { border-top: 2px solid var(--tinta); border-bottom: 1px solid var(--aco-escuro); }
-/* o total do rodapé numa célula estreita do cartão (celular): um texto comprido ("2d 9h 33m 15s", o Tempo de uso somado) quebra em vez de alargar a célula */
+/* o total do rodapé numa célula estreita do cartão (celular): um texto comprido ("2d 9h 33m 15s", o Tempo de uso somado) quebra nos
+   espaços em vez de alargar a célula. Nunca "anywhere" aqui: ele zera a largura mínima da coluna e o "R$ 11.757,85" quebrava letra por letra */
 #tabela-relogios.em-cartoes .mini-total caption { width: 0; min-width: 100%; }
-#tabela-relogios.em-cartoes .mini-total td.num { white-space: normal; overflow-wrap: anywhere; height: auto; line-height: 1.25; padding-top: .1rem; padding-bottom: .1rem; }
+#tabela-relogios.em-cartoes .mini-total td.num { white-space: normal; overflow-wrap: break-word; height: auto; line-height: 1.25; padding-top: .1rem; padding-bottom: .1rem; }
 #tabela-relogios.em-cartoes tbody td.col-nome::before { content: none; }
 /* no celular, duas colunas: cada par de campos lado a lado */
 @container (max-width: 559px) {
@@ -1856,7 +1858,8 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 #form-relatorio .periodo input[type=date] { padding-left: .45rem; padding-right: .35rem; }
 .form-relatorio .linha-parametros .botoes { margin: 0; }
 table.relatorio th.num, table.relatorio td.num { text-align: right; }
-table.relatorio td { white-space: normal; overflow-wrap: anywhere; }
+table.relatorio td { white-space: normal; overflow-wrap: break-word; }
+@media (max-width: 700px) { table.relatorio td { overflow-wrap: anywhere; } }
 /* a coluna de registro (o que o cron fez, gravado como saiu): pré-formatado, mas quebrando a linha, como na página das execuções */
 table.relatorio td pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
 table.relatorio tfoot td { font-weight: 600; border-top: 1px solid var(--aco-escuro); border-bottom: 0; }
@@ -2013,7 +2016,7 @@ table.onde-muda td:last-child, table.compacta.onde-muda td:last-child { text-ali
   table.tabela-campos th:nth-child(1) { width: 27%; } table.tabela-campos th:nth-child(2) { width: 17%; } table.tabela-campos th:nth-child(3) { width: 21%; }
   table.tabela-campos th:nth-child(4) { width: 12%; } table.tabela-campos th:nth-child(5) { width: 7%; } table.tabela-campos th:nth-child(6) { width: 16%; }
   table.tabela-formulas th:nth-child(1) { width: 30%; } table.tabela-formulas th:nth-child(2) { width: 54%; } table.tabela-formulas th:nth-child(3) { width: 16%; }
-  table.tabela-campos td, table.tabela-formulas td { overflow-wrap: anywhere; }
+  table.tabela-campos td, table.tabela-formulas td { overflow-wrap: break-word; }
   /* na largura fixa, os botões da linha e o identificador comprido quebram em vez de vazar */
   table.tabela-campos td.acoes-linha, table.tabela-formulas td.acoes-linha, table.tabela-campos td.ident { white-space: normal; }
 }
@@ -2084,3 +2087,9 @@ button.ajuda-linha:hover { text-decoration: underline; }
 @media print { button.ajuda-linha { display: none; } }
 /* o botão Explicações posto sozinho dentro do título da página: pequeno, ao lado do nome */
 h1 > .ajuda-botao { font-size: .9rem; font-weight: 400; vertical-align: middle; margin-left: .8rem; letter-spacing: 0; }
+
+/* o valor de uma célula (data, número, dinheiro, "(63120384 s)") nunca parte no meio, nem no celular nem no quadro estreito: as regras de
+   tabela estreita acima usam overflow-wrap: anywhere, que zera a largura mínima da coluna e partia "10/12/2024" em duas linhas */
+table.tabela-dados td.valor, table.tabela-dados td.valor small, table.tabela-dados td.versao,
+table.relogios.lista-historico td { overflow-wrap: break-word; }
+@container quadro (max-width: 26rem) { table.tabela-dados.compacta td { overflow-wrap: break-word; } }

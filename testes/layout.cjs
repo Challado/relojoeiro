@@ -1,7 +1,9 @@
 // Conferência do layout: todas as telas, em 15 tamanhos (computador de 1100 a 1920px, tablet de pé e deitado, celular de 320 a
 // 412px), procurando o que quebra: a página que rola de lado, o elemento que sai da caixa (o quadro, o cartão) em que está, a
 // etiqueta (com fundo ou borda) partida em duas linhas, o texto cortado, o botão com o texto partido ("Abrir" numa linha, "foto"
-// na outra), irmãos sobrepostos e espaço vazio aproveitável entre os cartões da Configuração. Abre os <details> e passa
+// na outra), irmãos sobrepostos, palavra ou número partido no meio ("R$ 11.757,85" letra por letra: o overflow-wrap: anywhere deixa a
+// coluna encolher abaixo do valor; só de 700px para cima, mais o rodapé de totais e o alto da Hoje em qualquer tamanho) e espaço vazio
+// aproveitável entre os cartões da Configuração. Abre os <details> e passa
 // por cada opção dos menus que mostram partes (o quadro Marcar).
 // Antes, deixa os dados do cenário "feios" de propósito (nomes longos, observação comprida, fotos: veja estressar); ESTRESSE=0
 // confere com os dados como estão.
@@ -159,6 +161,34 @@ function examinar(seletorRaiz) {
       }
       if (tops.length > 1) {
         probs.push({ tipo: 'texto-partido', det: tops.length + ' linhas', quem: nomear(e) });
+      }
+    }
+    // 4c. palavra ou número partido no meio, em duas linhas: "R$ 11.757,85" caindo letra por letra numa coluna que encolheu, "Esc/ala".
+    // Quem faz isso é o que quebra em qualquer ponto (overflow-wrap: anywhere, word-break: break-all): ele pega a palavra que caberia
+    // inteira na linha de baixo e zera a largura mínima das colunas. (O break-word só parte o que não cabe de jeito nenhum.) Só
+    // palavras (letras) e números/datas/dinheiro: identificadores, fórmulas e endereços compridos partem de propósito
+    // (no celular estreito, abaixo de 700px, as tabelas apertam de propósito e uma data pode partir: ali só o rodapé de totais e o
+    // cabeçalho da Hoje contam; de 700px para cima, qualquer lugar)
+    if ((cs.overflowWrap === 'anywhere' || cs.wordBreak === 'break-all') && !e.closest('pre, code') && (vw >= 700 || e.closest('.mini-total, .hoje'))) {
+      for (const no of e.childNodes) {
+        if (no.nodeType !== 3 || !no.textContent.trim() || no.textContent.length > 400) continue;
+        const palavras = /\S{3,24}/g;
+        let m;
+        while ((m = palavras.exec(no.textContent))) {
+          const w = m[0].replace(/^[(\["'«]+|[)\]"'»;:!?]+$/g, '');
+          if (!(/^\p{L}+[.,]?$/u.test(w) || /^[\d.,:\/%$+-]+$/.test(w))) continue;
+          const rg = document.createRange();
+          rg.setStart(no, m.index); rg.setEnd(no, m.index + m[0].length);
+          const tops = [];
+          for (const q of rg.getClientRects()) {
+            if (q.width < 1) continue;
+            if (!tops.some((t) => Math.abs(t - q.top) < 4)) tops.push(q.top);
+          }
+          if (tops.length > 1) {
+            probs.push({ tipo: 'palavra-partida', det: '«' + m[0] + '» em ' + tops.length + ' linhas', quem: nomear(e) });
+            break;
+          }
+        }
       }
     }
   }
