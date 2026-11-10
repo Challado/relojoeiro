@@ -122,9 +122,10 @@
  *                            arquivo sumiu da pasta, ele é recriado antes a partir da cópia no banco.
  *                            Ex.: curl -u lucas:senha -o nota.pdf "http://servidor/relojoeiro/api.php?recurso=documento&id=7"
  *   recurso=criterios        {"conjuntos": [{"escopo" ("" todos, "g:<ponto>", "r:<relógio>"), "lugar", "usado_por": [ids],
- *                            "parametros": [{"id", "ordem", "escopo_no_id", "escopo_relogio_id", "nome", "peso", "subparametros":
- *                            [{"id", "ordem", "nome", "variavel", "peso", "peso_efetivo_no_conjunto", "faixas": [{"id", "de", "ate",
- *                            "categoria", "nota"}]}]}]}], "variaveis": {o que um subparâmetro pode medir: campos e fórmulas},
+ *                            "parametros": [{"id", "ordem", "escopo_no_id", "escopo_relogio_id", "nome", "peso", "ao_excluir",
+ *                            "subparametros": [{"id", "ordem", "nome", "variavel", "peso", "peso_efetivo_no_conjunto", "ao_excluir",
+ *                            "faixas": [{"id", "de", "ate", "categoria", "nota"}]}]}]}] (ao_excluir: [{"id", "nome", "peso",
+ *                            "peso_novo"}], como ficam os pesos dos outros se ele sair: a prévia da exclusão), "variaveis": {o que um subparâmetro pode medir: campos e fórmulas},
  *                            "notas": [{"relogio_id", "relogio", "disponivel", "nota", "conjunto", "conjunto_texto", "conta": [{"parametro",
  *                            "subparametro", "variavel", "valor", "faixa", "nota", "peso_efetivo", "pontos"}]}], "max_sem_uso"}
  *                            o relógio usa o conjunto mais perto dele, inteiro; sem conjunto nenhum, nota 50
@@ -316,7 +317,9 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=arvore"
  *   recurso=cadastros        tudo o que a página Cadastros mostra: {"campos", "lancamento_tipos" (com "lancamentos": quantos cada um
  *                            tem), "formulas", "avisos" (todas as versões, como no banco), "modos" (com "blocos"), "modo_ativo",
- *                            "max_sem_uso", "grupos", "relogios", "funcoes" (as do motor), "tipos_de_campo", "formatos_de_lancamento"}
+ *                            "max_sem_uso", "grupos", "relogios", "funcoes" (as do motor), "tipos_de_campo", "formatos_de_lancamento",
+ *                            "semanas_a_frente" ([{"numero", "inicio", "fim"}]: as 8 semanas que um modo pode planejar),
+ *                            "semanas_da_que_vem", "dias_do_teste" ([{"data", "dia_semana", "hoje"}]: os 14 dias do teste do roteiro)}
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=cadastros"
  *   recurso=usuarios         o master: o painel das contas: {"usuarios": [{"id", "login", "email", "papel" (master ou comum), "idioma",
  *                            "criado", "ultimo_acesso", "expira_em", "demo", "dias_restantes", "bloqueado", "colecoes": [{"id", "nome",
@@ -1200,6 +1203,18 @@
  *     criterios.conjuntos[].lugar    o lugar por extenso
  *     criterios.conjuntos[].parametros[]
  *                                    os parâmetros do conjunto, em ordem
+ *     criterios.conjuntos[].parametros[].ao_excluir[]
+ *                                    a prévia da exclusão deste parâmetro: os outros, com o peso de agora e o que passam a ter (dividem os
+ *                                    100% na proporção de cada um, e o arredondamento que sobra vai para o maior); vazia se ele é o único.
+ *                                    É a mesma conta que a exclusão grava
+ *     criterios.conjuntos[].parametros[].ao_excluir[].id
+ *                                    o número de quem fica
+ *     criterios.conjuntos[].parametros[].ao_excluir[].nome
+ *                                    o nome de quem fica
+ *     criterios.conjuntos[].parametros[].ao_excluir[].peso
+ *                                    o peso de agora, em %
+ *     criterios.conjuntos[].parametros[].ao_excluir[].peso_novo
+ *                                    o peso depois da exclusão, em %
  *     criterios.conjuntos[].parametros[].escopo_no_id
  *                                    o grupo do conjunto; null se não é de grupo
  *     criterios.conjuntos[].parametros[].escopo_relogio_id
@@ -1214,6 +1229,18 @@
  *                                    o peso no conjunto, em % (os do conjunto somam 100)
  *     criterios.conjuntos[].parametros[].subparametros[]
  *                                    os subparâmetros, em ordem
+ *     criterios.conjuntos[].parametros[].subparametros[].ao_excluir[]
+ *                                    a prévia da exclusão deste subparâmetro: os outros, com o peso de agora e o que passam a ter (dividem
+ *                                    os 100% na proporção de cada um, e o arredondamento que sobra vai para o maior); vazia se ele é o
+ *                                    único. É a mesma conta que a exclusão grava
+ *     criterios.conjuntos[].parametros[].subparametros[].ao_excluir[].id
+ *                                    o número de quem fica
+ *     criterios.conjuntos[].parametros[].subparametros[].ao_excluir[].nome
+ *                                    o nome de quem fica
+ *     criterios.conjuntos[].parametros[].subparametros[].ao_excluir[].peso
+ *                                    o peso de agora, em %
+ *     criterios.conjuntos[].parametros[].subparametros[].ao_excluir[].peso_novo
+ *                                    o peso depois da exclusão, em %
  *     criterios.conjuntos[].parametros[].subparametros[].faixas[]
  *                                    as faixas: o valor medido vira uma nota de 0 a 100
  *     criterios.conjuntos[].parametros[].subparametros[].faixas[].ate
@@ -4474,6 +4501,18 @@
  *     semana_ultimo_dia              no último dia da semana, o que os modos por semana montam (a Configuração, semana_ultimo_dia):
  *                                    dia_seguinte (só o dia seguinte) ou semana_seguinte (a semana seguinte inteira: a lista das semanas
  *                                    começa nela)
+ *     semanas_a_frente[]             as 8 semanas à frente que um modo pode planejar, a partir de hoje (da que vem, com
+ *                                    semanas_da_que_vem): a página Modos mostra as primeiras, sem fazer a conta
+ *     semanas_a_frente[].numero      o número da semana no ano (o da semana ISO da segunda-feira dela)
+ *     semanas_a_frente[].inicio      o primeiro dia da semana (AAAA-MM-DD), pela semana_inicio
+ *     semanas_a_frente[].fim         o último dia da semana (AAAA-MM-DD)
+ *     semanas_da_que_vem             true no último dia da semana com a Configuração semana_ultimo_dia = semana_seguinte: a primeira da
+ *                                    lista é a semana que vem, não esta
+ *     dias_do_teste[]                hoje e os 13 dias seguintes: os dias em que o teste do roteiro de um modo personalizado pode rodar
+ *                                    (recurso=roteiro, dia)
+ *     dias_do_teste[].data           o dia (AAAA-MM-DD)
+ *     dias_do_teste[].dia_semana     o dia da semana: 1 (segunda) a 7 (domingo)
+ *     dias_do_teste[].hoje           true no dia de hoje
  *     relogios[]                     os relógios
  *     relogios[].id                  o número
  *     relogios[].nome                o nome
@@ -4525,6 +4564,18 @@
  *     conjuntos[].escopo             o lugar: "" (todos os relógios), g:<grupo> ou r:<relógio>
  *     conjuntos[].lugar              o lugar por extenso
  *     conjuntos[].parametros[]       os parâmetros do conjunto, em ordem
+ *     conjuntos[].parametros[].ao_excluir[]
+ *                                    a prévia da exclusão deste parâmetro: os outros, com o peso de agora e o que passam a ter (dividem os
+ *                                    100% na proporção de cada um, e o arredondamento que sobra vai para o maior); vazia se ele é o único.
+ *                                    É a mesma conta que a exclusão grava
+ *     conjuntos[].parametros[].ao_excluir[].id
+ *                                    o número de quem fica
+ *     conjuntos[].parametros[].ao_excluir[].nome
+ *                                    o nome de quem fica
+ *     conjuntos[].parametros[].ao_excluir[].peso
+ *                                    o peso de agora, em %
+ *     conjuntos[].parametros[].ao_excluir[].peso_novo
+ *                                    o peso depois da exclusão, em %
  *     conjuntos[].parametros[].escopo_no_id
  *                                    o grupo do conjunto; null se não é de grupo
  *     conjuntos[].parametros[].escopo_relogio_id
@@ -4535,6 +4586,18 @@
  *     conjuntos[].parametros[].peso  o peso no conjunto, em % (os do conjunto somam 100)
  *     conjuntos[].parametros[].subparametros[]
  *                                    os subparâmetros, em ordem
+ *     conjuntos[].parametros[].subparametros[].ao_excluir[]
+ *                                    a prévia da exclusão deste subparâmetro: os outros, com o peso de agora e o que passam a ter (dividem
+ *                                    os 100% na proporção de cada um, e o arredondamento que sobra vai para o maior); vazia se ele é o
+ *                                    único. É a mesma conta que a exclusão grava
+ *     conjuntos[].parametros[].subparametros[].ao_excluir[].id
+ *                                    o número de quem fica
+ *     conjuntos[].parametros[].subparametros[].ao_excluir[].nome
+ *                                    o nome de quem fica
+ *     conjuntos[].parametros[].subparametros[].ao_excluir[].peso
+ *                                    o peso de agora, em %
+ *     conjuntos[].parametros[].subparametros[].ao_excluir[].peso_novo
+ *                                    o peso depois da exclusão, em %
  *     conjuntos[].parametros[].subparametros[].faixas[]
  *                                    as faixas: o valor medido vira uma nota de 0 a 100
  *     conjuntos[].parametros[].subparametros[].faixas[].ate

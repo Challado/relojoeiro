@@ -617,11 +617,33 @@ if (count($param_smart) >= 2 && count($subs) >= 2) {
             foreach ($pm["subparametros"] as $sb) {
                 if ($sb["nome"] === "Dias de carga") {
                     $sub_novo = (int)$sb["id"];
+                    // a prévia da exclusão (ao_excluir): os pesos que a API diz que os outros vão ter
+                    $previa_sub = $sb["ao_excluir"] ?? null;
                 }
             }
         }
     }
     escrever(["recurso" => "criterios", "acao" => "sub_excluir", "id" => $sub_novo]);
+    // o contrato da prévia: o que a exclusão gravou é exatamente o que o ao_excluir prometia (a tela mostra a prévia na
+    // pergunta, sem refazer a conta)
+    $previa_sub = $previa_sub ?? null;
+    if (!is_array($previa_sub) || count($previa_sub) === 0) {
+        $falhas[] = "criterios: o subparâmetro novo veio sem a prévia da exclusão (ao_excluir)";
+    } else {
+        $gravados = [];
+        foreach (ler("criterios (sub excluído)", ["recurso" => "criterios"])["conjuntos"] ?? [] as $cj) {
+            foreach ($cj["parametros"] as $pm) {
+                foreach ($pm["subparametros"] as $sb) {
+                    $gravados[(int)$sb["id"]] = (float)$sb["peso"];
+                }
+            }
+        }
+        foreach ($previa_sub as $x) {
+            if (!isset($gravados[(int)$x["id"]]) || abs($gravados[(int)$x["id"]] - (float)$x["peso_novo"]) > 0.001) {
+                $falhas[] = "criterios: a prévia da exclusão dizia " . $x["nome"] . " = " . $x["peso_novo"] . " e a exclusão gravou " . json_encode($gravados[(int)$x["id"]] ?? null);
+            }
+        }
+    }
     escrever(["recurso" => "criterios", "acao" => "param_pesos", "escopo" => "g:" . G(1), "peso" => [$param_smart[0] => 90]], false);
 }
 escrever(["recurso" => "criterios", "acao" => "conjunto_excluir", "escopo" => "r:" . $rel["crono"]]);

@@ -367,12 +367,15 @@ function montar_criterios()
     }
     $lista = [];
     foreach (criterios_config() as $chave => $ps) {
-        $lista[] = ["escopo" => (string)$chave, "lugar" => escopo_texto((string)$chave), "usado_por" => $conjuntos[(string)$chave] ?? [], "parametros" => array_map(function ($p) {
+        // ao_excluir: como ficam os pesos dos outros se este sair (a tela mostra na pergunta da exclusão, sem refazer a conta)
+        $lista[] = ["escopo" => (string)$chave, "lugar" => escopo_texto((string)$chave), "usado_por" => $conjuntos[(string)$chave] ?? [], "parametros" => array_map(function ($p) use ($ps) {
             return ["id" => (int)$p["id"], "ordem" => (int)$p["ordem"], "escopo_no_id" => $p["escopo_no_id"] === null ? null : (int)$p["escopo_no_id"],
                 "escopo_relogio_id" => $p["escopo_relogio_id"] === null ? null : (int)$p["escopo_relogio_id"], "nome" => $p["nome"], "peso" => (float)$p["peso"],
+                "ao_excluir" => criterios_ao_excluir($ps, $p["id"]),
                 "subparametros" => array_map(function ($sb) use ($p) {
                     return ["id" => (int)$sb["id"], "ordem" => (int)$sb["ordem"], "nome" => $sb["nome"], "variavel" => $sb["variavel"], "peso" => (float)$sb["peso"],
                         "peso_efetivo_no_conjunto" => round((float)$sb["peso"] * (float)$p["peso"] / 100, 2),
+                        "ao_excluir" => criterios_ao_excluir($p["subs"], $sb["id"]),
                         "faixas" => array_map(function ($f) {
                             return ["id" => (int)$f["id"], "de" => $f["de"] === null ? null : (float)$f["de"], "ate" => $f["ate"] === null ? null : (float)$f["ate"],
                                 "categoria" => $f["categoria"], "nota" => (float)$f["nota"]];

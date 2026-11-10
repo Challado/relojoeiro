@@ -3876,15 +3876,8 @@ function op_criterios($acao, $d)
     // devolve a conta ("nome 25% → 20%") para a mensagem
     $regrava = function ($tabela, $antes, $alvo) {
         $conta = [];
-        $novos = [];
-        $soma = array_sum($antes);
-        foreach ($antes as $oid => $p) {
-            $novos[$oid] = round($soma > 0 ? $p * $alvo / $soma : $alvo / max(1, count($antes)), 2);
-        }
-        if (count($novos) > 0) {
-            $maior = array_search(max($novos), $novos);
-            $novos[$maior] = round($novos[$maior] + ($alvo - array_sum($novos)), 2);
-        }
+        // a conta é a do núcleo (criterios_pesos_na_proporcao): a mesma da prévia que a leitura devolve (ao_excluir)
+        $novos = criterios_pesos_na_proporcao($antes, $alvo);
         foreach ($novos as $oid => $np) {
             sql("UPDATE " . $tabela . " SET peso = ? WHERE id = ?", [$np, $oid]);
             $conta[] = valor("SELECT nome FROM " . $tabela . " WHERE id = ?", [$oid]) . " " . pct_br($antes[$oid]) . " → " . pct_br($np);

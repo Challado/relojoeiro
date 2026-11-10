@@ -58,39 +58,13 @@ function deOnde(m) {
 function diasEmOrdem() {
   return dados.semana_inicio === "domingo" ? [7, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 7];
 }
-// as semanas à frente: a lista das semanas (número; do primeiro ao último dia, pela semana_inicio), a partir de hoje
+// as semanas à frente: a lista vem pronta da API (semanas_a_frente: o número, o primeiro e o último dia de cada uma, já pela
+// semana_inicio e pela regra do último dia da semana; semanas_da_que_vem: a primeira é a que vem). Aqui só se mostram as n primeiras
 function listaSemanas(n) {
-  var hoje = new Date(instante(dados.hoje));
-  var seg = new Date(hoje.getTime());
-  seg.setDate(seg.getDate() - ((hoje.getDay() || 7) - diasEmOrdem()[0] + 7) % 7);
-  // no último dia da semana, com a Configuração "a semana seguinte inteira", as semanas contam da semana que vem
-  var proxima = dados.semana_ultimo_dia === "semana_seguinte" && (hoje.getDay() || 7) === diasEmOrdem()[6];
-  if (proxima) {
-    seg.setDate(seg.getDate() + 7);
-  }
-  var linhas = [];
-  for (var i = 0; i < n; i++) {
-    var ini = new Date(seg.getTime());
-    ini.setDate(ini.getDate() + i * 7);
-    var fim = new Date(ini.getTime());
-    fim.setDate(fim.getDate() + 6);
-    // o número é o da semana ISO da segunda-feira dela (na semana que começa no domingo, a segunda é o dia seguinte)
-    var segunda = new Date(ini.getTime());
-    segunda.setDate(segunda.getDate() + (ini.getDay() === 0 ? 1 : 0));
-    linhas.push(el("li", {}, t("Semana {1}: {2} a {3}", {1: numeroDaSemana(segunda), 2: dataBr(isoData(ini), true), 3: dataBr(isoData(fim), true)}) + (i === 0 ? " " + el("small", {}, proxima ? t("(a que vem)") : t("(esta)")) : "")));
-  }
+  var linhas = dados.semanas_a_frente.slice(0, n).map(function (s, i) {
+    return el("li", {}, t("Semana {1}: {2} a {3}", {1: s.numero, 2: dataBr(s.inicio, true), 3: dataBr(s.fim, true)}) + (i === 0 ? " " + el("small", {}, dados.semanas_da_que_vem ? t("(a que vem)") : t("(esta)")) : ""));
+  });
   return el("ul", {"class": "semanas-lista"}, linhas.join(""));
-}
-function isoData(d) {
-  return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
-}
-// o número da semana do ano (ISO), para a lista
-function numeroDaSemana(d) {
-  var x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  var dia = x.getUTCDay() || 7;
-  x.setUTCDate(x.getUTCDate() + 4 - dia);
-  var ano = new Date(Date.UTC(x.getUTCFullYear(), 0, 1));
-  return Math.ceil(((x - ano) / 86400000 + 1) / 7);
 }
 
 // o ⓘ do "Escolher de": de onde sai o relógio de cada dia (por dia da semana, também o dia livre)
@@ -145,13 +119,10 @@ function formModo(e, f) {
         return el("tr", {"class": dia >= 6 ? "fds" : ""}, el("td", {}, DIAS_LONGOS[dia]) + el("td", {}, el("select", {"name": "de[" + dia + "]", "aria-label": DIAS_LONGOS[dia]}, opcoesDe(e ? (b === null ? "livre" : valorDe(b)) : "0", true))));
       }).join(""))));
   } else if (tipo === "personalizado") {
-    var hoje = new Date(instante(dados.hoje));
-    var diasTeste = [];
-    for (var i = 0; i < 14; i++) {
-      var d = new Date(hoje.getTime());
-      d.setDate(d.getDate() + i);
-      diasTeste.push(el("option", {"value": isoData(d)}, (i === 0 ? t("hoje, ") : "") + DIAS_LONGOS[d.getDay() || 7].toLowerCase() + " " + dataBr(isoData(d), true)));
-    }
+    // os dias do teste vêm da API (dias_do_teste: a data e o dia da semana de hoje e dos 13 seguintes)
+    var diasTeste = dados.dias_do_teste.map(function (d) {
+      return el("option", {"value": d.data}, (d.hoje ? t("hoje, ") : "") + DIAS_LONGOS[d.dia_semana].toLowerCase() + " " + dataBr(d.data, true));
+    });
     corpo += el("label", {"class": "roteiro-campo"}, t("O roteiro {1}", {1: el("textarea", {"name": "roteiro", "rows": "10", "spellcheck": "false", "required": true}, h(f.roteiro || f.roteiro_efetivo || ""))}))
       + ajudaNota("roteiro-linhas", t("As linhas do roteiro"), t("Uma linha por nome (\"nome = expressão\"); linhas que começam com # são comentários. Os nomes que o motor lê: {1} (1 entra na escolha do dia), {2} (a nota), {3} (a chance no sorteio: todos 0, a maior nota ganha; todos iguais, aleatório), {4} (quantos dias seguidos fica) e {5} (1 passa na frente de todos, o mais parado primeiro). Os outros nomes são seus. O que faltar usa o padrão: {6}.", {1: el("code", {}, "candidato"), 2: el("code", {}, "nota"), 3: el("code", {}, "peso"), 4: el("code", {}, "dias"), 5: el("code", {}, "garantia"),
         6: Object.keys(dados.roteiro_padrao).map(function (k) { return el("code", {}, k + " = " + h(dados.roteiro_padrao[k])); }).join(", ")}))

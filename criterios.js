@@ -18,26 +18,10 @@ function pct(v) {
   return num(v, 2) + "%";
 }
 
-// a conta da exclusão, para a confirmação: como o peso de quem sai se divide entre os que ficam
-function contaExclusao(lista, id) {
-  var outros = {};
-  lista.forEach(function (x) {
-    if (x.id !== id) {
-      outros[x.id] = x.peso;
-    }
-  });
-  // os 100% divididos entre os que ficam, na proporção de cada um (o arredondamento que sobra vai para o maior), como no back-end
-  var novos = {};
-  var ids = Object.keys(outros);
-  var soma = ids.reduce(function (s, k) { return s + outros[k]; }, 0);
-  ids.forEach(function (k) {
-    novos[k] = Math.round((soma > 0 ? outros[k] * 100 / soma : 100 / Math.max(1, ids.length)) * 100) / 100;
-  });
-  if (ids.length > 0) {
-    var maior = ids.reduce(function (a, b) { return novos[b] > novos[a] ? b : a; });
-    novos[maior] = Math.round((novos[maior] + (100 - ids.reduce(function (s, k) { return s + novos[k]; }, 0))) * 100) / 100;
-  }
-  return lista.filter(function (x) { return x.id !== id; }).map(function (x) { return x.nome + ": " + pct(x.peso) + " → " + pct(novos[x.id]); });
+// a conta da exclusão, para a confirmação (como o peso de quem sai se divide entre os que ficam), vem pronta da API (ao_excluir de cada parâmetro e subparâmetro: os pesos dos que ficam, antes e depois);
+// aqui só vira texto para a pergunta
+function contaExclusao(aoExcluir) {
+  return (aoExcluir || []).map(function (x) { return x.nome + ": " + pct(x.peso) + " → " + pct(x.peso_novo); });
 }
 
 // "+ faixa": uma linha nova, vazia, igual à última da tabela, com o próximo índice
@@ -150,7 +134,7 @@ function recarregarCriterios() {
             }).join("")) + el("tfoot", {}, el("tr", {}, el("td", {}, t("Soma")) + el("td", {"colspan": "3"}, el("span", {"data-soma-total": true}, pct(soma)) + " " + el("span", {"data-soma-aviso": true, "class": "nota"}, ""))))))
           + el("div", {"class": "botoes"}, el("button", {}, t("Salvar parâmetros"))));
       proprio.forEach(function (p) {
-        var conta = contaExclusao(proprio, p.id);
+        var conta = contaExclusao(p.ao_excluir);
         conj += el("form", {"data-recurso": "criterios", "id": "excluir-p" + p.id, "onsubmit": "return confirm(" + JSON.stringify(t("Excluir o parâmetro {1} ({2}) e os subparâmetros dele?\n\n{3}", {1: p.nome, 2: pct(p.peso), 3: conta.length > 0 ? t("O peso dele é dividido na proporção dos que ficam:\n{1}", {1: conta.join("\n")}) : t("Era o único: o lugar fica sem critérios próprios e volta a herdar os de cima.")})) + ")"},
           el("input", {"type": "hidden", "name": "acao", "value": "param_excluir"}) + el("input", {"type": "hidden", "name": "id", "value": p.id}))
           + el("form", {"data-recurso": "criterios", "id": "ordem-p" + p.id}, el("input", {"type": "hidden", "name": "acao", "value": "ordem"}) + el("input", {"type": "hidden", "name": "tipo", "value": "parametro"})
@@ -189,7 +173,7 @@ function recarregarCriterios() {
             + el("span", {"data-soma-aviso": true, "class": "nota"}, ""))))))
           + el("div", {"class": "botoes"}, el("button", {}, t("Salvar subparâmetros"))));
         p.subparametros.forEach(function (s) {
-          var conta = contaExclusao(p.subparametros, s.id);
+          var conta = contaExclusao(s.ao_excluir);
           sec += el("form", {"data-recurso": "criterios", "id": "excluir-s" + s.id, "onsubmit": "return confirm(" + JSON.stringify(t("Excluir o subparâmetro {1} ({2} de {3})?\n\n{4}", {1: s.nome, 2: pct(s.peso), 3: p.nome, 4: conta.length > 0 ? t("O peso dele é dividido na proporção dos que ficam:\n{1}", {1: conta.join("\n")}) : t("O parâmetro fica sem subparâmetros e sai da conta até ganhar um.")})) + ")"},
             el("input", {"type": "hidden", "name": "acao", "value": "sub_excluir"}) + el("input", {"type": "hidden", "name": "id", "value": s.id}))
             + el("form", {"data-recurso": "criterios", "id": "ordem-s" + s.id}, el("input", {"type": "hidden", "name": "acao", "value": "ordem"}) + el("input", {"type": "hidden", "name": "tipo", "value": "sub"})

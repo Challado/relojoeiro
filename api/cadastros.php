@@ -51,6 +51,13 @@ $saida = ["campos" => array_map(function ($c) {
     "criterios_disponiveis" => criterios_nomes(),
     "modo_ativo" => modo_ativo(), "max_sem_uso" => (int)cfg("max_sem_uso"), "hoje" => hoje_da_colecao()->format("Y-m-d"), "semana_inicio" => semana_comeca() === 7 ? "domingo" : "segunda",
     "semana_ultimo_dia" => cfg("semana_ultimo_dia") === "semana_seguinte" ? "semana_seguinte" : "dia_seguinte",
+    // as semanas à frente (as 8 que um modo pode planejar) e os 14 dias do teste do roteiro: prontos, a tela não faz a conta
+    "semanas_a_frente" => semanas_a_frente(hoje_da_colecao(), 8)["semanas"],
+    "semanas_da_que_vem" => semanas_a_frente(hoje_da_colecao(), 8)["a_que_vem"],
+    "dias_do_teste" => array_map(function ($i) {
+        $d = hoje_da_colecao()->modify("+" . $i . " days");
+        return ["data" => $d->format("Y-m-d"), "dia_semana" => (int)$d->format("N"), "hoje" => $i === 0];
+    }, range(0, 13)),
     "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
     "documento_categorias" => documento_categorias_lista(),

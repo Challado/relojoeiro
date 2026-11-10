@@ -379,6 +379,18 @@ async function auditarTela(b, tela, fp, relatorio, total) {
     }
     await p.evaluate(() => document.querySelectorAll('details').forEach((d) => { d.open = true; }));
     await p.waitForTimeout(100);
+    // a página só é medida com o estilo.css aplicado: sem ele (a folha que chega atrasada, a página que se recarrega) o menu do
+    // celular aparece inteiro e largo, e a medição acusava vazamento numa tela que não existe. Espera até 10 s; se não vier,
+    // é um erro da página, dito com todas as letras
+    const comEstilo = () => p.evaluate(() => [...document.styleSheets].some((f) => {
+      try { return /estilo\.css/.test(f.href || '') && f.cssRules.length > 100; } catch (e) { return false; }
+    })).catch(() => false);
+    let estilo = await comEstilo();
+    for (let k = 0; k < 20 && !estilo; k++) {
+      await p.waitForTimeout(500);
+      estilo = await comEstilo();
+    }
+    if (!estilo) erros.push('a página não aplicou o estilo.css em 10 s');
     let probs = await p.evaluate(examinar, null);
     const menus = await p.$$eval('select[data-mostra]', (ss) => ss.map((s, i) => ({ i, n: s.options.length })));
     for (const m of menus) {

@@ -156,7 +156,38 @@ try {
     fuso_definir("America/New_York", "usuario");
     exigir_rodizio(rodizio_retomado_em() === $referencia, "O fuso do visitante mudou a retomada.");
     fuso_definir(null);
-    echo "Rodízio: níveis, permissões, pausa, marcações, previsão e retomada conferem.\n";
+
+    // as semanas à frente (a lista que a página Modos mostra, pronta da API) e a prévia da exclusão de um critério: as duas
+    // contas saem do núcleo, e a tela não as refaz
+    $terca = new DateTimeImmutable("2026-11-10");
+    $domingo = new DateTimeImmutable("2026-11-15");
+    cfg_set("semana_inicio", "segunda");
+    cfg_set("semana_ultimo_dia", "dia_seguinte");
+    $sf = semanas_a_frente($terca, 8);
+    exigir_rodizio(count($sf["semanas"]) === 8 && $sf["a_que_vem"] === false && $sf["semanas"][0] === ["numero" => 46, "inicio" => "2026-11-09", "fim" => "2026-11-15"]
+        && $sf["semanas"][1] === ["numero" => 47, "inicio" => "2026-11-16", "fim" => "2026-11-22"], "As semanas à frente (segunda) não batem: " . json_encode($sf["semanas"][0]));
+    exigir_rodizio(semanas_a_frente($domingo, 2)["a_que_vem"] === false && semanas_a_frente($domingo, 2)["semanas"][0]["inicio"] === "2026-11-09", "No último dia, sem a semana seguinte, a lista devia começar nesta semana.");
+    cfg_set("semana_ultimo_dia", "semana_seguinte");
+    $sf = semanas_a_frente($domingo, 2);
+    exigir_rodizio($sf["a_que_vem"] === true && $sf["semanas"][0] === ["numero" => 47, "inicio" => "2026-11-16", "fim" => "2026-11-22"], "No último dia, com a semana seguinte, a lista devia começar na que vem.");
+    exigir_rodizio(semanas_a_frente($terca, 1)["a_que_vem"] === false, "Fora do último dia, a lista começa nesta semana.");
+    cfg_set("semana_inicio", "domingo");
+    cfg_set("semana_ultimo_dia", "dia_seguinte");
+    $sf = semanas_a_frente($terca, 1);
+    exigir_rodizio($sf["semanas"][0] === ["numero" => 46, "inicio" => "2026-11-08", "fim" => "2026-11-14"], "A semana que começa no domingo leva o número da segunda-feira dela: " . json_encode($sf["semanas"][0]));
+    cfg_set("semana_inicio", "segunda");
+    // a virada do ano: a semana de 28/12/2026 é a 53, a de 04/01/2027 é a 1
+    $sf = semanas_a_frente(new DateTimeImmutable("2026-12-30"), 2);
+    exigir_rodizio($sf["semanas"][0]["numero"] === 53 && $sf["semanas"][1]["numero"] === 1, "A virada do ano não bate: " . json_encode(array_column($sf["semanas"], "numero")));
+    // a proporção: os pesos dos que ficam somam 100, na proporção de cada um, e o arredondamento vai para o maior
+    $np = criterios_pesos_na_proporcao([1 => 50.0, 2 => 30.0], 100);
+    exigir_rodizio($np === [1 => 62.5, 2 => 37.5], "A proporção de 50 e 30 devia dar 62,5 e 37,5: " . json_encode($np));
+    $np = criterios_pesos_na_proporcao([1 => 33.33, 2 => 33.33, 3 => 33.33], 100);
+    exigir_rodizio(abs(array_sum($np) - 100) < 0.001, "Os pesos redistribuídos não somam 100: " . json_encode($np));
+    $ae = criterios_ao_excluir([["id" => 1, "nome" => "A", "peso" => 50], ["id" => 2, "nome" => "B", "peso" => 30], ["id" => 3, "nome" => "C", "peso" => 20]], 3);
+    exigir_rodizio($ae === [["id" => 1, "nome" => "A", "peso" => 50.0, "peso_novo" => 62.5], ["id" => 2, "nome" => "B", "peso" => 30.0, "peso_novo" => 37.5]], "A prévia da exclusão não bate: " . json_encode($ae));
+    exigir_rodizio(criterios_ao_excluir([["id" => 1, "nome" => "A", "peso" => 100]], 1) === [], "O único da lista não tem prévia.");
+    echo "Rodízio: níveis, permissões, pausa, marcações, previsão, retomada, as semanas à frente e a prévia dos critérios conferem.\n";
 } catch (Throwable $e) {
     fwrite(STDERR, $e->getMessage() . " (" . basename($e->getFile()) . ":" . $e->getLine() . ")\nBase: " . $pasta . "\n");
     exit(1);

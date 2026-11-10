@@ -4907,6 +4907,43 @@ function app_service_worker()
 // relógio usa o conjunto mais perto dele, inteiro. Cada subparâmetro mede uma variável (campo ou fórmula); as faixas
 // transformam o valor numa nota de 0 a 100.
 // ---------------------------------------------------------------------------------------------------------------------
+// Os pesos divididos na proporção de cada um, somando $alvo (o arredondamento que sobra vai para o maior): a conta de quando
+// um parâmetro (ou subparâmetro) entra ou sai e os outros se ajustam. $antes: [id => peso]; devolve [id => peso novo].
+// Uma porta só: a gravação (op_criterios) e a prévia que a leitura devolve (ao_excluir, criterios_ao_excluir) usam esta.
+function criterios_pesos_na_proporcao($antes, $alvo)
+{
+    $novos = [];
+    $soma = array_sum($antes);
+    foreach ($antes as $oid => $p) {
+        $novos[$oid] = round($soma > 0 ? $p * $alvo / $soma : $alvo / max(1, count($antes)), 2);
+    }
+    if (count($novos) > 0) {
+        $maior = array_search(max($novos), $novos);
+        $novos[$maior] = round($novos[$maior] + ($alvo - array_sum($novos)), 2);
+    }
+    return $novos;
+}
+
+// A prévia da exclusão de um item de uma lista de parâmetros (ou de subparâmetros de um parâmetro): como ficam os pesos dos
+// que restam, que dividem os 100% na proporção de cada um. $itens: as linhas (id, nome, peso); devolve, para o item $id,
+// [{id, nome, peso, peso_novo}] dos outros, na ordem da lista (vazia se ele é o único).
+function criterios_ao_excluir($itens, $id)
+{
+    $antes = [];
+    $nomes = [];
+    foreach ($itens as $x) {
+        if ((int)$x["id"] !== (int)$id) {
+            $antes[(int)$x["id"]] = (float)$x["peso"];
+            $nomes[(int)$x["id"]] = $x["nome"];
+        }
+    }
+    $saida = [];
+    foreach (criterios_pesos_na_proporcao($antes, 100) as $oid => $np) {
+        $saida[] = ["id" => (int)$oid, "nome" => $nomes[$oid], "peso" => $antes[$oid], "peso_novo" => (float)$np];
+    }
+    return $saida;
+}
+
 function criterios_config($recarregar = false)
 {
     // guardado por coleção (o cron passa por todas)
@@ -5557,6 +5594,27 @@ function horizonte_do_modo($modo, $hoje)
         }
     }
     return $fim->modify("+" . (($semanas - 1) * 7) . " days");
+}
+
+// As semanas do plano à frente, a partir de hoje ($n: até 8): de cada uma, o número (o da semana ISO da segunda-feira dela; na
+// semana que começa no domingo, a segunda é o dia seguinte), o primeiro e o último dia (pela semana_inicio). No último dia da
+// semana, com a Configuração semana_ultimo_dia = semana_seguinte, as semanas contam da que vem: a mesma regra do
+// horizonte_do_modo. Devolve ["a_que_vem" => bool, "semanas" => [["numero", "inicio", "fim"]]]: a tela dos modos mostra a
+// lista sem refazer a conta.
+function semanas_a_frente($hoje, $n = 8)
+{
+    $ini = semana_inicio($hoje);
+    $a_que_vem = cfg("semana_ultimo_dia") === "semana_seguinte" && semana_fim($hoje)->format("Y-m-d") === $hoje->format("Y-m-d");
+    if ($a_que_vem) {
+        $ini = $ini->modify("+7 days");
+    }
+    $semanas = [];
+    for ($i = 0; $i < max(1, min(8, (int)$n)); $i++) {
+        $de = $ini->modify("+" . ($i * 7) . " days");
+        $segunda = (int)$de->format("N") === 7 ? $de->modify("+1 day") : $de;
+        $semanas[] = ["numero" => (int)$segunda->format("W"), "inicio" => $de->format("Y-m-d"), "fim" => $de->modify("+6 days")->format("Y-m-d")];
+    }
+    return ["a_que_vem" => $a_que_vem, "semanas" => $semanas];
 }
 
 // Os dias que o sorteio não mexe, de $de em diante (até $ate, se vier): os escolhidos à mão e os livres; ["mao" => N,
