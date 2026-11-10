@@ -1,4 +1,4 @@
-<!-- origem: f5705812fd43ef42c79a50cf5fcd8a0e0770ebb7 -->
+<!-- origem: 01fd95aec8314552411d03faea3a6eaec30ce5b5 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -370,7 +370,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 `parametros[<chave>]`）：在那里保存的值优先于 `config.php` 中的那一行，留空则恢复使用那一行。凭据、密钥、文件夹和服务器地址
 仍只在 `config.php` 中。
 
-系统读取它所在文件夹中的 `config.php`。服务器环境变量 `RELOGIOS_CONFIG` 可以指向另一个文件代替它：一致性测试就是这样用的（`testes/paridade.sh`，配合 [`testes/config.teste.php`](testes/config.teste.php)），以便在不碰真正的 `config.php` 的情况下运行。正常安装时不要设置它。
+系统读取它所在文件夹中的 `config.php`。服务器环境变量 `RELOGIOS_CONFIG` 可以指向另一个文件代替它：一致性测试就是这样用的（`testes/paridade.sh`，配合 [`testes/config.teste.php`](testes/config.teste.php)），以便在不碰真正的 `config.php` 的情况下运行。正常安装时不要设置它。系统读取的另一个环境变量是 `RELOGIOS_SEMENTE`，同样只用于测试：有了它，抽签可以重复（同一个种子得到同样的抽签结果），好让一致性测试比较各个数据库。正常安装时不要设置它：抽签将不再随机。
 
 ### 服务器上的推送目标与日历 {#destinos-e-agendas-no-servidor}
 

@@ -157,7 +157,7 @@ function formModo(e, f) {
         6: Object.keys(dados.roteiro_padrao).map(function (k) { return el("code", {}, k + " = " + h(dados.roteiro_padrao[k])); }).join(", ")}))
       + ajudaNota("roteiro-funcoes", t("As funções do roteiro"), t("Além das funções das fórmulas: DIA_SEMANA() (1 segunda a 7 domingo), SEMANA_DO_ANO(), NO_GRUPO(\"grupo\"), RELOGIO(\"nome\"), ESCOLHIDO_HA(n) (1 se foi o do plano há n dias), VEZES_NO_PLANO(n), ESCOLHA(n; a; b; ...) (o n-ésimo valor), SORTEIO() (0 a 1) e a variável nota_criterios. A lista completa está em {1}.", {1: el("a", {"href": "cadastros.php?aba=formulas"}, t("Cadastros › Fórmulas"))}))
       + el("div", {"class": "botoes testar-roteiro"}, el("button", {"type": "button", "class": "leve", "data-testar-roteiro": true}, t("Testar em todos os relógios"))
-        + el("label", {}, t("no dia {1}", {1: el("select", {"name": "dia_teste"}, diasTeste.join(""))})))
+        + el("label", {}, t("no dia {1}", {1: el("select", {"name": "dia_teste", "data-so-tela": true}, diasTeste.join(""))})))
       + el("div", {"id": "roteiro-teste"}, "");
   }
   if (tipo !== "escala") {

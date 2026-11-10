@@ -245,7 +245,8 @@
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=agendas"
  *   recurso=ics chave=...    o calendário de uma agenda ICS (text/calendar), sem login, pela chave secreta do link
  *                            Ex.: curl "http://servidor/relojoeiro/api.php?recurso=ics&chave=Xy3..."
- *   recurso=outlook_retorno  a volta da Microsoft depois de Conectar ao Outlook (code, state): guarda a conexão e vai para Agendas (302)
+ *   recurso=outlook_retorno  a volta da Microsoft depois de Conectar ao Outlook (code, state; ou error e error_description, quando ela
+ *                            não autoriza): guarda a conexão e vai para Agendas (302), com o recado
  *   recurso=autonomia        [relogio=ids] as autonomias de cada relógio, enxuto e rápido, para sistemas de fora: quanto dura cheio pelo
  *                            cadastro (autonomia_prevista) e pela conta do sistema com o gasto medido (autonomia_atual), quanto ainda
  *                            dura a partir de agora seguindo o plano (autonomia_estimada), no pulso sem tirar (restante_em_uso) e

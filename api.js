@@ -887,6 +887,11 @@ document.addEventListener("submit", function (ev) {
     escondidos.forEach(function (c) {
       c.disabled = false;
     });
+    // o campo que só serve à tela (data-so-tela: a escolha que decide o que os outros campos mandam) não vai para a API:
+    // as telas só mandam parâmetro que a ajuda explica
+    form.querySelectorAll("[data-so-tela][name]").forEach(function (c) {
+      dados.delete(c.name);
+    });
     // o campo de data e hora que ninguém mexeu (data-agora): "vazio" vai vazio (a API usa o agora dela, com os segundos);
     // os outros vão com o minuto de agora
     form.querySelectorAll("input[data-agora]").forEach(function (c) {
@@ -1322,9 +1327,9 @@ function explicacaoPedido(aberto) {
 
 function camposCodigoAcesso(obrigatorio, aberto) {
   return el("input", {"type": "hidden", "name": "colecao_id", "value": ""}) + el("input", {"type": "hidden", "name": "dono_id", "value": ""})
-    + parCampo(t("Acesso a"), el("select", {"name": "tipo_codigo"}, el("option", {"value": "c"}, t("uma coleção (o código da coleção)"))
+    + parCampo(t("Acesso a"), el("select", {"name": "tipo_codigo", "data-so-tela": true}, el("option", {"value": "c"}, t("uma coleção (o código da coleção)"))
       + el("option", {"value": "d"}, t("todas as coleções de um dono (o código do dono)"))), "largo")
-    + parCampo(t("Código"), el("input", {"type": "number", "name": "codigo", "min": "1", "step": "1", "inputmode": "numeric", "required": !!obrigatorio}))
+    + parCampo(t("Código"), el("input", {"type": "number", "name": "codigo", "data-so-tela": true, "min": "1", "step": "1", "inputmode": "numeric", "required": !!obrigatorio}))
     + explicacaoPedido(aberto);
 }
 

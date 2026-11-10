@@ -1,4 +1,4 @@
-<!-- origem: f5705812fd43ef42c79a50cf5fcd8a0e0770ebb7 -->
+<!-- origem: 01fd95aec8314552411d03faea3a6eaec30ce5b5 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -444,7 +444,9 @@ back to the line. Credentials, keys, folders and server addresses stay only in `
 
 The system reads the `config.php` in its folder. A server environment variable, `RELOGIOS_CONFIG`, points to another file
 instead: it is what the parity test uses (`testes/paridade.sh`, with [`testes/config.teste.php`](testes/config.teste.php)), to
-run without touching the real `config.php`. On a normal installation, don't set it.
+run without touching the real `config.php`. On a normal installation, don't set it. The other environment variable the system reads is
+`RELOGIOS_SEMENTE`, also only for the tests: with it the draws repeat (the same seed gives the same draws), so that the parity
+test can compare the databases. On a normal installation, don't set it: the draws would stop being random.
 
 ### Destinations and calendars on the server {#destinos-e-agendas-no-servidor}
 

@@ -2347,7 +2347,9 @@ As credenciais, as chaves, as pastas e os endereços dos servidores ficam só no
 
 O sistema lê o `config.php` da pasta dele. Uma variável de ambiente do servidor, `RELOGIOS_CONFIG`, aponta outro arquivo no
 lugar: é o que o teste de paridade usa (`testes/paridade.sh`, com o [`testes/config.teste.php`](testes/config.teste.php)), para
-rodar sem tocar no `config.php` de verdade. Numa instalação normal, não a defina.
+rodar sem tocar no `config.php` de verdade. Numa instalação normal, não a defina. A outra variável de ambiente que o sistema lê
+é a `RELOGIOS_SEMENTE`, também só dos testes: com ela os sorteios se repetem (a mesma semente dá os mesmos sorteios), para o teste
+de paridade comparar os bancos. Numa instalação normal, não a defina: os sorteios deixariam de ser ao acaso.
 
 ### Destinos e agendas no servidor
 

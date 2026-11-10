@@ -259,7 +259,7 @@ $saida = [
         "ics" => ["descricao" => t('o calendário de uma agenda do tipo link ICS (text/calendar, não é JSON), para assinar em qualquer app de agenda: responde sem login, pela chave secreta do link (quem tem o link vê os eventos; Gerar outro link, na página Agendas, desliga o antigo); chave desconhecida: 404'),
             "parametros" => ["chave" => t('a chave do link (vem pronta no link da agenda)')],
             "exemplo" => t('curl "http://servidor/relojoeiro/api.php?recurso=ics&chave=Xy3..."')],
-        "outlook_retorno" => ["descricao" => t('a volta da página da Microsoft depois de Conectar ao Outlook (com code e state): guarda a conexão na agenda e leva para a página Agendas com o recado (302). É o endereço de retorno que se registra no aplicativo da Microsoft (OUTLOOK_CLIENTE_ID); não é para chamar à mão'),
+        "outlook_retorno" => ["descricao" => t('a volta da página da Microsoft depois de Conectar ao Outlook (com code e state; ou com error e error_description, quando a Microsoft não autoriza: o recado traz o motivo): guarda a conexão na agenda e leva para a página Agendas com o recado (302). É o endereço de retorno que se registra no aplicativo da Microsoft (OUTLOOK_CLIENTE_ID); não é para chamar à mão'),
             "parametros" => ["code" => t('o código que a Microsoft manda'), "state" => t('a agenda e a assinatura dela')],
             "exemplo" => t('(a Microsoft chama: http://servidor/relojoeiro/api.php?recurso=outlook_retorno&code=...&state=...)')],
         "foto" => ["descricao" => t('a foto de um relógio (a imagem, não é JSON)'),

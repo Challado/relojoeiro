@@ -2322,7 +2322,9 @@ back to the line. Credentials, keys, folders and server addresses stay only in `
 
 The system reads the `config.php` in its folder. A server environment variable, `RELOGIOS_CONFIG`, points to another file
 instead: it is what the parity test uses (`testes/paridade.sh`, with [`testes/config.teste.php`](testes/config.teste.php)), to
-run without touching the real `config.php`. On a normal installation, don't set it.
+run without touching the real `config.php`. On a normal installation, don't set it. The other environment variable the system reads is
+`RELOGIOS_SEMENTE`, also only for the tests: with it the draws repeat (the same seed gives the same draws), so that the parity
+test can compare the databases. On a normal installation, don't set it: the draws would stop being random.
 
 ### Destinations and calendars on the server
 

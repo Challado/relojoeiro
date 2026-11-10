@@ -50,6 +50,9 @@ const PAGINAS = require('./paginas.cjs');
 
 // roda dentro da página: devolve a lista de problemas
 function examinar(seletorRaiz) {
+  // abre os <details> aqui, no mesmo instante da medição: aberto antes (noutra chamada), a tela que se redesenha no meio do caminho
+  // (o atualizar sozinho) devolve o <details> fechado, e o conteúdo dele, que não aparece mas tem posição, caía "por cima" do que vem depois
+  document.querySelectorAll('details').forEach((d) => { d.open = true; });
   const raiz = (seletorRaiz && document.querySelector(seletorRaiz)) || document.body;
   const probs = [];
   const vw = document.documentElement.clientWidth;
@@ -60,6 +63,8 @@ function examinar(seletorRaiz) {
     const cs = getComputedStyle(e);
     if (cs.visibility === 'hidden' || cs.display === 'none' || parseFloat(cs.opacity) === 0) return false;
     if (e.closest('[hidden], [aria-hidden="true"]')) return false;
+    // dentro de um <details> fechado (ou de qualquer conteúdo que o navegador não desenha: content-visibility) não está à mostra
+    if (typeof e.checkVisibility === 'function' && !e.checkVisibility()) return false;
     // fora da tela de propósito (os só-para-leitores-de-tela)
     if (cs.position === 'absolute' && (r.right < 0 || r.left > vw * 3)) return false;
     if (cs.clip !== 'auto' || cs.clipPath !== 'none') return false;

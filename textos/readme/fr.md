@@ -1,4 +1,4 @@
-<!-- origem: f5705812fd43ef42c79a50cf5fcd8a0e0770ebb7 -->
+<!-- origem: 01fd95aec8314552411d03faea3a6eaec30ce5b5 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -455,7 +455,9 @@ restent seulement dans le `config.php`.
 Le système lit le `config.php` de son dossier. Une variable d'environnement du serveur, `RELOGIOS_CONFIG`, désigne un autre
 fichier à la place : c'est ce qu'utilise le test de parité (`testes/paridade.sh`, avec le
 [`testes/config.teste.php`](testes/config.teste.php)), pour tourner sans toucher au vrai `config.php`. Sur une installation
-normale, ne la définissez pas.
+normale, ne la définissez pas. L'autre variable d'environnement que lit le système est `RELOGIOS_SEMENTE`, elle aussi réservée aux tests : avec
+elle les tirages se répètent (la même graine donne les mêmes tirages), pour que le test de parité compare les bases. Sur une
+installation normale, ne la définissez pas : les tirages cesseraient d'être aléatoires.
 
 ### Destinations et agendas sur le serveur {#destinos-e-agendas-no-servidor}
 

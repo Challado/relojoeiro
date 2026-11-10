@@ -51,7 +51,7 @@ function carregarAprovacoes() {
       + el("form", {"data-recurso": "convites", "class": "campos", "data-dono": CONTA_LOGIN, "onsubmit": "var v = this.alvo.value.split(':'); this.colecao_id.value = v[0] === 'c' ? v[1] : ''; this.dono.value = v[0] === 'd' ? this.getAttribute('data-dono') : ''"},
         el("input", {"type": "hidden", "name": "acao", "value": "convidar"}) + el("input", {"type": "hidden", "name": "colecao_id", "value": ""}) + el("input", {"type": "hidden", "name": "dono", "value": ""})
         + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "required": true, "maxlength": "200"}), "largo")
-        + parCampo(t("Para ver"), el("select", {"name": "alvo", "required": true}, alvos), "largo")
+        + parCampo(t("Para ver"), el("select", {"name": "alvo", "data-so-tela": true, "required": true}, alvos), "largo")
         + el("div", {"class": "botoes"}, el("button", {}, t("Convidar")))));
     if (d.convites_feitos.length > 0) {
       res += el("section", {"class": "cartao-config", "id": "convites-feitos"}, el("h2", {}, t("Convites que você fez"))

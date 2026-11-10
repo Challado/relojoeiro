@@ -2319,7 +2319,9 @@ quedan solo en el `config.php`.
 
 El sistema lee el `config.php` de su carpeta. Una variable de entorno del servidor, `RELOGIOS_CONFIG`, apunta a otro archivo en
 su lugar: es lo que usa la prueba de paridad (`testes/paridade.sh`, con el [`testes/config.teste.php`](testes/config.teste.php)),
-para ejecutarse sin tocar el `config.php` de verdad. En una instalación normal, no la defina.
+para ejecutarse sin tocar el `config.php` de verdad. En una instalación normal, no la defina. La otra variable de entorno que lee el sistema es
+`RELOGIOS_SEMENTE`, también solo de las pruebas: con ella los sorteos se repiten (la misma semilla da los mismos sorteos), para que la
+prueba de paridad compare las bases de datos. En una instalación normal, no la defina: los sorteos dejarían de ser al azar.
 
 ### Destinos y calendarios en el servidor
 

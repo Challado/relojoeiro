@@ -55,7 +55,10 @@ function pedirConta(form) {
     });
     api(p).then(function (r) {
       document.getElementById("conta-programa").innerHTML = tabelaConta(r.calculo);
-    }).catch(function () { /* a conta volta na próxima mudança */ });
+    }).catch(function (e) {
+      // a conta não saiu (a rede, um valor que a API recusou): o motivo aparece no lugar dela, em vez da conta antiga
+      document.getElementById("conta-programa").innerHTML = el("p", {"class": "acao"}, h(e.message));
+    });
   }, 250);
 }
 
@@ -126,9 +129,9 @@ function carregarProgramas() {
           + el("div", {"class": "par-tempo", "data-so-blocos": true}, el("label", {}, t("liga {1} h", {1: el("input", {"name": "liga_horas", "value": dec(ep ? ep.liga_horas : null), "inputmode": "decimal", "class": "curto"})}))
             + el("label", {}, t("e para {1} h", {1: el("input", {"name": "para_horas", "value": dec(ep ? ep.para_horas : null), "inputmode": "decimal", "class": "curto"})}))))
         + el("fieldset", {"class": "escolha"}, el("legend", {}, t("Velocidade do berço") + iVel)
-          + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "origem_velocidade", "value": "contada", "checked": origem === "contada"}) + " " + t("contada"))
-          + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "origem_velocidade", "value": "manual", "checked": origem === "manual"}) + " " + t("pelas voltas por dia do manual"))
-          + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "origem_velocidade", "value": "nenhuma", "checked": origem === "nenhuma"}) + " " + t("ainda não sei"))
+          + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "origem_velocidade", "data-so-tela": true, "value": "contada", "checked": origem === "contada"}) + " " + t("contada"))
+          + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "origem_velocidade", "data-so-tela": true, "value": "manual", "checked": origem === "manual"}) + " " + t("pelas voltas por dia do manual"))
+          + el("label", {"class": "check"}, el("input", {"type": "radio", "name": "origem_velocidade", "data-so-tela": true, "value": "nenhuma", "checked": origem === "nenhuma"}) + " " + t("ainda não sei"))
           + el("label", {"data-so-contada": true}, t("{1} voltas por minuto", {1: el("input", {"name": "velocidade", "value": dec(ep ? ep.velocidade : null), "inputmode": "decimal", "class": "curto"})}))
           + el("label", {"data-so-manual": true}, t("{1} voltas por dia (o manual)", {1: el("input", {"name": "tpd_manual", "value": ep && ep.tpd_manual !== null ? ep.tpd_manual : "", "inputmode": "numeric", "class": "curto"})})))
         + el("div", {"class": "campo-sequencia"}, el("label", {}, t("Sequência {1}", {1: el("input", {"name": "sequencia", "value": ep ? ep.sequencia.join(", ") : "", "placeholder": t("4, 5, 6, 5"), "autocomplete": "off"})}) + iSeq)
