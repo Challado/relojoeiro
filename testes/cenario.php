@@ -1067,6 +1067,15 @@ escrever(["recurso" => "colunas", "acao" => "salvar", "id" => $col["Marcha médi
 escrever(["recurso" => "colunas", "acao" => "descer", "id" => $col["Marcha média"]]);
 escrever(["recurso" => "colunas", "acao" => "subir", "id" => $col["Marcha média"]]);
 ler("colunas cadastradas", ["recurso" => "colunas"]);
+// os totais do rodapé embaixo de qualquer coluna do cadastro (as de sempre e as montadas), só com formato que combine com a coluna
+$tot_col = escrever(["recurso" => "totais", "acao" => "salvar", "id" => 0, "coluna" => "c_custo_por_medicao", "nome" => "Custo somado", "expressao" => "SOMA(fonte_timegrapher_id_conta)", "rodape" => 1, "pagina" => 1, "formato" => "moeda"]);
+escrever(["recurso" => "totais", "acao" => "salvar", "id" => 0, "coluna" => "marca", "nome" => "Marcas contadas", "expressao" => "DISTINTOS(marca)", "rodape" => 1, "pagina" => 1, "formato" => "inteiro"]);
+foreach ([["uso", "moeda"], ["marca", "moeda"], ["valor", "duracao"], ["c_nao_existe", "inteiro"]] as [$col_r, $fmt_r]) {
+    escrever(["recurso" => "totais", "acao" => "salvar", "id" => 0, "coluna" => $col_r, "nome" => "Recusado " . $col_r, "expressao" => "CONTA()", "rodape" => 1, "pagina" => 1, "formato" => $fmt_r], false);
+}
+escrever(["recurso" => "colunas", "acao" => "salvar", "id" => $col["Custo"], "formato" => "inteiro", "simbolo" => ""], false);
+ler("totais com a coluna montada", ["recurso" => "totais"]);
+ler("totais do rodape com a coluna montada", ["recurso" => "totais", "parte" => "rodape"]);
 ler("colunas teste guiado", ["recurso" => "colunas", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "media", "relogio" => $rel["manual"]]);
 ler("colunas teste guiado do campo", ["recurso" => "colunas", "tabela" => "servico", "campo" => "mao_de_obra", "funcao" => "soma", "formato" => "moeda", "casas" => 0, "simbolo" => "€", "relogio" => $rel["auto"]]);
 ler("colunas teste expert", ["recurso" => "colunas", "expressao" => "fonte_timegrapher_id_conta * 2 + 1", "formato" => "inteiro", "relogio" => $rel["manual"]]);
@@ -1093,6 +1102,12 @@ foreach ($col as $id_c) {
     }
 }
 ler("colunas ao fim do cenário", ["recurso" => "colunas"]);
+ler("totais depois de excluir as colunas montadas", ["recurso" => "totais"]);
+foreach (ler("totais para limpar", ["recurso" => "totais"])["totais"] ?? [] as $x_t) {
+    if (in_array($x_t["nome"], ["Custo somado", "Marcas contadas"], true)) {
+        escrever(["recurso" => "totais", "acao" => "excluir", "id" => $x_t["id"], "confirmar" => 1]);
+    }
+}
 
 // o Tirar do sol sozinho (sol_auto_fim): desligado, o "fecha às" do tipo No sol fica vazio (a sessão só fecha pelo Tirar do
 // sol) e a hora continua guardada; ligado de novo, volta a hora

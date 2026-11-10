@@ -766,7 +766,8 @@ ul.teste-email li { margin: .3rem 0; }
 table.compacta.config-email td, table.compacta.config-email td:last-child { text-align: left; vertical-align: top; }
 table.config-email td:first-child { white-space: nowrap; font-weight: 600; }
 .tabela-faixas { margin-top: .5rem; }
-.conta-nota summary { display: flex; align-items: baseline; gap: .6rem; }
+/* o nome do relógio comprido quebra, e a nota passa para a linha de baixo quando não cabe (celular de 320px) */
+.conta-nota summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .6rem; overflow-wrap: anywhere; }
 .conta-nota .nota-final { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tabela-conta td, .tabela-criterios td { vertical-align: middle; }
 /* a seta de cada critério na conta da nota: puxa para cima (verde), para baixo (vermelho) ou é neutro (marrom) */

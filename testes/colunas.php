@@ -14,6 +14,9 @@ putenv("RELOGIOS_TESTE_PASTA=" . $pasta);
 putenv("RELOGIOS_DB=sqlite");
 require dirname(__DIR__) . "/lib.php";
 
+// as 14 colunas de sempre, na ordem em que o modelo.json as cria no cadastro de colunas
+const DE_SEMPRE = ["codigo", "nome", "marca", "tipo", "estado", "carga", "ultimo", "uso", "manut", "em", "fazer", "encostado", "compra", "valor"];
+
 function exigir_colunas($ok, $mensagem)
 {
     if (!$ok) {
@@ -73,8 +76,8 @@ try {
     $lc = $linhas[(int)$c["id"]][1];
     exigir_colunas($lc["uso"] === 0 && $lc["uso_texto"] === "—", "A linha de C (sem uso) devia sair 0 e —.");
     exigir_colunas(tabela_variaveis($la, $linhas[(int)$a["id"]][0], $agora)["tempo_de_uso"] === 12600, "A variável tempo_de_uso.");
-    exigir_colunas(isset($GLOBALS["VARIAVEIS_TABELA"]["tempo_de_uso"]) && isset(TOTAL_COLUNAS["uso"]) && isset(total_colunas_nomes()["uso"]) && isset(TOTAL_FORMATOS["duracao"]), "Faltam o tempo de uso no catálogo dos totais.");
-    exigir_colunas(array_keys(TOTAL_COLUNAS) === colunas_catalogo("hoje"), "O catálogo das colunas da Hoje (as do sistema, que o modelo cria no cadastro) devia ser o das colunas dos totais, na mesma ordem.");
+    exigir_colunas(isset($GLOBALS["VARIAVEIS_TABELA"]["tempo_de_uso"]) && isset(total_colunas_nomes()["uso"]) && isset(TOTAL_FORMATOS["duracao"]), "Faltam o tempo de uso no catálogo dos totais.");
+    exigir_colunas(DE_SEMPRE === colunas_catalogo("hoje"), "O catálogo das colunas da Hoje (as do sistema, que o modelo cria no cadastro) devia ser o das colunas dos totais, na mesma ordem.");
 
     // ---- um total no rodapé, embaixo do Tempo de uso, no formato Tempo
     $t = op_totais("salvar", ["nome" => "Tempo de uso somado", "coluna" => "uso", "expressao" => "SOMA(tempo_de_uso)", "formato" => "duracao", "rodape" => "1", "pagina" => "1"]);
@@ -83,7 +86,7 @@ try {
     exigir_colunas($res["tipo"] === "valor" && $res["texto"] === duracao_uso_txt(12600 + 5400 + 600), "O total SOMA(tempo_de_uso): " . json_encode($res, JSON_UNESCAPED_UNICODE));
 
     // ---- as colunas: sem escolha, todas, na ordem de sempre
-    $todas = array_keys(TOTAL_COLUNAS);
+    $todas = DE_SEMPRE;
     $da = colunas_da_pagina("hoje");
     exigir_colunas(array_column($da, "chave") === $todas && count(array_filter($da, function ($x) { return $x["visivel"]; })) === count($todas), "Sem escolha, todas as colunas à mostra, na ordem de sempre.");
     exigir_colunas(array_column($da, "posicao") === range(1, count($todas)) && $da[array_search("nome", $todas, true)]["fixa"] === true && $da[array_search("uso", $todas, true)]["titulo"] === "Tempo de uso",

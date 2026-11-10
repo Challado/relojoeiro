@@ -364,7 +364,7 @@ CREATE TABLE total (
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
     CONSTRAINT ck_total_textos CHECK (TRIM(nome) <> '' AND TRIM(expressao) <> ''),
     CONSTRAINT ck_total_lugares CHECK (rodape IN (0, 1) AND pagina IN (0, 1) AND (rodape = 0 OR coluna IS NOT NULL)),
-    CONSTRAINT ck_total_coluna CHECK (coluna IS NULL OR coluna IN ('codigo','nome','marca','tipo','estado','carga','ultimo','uso','manut','em','fazer','encostado','compra','valor'))
+    CONSTRAINT ck_total_coluna CHECK (coluna IS NULL OR TRIM(coluna) <> '')
 ) ENGINE=InnoDB;
 
 -- os avisos: uma versão por grupo, como as fórmulas; o tipo de lançamento que resolve o aviso é opcional (saindo o tipo,

@@ -427,6 +427,8 @@
         if (rodape && !rodape.querySelector("td[data-col=" + c.chave + "]")) {
           var tdr = document.createElement("td");
           tdr.setAttribute("data-col", c.chave);
+          // os totais que o cadastro põe embaixo desta coluna (recurso=totais: x.coluna é a chave dela) saem aqui, como nas de sempre
+          tdr.setAttribute("data-coluna", c.chave);
           tdr.setAttribute("data-rotulo", c.titulo);
           rodape.appendChild(tdr);
         }

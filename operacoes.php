@@ -729,8 +729,9 @@ function op_totais($acao, $d)
         $pagina = array_key_exists("pagina", $d) ? ((string)$d["pagina"] === "1" ? 1 : 0) : (int)($atual["pagina"] ?? 1);
         $largura = (string)($d["largura"] ?? ($atual["largura"] ?? "estreito"));
         $formato = (string)($d["formato"] ?? ($atual["formato"] ?? "numero"));
-        if ($coluna !== null && !isset(TOTAL_COLUNAS[$coluna])) {
-            $erros[] = t("Coluna: {1}, ou vazio (nenhuma: só na página de totais).", [1 => implode(", ", array_keys(TOTAL_COLUNAS))]);
+        // a coluna é uma do cadastro de colunas (as de sempre ou as montadas) e o formato do total combina com o que ela mostra
+        if ($coluna !== null && ($erro_col = total_coluna_conferir($coluna, $formato)) !== null) {
+            $erros[] = $erro_col;
         }
         if ($nome === "" || mb_strlen($nome, "UTF-8") > 120) {
             $erros[] = t("Dê um nome ao total (até 120 caracteres).");
@@ -860,10 +861,10 @@ function op_colunas($acao, $d)
         } else {
             if ($ident === "") {
                 $ident = trim(preg_replace("/[^a-z0-9]+/", "_", strtolower(sem_acentos(mb_strtolower($nome, "UTF-8")))), "_");
-                $ident = substr($ident === "" || ctype_digit($ident[0]) ? "x" . $ident : $ident, 0, 38);
+                $ident = substr($ident === "" || ctype_digit($ident[0]) ? "x" . $ident : $ident, 0, TOTAL_COLUNA_TAMANHO - 2);
             }
-            if (!preg_match("/^[a-z][a-z0-9_]{0,37}$/", $ident)) {
-                $erros[] = t("Identificador: letras minúsculas sem acento, números e _, começando por letra (até 38).");
+            if (!preg_match("/^[a-z][a-z0-9_]{0,17}$/", $ident)) {
+                $erros[] = t("Identificador: letras minúsculas sem acento, números e _, começando por letra (até 18).");
             } elseif (valor("SELECT COUNT(*) FROM coluna WHERE identificador = ?", [$ident]) > 0) {
                 $erros[] = t("Já existe uma coluna com o identificador {1}.", [1 => $ident]);
             }
@@ -910,6 +911,18 @@ function op_colunas($acao, $d)
         if ($simbolo !== "" && ($formato !== "moeda" || mb_strlen($simbolo, "UTF-8") > 8)) {
             $erros[] = $formato !== "moeda" ? t("O símbolo só vale no formato moeda.") : t("Símbolo da moeda: até 8 caracteres.");
         }
+        // os totais que já estão embaixo desta coluna têm de continuar combinando com o formato dela
+        if ($atual && count($erros) === 0 && $formato !== (string)$atual["formato"]) {
+            $nao_combinam = [];
+            foreach (linhas("SELECT nome, formato FROM total WHERE coluna = ?", [COLUNA_PREFIXO . $atual["identificador"]]) as $tt) {
+                if (!in_array($tt["formato"], total_formatos_do_formato($formato), true)) {
+                    $nao_combinam[] = $tt["nome"];
+                }
+            }
+            if (count($nao_combinam) > 0) {
+                $erros[] = t("O formato {1} não combina com os totais que estão embaixo desta coluna ({2}): mude o formato deles ou tire-os da coluna antes.", [1 => coluna_formatos()[$formato] ?? $formato, 2 => implode(", ", $nao_combinam)]);
+            }
+        }
         if (count($erros) === 0) {
             $simbolo = $simbolo === "" ? null : $simbolo;
             if ($atual) {
@@ -928,9 +941,13 @@ function op_colunas($acao, $d)
     } elseif ($acao === "excluir" && (int)$atual["sistema"] === 1) {
         $erros[] = t("A coluna {1} é do sistema e não se exclui: tire a marca de aparecer sem ninguém escolher para ela sair da tabela de início.", [1 => t($atual["nome"])]);
     } elseif ($acao === "excluir") {
+        // os totais que estavam embaixo dela ficam só na página de totais (um total não fica preso a uma coluna que não existe mais)
+        $chave_c = COLUNA_PREFIXO . $atual["identificador"];
+        $soltos = (int)valor("SELECT COUNT(*) FROM total WHERE coluna = ?", [$chave_c]);
+        sql("UPDATE total SET coluna = NULL, rodape = 0, pagina = 1 WHERE coluna = ?", [$chave_c]);
         sql("DELETE FROM coluna WHERE id = ?", [$id]);
         $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
-        $msg = t("Coluna {1} excluída.", [1 => $atual["nome"]]);
+        $msg = t("Coluna {1} excluída.", [1 => $atual["nome"]]) . ($soltos === 1 ? " " . t("1 total que estava embaixo dela ficou só na página de totais.") : ($soltos > 1 ? " " . t("{1} totais que estavam embaixo dela ficaram só na página de totais.", [1 => $soltos]) : ""));
     } elseif ($acao === "subir" || $acao === "descer") {
         // a ordem refeita de 10 em 10, e a coluna troca de lugar com a vizinha
         $ids = array_map("intval", array_column(linhas("SELECT id FROM coluna ORDER BY ordem, id"), "id"));

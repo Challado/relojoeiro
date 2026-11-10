@@ -17,6 +17,7 @@ async function api(p, post) {
   const exigir = (ok, msg) => { if (!ok) falhas.push(msg); };
   const b = await chromium.launch();
   const medicoes = [];
+  const totaisCriados = [];
   try {
     await api({ recurso: 'config', acao: 'salvar', colunas_hoje: '' }, true);
     // os relógios e as medições do timegrapher que a conta de teste usa (três no primeiro relógio; os outros ficam sem)
@@ -35,6 +36,13 @@ async function api(p, post) {
     const c1 = await api({ recurso: 'colunas', acao: 'salvar', id: 0, nome: 'Teste marcha média', modo: 'guiado', tabela: 'timegrapher', campo: 'marcha', funcao: 'media', casas: 1, padrao: 1 }, true);
     const c2 = await api({ recurso: 'colunas', acao: 'salvar', id: 0, nome: 'Teste custo', modo: 'expert', expressao: 'fonte_timegrapher_id_conta * 12.5', formato: 'moeda', simbolo: 'US$', casas: 2, padrao: 1 }, true);
     exigir(c1.ok && c2.ok, 'não criou as colunas pela API: ' + JSON.stringify([c1.erros, c2.erros]));
+    // um total embaixo da coluna montada (dinheiro): o rodapé da Hoje o mostra ali; e um que não combina é recusado
+    const tt = await api({ recurso: 'totais', acao: 'salvar', id: 0, coluna: 'c_teste_custo', nome: 'Teste total custo', expressao: 'SOMA(fonte_timegrapher_id_conta)', formato: 'moeda', rodape: 1, pagina: 1 }, true);
+    exigir(tt.ok, 'não criou o total embaixo da coluna montada: ' + JSON.stringify(tt.erros));
+    if (tt.id) totaisCriados.push(tt.id);
+    const ruim = await api({ recurso: 'totais', acao: 'salvar', id: 0, coluna: 'uso', nome: 'Teste total ruim', expressao: 'SOMA(custo_servicos)', formato: 'moeda', rodape: 1, pagina: 1 }, true);
+    exigir(!ruim.ok && /não combina com a coluna/.test((ruim.erros || []).join(' ')), 'o total em dinheiro embaixo do Tempo de uso devia ser recusado: ' + JSON.stringify(ruim));
+    if (ruim.id) totaisCriados.push(ruim.id);
     for (const celular of [false, true]) {
       const c = await b.newContext({ viewport: celular ? { width: 390, height: 844 } : { width: 1366, height: 900 }, isMobile: celular, hasTouch: celular,
         httpCredentials: { username: process.env.RELOGIOS_USUARIO || 'teste', password: process.env.RELOGIOS_SENHA || 'Senha@123' }, timezoneId: 'America/Sao_Paulo' });
@@ -56,6 +64,9 @@ async function api(p, post) {
       exigir(linha.media === '1,0' && linha.custo === 'US$ 37,50' && linha.rotulo === 'Teste custo' && Number(linha.cru) === 1, onde + 'o texto de cada cadastrada na linha: ' + JSON.stringify(linha));
       const vazias = await p.$$eval('#tabela-relogios tbody tr[data-id]:not([data-id="' + rid + '"]) td[data-col=c_teste_custo]', (ts) => ts.map((t) => t.textContent.trim()));
       exigir(vazias.every((x) => x === '—' || x.startsWith('US$')), onde + 'o relógio sem medição mostra o traço: ' + JSON.stringify(vazias.slice(0, 4)));
+      // o total do rodapé embaixo da coluna montada
+      await p.waitForSelector('#tabela-relogios tfoot td[data-coluna=c_teste_custo] table.mini-total caption', { timeout: 15000 }).catch(() => {});
+      exigir((await p.$$eval('#tabela-relogios tfoot td[data-coluna=c_teste_custo] table.mini-total caption', (cs) => cs.map((c) => c.textContent))).includes('Teste total custo'), onde + 'o rodapé mostra o total embaixo da coluna montada');
       // 2. a ordem por número (os vazios por último) e a busca no texto
       await p.click('#tabela-relogios thead [data-ordena=c_teste_custo]');
       let crus = await p.$$eval('#tabela-relogios tbody tr[data-id]', (rs) => rs.map((r) => r.dataset.c_teste_custo));
@@ -87,6 +98,18 @@ async function api(p, post) {
       exigir(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), onde + 'a página não rola de lado com as cadastradas');
       await api({ recurso: 'config', acao: 'salvar', colunas_hoje: '' }, true);
 
+      // 3b. Cadastros › Totais: o formato acompanha a coluna (os que não combinam ficam desabilitados, com o motivo)
+      await p.goto(BASE + 'cadastros.php?aba=totais', { waitUntil: 'networkidle' });
+      await p.waitForSelector('#form-total');
+      const colunasTotal = await p.$$eval('#form-total [name=coluna] option', (os) => os.map((o) => o.value));
+      exigir(colunasTotal.includes('c_teste_custo') && colunasTotal.includes('uso'), onde + 'o menu Coluna do total lista as de sempre e as montadas: ' + JSON.stringify(colunasTotal));
+      await p.selectOption('#form-total [name=coluna]', 'uso');
+      const fmt = await p.$$eval('#form-total [name=formato] option', (os) => os.map((o) => ({ v: o.value, d: o.disabled, t: o.textContent })));
+      exigir(fmt.find((o) => o.v === 'moeda').d && /não combina com a coluna/.test(fmt.find((o) => o.v === 'moeda').t) && !fmt.find((o) => o.v === 'duracao').d && !fmt.find((o) => o.v === 'inteiro').d,
+        onde + 'embaixo do Tempo de uso: dinheiro desabilitado com o motivo, tempo e contagem livres: ' + JSON.stringify(fmt.map((o) => o.v + (o.d ? '(x)' : ''))));
+      exigir(fmt.length === 8, onde + 'nenhum formato some do menu (só ficam desabilitados): ' + fmt.length);
+      await p.selectOption('#form-total [name=coluna]', '');
+      exigir((await p.$$eval('#form-total [name=formato] option', (os) => os.every((o) => !o.disabled))), onde + 'sem coluna, todos os formatos valem');
       // 4. Cadastros › Colunas: a lista e o formulário
       await p.goto(BASE + 'cadastros.php?aba=colunas', { waitUntil: 'networkidle' });
       await p.waitForSelector('#form-coluna');
@@ -151,6 +174,7 @@ async function api(p, post) {
     for (const x of (await api({ recurso: 'colunas' })).colunas || []) {
       if (/^Teste/.test(x.nome)) await api({ recurso: 'colunas', acao: 'excluir', id: x.id, confirmar: 1 }, true);
     }
+    for (const id of totaisCriados) await api({ recurso: 'totais', acao: 'excluir', id, confirmar: 1 }, true);
     for (const id of medicoes) await api({ recurso: 'timegrapher', acao: 'excluir', id, confirmar: 1 }, true);
     await api({ recurso: 'config', acao: 'salvar', colunas_hoje: '' }, true);
     await b.close();

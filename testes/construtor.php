@@ -14,6 +14,9 @@ putenv("RELOGIOS_TESTE_PASTA=" . $pasta);
 putenv("RELOGIOS_DB=sqlite");
 require dirname(__DIR__) . "/lib.php";
 
+// as 14 colunas de sempre, na ordem em que o modelo.json as cria no cadastro de colunas
+const DE_SEMPRE = ["codigo", "nome", "marca", "tipo", "estado", "carga", "ultimo", "uso", "manut", "em", "fazer", "encostado", "compra", "valor"];
+
 function exigir_cons($ok, $mensagem)
 {
     if (!$ok) {
@@ -37,7 +40,7 @@ try {
         sql("INSERT INTO timegrapher (relogio_id, quando, marcha, origem, criado) VALUES (?, ?, ?, 'manual', NOW())", [$a, $q, $marcha]);
     }
     exigir_cons(colunas_tabela_existe(), "A tabela coluna devia existir na base nova.");
-    exigir_cons(count(colunas_cadastradas()) === 0 && colunas_catalogo("hoje") === array_keys(TOTAL_COLUNAS) && colunas_padrao("hoje") === array_keys(TOTAL_COLUNAS), "Sem colunas montadas o catálogo é o das 14 de sempre, criadas no cadastro pelo modelo.");
+    exigir_cons(count(colunas_cadastradas()) === 0 && colunas_catalogo("hoje") === DE_SEMPRE && colunas_padrao("hoje") === DE_SEMPRE, "Sem colunas montadas o catálogo é o das 14 de sempre, criadas no cadastro pelo modelo.");
 
     // ---- o modo guiado: a fonte, o campo e a função viram a expressão; o formato combina com o que ela dá
     $g = op_colunas("salvar", ["id" => 0, "nome" => "Marcha média", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "media"]);
@@ -94,14 +97,14 @@ try {
 
     // ---- o catálogo da Hoje: as de sempre e as cadastradas; de início, só as marcadas "aparece sem ninguém escolher"
     $chaves = array_column(colunas_cadastradas(), "chave");
-    exigir_cons(colunas_catalogo("hoje") === array_merge(array_keys(TOTAL_COLUNAS), $chaves), "O catálogo = as de sempre + as cadastradas, na ordem do cadastro.");
-    exigir_cons(colunas_padrao("hoje") === array_merge(array_keys(TOTAL_COLUNAS), ["c_medicoes"]) && colunas_efetivas("hoje") === colunas_padrao("hoje"), "De início: as de sempre e as marcadas.");
+    exigir_cons(colunas_catalogo("hoje") === array_merge(DE_SEMPRE, $chaves), "O catálogo = as de sempre + as cadastradas, na ordem do cadastro.");
+    exigir_cons(colunas_padrao("hoje") === array_merge(DE_SEMPRE, ["c_medicoes"]) && colunas_efetivas("hoje") === colunas_padrao("hoje"), "De início: as de sempre e as marcadas.");
     exigir_cons(colunas_titulos("hoje")["c_medicoes"] === "Medições", "O título da cadastrada é o nome dela.");
     exigir_cons(colunas_conferir("hoje", "nome,c_marcha_media")[0] === null && colunas_conferir("hoje", "nome,c_nao_existe")[0] !== null, "O conferidor aceita a cadastrada e recusa a que não existe.");
     $r = op_config("salvar", ["colunas_hoje" => "nome,c_marcha_media,c_custo_da_medicao,uso"]);
     exigir_cons($r["ok"] && colunas_efetivas("hoje") === ["nome", "c_marcha_media", "c_custo_da_medicao", "uso"], "A escolha com colunas cadastradas: " . implode("; ", $r["erros"] ?? []));
     $lista = colunas_da_pagina("hoje");
-    exigir_cons(count($lista) === count(TOTAL_COLUNAS) + 4 && $lista[1]["chave"] === "c_marcha_media" && $lista[1]["cadastrada"] === true && $lista[1]["visivel"] && $lista[0]["cadastrada"] === false, "A lista da API: as que valem primeiro, com a marca de cadastrada.");
+    exigir_cons(count($lista) === count(DE_SEMPRE) + 4 && $lista[1]["chave"] === "c_marcha_media" && $lista[1]["cadastrada"] === true && $lista[1]["visivel"] && $lista[0]["cadastrada"] === false, "A lista da API: as que valem primeiro, com a marca de cadastrada.");
 
     // ---- o valor na linha da tabela: só das cadastradas que aparecem
     $rel = linha("SELECT * FROM relogio WHERE id = ?", [$a]);
@@ -115,7 +118,7 @@ try {
 
     // ---- as colunas de sempre moram no cadastro (sistema = 1, do modelo.json): 14, na ordem, a Relógio fixa; só mudam de lugar e de aparecer de início
     $sis = array_values(array_filter(colunas_todas(), function ($c) { return $c["sistema"]; }));
-    exigir_cons(array_column($sis, "chave") === array_keys(TOTAL_COLUNAS) && count($sis) === 14, "As 14 colunas de sempre nascem no cadastro, na ordem de sempre.");
+    exigir_cons(array_column($sis, "chave") === DE_SEMPRE && count($sis) === 14, "As 14 colunas de sempre nascem no cadastro, na ordem de sempre.");
     exigir_cons(array_column(array_filter($sis, function ($c) { return $c["fixa"]; }), "chave") === ["nome"] && colunas_fixas("hoje") === ["nome"], "A Relógio é a fixa.");
     exigir_cons((int)valor("SELECT COUNT(*) FROM coluna WHERE sistema = 1") === 14 && (int)valor("SELECT MIN(ordem) FROM coluna WHERE sistema = 1") === 10 && (int)valor("SELECT MAX(ordem) FROM coluna WHERE sistema = 1") === 140, "Estão gravadas na tabela, de 10 a 140.");
     exigir_cons((int)valor("SELECT MIN(ordem) FROM coluna WHERE sistema = 0") > 140, "As que a pessoa monta vêm depois.");
@@ -139,6 +142,41 @@ try {
     exigir_cons(op_colunas("descer", ["id" => $ids[0]])["ok"] && array_column(colunas_cadastradas(), "id")[1] === $ids[0], "Descer a primeira.");
     exigir_cons(op_colunas("subir", ["id" => $ids[0]])["ok"] && array_column(colunas_cadastradas(), "id")[0] === $ids[0], "Subir de volta.");
 
+    // ---- os totais do rodapé valem embaixo de qualquer coluna do cadastro (as de sempre e as montadas) e têm de combinar com ela
+    exigir_cons(total_formatos_do_formato("moeda") === ["numero", "inteiro", "moeda"] && total_formatos_do_formato("texto") === ["numero", "inteiro"]
+        && total_formatos_do_formato("data") === ["numero", "inteiro", "data", "dias"] && total_formatos_do_formato("duracao") === ["numero", "inteiro", "duracao"], "Os formatos que combinam com cada coluna.");
+    foreach (totais_todos() as $tt) {
+        exigir_cons($tt["coluna"] === null || total_coluna_conferir($tt["coluna"], $tt["formato"]) === null, "O total pronto do modelo " . $tt["nome"] . " devia combinar com a coluna dele (" . $tt["coluna"] . ", " . $tt["formato"] . ").");
+    }
+    $novo_total = function ($coluna, $formato, $extra = []) {
+        return op_totais("salvar", array_merge(["id" => 0, "coluna" => $coluna, "nome" => "T " . $coluna . " " . $formato, "expressao" => "CONTA()", "rodape" => 1, "pagina" => 1, "formato" => $formato], $extra));
+    };
+    $r = $novo_total("c_custo_da_medicao", "moeda", ["expressao" => "SOMA(fonte_timegrapher_id_conta)"]);
+    exigir_cons($r["ok"], "O total em dinheiro embaixo da coluna montada em dinheiro devia passar: " . implode("; ", $r["erros"] ?? []));
+    $r = $novo_total("c_marcha_media", "decimal", ["expressao" => "MEDIA(fonte_timegrapher_marcha_media)"]);
+    exigir_cons($r["ok"], "A média em decimal embaixo da coluna montada decimal: " . implode("; ", $r["erros"] ?? []));
+    exigir_cons($novo_total("marca", "inteiro")["ok"] && $novo_total("c_custo_da_medicao", "inteiro")["ok"], "A contagem combina com qualquer coluna, de texto ou de dinheiro.");
+    foreach ([["uso", "moeda"], ["marca", "moeda"], ["valor", "duracao"], ["c_medicoes", "data"], ["ultimo", "porcentagem"]] as [$col_r, $fmt_r]) {
+        $r = $novo_total($col_r, $fmt_r);
+        exigir_cons(!$r["ok"] && strpos(implode(" ", $r["erros"]), "não combina com a coluna") !== false, "O formato " . $fmt_r . " embaixo de " . $col_r . " devia ser recusado: " . json_encode($r["erros"] ?? []));
+    }
+    $r = $novo_total("c_nao_existe", "inteiro");
+    exigir_cons(!$r["ok"] && strpos(implode(" ", $r["erros"]), "Coluna:") !== false, "Uma coluna que não existe devia ser recusada: " . json_encode($r["erros"] ?? []));
+    // a coluna montada não muda de formato se isso deixar um total dela sem combinar
+    $r = op_colunas("salvar", ["id" => (int)valor("SELECT id FROM coluna WHERE identificador = 'custo_da_medicao'"), "formato" => "inteiro", "simbolo" => ""]);
+    exigir_cons(!$r["ok"] && strpos(implode(" ", $r["erros"]), "não combina com os totais") !== false, "Mudar o formato da coluna com um total em dinheiro embaixo devia ser recusado: " . json_encode($r["erros"] ?? []));
+    // excluir a coluna solta os totais dela: ficam só na página de totais
+    $tmp = op_colunas("salvar", ["id" => 0, "nome" => "Para excluir", "modo" => "expert", "expressao" => "1", "formato" => "inteiro"]);
+    exigir_cons($tmp["ok"], "Não criou a coluna de teste.");
+    exigir_cons($novo_total("c_para_excluir", "inteiro", ["nome" => "Preso nela"])["ok"], "Um total embaixo da coluna de teste.");
+    $ex = op_colunas("excluir", ["id" => $tmp["id"]]);
+    exigir_cons($ex["ok"] && strpos($ex["mensagem"], "ficou só na página de totais") !== false, "Excluir a coluna devia avisar do total solto: " . json_encode($ex));
+    $solto = linha("SELECT coluna, rodape, pagina FROM total WHERE nome = 'Preso nela'");
+    exigir_cons($solto !== null && $solto["coluna"] === null && (int)$solto["rodape"] === 0 && (int)$solto["pagina"] === 1, "O total solto fica sem coluna, só na página: " . json_encode($solto));
+    // o identificador da coluna montada tem até 18 letras (a chave c_... cabe em total.coluna)
+    $r = op_colunas("salvar", ["id" => 0, "nome" => "Identificador comprido", "identificador" => "abcdefghijklmnopqrs", "modo" => "expert", "expressao" => "1"]);
+    exigir_cons(!$r["ok"] && strpos(implode(" ", $r["erros"]), "até 18") !== false, "Identificador com 19 letras devia ser recusado: " . json_encode($r["erros"] ?? []));
+
     // ---- excluir: a chave sai do catálogo e da escolha guardada (a lista guardada com ela continua valendo, sem ela)
     exigir_cons(op_colunas("excluir", ["id" => $col["id"]])["ok"], "Não excluiu.");
     exigir_cons(!in_array("c_marcha_media", colunas_catalogo("hoje"), true) && colunas_efetivas("hoje") === ["nome", "c_custo_da_medicao", "uso"], "A coluna excluída sai da escolha: " . json_encode(colunas_efetivas("hoje")));
@@ -157,7 +195,7 @@ try {
     migracao_v62_dados(false);
     $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
     exigir_cons((int)valor("SELECT COUNT(*) FROM coluna WHERE sistema = 1") === 14, "A v62 cria as 14 uma vez só (rodar de novo não duplica).");
-    exigir_cons(array_slice(array_column(colunas_todas(), "chave"), 0, 14) === array_keys(TOTAL_COLUNAS) && array_column(colunas_cadastradas(), "chave") === $montadas_antes, "As 14 vêm na frente e as montadas, na mesma ordem de antes, depois.");
+    exigir_cons(array_slice(array_column(colunas_todas(), "chave"), 0, 14) === DE_SEMPRE && array_column(colunas_cadastradas(), "chave") === $montadas_antes, "As 14 vêm na frente e as montadas, na mesma ordem de antes, depois.");
     exigir_cons((int)valor("SELECT MIN(ordem) FROM coluna WHERE sistema = 0") > 1000, "As montadas sobem 1000.");
 
     echo "O construtor de colunas confere: guiado e expert, as recusas, o formato (casas e moeda), o catálogo e a escolha da página Hoje, o valor na linha, a ordem e a exclusão.\n";

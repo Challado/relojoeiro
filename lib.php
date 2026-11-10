@@ -1280,6 +1280,7 @@ $MIGRACOES = [
     "v59" => ["migracao_v59.sql", tk("o menos usado: a forma de escolha (o relógio com menos dias de uso no total) e o critério Menos usado nas notas; a escala inteligente escolhe a forma e os critérios que usa no cálculo"), "modo_criterio", "migracao_v59_dados"],
     "v60" => ["migracao_v60.sql", tk("a coluna Tempo de uso na tabela dos relógios (o tempo no pulso somado, em dias, horas, minutos e segundos), com o formato de total Tempo e a variável tempo_de_uso; e a escolha das colunas da tabela da página Hoje, em três níveis (padrão do sistema, preferência do usuário e escolha da coleção)"), "sistema.chave=migracao_v60", "migracao_v60_dados"],
     "v61" => ["migracao_v61.sql", tk("o construtor de colunas da tabela dos relógios (Cadastros › Colunas): colunas suas, escolhendo o campo do banco, a função (soma, média, menor, maior, contagem) e o formato (casas decimais, moeda, tempo, data), ou escrevendo a expressão; elas entram na escolha das colunas da página Hoje"), "coluna"],
+    "v63" => ["migracao_v63.sql", tk("o total vale embaixo de qualquer coluna do cadastro de colunas, as de sempre e as que você monta (antes, só as 14 de sempre), e só aceita um formato que combine com o que a coluna mostra; excluir uma coluna solta os totais dela, que ficam só na página de totais"), "sistema.chave=migracao_v63", "migracao_v63_dados"],
     "v62" => ["migracao_v62.sql", tk("as colunas de sempre da tabela dos relógios (código, relógio, marca, tipo, estado, carga, última vez usado, tempo de uso, próxima manutenção, em, o que fazer, encostado, comprado em e valor) passam a morar no cadastro de colunas (Cadastros › Colunas), como colunas do sistema: só mudam de lugar e de aparecer de início; toda coluna nova nasce ali, e uma árvore nova já nasce com as de sempre"), "sistema.chave=migracao_v62", "migracao_v62_dados"],
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
 ];
@@ -1291,6 +1292,18 @@ $MIGRACOES = [
 // tem os dois (o schema.sql)
 // As 14 colunas de sempre viram colunas do sistema em cada árvore que já existia, na frente das que a pessoa montou (a ordem delas
 // sobe 1000: as de sistema ficam de 10 a 140). Uma instalação nova já tem tudo (o modelo, ao criar a árvore)
+// A regra do banco da coluna de um total deixa de listar as 14 pelo nome: só pede um texto não vazio (a API confere a coluna e o formato).
+// Uma instalação nova já tem a regra nova (o schema.sql)
+function migracao_v63_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            banco_regra("total", "ck_total_coluna", "coluna IS NULL OR TRIM(coluna) <> ''");
+        });
+    }
+    sis_set("migracao_v63", "1");
+}
+
 function migracao_v62_dados($nova = false)
 {
     if (!$nova) {
@@ -3741,19 +3754,15 @@ $VARIAVEIS_TABELA = [
     "tempo_de_uso" => [tk("o tempo de uso total do relógio, em segundos: as sessões no pulso somadas, sem contar duas vezes a mesma hora (a coluna Tempo de uso; 0: nunca usado)"), "s"],
 ];
 
-// As colunas da tabela dos relógios onde um total pode ir (a chave é a do cabeçalho da página Hoje), na ordem dela
-const TOTAL_COLUNAS = ["codigo" => "Código", "nome" => "Relógio", "marca" => "Marca", "tipo" => "Tipo", "estado" => "Estado", "carga" => "Carga", "ultimo" => "Última vez usado",
-    "uso" => "Tempo de uso", "manut" => "Próxima manutenção", "em" => "Em", "fazer" => "O que fazer", "encostado" => "Encostado", "compra" => "Comprado em", "valor" => "Valor"];
 // Como os números de um total saem: número (inteiro quando é, senão até 2 casas), inteiro, decimal (2 casas), moeda (R$),
 // porcentagem, data, dias e duração (segundos em dias, horas, minutos e segundos)
 const TOTAL_FORMATOS = ["numero" => "Número", "inteiro" => "Inteiro", "decimal" => "Com 2 casas", "moeda" => "Dinheiro (R$)", "porcentagem" => "Porcentagem (%)",
     "data" => "Data", "dias" => "Dias", "duracao" => "Tempo (1d 4h 30m)"];
 
-// Os nomes das colunas e dos formatos, no idioma do pedido
+// Os nomes das colunas (as do cadastro de colunas: as de sempre e as montadas, onde um total pode ir) e dos formatos, no idioma do pedido
 function total_colunas_nomes()
 {
-    return ["codigo" => t("Código"), "nome" => t("Relógio"), "marca" => t("Marca"), "tipo" => t("Tipo"), "estado" => t("Estado"), "carga" => t("Carga"), "ultimo" => t("Última vez usado"),
-        "uso" => t("Tempo de uso"), "manut" => t("Próxima manutenção"), "em" => t("Em"), "fazer" => t("O que fazer"), "encostado" => t("Encostado"), "compra" => t("Comprado em"), "valor" => t("Valor")];
+    return colunas_titulos("hoje");
 }
 
 function total_formatos_nomes()

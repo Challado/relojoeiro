@@ -363,7 +363,7 @@ function recarregarTotais() {
         + el("label", {"class": "check"}, marca("pagina", f.pagina, false) + " " + t("Exibir na página de totais"))
         + el("label", {}, t("Largura na página {1}", {1: el("select", {"name": "largura"}, [["estreito", t("Estreito (três por linha no computador)")], ["largo", t("Largo (a linha inteira)")]].map(function (o) {
           return el("option", {"value": o[0], "selected": f.largura === o[0]}, o[1]); }).join(""))}))
-        + el("label", {}, t("Formato dos números {1}", {1: el("select", {"name": "formato"}, d.formatos.map(function (o) { return el("option", {"value": o.chave, "selected": f.formato === o.chave}, h(o.nome)); }).join(""))}))
+        + el("label", {}, t("Formato dos números {1}", {1: el("select", {"name": "formato"}, d.formatos.map(function (o) { return el("option", {"value": o.chave, "data-nome": o.nome, "selected": f.formato === o.chave}, h(o.nome)); }).join(""))}))
         + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, t("Só os totais de uma coluna vão para o rodapé; os outros, quantos você quiser, ficam só na página de totais."))
         + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + " " + el("button", {"type": "button", "class": "leve", "id": "testar-total"}, t("Testar em todos os relógios"))
           + (e ? " " + el("a", {"href": "cadastros.php?aba=totais"}, t("cancelar")) : "")))
@@ -373,8 +373,38 @@ function recarregarTotais() {
       + el("details", {}, el("summary", {}, t("As variáveis da tabela")) + el("ul", {"class": "nota"}, d.variaveis.map(function (x) { return el("li", {}, el("strong", {}, h(x.nome)) + ": " + h(x.descricao)); }).join("")));
     res += el("section", {"class": "cartao-config"}, sec);
     document.getElementById("cadastros").innerHTML = res;
+    totaisColunas = d.colunas;
+    totalFormatoAjustar(document.getElementById("form-total"));
   });
 }
+// o formato de um total tem de combinar com a coluna dele: os que não combinam ficam no menu, desabilitados, com o motivo (as colunas e
+// os formatos que cada uma aceita vêm da API: totais.colunas[].formatos); sem coluna (só na página de totais), todos valem
+var totaisColunas = [];
+function totalFormatoAjustar(form) {
+  if (!form) {
+    return;
+  }
+  var col = null;
+  totaisColunas.forEach(function (c) { if (c.chave === form.coluna.value) { col = c; } });
+  var primeiro = null;
+  Array.prototype.forEach.call(form.formato.options, function (o) {
+    var combina = col === null || col.formatos.indexOf(o.value) >= 0;
+    o.disabled = !combina;
+    o.textContent = o.getAttribute("data-nome") + (combina ? "" : " — " + t("não combina com a coluna {1}", {1: col.nome}));
+    if (combina && primeiro === null) {
+      primeiro = o;
+    }
+  });
+  if (form.formato.options[form.formato.selectedIndex].disabled && primeiro !== null) {
+    form.formato.value = primeiro.value;
+  }
+}
+document.addEventListener("change", function (ev) {
+  var form = ev.target.form;
+  if (form && form.getAttribute("id") === "form-total" && ev.target.name === "coluna") {
+    totalFormatoAjustar(form);
+  }
+});
 
 // a aba Colunas: as colunas da tabela dos relógios que a pessoa monta (a lista, na ordem, e o formulário). No modo guiado ela escolhe a
 // fonte (a tabela dos relógios, um campo do cadastro ou uma tabela do banco ligada ao relógio, do dicionário da API), o campo e a

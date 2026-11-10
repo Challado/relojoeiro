@@ -201,6 +201,57 @@ function colunas_da_pagina($pagina)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Os totais do rodapé: um total vai embaixo de uma coluna do cadastro (as de sempre e as montadas, a chave dela em total.coluna) e tem de
+// combinar com ela. A contagem (inteiro, número) combina com qualquer coluna (quantos relógios, quantos de cada marca, em cada faixa); o
+// resto, só com o que a coluna mostra: embaixo do dinheiro, dinheiro; embaixo de uma data, a data (ou os dias); embaixo do tempo, o tempo.
+// A coluna de texto só aceita contagem. O formato da coluna é o do cadastro dela
+// ---------------------------------------------------------------------------------------------------------------------
+
+// O tamanho de total.coluna no banco (VARCHAR(20)): a chave de uma coluna montada é c_ e o identificador, por isso o identificador tem até 18
+const TOTAL_COLUNA_TAMANHO = 20;
+
+// Os formatos de total que combinam com um formato de coluna, na ordem de TOTAL_FORMATOS
+function total_formatos_do_formato($formato_coluna)
+{
+    $mais = ["texto" => [], "inteiro" => ["decimal"], "numero" => ["decimal"], "decimal" => ["decimal"], "moeda" => ["moeda"], "porcentagem" => ["porcentagem", "decimal"],
+        "data" => ["data", "dias"], "dias" => ["dias", "decimal"], "duracao" => ["duracao"]][$formato_coluna] ?? [];
+    $aceitos = array_merge(["numero", "inteiro"], $mais);
+    return array_values(array_filter(array_keys(TOTAL_FORMATOS), function ($f) use ($aceitos) { return in_array($f, $aceitos, true); }));
+}
+
+// A coluna do cadastro de uma chave (a do sistema ou a montada); null: não existe
+function coluna_da_chave($chave)
+{
+    foreach (colunas_todas() as $c) {
+        if ($c["chave"] === (string)$chave) {
+            return $c;
+        }
+    }
+    return null;
+}
+
+// Confere o lugar de um total: a coluna existe no cadastro, cabe no banco e o formato do total combina com o que ela mostra. Devolve o
+// erro (texto) ou null
+function total_coluna_conferir($chave, $formato)
+{
+    $c = coluna_da_chave($chave);
+    if ($c === null) {
+        return t("Coluna: {1}, ou vazio (nenhuma: só na página de totais).", [1 => implode(", ", array_column(colunas_todas(), "chave"))]);
+    }
+    if (strlen($c["chave"]) > TOTAL_COLUNA_TAMANHO) {
+        return t("A coluna {1} tem o identificador comprido demais para ter total (a chave dela passa de {2} letras): encurte o identificador ou deixe o total só na página de totais.", [1 => $c["sistema"] ? t($c["nome"]) : $c["nome"], 2 => TOTAL_COLUNA_TAMANHO]);
+    }
+    $aceitos = total_formatos_do_formato($c["formato"]);
+    if (!in_array((string)$formato, $aceitos, true)) {
+        $nomes = total_formatos_nomes();
+        return t("O formato {1} não combina com a coluna {2} (ela mostra {3}): use {4}, ou deixe o total só na página de totais.",
+            [1 => $nomes[$formato] ?? $formato, 2 => $c["sistema"] ? t($c["nome"]) : $c["nome"], 3 => coluna_formatos()[$c["formato"]] ?? $c["formato"],
+            4 => implode(", ", array_map(function ($f) use ($nomes) { return $nomes[$f]; }, $aceitos))]);
+    }
+    return null;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // As colunas cadastradas: a expressão do modo guiado, o formato e o valor de cada relógio
 // ---------------------------------------------------------------------------------------------------------------------
 

@@ -516,7 +516,7 @@
  *                            Ex. juntar: curl -u lucas:senha -d recurso=marcas -d acao=juntar -d id=7 -d em_id=2 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=marcas -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=colunas           salvar (id: 0 cria; nome (até 80, sem repetir outra da árvore, sem diferença de maiúsculas), identificador
- *                             (a chave da coluna na escolha das colunas, c_<identificador>: a-z, 0-9 e _, até 38; vazio: sai do nome; não
+ *                             (a chave da coluna na escolha das colunas, c_<identificador>: a-z, 0-9 e _, até 18; vazio: sai do nome; não
  *                             muda depois de criada), modo (guiado ou expert), tabela, campo e funcao (guiado: a fonte do dicionário;
  *                             funcao só nas tabelas do banco), expressao (expert: a conta de cada relógio, a mesma dos relatórios),
  *                             formato (numero, inteiro, decimal, moeda, porcentagem, data, dias, duracao ou texto; vazio: o que combina
@@ -4903,8 +4903,8 @@
  *     todos                          quantos relógios a tabela tem ao todo (sem o filtro)
  *     totais[]                       os totais, na ordem do cadastro
  *     totais[].id                    o número do total
- *     totais[].coluna                a chave da coluna da tabela dos relógios onde ele vai no rodapé (codigo, nome, marca, tipo, estado,
- *                                    carga, ultimo, uso, manut, em, fazer, encostado, compra, valor); null: nenhuma
+ *     totais[].coluna                a chave da coluna do cadastro de colunas onde ele vai no rodapé (as de sempre: codigo, nome, marca...;
+ *                                    as montadas: c_<identificador>); null: nenhuma
  *     totais[].coluna_nome           o nome da coluna, no idioma do pedido; null: nenhuma
  *     totais[].nome                  o nome do total (o título da tabelinha e do quadro)
  *     totais[].expressao             a expressão de total
@@ -4941,9 +4941,15 @@
  *     totais[].resultado.total_texto o total no formato
  *     totais[].resultado.erro        no erro: por que não deu (a expressão com erro, os limites das FAIXAS fora de ordem)
  *     teste                          o resultado da expressao testada (como totais[].resultado); só com expressao
- *     colunas[]                      as colunas da tabela dos relógios onde um total pode ir (sem parte=rodape)
+ *     colunas[]                      as colunas do cadastro de colunas (as de sempre e as montadas) onde um total pode ir (sem
+ *                                    parte=rodape)
  *     colunas[].chave                a chave (o que se grava em coluna)
  *     colunas[].nome                 o nome, no idioma do pedido
+ *     colunas[].formato              o formato que a coluna mostra (numero, inteiro, decimal, moeda, porcentagem, data, dias, duracao ou
+ *                                    texto)
+ *     colunas[].formatos             os formatos de total que combinam com a coluna (a contagem, inteiro e numero, combina com qualquer
+ *                                    uma)
+ *     colunas[].formatos[]           um formato de total
  *     formatos[]                     os formatos dos números
  *     formatos[].chave               a chave (o que se grava em formato)
  *     formatos[].nome                o nome, no idioma do pedido

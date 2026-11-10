@@ -31,7 +31,10 @@ if (isset($_REQUEST["expressao"])) {
 }
 if ($parte_t !== "rodape" && $parte_t !== "teste") {
     // o que o cadastro mostra: as colunas, os formatos, as funções de total e as variáveis da tabela
-    $saida["colunas"] = array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(total_colunas_nomes()), total_colunas_nomes());
+    // as colunas do cadastro de colunas (as de sempre e as montadas), cada uma com o formato dela e os formatos de total que combinam com ela
+    $saida["colunas"] = array_map(function ($c) {
+        return ["chave" => $c["chave"], "nome" => $c["sistema"] ? t($c["nome"]) : $c["nome"], "formato" => $c["formato"], "formatos" => total_formatos_do_formato($c["formato"])];
+    }, colunas_todas());
     $saida["formatos"] = array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(total_formatos_nomes()), total_formatos_nomes());
     $saida["funcoes"] = array_map(function ($k) { return ["nome" => $k, "descricao" => t($GLOBALS["FUNCOES_TOTAIS"][$k][2])]; }, array_keys($GLOBALS["FUNCOES_TOTAIS"]));
     $saida["variaveis"] = array_map(function ($k) { return ["nome" => $k, "descricao" => t($GLOBALS["VARIAVEIS_TABELA"][$k][0])]; }, array_keys($GLOBALS["VARIAVEIS_TABELA"]));

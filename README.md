@@ -169,10 +169,13 @@ de gravar.
 ### Os totais
 
 Os totais também são do motor de fórmulas, mas olham para **todos os relógios mostrados de uma vez** (os que o filtro da
-tabela da página Hoje deixa). Eles ficam na aba **Totais** da página **Cadastros**: cada total tem a **coluna** da tabela onde
-ele vai (ou nenhuma), o **nome**, a **expressão**, as caixas **Exibir no rodapé do totalizador** e **Exibir na página de
+tabela da página Hoje deixa). Eles ficam na aba **Totais** da página **Cadastros**: cada total tem a **coluna** onde
+ele vai (qualquer uma do cadastro de colunas: as de sempre e as que você montou; ou nenhuma), o **nome**, a **expressão**, as caixas **Exibir no rodapé do totalizador** e **Exibir na página de
 totais**, a **largura** do quadro na página (estreito ou largo) e o **formato** dos números (número, inteiro, com 2 casas,
-dinheiro, porcentagem, data, dias ou tempo, que escreve segundos como *1d 4h 30m*). Só os totais de uma coluna vão para o rodapé, embaixo dela; os outros, quantos você
+dinheiro, porcentagem, data, dias ou tempo, que escreve segundos como *1d 4h 30m*). Só os totais de uma coluna vão para o rodapé, embaixo dela, e o **formato** tem de combinar com o que a coluna mostra:
+a **contagem** (inteiro, número) vale em qualquer coluna, mas dinheiro só embaixo de dinheiro, data ou dias embaixo de data,
+tempo embaixo de tempo, e uma coluna de texto só aceita contagem; o que não combina fica **desabilitado no menu, com o motivo**, e
+a gravação recusa. Excluir uma coluna solta os totais dela, que ficam só na **página de totais**. Os outros totais, quantos você
 quiser, ficam só na **página de totais** (menu **Coleção**, ou **Ver todos os totais** embaixo da tabela, que leva o mesmo
 filtro). Vários totais na mesma coluna ficam um embaixo do outro, na ordem da lista (↑ ↓), e o **Testar em todos os
 relógios** mostra o resultado antes de gravar.
@@ -1747,7 +1750,7 @@ modos a expressão fica gravada e o **Testar num relógio** mostra o valor antes
 O **formato** é o tradutor do valor: **Número**, **Inteiro**, **Com 2 casas**, **Dinheiro**, **Porcentagem**, **Data**, **Dias**,
 **Tempo** (*1d 4h 30m*) ou **Texto**; com **Casas decimais** (de 0 a 6; vazio, o padrão do formato) e, no dinheiro, o **Símbolo da moeda**
 (*R$*, *US$*, *€*...). Vazio, o formato é o que combina com a fonte (uma data sai como data, uma contagem como inteiro, a soma de reais como
-dinheiro). A coluna ganha o **nome** que você der, e a chave `c_<identificador>` (o identificador sai do nome e não muda depois):
+dinheiro). A coluna ganha o **nome** que você der, e a chave `c_<identificador>` (o identificador, de até 18 letras, sai do nome e não muda depois):
 ela entra no botão **Colunas**, na Configuração, em Minha conta e em Sistema como qualquer outra, com cabeçalho, **busca no texto** e
 **ordem por número** (os vazios por último). Só as colunas que aparecem são calculadas. Marque **Aparece na tabela sem ninguém
 escolher** para ela valer de início. As colunas ficam na ordem do cadastro (**↑** e **↓**), valem para as coleções que usam a árvore
