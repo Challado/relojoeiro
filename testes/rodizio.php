@@ -83,6 +83,9 @@ try {
     cfg_set("uso_fim", "23:59");
     cfg_set("pulso_auto_inicio", "1");
     cfg_set("pulso_auto_fim", "0");
+    // desligado, o "fecha às" do tipo No pulso (22:00, do modelo) também sai: senão, depois das 22h do fuso de quem roda o teste, o pulso manual já nasce encerrado
+    sql("UPDATE lancamento_tipo SET fecha_as = NULL WHERE identificador = 'pulso'");
+    lancamento_tipos(true);
     plano_gravar($hoje->format("Y-m-d"), $rid, null, "manual", "Preservar", null, true);
     plano_gravar($hoje->modify("+1 day")->format("Y-m-d"), $rid, null, "manual", "Preservar amanhã", null, true);
     plano_gravar($hoje->modify("-1 day")->format("Y-m-d"), $rid, null, "manual", "Histórico", null, true);
