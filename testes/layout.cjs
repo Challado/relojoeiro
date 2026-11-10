@@ -1,8 +1,8 @@
-// Conferência do layout: todas as telas, em 15 tamanhos (computador de 1100 a 1920px, tablet de pé e deitado, celular de 320 a
+// Conferência do layout: todas as telas, em 18 tamanhos (computador de 1100 a 1920px, tablet (Apple e Android) de pé e deitado, celular de 320 a
 // 412px), procurando o que quebra: a página que rola de lado, o elemento que sai da caixa (o quadro, o cartão) em que está, a
 // etiqueta (com fundo ou borda) partida em duas linhas, o texto cortado, o botão com o texto partido ("Abrir" numa linha, "foto"
-// na outra), irmãos sobrepostos, palavra ou número partido no meio ("R$ 11.757,85" letra por letra: o overflow-wrap: anywhere deixa a
-// coluna encolher abaixo do valor; só de 700px para cima, mais o rodapé de totais e o alto da Hoje em qualquer tamanho) e espaço vazio
+// na outra), irmãos sobrepostos, palavra ou número partido no meio ("R$ 11.757,85" letra por letra, a data "10/12/2024" em duas linhas: em
+// qualquer tamanho, do computador ao celular de 320px) e espaço vazio
 // aproveitável entre os cartões da Configuração. Abre os <details> e passa
 // por cada opção dos menus que mostram partes (o quadro Marcar).
 // Antes, deixa os dados do cenário "feios" de propósito (nomes longos, observação comprida, fotos: veja estressar); ESTRESSE=0
@@ -12,7 +12,8 @@
 // (página e tela: um filtro, expressão regular, no nome; ex.: node testes/layout.cjs "ficha" "cel-"). Grava em testes/layout/
 // uma captura de cada tela, o relatorio.tsv (uma linha por problema) e o agrupado.txt (o mesmo problema com as telas em que
 // aparece). Termina com 0 se não achou nada, 1 se achou. LINGUA=en (zh-CN, hi, es, fr) confere as telas nesse idioma (o
-// cookie do seletor do menu); sem ela, em português. SO=ajuda-solta,ajuda-sem-nome confere só esses tipos de problema (o CI "Botões de
+// cookie do seletor do menu); sem ela, em português. SEM_CAPTURA=1 não grava as capturas (a página Ajuda inteira derruba o Chromium de algumas máquinas; os problemas são conferidos antes dela).
+// SO=ajuda-solta,ajuda-sem-nome confere só esses tipos de problema (o CI "Botões de
 // ajuda": o ⓘ colado ao rótulo ou ao campo que explica, e com nome e explicação).
 const { chromium, devices } = require(process.env.PLAYWRIGHT || require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const fs = require('fs');
@@ -35,6 +36,10 @@ const TELAS = [
   { nome: 'tablet-pe-820', ...devices['iPad Air'] },
   { nome: 'tablet-deitado-1024', ...devices['iPad Mini landscape'] },
   { nome: 'tablet-deitado-1180', ...devices['iPad Air landscape'] },
+  // os tablets Android: 800x1280 (um de 1200x1920 físicos, o de quem mandou o print), 600x960 (7 polegadas) e 1280x800 deitado
+  { nome: 'tablet-android-pe-800', viewport: { width: 800, height: 1280 }, deviceScaleFactor: 1.5, isMobile: true, hasTouch: true },
+  { nome: 'tablet-android-pe-600', viewport: { width: 600, height: 960 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+  { nome: 'tablet-android-deitado-1280', viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1.5, isMobile: true, hasTouch: true },
   { nome: 'cel-390', ...devices['iPhone 13'] },
   { nome: 'cel-360', ...devices['Galaxy S9+'], viewport: { width: 360, height: 740 } },
   { nome: 'cel-412', ...devices['Pixel 7'] },
@@ -163,19 +168,21 @@ function examinar(seletorRaiz) {
         probs.push({ tipo: 'texto-partido', det: tops.length + ' linhas', quem: nomear(e) });
       }
     }
-    // 4c. palavra ou número partido no meio, em duas linhas: "R$ 11.757,85" caindo letra por letra numa coluna que encolheu, "Esc/ala".
-    // Quem faz isso é o que quebra em qualquer ponto (overflow-wrap: anywhere, word-break: break-all): ele pega a palavra que caberia
-    // inteira na linha de baixo e zera a largura mínima das colunas. (O break-word só parte o que não cabe de jeito nenhum.) Só
-    // palavras (letras) e números/datas/dinheiro: identificadores, fórmulas e endereços compridos partem de propósito
-    // (no celular estreito, abaixo de 700px, as tabelas apertam de propósito e uma data pode partir: ali só o rodapé de totais e o
-    // cabeçalho da Hoje contam; de 700px para cima, qualquer lugar)
-    if ((cs.overflowWrap === 'anywhere' || cs.wordBreak === 'break-all') && !e.closest('pre, code') && (vw >= 700 || e.closest('.mini-total, .hoje'))) {
+    // 4c. palavra ou número partido no meio, em duas linhas: "R$ 11.757,85" caindo letra por letra numa coluna que encolheu, "Esc/ala",
+    // a data "10/12/2024" em duas linhas. Vale em todos os tamanhos, do computador ao celular de 320px, e para qualquer CSS (o anywhere
+    // quebra em qualquer ponto e zera a largura mínima da coluna; o break-word parte o que não cabe: nos dois casos o texto sai feio).
+    // Só palavras (letras) e números/datas/dinheiro: identificadores, fórmulas, endereços e comandos compridos (pre, code) partem de propósito
+    // (a hifenização com hífen, hyphens: auto, é de propósito e fica de fora)
+    if (!e.closest('pre, code') && cs.hyphens !== 'auto') {
       for (const no of e.childNodes) {
         if (no.nodeType !== 3 || !no.textContent.trim() || no.textContent.length > 400) continue;
-        const palavras = /\S{3,24}/g;
+        const palavras = /\S+/g;
         let m;
         while ((m = palavras.exec(no.textContent))) {
+          if (m[0].length < 3 || m[0].length > 24) continue;
           const w = m[0].replace(/^[(\["'«]+|[)\]"'»;:!?]+$/g, '');
+          // (chinês, japonês e coreano não têm espaços: quebrar entre os caracteres é o normal)
+          if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(w)) continue;
           if (!(/^\p{L}+[.,]?$/u.test(w) || /^[\d.,:\/%$+-]+$/.test(w))) continue;
           const rg = document.createRange();
           rg.setStart(no, m.index); rg.setEnd(no, m.index + m[0].length);
@@ -406,7 +413,7 @@ async function auditarTela(b, tela, fp, relatorio, total) {
     erros.forEach((e) => probs.push({ tipo: 'erro', det: e, quem: '' }));
     // a captura só serve para olhar: com a máquina carregada (15 tamanhos ao mesmo tempo) ela pode passar do tempo esperando
     // as fontes; tenta de novo, e se falhar outra vez segue sem ela (os problemas já foram conferidos)
-    for (let t = 0; t < 2; t++) {
+    for (let t = 0; t < (process.env.SEM_CAPTURA ? 0 : 2); t++) {
       try {
         await p.screenshot({ path: SAIDA + '/' + pg.nome + '__' + tela.nome + '.png', fullPage: true, timeout: 60000 });
         break;
