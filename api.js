@@ -301,8 +301,21 @@ function h(t) {
 // Uma marca HTML: el("p", {"class": "nota"}, "texto já seguro"). Atributo null ou false não sai; true sai sem valor.
 // O ⓘ de ajuda não vai sozinho para a linha de baixo: a última palavra do texto e o ⓘ ficam juntas, num trecho que não quebra
 var AJUDA_GRUDE = /(?<=^|\s|>)(?<!ajuda-grude">)([^\s<>]+)(\s*)(<button type="button" class="ajuda-i"[^>]*>[^<]*<\/button>)/g;
+// (em chinês, japonês e coreano o texto não tem espaços e a "última palavra" seria o rótulo inteiro, que deixaria de quebrar: ali só os
+// dois últimos caracteres ficam colados ao ⓘ)
+var AJUDA_SEM_ESPACOS = /[぀-ヿ㐀-鿿가-힯＀-￯]/;
 function ajudaGruda(conteudo) {
-  return typeof conteudo === "string" && conteudo.indexOf('class="ajuda-i"') >= 0 ? conteudo.replace(AJUDA_GRUDE, '<span class="ajuda-grude">$1$2$3</span>') : conteudo;
+  if (typeof conteudo !== "string" || conteudo.indexOf('class="ajuda-i"') < 0) return conteudo;
+  return conteudo.replace(AJUDA_GRUDE, function (tudo, palavra, espaco, botao) {
+    var antes = "";
+    var fim = palavra.slice(-2);
+    // (o fim com & ou ; pode ser um pedaço de entidade HTML, "&amp;": aí a palavra fica inteira)
+    if (palavra.length > 2 && AJUDA_SEM_ESPACOS.test(palavra) && !/[&;]/.test(fim)) {
+      antes = palavra.slice(0, -2);
+      palavra = fim;
+    }
+    return antes + '<span class="ajuda-grude">' + palavra + espaco + botao + "</span>";
+  });
 }
 function el(nome, atributos, conteudo) {
   var res = "<" + nome;

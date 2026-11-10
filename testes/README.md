@@ -127,14 +127,20 @@ servidor do banco no `NOW()`. Rodando os dois juntos em cada horário (de hora e
 # Conferência do layout
 
 O `testes/layout.cjs` abre todas as telas num navegador de verdade (o Chromium, pelo
-[Playwright](https://playwright.dev/)), em 15 tamanhos: computador (1100, 1152, 1280, 1366, 1440, 1536 e 1920px), tablet de pé
-(768 e 820px) e deitado (1024 e 1180px) e celular (320, 360, 390 e 412px). Em cada uma, mede o que quebra:
+[Playwright](https://playwright.dev/)), em 18 tamanhos: computador (1100, 1152, 1280, 1366, 1440, 1536 e 1920px), tablet de pé
+(768 e 820px, os da Apple; 600 e 800px, os Android) e deitado (1024, 1180 e 1280px) e celular (320, 360, 390 e 412px). Em cada uma,
+mede o que quebra:
 
 - a página que rola de lado;
 - o elemento que sai da caixa (o quadro, o cartão, a etiqueta) em que está;
 - a etiqueta com fundo ou borda partida em duas linhas, e o botão com o texto partido ("Abrir" numa linha, "foto" na outra);
 - o texto cortado, e o conteúdo (um texto que não quebra, uma etiqueta) que passa da caixa do próprio elemento;
 - irmãos que ficam um por cima do outro;
+- **palavra, data ou valor partido no meio** (`palavra-partida`): "R$ 11.757,85" caindo um caractere por linha numa coluna que
+  encolheu, "10/12/2024" em duas linhas, "Esc/ala". Vale em todos os tamanhos. Ficam de fora a hifenização com hífen, a palavra que
+  já tem hífen ("2026-10-13"), o chinês, o japonês e o coreano (que quebram entre os caracteres) e o que é técnico (`pre`, `code`).
+  Quem causa isso é quase sempre o `overflow-wrap: anywhere`, que quebra em qualquer ponto e zera a largura mínima da coluna: prefira
+  `break-word` e deixe a tabela rolar para o lado;
 - **texto por cima de texto, ou por cima de um botão ou campo** (`texto-sobreposto`): o conteúdo que vaza da caixa e cai sobre o que
   vem depois sem ser vizinho dele (o botão "ⓘ A garantia de rodízio" que pisava no "Aplicar modo", no celular). O texto é medido já
   recortado pela caixa que o corta (a célula com reticências não conta), e ficam de fora o que é fixo, sticky ou absoluto de
@@ -145,7 +151,7 @@ O `testes/layout.cjs` abre todas as telas num navegador de verdade (o Chromium, 
 
 Antes de conferir, ele deixa os dados do cenário "feios" de propósito, pela API: nomes longos de relógio e de grupo, uma
 observação comprida e fotos (a cabeça do painel muda com elas). O cenário tem nomes e números curtos, e o que quebra no uso de
-verdade é o comprido. `ESTRESSE=0` confere com os dados como estão.
+verdade é o comprido. `ESTRESSE=0` confere com os dados como estão. `SEM_CAPTURA=1` não grava as capturas das telas (a captura da página Ajuda inteira derruba o Chromium de algumas máquinas; os problemas são conferidos antes dela). `LINGUA=fr` (en, es, hi, zh-CN) confere as telas nesse idioma; pelo `testes/paridade.sh --layout`, é `LAYOUT_LINGUA=fr` (o roteiro continua em português).
 
 As telas: a Hoje (com o Rodízio manual aberto, e com o painel de cada relógio ao lado e na janela flutuante), a Ficha de cada
 relógio e a de um relógio novo, o Histórico, o Plano, os Critérios, os Grupos, os Cadastros, a Configuração, os Documentos, as
@@ -375,9 +381,11 @@ quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo
   da documentação); depois, o `testes/migracao.sh` nos três, a partir da versão de antes do push (`github.event.before`);
 - **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;
 - **Simulação dos modos de rodízio:** o libfaketime e o `testes/simulacao.sh` (veja acima): os 19 modos, 28 dias cada, as trocas de modo e a matriz do rodízio;
-- **Layout das telas:** o Playwright com o Chromium, o `configuracao-interface.cjs` e o `testes/paridade.sh --layout sqlite`; quando falha, as capturas das
-  telas ficam para baixar na página da rodada (Artifacts, "layout");
-- **Botões de ajuda:** o `testes/paridade.sh --ajuda sqlite`: em todas as páginas e nos 15 tamanhos, cada ⓘ colado ao rótulo ou ao
+- **Layout das telas:** um job por idioma (pt-BR, en, es, fr, hi e zh-CN), em paralelo: o Playwright com o Chromium, o
+  `configuracao-interface.cjs` (só no de português) e o `LAYOUT_LINGUA=<idioma> testes/paridade.sh --layout sqlite` (o roteiro em
+  português e as telas no idioma: o texto de cada língua tem outro tamanho, e o que cabe numa pode vazar ou partir em outra); quando
+  falha, as capturas das telas ficam para baixar na página da rodada (Artifacts, "layout-<idioma>");
+- **Botões de ajuda:** o `testes/paridade.sh --ajuda sqlite`: em todas as páginas e nos 18 tamanhos, cada ⓘ colado ao rótulo ou ao
   campo que explica, com nome e explicação; quando falha, as capturas ficam para baixar (Artifacts, "ajuda");
 - **Rolagem das telas:** o `testes/paridade.sh --rolagem sqlite`: no computador, no tablet de pé e deitado e no celular, cada
   página rola até o fim, o menu aberto até o último item e a gaveta Explicações até a última explicação;

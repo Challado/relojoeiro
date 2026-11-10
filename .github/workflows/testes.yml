@@ -141,10 +141,16 @@ jobs:
       - name: Os 19 modos (28 dias cada), as trocas de modo e a matriz do rodízio (todos os modos, trocas, ações e parâmetros)
         run: testes/simulacao.sh
 
+  # um job por idioma, em paralelo: os textos de cada língua têm outro tamanho (o francês e o inglês são mais compridos, o chinês não tem
+  # espaços, o hindi tem outra escrita) e o que cabe em português pode vazar, partir ou sobrepor em outra
   layout:
-    name: Layout das telas
+    name: Layout das telas (${{ matrix.lingua }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        lingua: [pt-BR, en, es, fr, hi, zh-CN]
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -160,14 +166,15 @@ jobs:
           npm install -g playwright@1
           playwright install --with-deps chromium
       - name: Interface da Configuração (celular, tablet e PC)
+        if: matrix.lingua == 'pt-BR'
         run: node testes/configuracao-interface.cjs
       - name: Conferência do layout
-        run: testes/paridade.sh --layout sqlite
+        run: LAYOUT_LINGUA=${{ matrix.lingua }} testes/paridade.sh --layout sqlite
       - name: Capturas das telas (para olhar quando falha)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: layout
+          name: layout-${{ matrix.lingua }}
           path: /tmp/relojoeiro-paridade.*/layout/
           if-no-files-found: ignore
           retention-days: 7

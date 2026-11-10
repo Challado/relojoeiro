@@ -2697,7 +2697,7 @@ api.php?recurso=codigo&conteudo=1&f[arquivos][camada]=tela   स्क्री�
    API और cron छूते हैं, अंदरूनी फ़ाइलें वेब से बंद हैं, हर क्रिया और `config.php` का हर स्थिरांक दस्तावेज़ में है, और फ़ाइल
    की शुरुआत में बताए बाक़ी नियम। और अगर दौर के दौरान PHP कोई भी चेतावनी (Warning, Notice, Deprecated) दे तो यह विफल होता है।
    स्क्रीनें बदलीं? लेआउट की
-   जाँच भी चलाएँ (`testes/paridade.sh --layout sqlite`): `0 problemas`; और स्क्रॉल की जाँच
+   जाँच भी चलाएँ (`testes/paridade.sh --layout sqlite`): `0 problemas`, पुर्तगाली में और बाक़ी भाषाओं में भी (`LAYOUT_LINGUA=fr testes/paridade.sh --layout sqlite`, और यही `en`, `es`, `hi` और `zh-CN` के साथ: GitHub हर भाषा के लिए एक चलाता है); और स्क्रॉल की जाँच
    (`testes/paridade.sh --rolagem sqlite`): `A rolagem confere`। रोटेशन बदला?
    मोड का सिमुलेशन चलाएँ (`testes/simulacao.sh`, `faketime` इंस्टॉल करके): `Os 19 modos conferem`।
 7. **हर नया टेक्स्ट `t()` से गुज़रता है** (`api.js` और `textos/funcoes.php` में यह फ़ंक्शन है), पुर्तगाली को कुंजी बनाकर और

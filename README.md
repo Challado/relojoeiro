@@ -2875,7 +2875,8 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    banco só é tocado pelo núcleo, pela API e pelo cron, os arquivos internos ficam bloqueados pela web, toda ação e toda
    constante do `config.php` estão documentadas, e as outras regras listadas no começo do arquivo. E falha se o PHP der
    qualquer aviso (Warning, Notice, Deprecated) durante a rodada. Mexeu nas telas? Rode também a conferência do layout
-   (`testes/paridade.sh --layout sqlite`): `0 problemas`; e a da rolagem (`testes/paridade.sh --rolagem sqlite`):
+   (`testes/paridade.sh --layout sqlite`): `0 problemas`, em português e nos outros idiomas (`LAYOUT_LINGUA=fr testes/paridade.sh
+   --layout sqlite`, e o mesmo com `en`, `es`, `hi` e `zh-CN`: o GitHub roda um por idioma); e a da rolagem (`testes/paridade.sh --rolagem sqlite`):
    `A rolagem confere`. Mexeu no rodízio? Rode a simulação dos modos (`testes/simulacao.sh`, com o `faketime` instalado):
    `Os 19 modos conferem`.
 7. **Todo texto novo passa pelo `t()`** (o `api.js` e o `textos/funcoes.php` têm a função), com o português como chave e os

@@ -533,7 +533,8 @@ form.calibre-campos select { max-width: 100%; }
 #tabela-relogios .carga-cel .barra { width: 44px; }
 /* títulos compridos em duas linhas */
 #tabela-relogios thead th { white-space: normal; vertical-align: bottom; }
-#tabela-relogios thead th button { white-space: normal; text-align: left; line-height: 1.2; }
+/* (keep-all: em chinês o título "还有" não quebra entre os dois caracteres quando a coluna encolhe) */
+#tabela-relogios thead th button { white-space: normal; word-break: keep-all; text-align: left; line-height: 1.2; }
 /* o título de uma coluna cadastrada (c_...) não quebra: as de sempre quebram onde o <br> manda, e o nome que a pessoa escolhe fica numa linha só */
 #tabela-relogios thead th[data-col^="c_"] button { white-space: nowrap; }
 #tabela-relogios .col-codigo { width: 2.4rem; }
@@ -1010,7 +1011,7 @@ table.resumo-plano { max-width: 44rem; }
 
   /* os dias do plano: o dia à esquerda; o relógio (com o motivo) em cima; embaixo o lembrete e o "trocar por…" */
   #bloco-proximos table.relogios tr, table.dias-plano tr {
-    display: grid; grid-template-columns: 3.2rem minmax(0, 1fr) auto; gap: .25rem .6rem; align-items: center;
+    display: grid; grid-template-columns: minmax(3.2rem, max-content) minmax(0, 1fr) auto; gap: .25rem .6rem; align-items: center;
     padding: .55rem .7rem; border-bottom: 1px solid var(--aco);
   }
   #bloco-proximos table.relogios tr:last-child, table.dias-plano tr:last-child { border-bottom: 0; }
@@ -1362,7 +1363,8 @@ a.botao:hover { filter: brightness(1.08); }
 .cartao-pe { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding-top: .6rem; border-top: 1px solid var(--aco); }
 .cartao-pe > .nota { flex: 1 1 100%; margin: 0; }
 .campos { display: grid; max-width: 46rem; }
-.par-campo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(11rem, 55%); align-items: center; gap: .9rem; padding: .45rem 0; border-bottom: 1px solid var(--aco); font-size: .93rem; }
+/* o rótulo nunca fica mais estreito que a maior palavra dele ("automatiquement" com o ⓘ colado); o controle cede até 10rem */
+.par-campo { display: grid; grid-template-columns: minmax(min-content, 1fr) minmax(10rem, 1.2fr); align-items: center; gap: .9rem; padding: .45rem 0; border-bottom: 1px solid var(--aco); font-size: .93rem; }
 .par-campo:last-child { border-bottom: 0; }
 .par-campo .controle { display: flex; min-width: 0; }
 .par-campo .controle input:not([type=checkbox]), .par-campo .controle select { width: 100%; }
@@ -1627,7 +1629,7 @@ footer.apagar-plano h2 { margin-top: 0; }
   table.tabela-dados th, table.tabela-dados td { padding-left: .3rem; padding-right: .3rem; }
   table.tabela-dados th { letter-spacing: 0; }
   table.resumo-plano th, table.resumo-plano td { padding-left: .35rem; padding-right: .35rem; }
-  table.tabela-dados td, table.tabela-dados th, table.resumo-plano td, table.resumo-plano th { overflow-wrap: anywhere; }
+  table.tabela-dados td, table.tabela-dados th, table.resumo-plano td, table.resumo-plano th { overflow-wrap: break-word; }
   table.tabela-dados td.valor { white-space: normal; }
   table.tabela-dados td.valor.texto { min-width: 0; }
   table.resumo-plano { font-size: .85rem; }
@@ -1659,7 +1661,7 @@ form.excluir-conjunto button.discreto { white-space: normal; text-align: left; }
   table.tabela-dados.tecnico th, table.tabela-dados.tecnico td { display: block; width: auto; padding-left: 0; padding-right: 0; }
   table.tabela-dados.tecnico th { border-bottom: 0; padding-bottom: 0; white-space: normal; }
   table.tabela-dados th, table.tabela-dados td { padding-left: .3rem; padding-right: .3rem; }
-  table.tabela-dados td { overflow-wrap: anywhere; }
+  table.tabela-dados td { overflow-wrap: break-word; }
   table.tabela-dados td.valor { white-space: normal; }
   table.tabela-dados td.valor.texto { min-width: 0; }
   table.tabela-dados th { letter-spacing: 0; }
@@ -1710,6 +1712,8 @@ svg.grafico-barras rect { fill: var(--safira); }
 svg.grafico-barras .eixo { stroke: var(--aco-escuro); stroke-width: 1; }
 svg.grafico-barras text { font-size: 22px; fill: var(--cinza); text-anchor: middle; font-variant-numeric: tabular-nums; }
 svg.grafico-barras text.valor { fill: var(--tinta); font-size: 19px; }
+/* o rótulo embaixo da barra cabe na faixa dela também nos idiomas de texto mais largo (chinês) */
+svg.grafico-barras text.rotulo { font-size: 19px; }
 .distribuicao { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); gap: 1rem 1.5rem; }
 .parte-distribuicao h3 { margin: 0 0 .3rem; font-size: 1rem; }
 table.tabela-distribuicao { width: 100%; }
@@ -2099,3 +2103,43 @@ table.compacta td.formula { min-width: 12rem; }
 /* o resumo do plano no celular: o nome do relógio quebra nos espaços, não no meio da palavra, e a seção rola para o lado se não couber */
 table.resumo-plano td { overflow-wrap: break-word; }
 main.plano > section { overflow-x: auto; }
+/* o painel do relógio ao lado da lista (~315px) e a ficha em tela estreita (até 900px): a foto fica pequena ao lado do nome e os botões da
+   foto ("Trocar a foto", "Remover foto", em qualquer idioma) passam para uma linha de baixo, na largura toda, em vez de presos numa coluna
+   de 5,5rem onde o texto não cabe (e o título ganha a largura que sobra) */
+.col-detalhe .ficha-cabeca { grid-template-columns: 5.5rem minmax(0, 1fr); }
+.col-detalhe .ficha-foto { display: contents; }
+.col-detalhe .ficha-cabeca > .ficha-identidade { grid-column: 2; grid-row: 1 / span 3; }
+.col-detalhe .ficha-foto > form { grid-column: 1 / -1; }
+.col-detalhe .foto-acoes { margin-top: 0 !important; }
+.col-detalhe .foto-acoes .botao-arquivo, .col-detalhe .foto-acoes button { width: auto; flex: 1 1 auto; }
+.col-detalhe .foto-remover button { width: auto; }
+.col-detalhe .ficha-link a { white-space: nowrap; }
+@media (max-width: 900px) {
+  .ficha-cabeca { grid-template-columns: 5.5rem minmax(0, 1fr); }
+  .ficha-foto { display: contents; }
+  .ficha-cabeca > .ficha-identidade { grid-column: 2; grid-row: 1 / span 3; }
+  .ficha-foto > form { grid-column: 1 / -1; }
+  .foto-acoes { margin-top: 0 !important; }
+  .foto-acoes .botao-arquivo, .foto-acoes button { width: auto; flex: 1 1 auto; }
+  .foto-remover button { width: auto; }
+}
+/* a tabela das medições do gasto (cabeçalhos mais compridos em francês e inglês) rola para o lado dentro do quadro em vez de vazar */
+table.tabela-dados.medicoes { display: block; max-width: 100%; overflow-x: auto; }
+/* o botão "Tirar do pulso" / "Retirée du poignet" desce para a linha de baixo quando não cabe ao lado do texto, sem partir em duas linhas */
+form.marcar-pulso button { white-space: nowrap; }
+@media (max-width: 420px) { form.marcar-pulso { display: block; margin: .35rem 0 0; } }
+/* o painel do relógio: o link "Abrir a ficha" cabe na coluna do nome em qualquer idioma ("Open the watch page ↗") */
+.col-detalhe .ficha-link a { font-size: .78rem; padding: .2rem .5rem; }
+/* a reserva à direita para o × do alto vale só nas primeiras linhas (o tipo e o título): o resto do cabeçalho usa a largura toda */
+.col-detalhe .ficha-cabeca { padding-right: 0; }
+.col-detalhe .ficha-identidade > :first-child, .col-detalhe .ficha-identidade > h1 { padding-right: 2.2rem; }
+@media (max-width: 420px) {
+  /* o rótulo comprido de um campo (com o ⓘ colado) ganha a linha toda e o controle desce para baixo dele */
+  .par-campo { grid-template-columns: minmax(0, 1fr); gap: .3rem; }
+  /* os botões não partem o texto em duas linhas: o que não cabe ao lado desce para a linha de baixo */
+  .titulo-secao { flex-wrap: wrap; gap: .5rem; }
+  .titulo-secao .botoes { flex-wrap: wrap; }
+  .botoes > button, .botoes > a.botao { white-space: nowrap; max-width: 100%; }
+}
+/* a grade de dados do quadro (campo, valor, identificação...): a tabela que não cabe na largura rola para o lado dentro dela, não vaza do quadro */
+.dados-grade > div { overflow-x: auto; max-width: 100%; }

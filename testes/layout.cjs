@@ -181,6 +181,8 @@ function examinar(seletorRaiz) {
         while ((m = palavras.exec(no.textContent))) {
           if (m[0].length < 3 || m[0].length > 24) continue;
           const w = m[0].replace(/^[(\["'«]+|[)\]"'»;:!?]+$/g, '');
+          // (a palavra com hífen, "2026-10-13", "F-91W", quebra no hífen: é o comportamento normal do texto corrido)
+          if (w.includes('-')) continue;
           // (chinês, japonês e coreano não têm espaços: quebrar entre os caracteres é o normal)
           if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(w)) continue;
           if (!(/^\p{L}+[.,]?$/u.test(w) || /^[\d.,:\/%$+-]+$/.test(w))) continue;

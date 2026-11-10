@@ -24,6 +24,7 @@
 # dicionários dos idiomas têm todos os textos do código (testes/textos.php) e todo
 # campo das respostas está explicado na ajuda (testes/campos.php, no servidor do primeiro banco). Por último, em cada banco, o
 # isolamento entre contas (testes/isolamento.php): uma conta não vê nem muda o que é de outra pelo token pessoal.
+# LAYOUT_LINGUA=fr (en, es, hi, zh-CN) confere só o layout nesse idioma, com o roteiro em português (o GitHub roda um job por idioma).
 # LINGUA=en roda o roteiro e a conferência dos campos nesse idioma (e o layout, com --layout); TESTE_ESTRITO=1 liga o modo
 # estrito dos idiomas no servidor de teste: a tradução que falta para com erro e aparece no registro do roteiro.
 # Outras variáveis: TESTE_PORTA (a primeira porta, padrão 8101; uma por banco), RELOGIOS_TESTE_PASTA (a pasta da rodada;
@@ -201,7 +202,9 @@ fi
 
 if [ $LAYOUT -eq 1 ]; then
   echo "Conferência do layout no $REF:"
-  if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/layout" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/layout/agrupado.txt:"; sed 's/^/    /' "$PASTA/layout/agrupado.txt" 2>/dev/null | head -60; fi
+  # LAYOUT_LINGUA=en (es, fr, hi, zh-CN): só o layout nesse idioma, com o roteiro em português (pt-BR ou vazia: em português)
+  LL="${LAYOUT_LINGUA:-${LINGUA:-}}"; [ "$LL" = "pt-BR" ] && LL=""
+  if BASE="http://127.0.0.1:$PORTA0/" SAIDA="$PASTA/layout" LINGUA="$LL" node testes/layout.cjs; then :; else FALHOU=1; echo "    veja $PASTA/layout/agrupado.txt:"; sed 's/^/    /' "$PASTA/layout/agrupado.txt" 2>/dev/null | head -60; fi
 fi
 
 if [ $AJUDA -eq 1 ]; then

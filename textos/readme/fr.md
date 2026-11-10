@@ -1,4 +1,4 @@
-<!-- origem: 2ae055a25d7832e8792cfb6212e3bea0019a9b07 -->
+<!-- origem: f5705812fd43ef42c79a50cf5fcd8a0e0770ebb7 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -782,7 +782,7 @@ Les améliorations sont les bienvenues, et le chemin passe toujours par ce dép�
    l'API, la base n'est touchée que par le noyau, l'API et le cron, les fichiers internes sont bloqués par le web, chaque action
    et chaque constante du `config.php` sont documentées, et les autres règles listées au début du fichier. Et il échoue si PHP
    donne le moindre avertissement (Warning, Notice, Deprecated) pendant le passage. Vous avez touché aux
-   écrans ? Lancez aussi la vérification de la mise en page (`testes/paridade.sh --layout sqlite`) : `0 problemas` ; et celle du
+   écrans ? Lancez aussi la vérification de la mise en page (`testes/paridade.sh --layout sqlite`) : `0 problemas`, en portugais et dans les autres langues (`LAYOUT_LINGUA=fr testes/paridade.sh --layout sqlite`, et de même avec `en`, `es`, `hi` et `zh-CN` : GitHub en lance un par langue) ; et celle du
    défilement (`testes/paridade.sh --rolagem sqlite`) : `A rolagem confere`. Vous avez
    modifié la rotation ? Lancez la simulation des modes (`testes/simulacao.sh`, avec `faketime` installé) : `Os 19 modos conferem`.
 7. **Tout nouveau texte passe par `t()`** (le `api.js` et le `textos/funcoes.php` ont la fonction), avec le portugais comme clé

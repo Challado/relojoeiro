@@ -1,4 +1,4 @@
-<!-- origem: 2ae055a25d7832e8792cfb6212e3bea0019a9b07 -->
+<!-- origem: f5705812fd43ef42c79a50cf5fcd8a0e0770ebb7 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -745,7 +745,8 @@ Improvements are welcome, and the way is always this repository:
    the database is only touched by the core, the API and the cron, the internal files are blocked over the web, every action
    and every `config.php` constant is documented, and the other rules listed at the top of the file. And it fails if PHP gives
    any warning (Warning, Notice, Deprecated) during the round. Touched the screens? Also run the layout check (`testes/paridade.sh --layout sqlite`):
-   `0 problemas`; and the scroll check (`testes/paridade.sh --rolagem sqlite`): `A rolagem confere`. Changed the
+   `0 problemas`, in Portuguese and in the other languages (`LAYOUT_LINGUA=fr testes/paridade.sh --layout sqlite`, and the same with
+   `en`, `es`, `hi` and `zh-CN`: GitHub runs one per language); and the scroll check (`testes/paridade.sh --rolagem sqlite`): `A rolagem confere`. Changed the
    rotation? Run the mode simulation (`testes/simulacao.sh`, with `faketime` installed): `Os 19 modos conferem`.
 7. **Every new text goes through `t()`** (`api.js` and `textos/funcoes.php` have the function), with the Portuguese as the key
    and the parameters in braces: `t("Excluir {1}?", {1: nome})`, never `"Excluir " + nome + "?"`. No text written straight into the screens or the API: GitHub checks it in two ways. Rule 11 of `testes/arquitetura.php` rejects a quoted text that goes to the screen outside `t()` (what is deliberately not translated, such as the brand, goes in `fixo("...")`), and `LINGUA=zh-CN testes/paridade.sh --textos sqlite` opens every screen with the whole system in Chinese and flags any word in Latin letters that is neither the user's data nor from the dictionary. Then translate it in the
