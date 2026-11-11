@@ -557,17 +557,44 @@ function campos_do_relogio($r)
 // Os valores gravados de um relógio: [identificador => texto]
 function valores_proprios($id)
 {
+    // guardados por pedido: a página Hoje pedia os valores de cada relógio dezenas de vezes (uma por fórmula, aviso, critério
+    // e coluna), duas consultas de cada vez. Dentro de uma coleção, os de todos os relógios dela vêm em duas consultas; fora
+    // dela (o cron entre as coleções, o que roda sem escopo), os de cada relógio, uma vez. A chave leva o contador das
+    // gravações de cadastro (BANCO_CADASTRO, do banco.php) e o FORMULAS_VERSAO: gravou um valor, um campo ou um relógio,
+    // tudo é lido de novo; o uso e o plano (lançamentos, medições, o plano) não mexem nisto
+    static $cache = [];
+    $escopo = $GLOBALS["BANCO_ESCOPO"]["colecao"] ?? null;
+    $k = ($escopo === null ? "sem" : (int)$escopo) . "/" . ($GLOBALS["BANCO_CADASTRO"] ?? 0) . "/" . ($GLOBALS["FORMULAS_VERSAO"] ?? 0);
+    if (!isset($cache[$k])) {
+        $cache = [$k => $escopo === null ? [] : valores_proprios_ler(null)];
+    }
+    $id = (int)$id;
+    if (!array_key_exists($id, $cache[$k])) {
+        // fora do escopo, ou um relógio que a coleção do pedido não alcança: o dele, direto
+        $cache[$k][$id] = $escopo === null ? (valores_proprios_ler($id)[$id] ?? []) : [];
+    }
+    return $cache[$k][$id];
+}
+
+// Lê do banco os valores dos campos: os de um relógio ($id) ou, com null, os de todos os relógios que o escopo alcança.
+// Devolve [relogio_id => [identificador => valor]] (os campos múltiplos já juntos, como o campo manda)
+function valores_proprios_ler($id)
+{
+    $onde = $id === null ? "" : " WHERE v.relogio_id = ?";
+    $p = $id === null ? [] : [(int)$id];
     $res = [];
-    foreach (linhas("SELECT c.identificador, v.valor FROM campo_valor v JOIN campo c ON c.id = v.campo_id WHERE v.relogio_id = ?", [$id]) as $x) {
-        $res[$x["identificador"]] = $x["valor"];
+    foreach (linhas("SELECT v.relogio_id, c.identificador, v.valor FROM campo_valor v JOIN campo c ON c.id = v.campo_id" . $onde, $p) as $x) {
+        $res[(int)$x["relogio_id"]][$x["identificador"]] = $x["valor"];
     }
     // os campos múltiplos: um valor por linha da tabela, juntos
     $itens = [];
-    foreach (linhas("SELECT c.identificador, v.valor FROM campo_valor_item v JOIN campo c ON c.id = v.campo_id WHERE v.relogio_id = ?", [$id]) as $x) {
-        $itens[$x["identificador"]][] = $x["valor"];
+    foreach (linhas("SELECT v.relogio_id, c.identificador, v.valor FROM campo_valor_item v JOIN campo c ON c.id = v.campo_id" . $onde, $p) as $x) {
+        $itens[(int)$x["relogio_id"]][$x["identificador"]][] = $x["valor"];
     }
-    foreach ($itens as $ident => $l) {
-        $res[$ident] = itens_juntar(campos_todos()[$ident] ?? null, $l);
+    foreach ($itens as $rid => $campos) {
+        foreach ($campos as $ident => $l) {
+            $res[$rid][$ident] = itens_juntar(campos_todos()[$ident] ?? null, $l);
+        }
     }
     return $res;
 }
@@ -2264,6 +2291,24 @@ function instalacao_situacao()
         "migracoes_pendentes" => array_values($pendentes), "usuarios" => $usuarios, "proximo_passo" => $proximo];
 }
 
+// As chaves que existem na tabela sistema (as marcas das migrações: migracao_vNN), lidas uma vez e de novo depois de
+// qualquer gravação (BANCO_ESCRITAS): [chave => true]; sem a tabela, nenhuma
+function migracoes_marcas_do_sistema()
+{
+    static $cache = null;
+    $k = ($GLOBALS["BANCO_ESCRITAS"] ?? 0) . "/" . ($GLOBALS["BANCO_ESTRUTURA"] ?? 0);
+    if ($cache === null || $cache[0] !== $k) {
+        $tem = [];
+        if (banco_tem_tabela("sistema")) {
+            foreach (sem_escopo(function () { return linhas("SELECT chave FROM sistema"); }) as $x) {
+                $tem[(string)$x["chave"]] = true;
+            }
+        }
+        $cache = [($GLOBALS["BANCO_ESCRITAS"] ?? 0) . "/" . ($GLOBALS["BANCO_ESTRUTURA"] ?? 0), $tem];
+    }
+    return $cache[1];
+}
+
 function migracoes_pendentes()
 {
     global $MIGRACOES;
@@ -2278,7 +2323,10 @@ function migracoes_pendentes()
             foreach (explode("|", $m[2]) as $uma) {
                 $linha = explode("=", $uma, 2);
                 $marca = explode(".", $linha[0]);
-                if (count($linha) === 2) {
+                if (count($linha) === 2 && $marca === ["sistema", "chave"]) {
+                    // as marcas guardadas na tabela sistema: todas numa consulta só (eram uma por migração, a cada pedido)
+                    $existe = isset(migracoes_marcas_do_sistema()[$linha[1]]);
+                } elseif (count($linha) === 2) {
                     $existe = banco_tem_tabela($marca[0]) && (int)valor("SELECT COUNT(*) FROM " . $marca[0] . " WHERE " . $marca[1] . " = ?", [$linha[1]]) > 0;
                 } else {
                     $existe = count($marca) === 2 ? banco_tem_coluna($marca[0], $marca[1]) : banco_tem_tabela($marca[0]);
@@ -4952,12 +5000,19 @@ function criterios_config($recarregar = false)
     $cfg = $todos_[$k_] ?? null;
     if ($cfg === null || $recarregar) {
         $cfg = [];
+        // três consultas para o conjunto inteiro (eram uma por parâmetro e uma por subparâmetro): os subparâmetros e as faixas
+        // vêm todos de uma vez, na ordem de sempre, e se juntam aqui
+        $faixas = [];
+        foreach (linhas("SELECT * FROM criterio_faixa ORDER BY categoria, de") as $f) {
+            $faixas[(int)$f["sub_id"]][] = $f;
+        }
+        $subs = [];
+        foreach (linhas("SELECT * FROM criterio_sub ORDER BY ordem, id") as $sb) {
+            $sb["faixas"] = $faixas[(int)$sb["id"]] ?? [];
+            $subs[(int)$sb["parametro_id"]][] = $sb;
+        }
         foreach (linhas("SELECT * FROM criterio_parametro ORDER BY ordem, id") as $p) {
-            $p["subs"] = [];
-            foreach (linhas("SELECT * FROM criterio_sub WHERE parametro_id = ? ORDER BY ordem, id", [$p["id"]]) as $sb) {
-                $sb["faixas"] = linhas("SELECT * FROM criterio_faixa WHERE sub_id = ? ORDER BY categoria, de", [$sb["id"]]);
-                $p["subs"][] = $sb;
-            }
+            $p["subs"] = $subs[(int)$p["id"]] ?? [];
             $chave = $p["escopo_relogio_id"] !== null ? "r:" . (int)$p["escopo_relogio_id"] : ($p["escopo_no_id"] !== null ? "g:" . (int)$p["escopo_no_id"] : "");
             $cfg[$chave][] = $p;
         }

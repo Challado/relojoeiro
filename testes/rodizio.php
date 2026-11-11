@@ -187,7 +187,44 @@ try {
     $ae = criterios_ao_excluir([["id" => 1, "nome" => "A", "peso" => 50], ["id" => 2, "nome" => "B", "peso" => 30], ["id" => 3, "nome" => "C", "peso" => 20]], 3);
     exigir_rodizio($ae === [["id" => 1, "nome" => "A", "peso" => 50.0, "peso_novo" => 62.5], ["id" => 2, "nome" => "B", "peso" => 30.0, "peso_novo" => 37.5]], "A prévia da exclusão não bate: " . json_encode($ae));
     exigir_rodizio(criterios_ao_excluir([["id" => 1, "nome" => "A", "peso" => 100]], 1) === [], "O único da lista não tem prévia.");
-    echo "Rodízio: níveis, permissões, pausa, marcações, previsão, retomada, as semanas à frente e a prévia dos critérios conferem.\n";
+    // o que se lê do cadastro fica guardado dentro do pedido: a página Hoje pedia os valores dos campos de cada relógio
+    // dezenas de vezes, duas consultas de cada vez (com o banco noutra máquina, cada uma é uma ida e volta de rede)
+    $consultas = function ($f) { $n = $GLOBALS["BANCO_CONSULTAS"] ?? 0; $f(); return ($GLOBALS["BANCO_CONSULTAS"] ?? 0) - $n; };
+    banco_escopo((int)sem_escopo(function () use ($rid) { return valor("SELECT colecao_id FROM relogio WHERE id = ?", [$rid]); }));
+    $campo_obs = (int)valor("SELECT id FROM campo WHERE identificador = 'autonomia_dias'");
+    $ident_obs = (string)valor("SELECT identificador FROM campo WHERE id = ?", [$campo_obs]);
+    sql("DELETE FROM campo_valor WHERE relogio_id = ? AND campo_id = ?", [$rid, $campo_obs]);
+    sql("INSERT INTO campo_valor (relogio_id, campo_id, valor) VALUES (?, ?, ?)", [$rid, $campo_obs, "primeiro"]);
+    exigir_rodizio((valores_do_relogio($rid)[$ident_obs] ?? null) === "primeiro", "O valor gravado não apareceu na leitura.");
+    exigir_rodizio($consultas(function () use ($rid) { valores_do_relogio($rid); valores_do_relogio($rid); valores_proprios($rid); }) === 0, "Ler de novo os valores do relógio foi ao banco outra vez.");
+    // gravar no plano ou no uso não joga fora o que se leu do cadastro
+    plano_gravar($hoje->modify("+2 days")->format("Y-m-d"), $rid, null, "manual", "Não mexe nos valores", null, true);
+    exigir_rodizio($consultas(function () use ($rid) { valores_do_relogio($rid); }) === 0, "Gravar no plano fez reler os valores dos campos.");
+    // gravar um valor faz reler, e a leitura traz o valor novo
+    sql("UPDATE campo_valor SET valor = ? WHERE relogio_id = ? AND campo_id = ?", ["segundo", $rid, $campo_obs]);
+    exigir_rodizio((valores_do_relogio($rid)[$ident_obs] ?? null) === "segundo", "Depois de gravar, a leitura devolveu o valor velho.");
+    // a transação desfeita: o que foi lido dentro dela não fica valendo
+    try {
+        banco_atomico(function () use ($rid, $campo_obs, $ident_obs) {
+            sql("UPDATE campo_valor SET valor = ? WHERE relogio_id = ? AND campo_id = ?", ["terceiro", $rid, $campo_obs]);
+            exigir_rodizio((valores_do_relogio($rid)[$ident_obs] ?? null) === "terceiro", "Dentro da transação, a leitura não viu o valor gravado.");
+            throw new RuntimeException("desfaz");
+        });
+    } catch (RuntimeException $e) {
+        exigir_rodizio($e->getMessage() === "desfaz", $e->getMessage());
+    }
+    exigir_rodizio((valores_do_relogio($rid)[$ident_obs] ?? null) === "segundo", "Depois de desfazer a transação, a leitura ficou com o valor que não foi gravado.");
+    // as tabelas que existem: perguntar de novo não vai ao banco; criar uma tabela faz reler
+    banco_tem_tabela("relogio");
+    exigir_rodizio($consultas(function () { banco_tem_tabela("relogio"); banco_tem_tabela("campo"); banco_tem_tabela("nao_existe"); }) === 0, "Perguntar de novo se a tabela existe foi ao banco outra vez.");
+    exigir_rodizio(!banco_tem_tabela("teste_guardado"), "A tabela de teste já existia.");
+    banco_script("CREATE TABLE teste_guardado (id INT NOT NULL PRIMARY KEY);");
+    exigir_rodizio(banco_tem_tabela("teste_guardado"), "A tabela recém-criada não apareceu.");
+    banco_script("DROP TABLE teste_guardado;");
+    exigir_rodizio(!banco_tem_tabela("teste_guardado"), "A tabela apagada continuou aparecendo.");
+    // os critérios: o conjunto inteiro em três consultas, quantos forem os parâmetros
+    exigir_rodizio($consultas(function () { criterios_config(true); }) <= 3, "Os critérios foram lidos com uma consulta por parâmetro.");
+    echo "Rodízio: níveis, permissões, pausa, marcações, previsão, retomada, as semanas à frente, a prévia dos critérios e o que fica guardado no pedido conferem.\n";
 } catch (Throwable $e) {
     fwrite(STDERR, $e->getMessage() . " (" . basename($e->getFile()) . ":" . $e->getLine() . ")\nBase: " . $pasta . "\n");
     exit(1);

@@ -655,8 +655,40 @@ function banco_executar_cru($comando, $params = [])
     return $r;
 }
 
+// As tabelas que mudam a toda hora e não entram no que se guarda do cadastro (os valores dos campos, os critérios): a
+// gravação nelas não joga esse guardado fora. São o uso e o plano; o resto (campos, valores, relógios, calibres, a árvore...)
+// joga.
+const BANCO_ESCRITA_LEVE = ["plano", "plano_bloco", "plano_livre", "lancamento", "lancamento_winder", "medicao", "sistema",
+    "cron_execucao", "cron_execucao_colecao"];
+
+// Toda gravação do pedido passa por aqui (banco_executar_banco, banco_direto, banco_script e o desfazer da transação): quem
+// guarda o que leu do banco, para não ler de novo no mesmo pedido, põe o contador na chave e relê quando ele muda. Três
+// contadores: BANCO_ESCRITAS (qualquer gravação), BANCO_CADASTRO (fora das tabelas de BANCO_ESCRITA_LEVE; o comando que
+// não dá para reconhecer conta aqui, por segurança) e BANCO_ESTRUTURA (CREATE, ALTER, DROP: as tabelas e colunas mudaram).
+// $comando no dialeto de origem (o do MySQL) ou já traduzido; $tudo: sem olhar o comando, mexe nos três.
+function banco_anotar_escrita($comando, $tudo = false)
+{
+    if (!$tudo && preg_match("/^\\s*(?:\\/\\*.*?\\*\\/\\s*)?(SELECT|WITH|SHOW|PRAGMA|EXPLAIN|BEGIN|START|COMMIT|SAVEPOINT|RELEASE|SET)\\b/is", $comando) === 1) {
+        return;
+    }
+    $GLOBALS["BANCO_ESCRITAS"] = ($GLOBALS["BANCO_ESCRITAS"] ?? 0) + 1;
+    if ($tudo || preg_match("/^\\s*(?:\\/\\*.*?\\*\\/\\s*)?(CREATE|ALTER|DROP|TRUNCATE|RENAME|RECREATE|ROLLBACK)\\b/is", $comando) === 1) {
+        $GLOBALS["BANCO_ESTRUTURA"] = ($GLOBALS["BANCO_ESTRUTURA"] ?? 0) + 1;
+        $GLOBALS["BANCO_CADASTRO"] = ($GLOBALS["BANCO_CADASTRO"] ?? 0) + 1;
+        return;
+    }
+    $leve = preg_match("/^\\s*(?:\\/\\*.*?\\*\\/\\s*)?(?:INSERT(?:\\s+IGNORE)?\\s+INTO|REPLACE\\s+INTO|UPDATE(?:\\s+OR\\s+INSERT\\s+INTO)?|DELETE\\s+FROM|MERGE\\s+INTO)\\s+[`\"]?(\\w+)/is", $comando, $m) === 1
+        && in_array(strtolower($m[1]), BANCO_ESCRITA_LEVE, true);
+    if (!$leve) {
+        $GLOBALS["BANCO_CADASTRO"] = ($GLOBALS["BANCO_CADASTRO"] ?? 0) + 1;
+    }
+}
+
 function banco_executar_banco($comando, $params = [])
 {
+    // quantos comandos o pedido mandou ao banco (os testes conferem que o que já foi lido não é lido de novo)
+    $GLOBALS["BANCO_CONSULTAS"] = ($GLOBALS["BANCO_CONSULTAS"] ?? 0) + 1;
+    banco_anotar_escrita($comando);
     $params = array_values($params);
     $traduzido = sql_traduzir($comando);
     if (count($traduzido) !== 1 || !is_string($traduzido[0])) {
@@ -1015,6 +1047,7 @@ function banco_tabela_sql($tabela)
 // Um comando sem parâmetros, direto (o DDL, a sessão): sem prepare
 function banco_direto($comando, $c = null)
 {
+    banco_anotar_escrita($comando);
     $c = $c ?? db();
     try {
         switch (banco_tipo()) {
@@ -1088,6 +1121,8 @@ function banco_confirma()
 
 function banco_desfaz()
 {
+    // o que foi lido dentro da transação desfeita não vale mais
+    banco_anotar_escrita("", true);
     if (banco_tipo() === "firebird") {
         banco_fb_transacao("desfaz");
         $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
@@ -1179,7 +1214,36 @@ function banco_fb_transacao($acao)
 // A estrutura: o que existe, os scripts (a instalação, as migrações) e os números dos ids
 // ---------------------------------------------------------------------------------------------------------------------
 
+// As tabelas que existem, lidas numa consulta só e guardadas até a estrutura mudar (BANCO_ESTRUTURA): todo pedido confere as
+// migrações pendentes, que perguntam por dezenas de tabelas, e com o banco noutra máquina cada pergunta era uma ida e volta
 function banco_tem_tabela($tabela)
+{
+    static $cache = null;
+    static $lendo = false;
+    $k = (string)($GLOBALS["BANCO_ESTRUTURA"] ?? 0);
+    if ($lendo) {
+        // a própria leitura da lista perguntou por uma tabela (a tradução do comando, num dos bancos): essa vai direto
+        return banco_tem_tabela_agora($tabela);
+    }
+    if ($cache === null || $cache[0] !== $k) {
+        $lendo = true;
+        try {
+            $nomes = banco_tabelas_agora();
+        } finally {
+            $lendo = false;
+        }
+        $tem = [];
+        foreach ($nomes as $x) {
+            // (a chave do resultado vem em maiúsculas no Firebird e, em alguns MySQL, no information_schema)
+            $tem[strtolower((string)(array_values($x)[0]))] = true;
+        }
+        $cache = [(string)($GLOBALS["BANCO_ESTRUTURA"] ?? 0), $tem];
+    }
+    return isset($cache[1][strtolower((string)$tabela)]);
+}
+
+// A pergunta por uma tabela, direto ao banco (sem o guardado)
+function banco_tem_tabela_agora($tabela)
 {
     switch (banco_tipo()) {
         case "mysql":
@@ -1193,7 +1257,36 @@ function banco_tem_tabela($tabela)
     }
 }
 
+// Todas as tabelas do banco, numa consulta
+function banco_tabelas_agora()
+{
+    switch (banco_tipo()) {
+        case "mysql":
+            return linhas("SELECT table_name AS n FROM information_schema.tables WHERE table_schema = DATABASE()");
+        case "pgsql":
+            return linhas("SELECT table_name AS n FROM information_schema.tables WHERE table_schema = current_schema()");
+        case "firebird":
+            return linhas("SELECT TRIM(RDB\$RELATION_NAME) AS n FROM RDB\$RELATIONS WHERE COALESCE(RDB\$SYSTEM_FLAG, 0) = 0");
+        default:
+            return linhas("SELECT name AS n FROM sqlite_master WHERE type = 'table'");
+    }
+}
+
+// (o resultado de cada pergunta fica guardado até a estrutura mudar, como as tabelas)
 function banco_tem_coluna($tabela, $coluna)
+{
+    static $cache = [];
+    $k = ($GLOBALS["BANCO_ESTRUTURA"] ?? 0) . "/" . strtolower($tabela . "." . $coluna);
+    if (!isset($cache[$k])) {
+        if (count($cache) > 500) {
+            $cache = [];
+        }
+        $cache[$k] = banco_tem_coluna_agora($tabela, $coluna);
+    }
+    return $cache[$k];
+}
+
+function banco_tem_coluna_agora($tabela, $coluna)
 {
     switch (banco_tipo()) {
         case "mysql":
@@ -1291,6 +1384,8 @@ function banco_script($texto)
         banco_fb_limpar();
     }
     banco_ajustar_ids();
+    // um script mexe na estrutura e nos dados por caminhos próprios de cada banco: o que se guardou não vale mais
+    banco_anotar_escrita("", true);
     return $n;
 }
 
