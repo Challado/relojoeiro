@@ -1,4 +1,4 @@
-<!-- origem: 5d0f7a74bfc2ec15d1b117e8157cfc2e6fa705d1 -->
+<!-- origem: 21058b6df230ca2ecf6a38b35fdad9bd93bb4bcd -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1256,11 +1256,14 @@ enregistrés, mais disparaissent de la fiche. Par l'API : `recurso=desejos` (la 
 ### Les onglets et les sorties de la collection {#as-abas-e-as-saídas-da-coleção}
 
 Au-dessus du tableau des montres de la page **Aujourd'hui** (et de la **Galerie**) se trouve une bande d'**onglets**, un
-pour chaque statut qui a une montre, dans l'ordre de vos définitions (Définitions › Listes, **Statuts de la montre dans la
-collection**) : *Dans la collection (42)*, *Prêtée (1)*, *Désirée (5)*, *Vendue (3)*... Chaque montre apparaît dans un seul
-onglet, celui de son statut. Créez un nouveau motif (Volée, Irréparable) et mettez-y une montre, l'onglet apparaît tout
-seul ; l'onglet vide disparaît (sauf le premier). Quand les onglets ne tiennent pas dans la largeur, la bande défile sur le
-côté, avec les flèches **‹** et **›** aux extrémités. Ce que montre chaque onglet dépend de ce que fait le statut :
+pour chaque statut de vos définitions, dans leur ordre (Définitions › Listes, **Statuts de la montre dans la collection**) :
+*Dans la collection (42)*, *Prêtée (1)*, *Désirée (5)*, *Vendue (3)*... Chaque montre apparaît dans un seul onglet, celui de
+son statut. Créez un nouveau motif (Volée, Irréparable) et son onglet apparaît tout seul. L'onglet du statut sans montre est
+désactivé : grisé, non cliquable, avec le motif au survol de la souris. Vous préférez ne pas voir les vides ? Dans
+Configuration, sous **Onglets des statuts sans montre**, choisissez *Masquer* : seuls les statuts qui ont une montre
+apparaissent, et la bande disparaît quand elles sont toutes dans un seul. Quand les onglets ne tiennent pas dans la largeur,
+la bande défile sur le côté, avec les flèches **‹** et **›** aux extrémités. Ce que montre chaque onglet dépend de ce que
+fait le statut :
 
 | Le statut fait | L'onglet montre |
 |---|---|
@@ -1556,6 +1559,7 @@ Les cartes remplissent les espaces disponibles selon la largeur de l’écran et
 | **Langue par défaut** (`idioma`) | la langue de la collection : celle des écrans pour qui n'a pas choisi la sienne (dans le sélecteur du menu ou dans **Mon compte** ; voir [Les langues](#os-idiomas)) et celle des messages et des agendas sans langue propre : portugais, anglais, chinois, hindi, espagnol ou français. Par défaut : celle de qui a créé la collection. |
 | **Ouvrir la montre sur la page Aujourd'hui** (`painel_modo`) | **À côté de la liste** (`lado`) : la montre cliquée s'ouvre dans un panneau à droite, et la liste reste visible. **Dans une grande fenêtre flottante** (`flutuante`) : elle s'ouvre au milieu de l'écran, par-dessus la page, avec le fond assombri et les cadres côte à côte ; elle se ferme avec le ×, Échap ou un clic à l'extérieur. Sur le téléphone, les deux occupent tout l'écran. Par défaut : à côté de la liste. |
 | **Mise en avant en haut de la page Aujourd'hui** (`destaque_hoje`) | **La montre du jour** (`dia`) : le grand cadre en haut de la page Aujourd'hui montre la montre du jour (celle du plan), avec jusqu'à quand elle reste et pourquoi elle est sortie. **La montre au poignet maintenant** (`pulso`) : il montre la montre qui est au poignet, même si ce n'est pas celle du jour (avec *au poignet maintenant* et, en dessous, *Montre du jour : …*, qui ouvre celle du jour) ; avec plus d'une au poignet, la dernière mise ; sans aucune au poignet, celle du jour reste, avec l'avis *Aucune montre au poignet maintenant*. Les données en dessous (état, charge, le bouton Mise au poignet/Retirée du poignet, la photo) sont celles de la montre mise en avant. Sous la photo, un petit tableau de deux cases dit ce qu'il y a là : **Du jour** | **Au poignet**. La case qui compte s'allume avec un ✓ (bleu *Du jour*, vert *Au poignet*) et l'autre reste éteinte ; la montre du jour au poignet allume les deux. En posant la souris dessus, la phrase du pourquoi (*Au poignet maintenant ; la montre du jour est une autre.*...). Par défaut : la montre du jour. |
+| **Onglets des statuts sans montre** (`abas_vazias`) | les onglets au-dessus du tableau des montres (pages Aujourd'hui et Galerie) sont les statuts des définitions. **Toujours afficher** (`sempre`) : tous apparaissent, et celui du statut sans montre est désactivé (grisé, non cliquable), avec le motif au survol de la souris. **Masquer** (`com_relogio`) : seuls les statuts qui ont une montre apparaissent ; avec toutes les montres dans un seul statut, la bande d'onglets disparaît. |
 | **Petite montre de la barre** (`relojinho_modo`) | la petite montre du coin de la barre et de l'onglet a 24 modèles, un pour chaque heure du jour. **Normal** (`hora`) : chaque heure a le sien (à 0 h la Classique, à 16 h la Numérique, à 23 h la Futuriste). **Aléatoire** (`aleatorio`) : chaque heure en tire un des 24, et il peut se répéter. **Aléatoire sans répétition** (`sem_repeticao`) : les 24 mélangés, chacun apparaît une fois dans la journée. Le tirage est celui du jour : le même sur chaque page et appareil, et un autre le lendemain. Par défaut : normal. |
 
 Sur la page, chaque option tient sur une ligne, avec le nom à gauche et le champ à droite, dans des cadres (Routine du jour,

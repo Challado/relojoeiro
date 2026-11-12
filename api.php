@@ -1211,6 +1211,8 @@
  *                                    grande por cima da página); vazio: lado
  *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
+ *     config.abas_vazias             as abas das situações sem relógio (páginas Hoje e Galeria): sempre (aparecem desabilitadas, com o
+ *                                    motivo) ou com_relogio (só aparecem as situações que têm relógio); vazio: sempre
  *     config.calibre_campos          os campos do formulário do calibre (Cadastros › Calibres): movimento (só os campos marcados como do
  *                                    movimento, e os que o calibre já define) ou todos; vazio: movimento
  *     config.relojinho_modo          o reloginho da barra e da aba: hora (cada hora do dia tem o seu modelo), aleatorio (um sorteado a cada
@@ -2409,8 +2411,9 @@
  *     fora_da_colecao[].posse_texto  a mesma por extenso ("Desejado", "Vendido", "Arquivado")
  *     fora_da_colecao[].tipo         o grupo do relógio (o nome; "—": na raiz)
  *     fora_da_colecao[].aba          a aba em que ele aparece: a situação dele (uma chave de abas[])
- *     abas                           as abas por situação, na ordem do cadastro (Cadastros › Listas): uma por situação que tem relógio; a
- *                                    primeira que faz "na coleção" vem mesmo vazia
+ *     abas                           as abas por situação, na ordem do cadastro (Cadastros › Listas): uma por situação da lista; a da
+ *                                    situação sem relógio vem desabilitada (disponivel: false, com o motivo) ou, com a opção abas_vazias em
+ *                                    com_relogio, não vem; a primeira que faz "na coleção" vem e abre mesmo vazia
  *     abas[]                         uma aba
  *     abas[].chave                   a situação da aba: o identificador do item da lista (o que se pede em aba= e o que cada relógio traz
  *                                    em aba)
@@ -2419,6 +2422,9 @@
  *     abas[].tipo                    o que a aba mostra: relogios (os que são seus: a tabela dos relógios), desejos (a lista de desejos,
  *                                    recurso=desejos), saidas (os que saíram, recurso=saidas) ou todos (a aba Todos da galeria)
  *     abas[].quantos                 quantos relógios a aba tem
+ *     abas[].disponivel              se a aba abre: false na situação sem relógio (a tela a mostra desabilitada, sem link)
+ *     abas[].motivo                  por que a aba não abre, no idioma do pedido: o que falta e como pôr um relógio nela; null na aba que
+ *                                    abre
  *     relogios[].aba                 a aba da tabela em que ele aparece: a situação dele (uma chave de abas[]); a tabela mostra os da aba
  *                                    escolhida
  *     relogios[].saida               a saída de agora (o emprestado: com quem está e desde quando); null: está na coleção
@@ -4322,6 +4328,8 @@
  *                                    grande por cima da página); vazio: lado
  *     config.destaque_hoje           o destaque no alto da página Hoje: dia (o relógio do dia, o do plano) ou pulso (o relógio no pulso
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
+ *     config.abas_vazias             as abas das situações sem relógio (páginas Hoje e Galeria): sempre (aparecem desabilitadas, com o
+ *                                    motivo) ou com_relogio (só aparecem as situações que têm relógio); vazio: sempre
  *     config.calibre_campos          os campos do formulário do calibre (Cadastros › Calibres): movimento (só os campos marcados como do
  *                                    movimento, e os que o calibre já define) ou todos; vazio: movimento
  *     config.relojinho_modo          o reloginho da barra e da aba: hora (cada hora do dia tem o seu modelo), aleatorio (um sorteado a cada
@@ -6952,8 +6960,9 @@
  *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
  *     gerado_em                      quando foi gerado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     todos                          verdadeiro: com os de fora da coleção (posse=todos ou aba=todos)
- *     abas                           as abas por situação, na ordem do cadastro (Cadastros › Listas): uma por situação que tem relógio; a
- *                                    primeira que faz "na coleção" vem mesmo vazia
+ *     abas                           as abas por situação, na ordem do cadastro (Cadastros › Listas): uma por situação da lista; a da
+ *                                    situação sem relógio vem desabilitada (disponivel: false, com o motivo) ou, com a opção abas_vazias em
+ *                                    com_relogio, não vem; a primeira que faz "na coleção" vem e abre mesmo vazia
  *     abas[]                         uma aba
  *     abas[].chave                   a situação da aba: o identificador do item da lista (o que se pede em aba= e o que cada relógio traz
  *                                    em aba)
@@ -6962,6 +6971,9 @@
  *     abas[].tipo                    o que a aba mostra: relogios (os que são seus: a tabela dos relógios), desejos (a lista de desejos,
  *                                    recurso=desejos), saidas (os que saíram, recurso=saidas) ou todos (a aba Todos da galeria)
  *     abas[].quantos                 quantos relógios a aba tem
+ *     abas[].disponivel              se a aba abre: false na situação sem relógio (a tela a mostra desabilitada, sem link)
+ *     abas[].motivo                  por que a aba não abre, no idioma do pedido: o que falta e como pôr um relógio nela; null na aba que
+ *                                    abre
  *     aba                            a aba que a resposta mostra: a situação pedida (ou a primeira, com aba=principal), todos, ou vazio
  *                                    (sem aba: os da coleção, na coleção e emprestados)
  *     grupos[].relogios[].aba        a aba do relógio: a situação dele (uma chave de abas[])

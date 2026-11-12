@@ -1279,6 +1279,13 @@ escrever(["recurso" => "config", "acao" => "salvar", "destaque_hoje" => "pulso"]
 ler("hoje com o destaque no pulso", ["recurso" => "hoje"]);
 escrever(["recurso" => "config", "acao" => "salvar", "destaque_hoje" => "agora"], false);
 escrever(["recurso" => "config", "acao" => "salvar", "destaque_hoje" => "dia"]);
+// as abas das situações sem relógio (a Configuração): escondidas (só as que têm relógio; a aba vazia deixa de existir na
+// galeria) e de volta a aparecer sempre, desabilitadas
+escrever(["recurso" => "config", "acao" => "salvar", "abas_vazias" => "com_relogio"]);
+ler("hoje sem as abas vazias", ["recurso" => "hoje"]);
+ler("galeria de uma aba vazia, escondida", ["recurso" => "galeria", "aba" => "presenteado"]);
+escrever(["recurso" => "config", "acao" => "salvar", "abas_vazias" => "nunca"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "abas_vazias" => "sempre"]);
 ler("proximos pagina 2", ["recurso" => "proximos", "pagina" => 2]);
 ler("plano pagina 2", ["recurso" => "plano", "dias" => 30, "pagina" => 2]);
 ler("plano de um relogio", ["recurso" => "plano", "dias" => "todos", "relogio" => $rel["manual"]]);
@@ -1338,9 +1345,10 @@ ler("plano depois de vender", ["recurso" => "plano", "dias" => 30]);
 ler("saidas", ["recurso" => "saidas"]);
 ler("saidas de agora dos vendidos", ["recurso" => "saidas", "situacao" => "vendido", "abertas" => 1]);
 ler("ficha do vendido", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
-// a galeria por aba: a primeira, a dos vendidos, todos e uma que não existe
+// a galeria por aba: a primeira, a dos vendidos, uma vazia (existe, sem relógio), todos e uma que não existe
 ler("galeria da primeira aba", ["recurso" => "galeria", "aba" => "principal"]);
 ler("galeria dos vendidos", ["recurso" => "galeria", "aba" => "vendido"]);
+ler("galeria de uma aba vazia", ["recurso" => "galeria", "aba" => "presenteado"]);
 ler("galeria de todos", ["recurso" => "galeria", "aba" => "todos"]);
 ler("galeria de uma aba que nao existe", ["recurso" => "galeria", "aba" => "extraviado"]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo, "posse" => "colecao", "valores" => ["data_compra" => substr(dia(0, "00:00"), 0, 10), "valor_compra" => "24500"]]);

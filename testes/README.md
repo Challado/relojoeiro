@@ -30,7 +30,7 @@ relógio é emprestado ou sai (vendido, presenteado, arquivado), com a data, o v
 mesmo dia e a troca de motivo noutro dia (a de antes fecha, a nova abre); a volta, que fecha a saída e a deixa no histórico; os pedidos
 recusados (a data no futuro, o valor negativo, os campos da saída numa situação que não é saída, a volta numa saída); as contas (o
 resultado, o tempo na coleção, as somas por situação); a correção e a exclusão do histórico (a de agora não se fecha nem se exclui por
-ali); as abas (uma por situação com relógio, a principal sempre, a vazia some); o item da lista que o histórico cita não sai; e o passo
+ali); as abas (uma por situação do cadastro; a vazia desabilitada, com o motivo, ou escondida, conforme a opção `abas_vazias`); o item da lista que o histórico cita não sai; e o passo
 da migração v64, rodado duas vezes (quem já estava fora ganha a saída aberta, sem data, uma vez só).
 
 `php testes/menos_usado.php` confere o menos usado: o critério (a fórmula e o parâmetro nas notas, com peso 0), a forma de escolha (menos

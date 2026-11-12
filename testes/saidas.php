@@ -2,7 +2,7 @@
 // As saídas da coleção (relogio_saida, a v64) e as abas por situação: a saída abre quando o relógio é emprestado ou sai, fecha
 // quando ele volta, vira outra quando troca de motivo noutro dia e é só corrigida no mesmo dia; os campos da saída só valem
 // numa saída; a correção e a exclusão pelo recurso=saidas; as contas (o resultado, o tempo na coleção); as abas (uma por
-// situação com relógio, a principal sempre) e o item da lista que não sai enquanto o histórico o cita. E o passo da migração:
+// situação do cadastro; a vazia desabilitada ou escondida, conforme a opção abas_vazias) e o item da lista que não sai enquanto o histórico o cita. E o passo da migração:
 // os que já estavam fora ganham a saída aberta, sem data. Base SQLite nova e descartável.
 if (PHP_SAPI !== "cli") {
     http_response_code(404);
@@ -36,9 +36,20 @@ try {
     $todas = function ($rid) { return (int)valor("SELECT COUNT(*) FROM relogio_saida WHERE relogio_id = ?", [$rid]); };
     $aba = function ($chave) { return array_values(array_filter(abas_situacao(), function ($a) use ($chave) { return $a["chave"] === $chave; }))[0] ?? null; };
 
-    // ---- sem relógio nenhum: só a aba principal (a primeira situação que faz "na coleção"), vazia
+    // ---- sem relógio nenhum, com a opção abas_vazias de fábrica (sempre): uma aba por situação do cadastro, na ordem dele; a
+    // principal (a primeira que faz "na coleção") abre mesmo vazia, as outras vêm desabilitadas, com o motivo
     $ab = abas_situacao();
-    exigir_saidas(count($ab) === 1 && $ab[0]["chave"] === "colecao" && $ab[0]["quantos"] === 0 && $ab[0]["tipo"] === "relogios", "Sem relógios, só a aba principal: " . json_encode($ab));
+    exigir_saidas(cfg("abas_vazias") === "sempre" && array_column($ab, "chave") === array_keys(lista_itens("relogio_situacao")) && count($ab) >= 4
+        && array_sum(array_column($ab, "quantos")) === 0 && $ab[0]["chave"] === "colecao" && $ab[0]["tipo"] === "relogios" && $ab[0]["disponivel"] === true && $ab[0]["motivo"] === null,
+        "Sem relógios, as abas do cadastro: " . json_encode($ab));
+    exigir_saidas($aba("vendido")["tipo"] === "saidas" && $aba("desejado")["tipo"] === "desejos" && $aba("emprestado")["tipo"] === "relogios", "O tipo de cada aba vazia: " . json_encode($ab));
+    exigir_saidas(count(array_filter($ab, function ($a) { return $a["disponivel"]; })) === 1 && $aba("vendido")["disponivel"] === false && strpos($aba("vendido")["motivo"], "Tirar da coleção") !== false
+        && strpos($aba("desejado")["motivo"], "Novo desejo") !== false, "As vazias desabilitadas, com o motivo: " . json_encode($ab));
+    // ---- a opção em com_relogio (a coleção escolhe): só a principal sobra
+    exigir_saidas(op_config("salvar", ["abas_vazias" => "com_relogio"])["ok"], "A opção abas_vazias não gravou.");
+    $ab = abas_situacao();
+    exigir_saidas(count($ab) === 1 && $ab[0]["chave"] === "colecao" && $ab[0]["quantos"] === 0 && $ab[0]["disponivel"] === true, "Com a opção de esconder, sem relógios, só a aba principal: " . json_encode($ab));
+    exigir_saidas(!op_config("salvar", ["abas_vazias" => "talvez"])["ok"] && op_config("salvar", ["abas_vazias" => ""])["ok"] && cfg("abas_vazias") === "sempre", "A opção abas_vazias não voltou a herdar.");
 
     $a = op_relogio("salvar", ["nome" => "A", "no_id" => $grupo, "valores" => ["valor_compra" => "1000", "data_compra" => $mes]]);
     $b = op_relogio("salvar", ["nome" => "B", "no_id" => $grupo]);
@@ -94,7 +105,10 @@ try {
     // ---- voltar para a coleção: a aberta fecha e fica no histórico; ele volta disponível
     $r = op_relogio("salvar", ["id" => $a["id"], "posse" => "colecao"]);
     exigir_saidas($r["ok"] && $abertas($a["id"]) === 0 && $todas($a["id"]) === 2 && (int)valor("SELECT disponivel FROM relogio WHERE id = ?", [$a["id"]]) === 1, "A volta: " . json_encode($r));
-    exigir_saidas($aba("arquivado") === null && $aba("colecao")["quantos"] === 3, "A aba vazia some: " . json_encode(abas_situacao()));
+    exigir_saidas($aba("arquivado")["quantos"] === 0 && $aba("arquivado")["disponivel"] === false && $aba("colecao")["quantos"] === 3, "A aba que esvaziou continua, desabilitada: " . json_encode(abas_situacao()));
+    op_config("salvar", ["abas_vazias" => "com_relogio"]);
+    exigir_saidas($aba("arquivado") === null && $aba("colecao")["quantos"] === 3 && count(abas_situacao()) === 1, "Com a opção de esconder, a aba que esvaziou some: " . json_encode(abas_situacao()));
+    op_config("salvar", ["abas_vazias" => ""]);
 
     // ---- emprestar: é uma saída (com quem está), e ele continua da coleção; devolver com a data da volta
     $r = op_relogio("salvar", ["id" => $b["id"], "posse" => "emprestado", "saida_destino" => "Meu irmão", "saida_data" => $mes]);

@@ -7168,8 +7168,10 @@ function saida_registrar($id, $antes, $item, $p)
         3 => ($dados["destino"] ?? null) !== null ? t(", para {1}", [1 => $dados["destino"]]) : "", 4 => ($dados["valor"] ?? null) !== null ? t(", por {1}", [1 => dinheiro_txt($dados["valor"])]) : ""]);
 }
 
-// As abas por situação (em cima da tabela dos relógios da página Hoje e da Galeria): uma por item da lista relogio_situacao
-// que tem relógio, na ordem do cadastro; a primeira que faz "na coleção" aparece mesmo vazia. O tipo diz o que a aba mostra:
+// As abas por situação (em cima da tabela dos relógios da página Hoje e da Galeria): uma por item da lista relogio_situacao,
+// na ordem do cadastro. A opção abas_vazias (opcoes.php: sistema, usuário, coleção) diz o que fazer com a situação sem
+// relógio: sempre (o padrão: a aba aparece desabilitada, com o motivo) ou com_relogio (a aba some; com uma aba só, a tela
+// não mostra a faixa). A primeira que faz "na coleção" é a principal: aparece e abre mesmo vazia. O tipo diz o que a aba mostra:
 // relogios (os que são da pessoa: a tabela de sempre), desejos (a lista de desejos) ou saidas (os que saíram, com o motivo,
 // a data, o valor e para quem)
 const ABA_TIPOS = ["colecao" => "relogios", "emprestado" => "relogios", "desejado" => "desejos", "fora" => "saidas"];
@@ -7184,7 +7186,14 @@ function aba_do_relogio($r)
     return lista_com_comportamento("relogio_situacao", posse_de($r))["identificador"] ?? $p;
 }
 
-// as abas, com quantos relógios cada uma tem: [{chave, nome, comportamento, tipo, quantos}]
+// o motivo da aba desabilitada (a situação sem relógio): o que falta e como um relógio chega nela
+function aba_vazia_motivo($comportamento)
+{
+    return $comportamento === "desejado" ? t('Nenhum relógio na lista de desejos. Para pôr um, use "Novo desejo" (página Desejos).')
+        : t('Nenhum relógio nesta situação. Para pôr um aqui, abra o relógio e use "Tirar da coleção…" (ou mude a "Situação na coleção" no cadastro dele).');
+}
+
+// as abas, com quantos relógios cada uma tem: [{chave, nome, comportamento, tipo, quantos, disponivel, motivo}]
 function abas_situacao($relogios = null)
 {
     $conta = [];
@@ -7193,20 +7202,23 @@ function abas_situacao($relogios = null)
         $conta[$a] = ($conta[$a] ?? 0) + 1;
     }
     $abas = [];
+    $sempre = cfg("abas_vazias") !== "com_relogio";
     $tem_principal = false;
     foreach (lista_itens("relogio_situacao") as $x) {
         $n = $conta[$x["identificador"]] ?? 0;
         unset($conta[$x["identificador"]]);
         $principal = !$tem_principal && $x["comportamento"] === "colecao";
         $tem_principal = $tem_principal || $principal;
-        if ($n > 0 || $principal) {
-            $abas[] = ["chave" => (string)$x["identificador"], "nome" => $x["nome"], "comportamento" => $x["comportamento"], "tipo" => ABA_TIPOS[$x["comportamento"]] ?? "relogios", "quantos" => $n];
+        $abre = $n > 0 || $principal;
+        if ($abre || $sempre) {
+            $abas[] = ["chave" => (string)$x["identificador"], "nome" => $x["nome"], "comportamento" => $x["comportamento"], "tipo" => ABA_TIPOS[$x["comportamento"]] ?? "relogios", "quantos" => $n,
+                "disponivel" => $abre, "motivo" => $abre ? null : aba_vazia_motivo($x["comportamento"])];
         }
     }
     // uma situação gravada que a lista não tem mais, nem outra que faça o mesmo: a aba dela, pelo identificador
     foreach ($conta as $ident => $n) {
         $comp = posse_de(["posse" => $ident]);
-        $abas[] = ["chave" => (string)$ident, "nome" => (string)$ident, "comportamento" => $comp, "tipo" => ABA_TIPOS[$comp] ?? "relogios", "quantos" => $n];
+        $abas[] = ["chave" => (string)$ident, "nome" => (string)$ident, "comportamento" => $comp, "tipo" => ABA_TIPOS[$comp] ?? "relogios", "quantos" => $n, "disponivel" => true, "motivo" => null];
     }
     return $abas;
 }

@@ -454,7 +454,7 @@ function mostrarAbas(abas) {
   var outra = document.getElementById("aba-conteudo");
   var tabela = document.getElementById("tabela-relogios");
   var aba = abaEscolhida(abas, abaAtual);
-  // uma aba só (a coleção inteira numa situação): sem faixa, a tabela de sempre
+  // uma aba só (a coleção inteira numa situação, com a opção de esconder as vazias; ou a lista com uma situação só): sem faixa, a tabela de sempre
   faixa.hidden = abas.length < 2;
   porHtml(faixa, abas.length < 2 ? "" : abasFaixaHtml(abas, aba.chave, function (chave) { return "index.php?aba=" + encodeURIComponent(chave); }));
   if (!faixa.hidden) {

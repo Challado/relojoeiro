@@ -169,10 +169,12 @@ try {
     entrar_opcoes($dono);
     exigir_opcoes(op_conta("alterar", ["opcoes" => ["painel_modo" => ""]])["ok"], "Não limpou o painel.");
 
-    // ---- a migração leva o valor igual ao padrão de fábrica para o vazio: todas as opções com padrão estão nela
+    // ---- a migração leva o valor igual ao padrão de fábrica para o vazio: todas as opções com padrão que existiam na v58
+    // estão nela (as que nasceram depois, como a abas_vazias, da v64, nunca tiveram o padrão gravado no config: nada a limpar)
     $sql = (string)file_get_contents(dirname(__DIR__) . "/migracao_v58.sql");
+    $depois_da_v58 = ["abas_vazias"];
     foreach (OPCOES as $k => [, , $padrao]) {
-        if ($padrao !== "" && !in_array($k, ["gasto_motor", "documentos_copia"], true)) {
+        if ($padrao !== "" && !in_array($k, array_merge(["gasto_motor", "documentos_copia"], $depois_da_v58), true)) {
             exigir_opcoes(strpos($sql, "chave = '" . $k . "' AND valor = '" . $padrao . "'") !== false, "A migração v58 não limpa " . $k . ".");
         }
     }

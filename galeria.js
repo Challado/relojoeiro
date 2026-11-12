@@ -1,5 +1,5 @@
-// Galeria: a coleção da API (recurso=galeria), em fotos, por grupo, com as abas por situação em cima (uma por situação do
-// cadastro que tem relógio e, no fim, Todos: galeria.php?aba=vendido, galeria.php?aba=todos; sem aba, a primeira). Na tela, o
+// Galeria: a coleção da API (recurso=galeria), em fotos, por grupo, com as abas por situação em cima (as da API: uma por situação do
+// cadastro, a sem relógio desabilitada ou escondida conforme a opção abas_vazias, e no fim Todos: galeria.php?aba=vendido, galeria.php?aba=todos; sem aba, a primeira). Na tela, o
 // Imprimir e as abas; no papel, só as fotos e os dados.
 var pedidaG = new URLSearchParams(window.location.search);
 // (o endereço de antes, galeria.php?posse=todos, continua valendo: é a aba Todos)

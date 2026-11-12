@@ -1252,12 +1252,13 @@ o histórico começa dali. Os campos só dos desejados continuam guardados, mas 
 
 ### As abas e as saídas da coleção
 
-Em cima da tabela dos relógios da página **Hoje** (e da **Galeria**) fica uma faixa de **abas**, uma para cada situação que
-tem relógio, na ordem do seu cadastro (Cadastros › Listas, **Situações do relógio na coleção**): *Na coleção (42)*,
-*Emprestado (1)*, *Desejado (5)*, *Vendido (3)*... Cada relógio aparece numa aba só, a da situação dele. Criou um motivo novo
-(Roubado, Sem conserto) e pôs um relógio nele, a aba aparece sozinha; a aba vazia some (menos a primeira). Quando as abas não
-cabem na largura, a faixa rola de lado, com as setas **‹** e **›** nas pontas. O que cada aba mostra depende do que a
-situação faz:
+Em cima da tabela dos relógios da página **Hoje** (e da **Galeria**) fica uma faixa de **abas**, uma para cada situação do
+seu cadastro, na ordem dele (Cadastros › Listas, **Situações do relógio na coleção**): *Na coleção (42)*, *Emprestado (1)*,
+*Desejado (5)*, *Vendido (3)*... Cada relógio aparece numa aba só, a da situação dele. Criou um motivo novo (Roubado, Sem
+conserto), a aba dele aparece sozinha. A aba da situação sem relógio fica desabilitada: apagada, sem clique, com o motivo ao
+passar o mouse. Prefere não ver as vazias? Na Configuração, em **Abas das situações sem relógio**, escolha *Esconder*: só
+aparecem as situações que têm relógio, e a faixa some quando todos estão numa só. Quando as abas não cabem na largura, a
+faixa rola de lado, com as setas **‹** e **›** nas pontas. O que cada aba mostra depende do que a situação faz:
 
 | A situação faz | A aba mostra |
 |---|---|
@@ -1565,6 +1566,7 @@ de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
 | **Idioma padrão** (`idioma`) | o idioma da coleção: o das telas para quem não escolheu o seu (no seletor do menu ou em **Minha conta**; veja [Os idiomas](#os-idiomas)) e o das mensagens e das agendas sem idioma próprio: português, inglês, chinês, hindi, espanhol ou francês. Padrão: o de quem criou a coleção. |
 | **Abrir o relógio na página Hoje** (`painel_modo`) | **Ao lado da lista** (`lado`): o relógio clicado abre num painel à direita, e a lista continua à vista. **Numa janela flutuante, grande** (`flutuante`): abre no meio da tela, por cima da página, com o fundo escurecido e os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira. Padrão: ao lado. |
 | **Destaque no alto da página Hoje** (`destaque_hoje`) | **O relógio do dia** (`dia`): o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano), com até quando ele fica e por que saiu. **O relógio no pulso agora** (`pulso`): mostra o relógio que está no pulso, mesmo que não seja o do dia (com *no pulso agora* e, embaixo, *Relógio do dia: …*, que abre o do dia); com mais de um no pulso, o que foi por último; sem nenhum no pulso, fica o do dia, com o aviso *Nenhum relógio no pulso agora*. Os dados embaixo (estado, carga, o botão Pôs/Tirou do pulso, a foto) são os do relógio do destaque. Embaixo da foto, uma tabelinha de duas casas diz o que está ali: **Do dia** | **No pulso**. A casa que vale fica acesa, com ✓ (azul o *Do dia*, verde o *No pulso*), e a outra apagada; o relógio do dia que está no pulso acende as duas. Parando o mouse nela, a frase do porquê (*No pulso agora; o relógio do dia é outro.*...). Padrão: o relógio do dia. |
+| **Abas das situações sem relógio** (`abas_vazias`) | as abas em cima da tabela dos relógios (páginas Hoje e Galeria) são as situações do cadastro. **Mostrar sempre** (`sempre`): todas aparecem, e a da situação sem relógio fica desabilitada (apagada, sem clique), com o motivo ao passar o mouse. **Esconder** (`com_relogio`): só aparecem as situações que têm relógio; com todos os relógios numa situação só, a faixa de abas some. |
 | **Reloginho da barra** (`relojinho_modo`) | o reloginho do canto da barra e da aba tem 24 modelos, um para cada hora do dia. **Normal** (`hora`): cada hora tem o seu (à 0 o Clássico, às 16 o Digital, às 23 o Futurista). **Aleatório** (`aleatorio`): cada hora sorteia um dos 24, e pode repetir. **Aleatório sem repetição** (`sem_repeticao`): os 24 embaralhados, cada um aparece uma vez no dia. O sorteio é do dia: o mesmo em toda página e aparelho, e outro no dia seguinte. Padrão: normal. |
 
 Na página, cada opção fica numa linha, com o nome à esquerda e o campo à direita, em quadros (Rotina do dia, Limites e contas,

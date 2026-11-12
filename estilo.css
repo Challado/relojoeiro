@@ -1706,6 +1706,8 @@ dl.pares.legenda-grafico dt, dl.pares.legenda-grafico dd { padding-top: .25rem; 
 .abas-faixa .abas-rolam { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; margin: 0; padding-bottom: 2px; scrollbar-width: thin; overscroll-behavior-x: contain; }
 .abas-faixa .abas-rolam a { flex: none; white-space: nowrap; background: var(--papel); border-color: var(--aco-escuro); }
 .abas-faixa .abas-rolam a.ativa { background: var(--safira); border-color: var(--safira); }
+.abas-faixa .abas-rolam a.desabilitada { border-style: dashed; border-color: var(--aco); color: var(--cinza); background: transparent; cursor: not-allowed; }
+.abas-faixa .abas-rolam a.desabilitada .aba-conta { background: transparent; }
 .aba-conta { display: inline-block; min-width: 1.5em; padding: 0 .4em; border-radius: 999px; background: var(--aco); color: var(--tinta); font-size: .78em; font-variant-numeric: tabular-nums; text-align: center; }
 .abas a.ativa .aba-conta { background: rgba(255, 255, 255, .25); color: #fff; }
 .abas-faixa .aba-seta { flex: none; padding: .2rem .6rem; font-size: 1.1rem; line-height: 1.2; }

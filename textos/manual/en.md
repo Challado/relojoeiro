@@ -1,4 +1,4 @@
-<!-- origem: 5d0f7a74bfc2ec15d1b117e8157cfc2e6fa705d1 -->
+<!-- origem: 21058b6df230ca2ecf6a38b35fdad9bd93bb4bcd -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1218,12 +1218,14 @@ Through the API: `recurso=desejos` (the list) and `recurso=relogio`, `acao=salva
 
 ### Tabs and exits from the collection {#as-abas-e-as-saídas-da-coleção}
 
-Above the watch table on the **Today** page (and in the **Gallery**) there is a strip of **tabs**, one for each status that
-has a watch, in the order of your definitions (Definitions › Lists, **Watch statuses in the collection**): *In the collection
-(42)*, *On loan (1)*, *Wished (5)*, *Sold (3)*... Each watch appears in one tab only, the one of its status. Create a new
-reason (Stolen, Beyond repair) and put a watch in it, and the tab appears by itself; an empty tab disappears (except the
-first). When the tabs don't fit the width, the strip scrolls sideways, with the arrows **‹** and **›** at the ends. What
-each tab shows depends on what the status does:
+Above the watch table on the **Today** page (and in the **Gallery**) there is a strip of **tabs**, one for each status in
+your definitions, in their order (Definitions › Lists, **Watch statuses in the collection**): *In the collection (42)*, *On
+loan (1)*, *Wished (5)*, *Sold (3)*... Each watch appears in one tab only, the one of its status. Create a new reason
+(Stolen, Beyond repair) and its tab appears by itself. The tab of a status with no watches is disabled: dimmed, not
+clickable, with the reason on mouse-over. Would you rather not see the empty ones? In Settings, under **Tabs of statuses
+with no watches**, choose *Hide*: only the statuses that have watches appear, and the strip disappears when they are all in
+a single one. When the tabs don't fit the width, the strip scrolls sideways, with the arrows **‹** and **›** at the ends.
+What each tab shows depends on what the status does:
 
 | The status does | The tab shows |
 |---|---|
@@ -1516,6 +1518,7 @@ Cards fill the available spaces according to screen width and content height. Th
 | **Default language** (`idioma`) | the collection's language: the one of the screens for whoever hasn't chosen their own (in the menu selector or in **My account**; see [The languages](#os-idiomas)) and the one of the messages and calendars without a language of their own: Portuguese, English, Chinese, Hindi, Spanish or French. Default: the one of whoever created the collection. |
 | **Open the watch on the Today page** (`painel_modo`) | **Next to the list** (`lado`): the clicked watch opens in a panel on the right, and the list stays in view. **In a large floating window** (`flutuante`): it opens in the middle of the screen, over the page, with the background darkened and the boxes side by side; it closes with the ×, Esc or a click outside. On the phone, both cover the whole screen. Default: next to the list. |
 | **Highlight at the top of the Today page** (`destaque_hoje`) | **The watch of the day** (`dia`): the big box at the top of the Today page shows the watch of the day (the plan's), with until when it stays and why it came up. **The watch on the wrist now** (`pulso`): it shows the watch that is on the wrist, even if it isn't the day's (with *on the wrist now* and, below, *Watch of the day: …*, which opens the day's); with more than one on the wrist, the last one put on; with none on the wrist, the day's stays, with the notice *No watch on the wrist now*. The data below (state, charge, the Put on/Took off the wrist button, the photo) are those of the highlighted watch. Under the photo, a little two-cell table says what is there: **Of the day** | **On the wrist**. The cell that applies lights up with a ✓ (blue *Of the day*, green *On the wrist*) and the other stays dim; the watch of the day on the wrist lights both. Resting the mouse on it, the sentence of why (*On the wrist now; the watch of the day is another.*...). Default: the watch of the day. |
+| **Tabs of statuses with no watches** (`abas_vazias`) | the tabs above the watch table (Today and Gallery pages) are the statuses of your definitions. **Always show** (`sempre`): all of them appear, and the one of a status with no watches is disabled (dimmed, not clickable), with the reason on mouse-over. **Hide** (`com_relogio`): only the statuses that have watches appear; with all the watches in a single status, the tab strip disappears. |
 | **Little watch in the bar** (`relojinho_modo`) | the little watch in the corner of the bar and in the tab has 24 models, one for each hour of the day. **Normal** (`hora`): each hour has its own (at 0 the Classic, at 16 the Digital, at 23 the Futuristic). **Random** (`aleatorio`): each hour draws one of the 24, and it may repeat. **Random without repetition** (`sem_repeticao`): the 24 shuffled, each appears once in the day. The draw is the day's: the same on every page and device, and another the next day. Default: normal. |
 
 On the page, each option is on one line, with the name on the left and the field on the right, in boxes (Daily routine,

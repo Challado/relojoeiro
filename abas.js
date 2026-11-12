@@ -1,29 +1,35 @@
 // As abas por situação (em cima da tabela dos relógios da página Hoje e da Galeria) e o que as abas que não são a tabela
 // mostram: a lista de desejos (recurso=desejos) e os relógios que saíram da coleção (recurso=saidas). As abas vêm da API (uma
-// por situação do cadastro que tem relógio: Cadastros › Listas); a faixa rola de lado, com as setas, quando não cabe.
+// por situação do cadastro, Cadastros › Listas; a da situação sem relógio vem desabilitada, com o motivo, ou não vem, conforme
+// a opção abas_vazias da Configuração); a faixa rola de lado, com as setas, quando não cabe.
 // A página Desejos (desejos.js) usa a mesma lista de desejos.
 
 // a aba pedida no endereço (?aba=): pela chave (a situação) ou pelo que a situação faz (desejado: a primeira aba dos
-// desejados); sem pedido, ou com um que não existe mais, a primeira
+// desejados); sem pedido, com um que não existe mais ou com uma aba desabilitada (sem relógio), a primeira
 function abaEscolhida(abas, pedida) {
   var achada = null;
   abas.forEach(function (a) {
-    if (achada === null && a.chave === pedida) {
+    if (achada === null && a.chave === pedida && a.disponivel) {
       achada = a;
     }
   });
   abas.forEach(function (a) {
-    if (achada === null && a.comportamento === pedida) {
+    if (achada === null && a.comportamento === pedida && a.disponivel) {
       achada = a;
     }
   });
   return achada !== null ? achada : (abas.length > 0 ? abas[0] : null);
 }
 
-// a faixa: a seta de cada lado e as abas (cada uma com quantos relógios tem); endereco(chave) dá o link de cada aba
+// a faixa: a seta de cada lado e as abas (cada uma com quantos relógios tem); endereco(chave) dá o link de cada aba. A aba
+// desabilitada (a situação sem relógio) não tem link: fica apagada, com o motivo que a API manda
 function abasFaixaHtml(abas, escolhida, endereco) {
   return el("button", {"type": "button", "class": "aba-seta leve", "data-aba-seta": "-1", "aria-label": t("Abas anteriores"), "title": t("Abas anteriores"), "hidden": true}, "‹")
     + el("nav", {"class": "abas abas-rolam", "aria-label": t("Situação na coleção")}, abas.map(function (a) {
+      if (!a.disponivel) {
+        return el("a", {"class": "desabilitada", "role": "link", "aria-disabled": "true", "title": a.motivo, "aria-label": a.nome + ": " + a.motivo},
+          h(a.nome) + " " + el("span", {"class": "aba-conta"}, String(a.quantos)));
+      }
       return el("a", {"href": endereco(a.chave), "class": a.chave === escolhida ? "ativa" : "", "data-aba": a.chave, "aria-current": a.chave === escolhida ? "true" : null},
         h(a.nome) + " " + el("span", {"class": "aba-conta"}, String(a.quantos)));
     }).join(""))

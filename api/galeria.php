@@ -17,7 +17,7 @@ $abas_g = abas_situacao($relogios_g);
 if ($aba_g === "principal") {
     $aba_g = (string)($abas_g[0]["chave"] ?? "");
 }
-// a aba pedida tem de existir (uma situação com relógio); a que não existe é um erro, não a coleção inteira
+// a aba pedida tem de existir (uma das abas: a opção abas_vazias diz se a situação sem relógio é uma); a que não existe é um erro, não a coleção inteira
 if ($aba_g !== "" && !$todos_g && !in_array($aba_g, array_column($abas_g, "chave"), true)) {
     $codigo = 400;
     $saida = ["erro" => t("aba: {1}, principal (a primeira) ou todos.", [1 => implode(", ", array_column($abas_g, "chave"))])];
@@ -58,7 +58,7 @@ foreach ($relogios_g as $r) {
 ksort($grupos_g);
 $saida = ["gerado_em" => date("Y-m-d H:i:s", $agora_g), "todos" => $todos_g, "total" => $total_g, "valor_total" => round($valor_g, 2),
     "com_foto" => $com_foto_g,
-    // as abas da tela (uma por situação que tem relógio, e Todos no fim) e a que esta resposta mostra (vazio: os da coleção)
-    "abas" => array_merge($abas_g, [["chave" => "todos", "nome" => t("Todos"), "comportamento" => null, "tipo" => "todos", "quantos" => count($relogios_g)]]),
+    // as abas da tela (as de abas_situacao, e Todos no fim) e a que esta resposta mostra (vazio: os da coleção)
+    "abas" => array_merge($abas_g, [["chave" => "todos", "nome" => t("Todos"), "comportamento" => null, "tipo" => "todos", "quantos" => count($relogios_g), "disponivel" => true, "motivo" => null]]),
     "aba" => $todos_g ? "todos" : $aba_g,
     "grupos" => array_values($grupos_g)];

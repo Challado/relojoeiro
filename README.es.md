@@ -1262,11 +1262,13 @@ ficha. Por la API: `recurso=desejos` (la lista) y `recurso=relogio`, `acao=salva
 ### Las pestañas y las salidas de la colección
 
 Encima de la tabla de los relojes de la página **Hoy** (y de la **Galería**) hay una franja de **pestañas**, una para cada
-situación que tiene reloj, en el orden de sus definiciones (Definiciones › Listas, **Situaciones del reloj en la
-colección**): *En la colección (42)*, *Prestado (1)*, *Deseado (5)*, *Vendido (3)*... Cada reloj aparece en una sola
-pestaña, la de su situación. Si crea un motivo nuevo (Robado, Sin arreglo) y pone un reloj en él, la pestaña aparece sola;
-la pestaña vacía desaparece (menos la primera). Cuando las pestañas no caben en el ancho, la franja se desplaza de lado,
-con las flechas **‹** y **›** en las puntas. Lo que muestra cada pestaña depende de lo que hace la situación:
+situación de sus definiciones, en el orden de ellas (Definiciones › Listas, **Situaciones del reloj en la colección**): *En
+la colección (42)*, *Prestado (1)*, *Deseado (5)*, *Vendido (3)*... Cada reloj aparece en una sola pestaña, la de su
+situación. Si crea un motivo nuevo (Robado, Sin arreglo), su pestaña aparece sola. La pestaña de la situación sin relojes
+queda deshabilitada: apagada, sin clic, con el motivo al pasar el ratón. ¿Prefiere no ver las vacías? En Configuración, en
+**Pestañas de las situaciones sin relojes**, elija *Ocultar*: solo aparecen las situaciones que tienen relojes, y la franja
+desaparece cuando todos están en una sola. Cuando las pestañas no caben en el ancho, la franja se desplaza de lado, con las
+flechas **‹** y **›** en las puntas. Lo que muestra cada pestaña depende de lo que hace la situación:
 
 | La situación hace | La pestaña muestra |
 |---|---|
@@ -1557,6 +1559,7 @@ Los cuadros ocupan los espacios disponibles según la anchura de la pantalla y l
 | **Idioma predeterminado** (`idioma`) | el idioma de la colección: el de las pantallas para quien no eligió el suyo (en el selector del menú o en **Mi cuenta**; vea [Los idiomas](#los-idiomas)) y el de los mensajes y los calendarios sin idioma propio: portugués, inglés, chino, hindi, español o francés. Por defecto: el de quien creó la colección. |
 | **Abrir el reloj en la página Hoy** (`painel_modo`) | **Al lado de la lista** (`lado`): el reloj pulsado se abre en un panel a la derecha, y la lista sigue a la vista. **En una ventana flotante, grande** (`flutuante`): se abre en el centro de la pantalla, sobre la página, con el fondo oscurecido y los cuadros lado a lado; se cierra con la ×, Esc o un clic fuera. En el móvil, los dos ocupan toda la pantalla. Predeterminado: al lado de la lista. |
 | **Destacado arriba de la página Hoy** (`destaque_hoje`) | **El reloj del día** (`dia`): el cuadro grande de arriba de la página Hoy muestra el reloj del día (el del plan), con hasta cuándo se queda y por qué salió. **El reloj en la muñeca ahora** (`pulso`): muestra el reloj que está en la muñeca, aunque no sea el del día (con *en la muñeca ahora* y, debajo, *Reloj del día: …*, que abre el del día); con más de uno en la muñeca, el último puesto; sin ninguno en la muñeca, se queda el del día, con el aviso *Ningún reloj en la muñeca ahora*. Los datos de debajo (estado, carga, el botón Me lo puse/Me lo quité, la foto) son los del reloj destacado. Debajo de la foto, una tablita de dos casillas dice qué hay ahí: **Del día** | **En la muñeca**. La casilla que vale se enciende con un ✓ (azul *Del día*, verde *En la muñeca*) y la otra queda apagada; el reloj del día en la muñeca enciende las dos. Al detener el ratón sobre ella, la frase del porqué (*En la muñeca ahora; el reloj del día es otro.*...). Predeterminado: el reloj del día. |
+| **Pestañas de las situaciones sin relojes** (`abas_vazias`) | las pestañas encima de la tabla de los relojes (páginas Hoy y Galería) son las situaciones de las definiciones. **Mostrar siempre** (`sempre`): aparecen todas, y la de la situación sin relojes queda deshabilitada (apagada, sin clic), con el motivo al pasar el ratón. **Ocultar** (`com_relogio`): solo aparecen las situaciones que tienen relojes; con todos los relojes en una sola situación, la franja de pestañas desaparece. |
 | **Relojito de la barra** (`relojinho_modo`) | el relojito de la esquina de la barra y de la pestaña tiene 24 modelos, uno para cada hora del día. **Normal** (`hora`): cada hora tiene el suyo (a las 0 el Clásico, a las 16 el Digital, a las 23 el Futurista). **Aleatorio** (`aleatorio`): cada hora sortea uno de los 24, y puede repetir. **Aleatorio sin repetición** (`sem_repeticao`): los 24 barajados, cada uno aparece una vez en el día. El sorteo es del día: el mismo en toda página y aparato, y otro al día siguiente. Predeterminado: normal. |
 
 En la página, cada opción está en una línea, con el nombre a la izquierda y el campo a la derecha, en recuadros (Rutina del
