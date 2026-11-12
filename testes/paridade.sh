@@ -7,6 +7,9 @@
 #   testes/paridade.sh                           os quatro: sqlite pgsql mysql firebird
 #   testes/paridade.sh sqlite mysql              só esses (o primeiro é a referência)
 #   testes/paridade.sh --layout sqlite           e, no fim, a conferência do layout (testes/layout.cjs) no primeiro
+#   testes/paridade.sh --consultas sqlite        e a conferência das consultas ao banco (testes/consultas.php): o roteiro roda com o
+#                                                registro das consultas ligado, e no fim cada pedido tem de caber no orçamento
+#                                                (testes/consultas.json); com --gravar, grava o orçamento com o que mediu
 #   testes/paridade.sh --rolagem sqlite          e a conferência da rolagem (testes/rolagem.cjs) no primeiro: em cada
 #                                                tamanho de tela, cada página rola até o fim, o menu aberto até o último
 #                                                item e a gaveta Explicações até a última explicação
@@ -39,6 +42,8 @@ ROLAGEM=0
 AJUDA=0
 MANTER=0
 TEXTOS=0
+CONSULTAS=0
+GRAVAR=0
 BANCOS=()
 for a in "$@"; do
   case "$a" in
@@ -47,10 +52,15 @@ for a in "$@"; do
     --ajuda) AJUDA=1 ;;
     --manter) MANTER=1 ;;
     --textos) TEXTOS=1 ;;
+    --consultas) CONSULTAS=1 ;;
+    --gravar) GRAVAR=1 ;;
     sqlite|pgsql|mysql|firebird) BANCOS+=("$a") ;;
-    *) echo "Não conheço \"$a\". Uso: testes/paridade.sh [--layout] [--rolagem] [--ajuda] [--textos] [--manter] [sqlite] [pgsql] [mysql] [firebird]" >&2; exit 2 ;;
+    *) echo "Não conheço \"$a\". Uso: testes/paridade.sh [--layout] [--rolagem] [--ajuda] [--textos] [--consultas [--gravar]] [--manter] [sqlite] [pgsql] [mysql] [firebird]" >&2; exit 2 ;;
   esac
 done
+if [ $GRAVAR -eq 1 ] && [ $CONSULTAS -eq 0 ]; then
+  echo "O --gravar grava o orçamento das consultas: só vale junto com o --consultas." >&2; exit 2
+fi
 [ ${#BANCOS[@]} -eq 0 ] && BANCOS=(sqlite pgsql mysql firebird)
 
 export TESTE_BANCO="${TESTE_BANCO:-relogios_teste}"
@@ -68,6 +78,12 @@ mkdir -p "$PASTA"
 export RELOGIOS_TESTE_PASTA="$PASTA"
 export RELOGIOS_CONFIG="$RAIZ/testes/config.teste.php"
 export RELOGIOS_SEMENTE=42
+# --consultas: o sistema anota num arquivo o que cada pedido manda ao banco (banco.php, RELOGIOS_CONSULTAS), para a conferência
+# das consultas (testes/consultas.php) no fim
+if [ $CONSULTAS -eq 1 ]; then
+  rm -f "$PASTA/consultas.registro"
+  export RELOGIOS_CONSULTAS="$PASTA/consultas.registro"
+fi
 PORTA0="${TESTE_PORTA:-8101}"
 
 SERVIDORES=()
@@ -239,6 +255,17 @@ if [ $ROLAGEM -eq 1 ]; then
     echo "    $(tail -1 "$PASTA/rolagem.txt")"
   else
     FALHOU=1; sed 's/^/    /' "$PASTA/rolagem.txt" | head -60
+  fi
+fi
+
+# as consultas ao banco (testes/consultas.php), no primeiro: o orçamento de cada pedido, o crescimento por relógio (ela cadastra
+# mais relógios: por isso vem depois da fotografia e das outras conferências) e o relatório do que mais se repete
+if [ $CONSULTAS -eq 1 ]; then
+  echo "Conferência das consultas ao banco no $REF:"
+  if php testes/consultas.php "http://127.0.0.1:$PORTA0/api.php" "$PASTA/consultas.registro" $([ $GRAVAR -eq 1 ] && echo --gravar) > "$PASTA/consultas.txt" 2>&1; then
+    echo "    $(tail -1 "$PASTA/consultas.txt")"
+  else
+    FALHOU=1; sed 's/^/    /' "$PASTA/consultas.txt" | head -80
   fi
 fi
 

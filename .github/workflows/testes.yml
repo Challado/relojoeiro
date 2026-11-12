@@ -1,6 +1,7 @@
 # Os testes a cada push no main (e quando pedido na aba Actions): o teste de paridade (testes/paridade.sh) nos bancos, que
 # confere também a documentação da API (o dicionário do cabeçalho e os campos explicados), a conferência do layout das telas, a
-# dos botões de ajuda (o ⓘ colado ao rótulo ou ao campo que explica) e a dos textos fixos (nenhum texto na tela fora do dicionário: o sistema inteiro em chinês).
+# dos botões de ajuda (o ⓘ colado ao rótulo ou ao campo que explica), a dos textos fixos (nenhum texto na tela fora do dicionário: o sistema inteiro em chinês)
+# e a das consultas ao banco (testes/consultas.php: nenhum pedido consultando mais do que o orçamento, nem consulta dentro de um laço por relógio).
 # Nos jobs dos bancos, depois da paridade, o teste da atualização (testes/migracao.sh): um banco instalado pela versão de
 # antes do push, com dados, passa para a de agora pelas migrações, como no servidor de quem usa ao fazer o git pull.
 # A simulação dos modos de rodízio (testes/simulacao.sh): cada modo vivido dia a dia, 28 dias, com o relógio da máquina
@@ -176,6 +177,34 @@ jobs:
         with:
           name: layout-${{ matrix.lingua }}
           path: /tmp/relojoeiro-paridade.*/layout/
+          if-no-files-found: ignore
+          retention-days: 7
+  # o desempenho: com o banco noutra máquina, o que pesa é quantas consultas cada pedido faz. O roteiro roda com o registro das
+  # consultas ligado e cada pedido tem de caber no orçamento (testes/consultas.json); relógios a mais não podem multiplicar as consultas
+  consultas:
+    name: Consultas ao banco (orçamento por pedido e por relógio)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: sqlite3, curl, mbstring, fileinfo, dom, zlib, gd, zip
+          coverage: none
+      - name: Cada pedido dentro do orçamento de consultas, e nenhuma consulta dentro de um laço por relógio
+        run: testes/paridade.sh --consultas sqlite
+      - name: O relatório (os pedidos mais caros e o que mais se repete)
+        if: always()
+        run: cat /tmp/relojoeiro-paridade.*/consultas.txt
+      - name: O relatório e o registro das consultas (para baixar)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consultas
+          path: |
+            /tmp/relojoeiro-paridade.*/consultas.txt
+            /tmp/relojoeiro-paridade.*/consultas.registro
           if-no-files-found: ignore
           retention-days: 7
   ajuda:

@@ -684,10 +684,66 @@ function banco_anotar_escrita($comando, $tudo = false)
     }
 }
 
+// A medição das consultas, para o teste que cuida do desempenho (testes/consultas.php, no GitHub a cada push): com a variável
+// de ambiente RELOGIOS_CONSULTAS apontando um arquivo, cada pedido acrescenta nele uma linha em JSON com o que mandou ao
+// banco: o método, o recurso, a ação, a parte e o tipo do pedido, o total de comandos (consultas), quantas leituras repetiram
+// uma leitura idêntica já feita no mesmo pedido (identicas: o mesmo texto com os mesmos parâmetros, que é trabalho perdido) e
+// as mais repetidas das duas contas (repetidas: pelo texto, com parâmetros diferentes; as_identicas). Sem a variável, o
+// normal, nada é anotado nem gravado. Devolve true com a medição ligada (e a guarda em BANCO_CONSULTAS_REGISTRO)
+function banco_consultas_ligar()
+{
+    $arquivo = (string)getenv("RELOGIOS_CONSULTAS");
+    $GLOBALS["BANCO_CONSULTAS_REGISTRO"] = $arquivo !== "";
+    if ($arquivo === "") {
+        return false;
+    }
+    $GLOBALS["BANCO_CONSULTAS_TEXTOS"] = [];
+    $GLOBALS["BANCO_CONSULTAS_IGUAIS"] = [];
+    register_shutdown_function(function () use ($arquivo) {
+        $textos = $GLOBALS["BANCO_CONSULTAS_TEXTOS"];
+        arsort($textos);
+        $iguais = [];
+        $identicas = 0;
+        foreach ($GLOBALS["BANCO_CONSULTAS_IGUAIS"] as $x) {
+            if ($x[1] > 1) {
+                $identicas += $x[1] - 1;
+                $iguais[$x[0]] = ($iguais[$x[0]] ?? 0) + $x[1] - 1;
+            }
+        }
+        arsort($iguais);
+        $pedido = PHP_SAPI === "cli" ? ["metodo" => "cli", "recurso" => basename((string)($_SERVER["argv"][0] ?? "")), "acao" => "", "parte" => "", "tipo" => ""]
+            : ["metodo" => (string)($_SERVER["REQUEST_METHOD"] ?? ""), "recurso" => (string)($_REQUEST["recurso"] ?? ""), "acao" => (string)($_REQUEST["acao"] ?? ""),
+                "parte" => (string)($_REQUEST["parte"] ?? ""), "tipo" => is_string($_REQUEST["tipo"] ?? null) ? $_REQUEST["tipo"] : ""];
+        $linha = json_encode($pedido + ["consultas" => (int)($GLOBALS["BANCO_CONSULTAS"] ?? 0), "identicas" => $identicas,
+            "repetidas" => array_slice($textos, 0, 5, true), "as_identicas" => array_slice($iguais, 0, 5, true)], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        // (a linha inteira de uma vez, com a trava do arquivo: vários pedidos gravam ao mesmo tempo)
+        file_put_contents($arquivo, $linha . "\n", FILE_APPEND | LOCK_EX);
+    });
+    return true;
+}
+
+// Anota um comando na medição: pelo texto (sem os espaços a mais, até 160 letras) e, nas leituras, pelo texto com os parâmetros
+function banco_consultas_anotar($comando, $params)
+{
+    $texto = substr((string)preg_replace("/\\s+/", " ", trim($comando)), 0, 160);
+    $GLOBALS["BANCO_CONSULTAS_TEXTOS"][$texto] = ($GLOBALS["BANCO_CONSULTAS_TEXTOS"][$texto] ?? 0) + 1;
+    if (preg_match("/^\\s*(SELECT|WITH)\\b/i", $comando) === 1) {
+        $chave = md5($comando . "\0" . json_encode(array_values($params), JSON_PARTIAL_OUTPUT_ON_ERROR));
+        if (isset($GLOBALS["BANCO_CONSULTAS_IGUAIS"][$chave])) {
+            $GLOBALS["BANCO_CONSULTAS_IGUAIS"][$chave][1]++;
+        } else {
+            $GLOBALS["BANCO_CONSULTAS_IGUAIS"][$chave] = [$texto, 1];
+        }
+    }
+}
+
 function banco_executar_banco($comando, $params = [])
 {
     // quantos comandos o pedido mandou ao banco (os testes conferem que o que já foi lido não é lido de novo)
     $GLOBALS["BANCO_CONSULTAS"] = ($GLOBALS["BANCO_CONSULTAS"] ?? 0) + 1;
+    if ($GLOBALS["BANCO_CONSULTAS_REGISTRO"] ?? banco_consultas_ligar()) {
+        banco_consultas_anotar($comando, $params);
+    }
     banco_anotar_escrita($comando);
     $params = array_values($params);
     $traduzido = sql_traduzir($comando);

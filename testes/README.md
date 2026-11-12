@@ -222,6 +222,37 @@ quebra (`ajudaGruda`), e o `estilo.css` põe o ⓘ ao lado do texto do rótulo n
 Pelo `paridade.sh`: `testes/paridade.sh --ajuda sqlite`. Ou, com um servidor do cenário no ar:
 `SO=ajuda-solta,ajuda-sem-nome BASE=http://127.0.0.1:8101/ node testes/layout.cjs`. O resultado esperado é `{} 0 problemas`.
 
+# Conferência das consultas ao banco
+
+Com o banco noutra máquina, cada consulta é uma ida e volta de rede, e o que pesa numa tela é a **quantidade** delas. A página
+Hoje já fez 3.800 consultas para 28 relógios, lendo os mesmos valores dezenas de vezes, com o banco em ordem (chave primária e
+índice em tudo). O teste de paridade não vê isso: a resposta sai certa.
+
+O `testes/consultas.php` cuida disso. O sistema, com a variável de ambiente `RELOGIOS_CONSULTAS` apontando um arquivo, acrescenta
+nele uma linha por pedido com o que mandou ao banco (o total de comandos, as leituras idênticas repetidas e os comandos mais
+repetidos). O teste lê esse registro do roteiro e confere:
+
+- **o orçamento por pedido**: cada consulta e cada gravação da API (`GET hoje`, `POST relogio.salvar`, `cli cron.php`...) tem um
+  teto de comandos e um teto de leituras idênticas repetidas (o mesmo comando com os mesmos parâmetros no mesmo pedido: trabalho
+  perdido), guardados no [`consultas.json`](consultas.json). O pedido que passa do teto com a folga (teto × 1,3 + 20) falha; o
+  que o arquivo não conhece (um recurso novo) vale até 600;
+- **o crescimento por relógio**: cadastra 10 relógios a mais, com uma leitura de carga cada, e mede quantas consultas **a mais**
+  cada pedido faz por relógio (Hoje, tudo, totais, previsão, plano, critérios, cadastros, estatísticas, autonomia, galeria e
+  relatórios). É o que pega a consulta dentro de um laço, e não depende do tamanho do banco do roteiro;
+- **o relatório**, que sai sempre: os pedidos mais caros, as leituras idênticas mais repetidas e os comandos mais repetidos. É por
+  ele que se sabe onde otimizar.
+
+```
+testes/paridade.sh --consultas sqlite            # o roteiro com o registro ligado e a conferência
+testes/paridade.sh --consultas --gravar sqlite   # grava o orçamento com o que mediu
+```
+
+Termina com `As consultas cabem no orçamento`. Quando falha, diz o pedido, quanto mediu e quanto podia, e o relatório mostra o que
+se repete. O conserto é ler uma vez e guardar no pedido, com o contador das gravações na chave (`BANCO_CADASTRO`, `BANCO_ESCRITAS`
+ou `BANCO_ESTRUTURA`, do `banco.php`: veja `valores_proprios()` no `lib.php`), ou buscar tudo numa consulta em vez de uma por
+item. **Grave o orçamento só quando a conta nova é devida** (um recurso novo, mais trabalho de verdade) ou depois de otimizar, para
+o teto descer: o arquivo passa a aceitar o que está medido.
+
 # A documentação da API
 
 O dicionário dos campos (o que é cada campo de cada resposta) tem **uma fonte só**: o `"campos"` da ajuda, no [`api/ajuda.php`](../api/ajuda.php) (o
@@ -385,6 +416,8 @@ quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo
   `configuracao-interface.cjs` (só no de português) e o `LAYOUT_LINGUA=<idioma> testes/paridade.sh --layout sqlite` (o roteiro em
   português e as telas no idioma: o texto de cada língua tem outro tamanho, e o que cabe numa pode vazar ou partir em outra); quando
   falha, as capturas das telas ficam para baixar na página da rodada (Artifacts, "layout-<idioma>");
+- **Consultas ao banco:** o `testes/paridade.sh --consultas sqlite`: cada pedido dentro do orçamento de consultas e nenhuma consulta
+  dentro de um laço por relógio; o relatório sai no registro do job e fica para baixar (Artifacts, "consultas");
 - **Botões de ajuda:** o `testes/paridade.sh --ajuda sqlite`: em todas as páginas e nos 18 tamanhos, cada ⓘ colado ao rótulo ou ao
   campo que explica, com nome e explicação; quando falha, as capturas ficam para baixar (Artifacts, "ajuda");
 - **Rolagem das telas:** o `testes/paridade.sh --rolagem sqlite`: no computador, no tablet de pé e deitado e no celular, cada

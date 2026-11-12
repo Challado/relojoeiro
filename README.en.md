@@ -2324,7 +2324,10 @@ The system reads the `config.php` in its folder. A server environment variable, 
 instead: it is what the parity test uses (`testes/paridade.sh`, with [`testes/config.teste.php`](testes/config.teste.php)), to
 run without touching the real `config.php`. On a normal installation, don't set it. The other environment variable the system reads is
 `RELOGIOS_SEMENTE`, also only for the tests: with it the draws repeat (the same seed gives the same draws), so that the parity
-test can compare the databases. On a normal installation, don't set it: the draws would stop being random.
+test can compare the databases. On a normal installation, don't set it: the draws would stop being random. And
+`RELOGIOS_CONSULTAS`, also for the tests: it points to a file in which each request notes how many commands it sent to the
+database and which ones were repeated, for the query check (`testes/consultas.php`). It also helps to investigate a slow page
+on a server: turn it on, use the page, read the file and turn it off (it grows with every request).
 
 ### Destinations and calendars on the server
 
@@ -2852,7 +2855,7 @@ Improvements are welcome, and the way is always this repository:
    (the resource's section, with the field's path as the key). It is the single source: the dictionary in the header of
    `api.php` is generated from it, with `php testes/dicionario.php --gravar` (don't write in the header by hand).
 6. **Run the parity test** ([`testes/`](testes/)) on the four databases before sending (GitHub also runs it, on every push to
-   `main`: the parity test, the update of an old database, the documentation, the rotation-mode simulation, the layout and the scrolling, in [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
+   `main`: the parity test, the update of an old database, the documentation, the rotation-mode simulation, the layout, the scrolling and the database queries, in [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
    the result shows in the **Actions** tab and in the ✓ / ✗ next to each commit): `testes/paridade.sh`, with the databases
    up, has to end with `Tudo igual.` It also checks the documentation: the header is what the help generates, and every field
    of the responses is explained. It checks the architecture ([`testes/arquitetura.php`](testes/arquitetura.php), which GitHub
@@ -2862,7 +2865,10 @@ Improvements are welcome, and the way is always this repository:
    any warning (Warning, Notice, Deprecated) during the round. Touched the screens? Also run the layout check (`testes/paridade.sh --layout sqlite`):
    `0 problemas`, in Portuguese and in the other languages (`LAYOUT_LINGUA=fr testes/paridade.sh --layout sqlite`, and the same with
    `en`, `es`, `hi` and `zh-CN`: GitHub runs one per language); and the scroll check (`testes/paridade.sh --rolagem sqlite`): `A rolagem confere`. Changed the
-   rotation? Run the mode simulation (`testes/simulacao.sh`, with `faketime` installed): `Os 19 modos conferem`.
+   rotation? Run the mode simulation (`testes/simulacao.sh`, with `faketime` installed): `Os 19 modos conferem`. Changed the
+   engine, a query or a write of the API? Run the database query check (`testes/paridade.sh --consultas sqlite`):
+   `As consultas cabem no orçamento` (each request has a ceiling of queries, and more watches must not multiply them: with the
+   database on another machine, each query is a network round trip).
 7. **Every new text goes through `t()`** (`api.js` and `textos/funcoes.php` have the function), with the Portuguese as the key
    and the parameters in braces: `t("Excluir {1}?", {1: nome})`, never `"Excluir " + nome + "?"`. No text written straight into the screens or the API: GitHub checks it in two ways. Rule 11 of `testes/arquitetura.php` rejects a quoted text that goes to the screen outside `t()` (what is deliberately not translated, such as the brand, goes in `fixo("...")`), and `LINGUA=zh-CN testes/paridade.sh --textos sqlite` opens every screen with the whole system in Chinese and flags any word in Latin letters that is neither the user's data nor from the dictionary. Then translate it in the
    five files in `textos/` and run `php testes/textos.php` (the parity test runs it too): it has to end with nothing missing.

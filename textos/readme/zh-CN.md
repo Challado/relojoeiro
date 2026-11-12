@@ -1,4 +1,4 @@
-<!-- origem: 01fd95aec8314552411d03faea3a6eaec30ce5b5 -->
+<!-- origem: cdfdb12c56332be4704d605d63149b3440e0d502 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -370,7 +370,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 `parametros[<chave>]`）：在那里保存的值优先于 `config.php` 中的那一行，留空则恢复使用那一行。凭据、密钥、文件夹和服务器地址
 仍只在 `config.php` 中。
 
-系统读取它所在文件夹中的 `config.php`。服务器环境变量 `RELOGIOS_CONFIG` 可以指向另一个文件代替它：一致性测试就是这样用的（`testes/paridade.sh`，配合 [`testes/config.teste.php`](testes/config.teste.php)），以便在不碰真正的 `config.php` 的情况下运行。正常安装时不要设置它。系统读取的另一个环境变量是 `RELOGIOS_SEMENTE`，同样只用于测试：有了它，抽签可以重复（同一个种子得到同样的抽签结果），好让一致性测试比较各个数据库。正常安装时不要设置它：抽签将不再随机。
+系统读取它所在文件夹中的 `config.php`。服务器环境变量 `RELOGIOS_CONFIG` 可以指向另一个文件代替它：一致性测试就是这样用的（`testes/paridade.sh`，配合 [`testes/config.teste.php`](testes/config.teste.php)），以便在不碰真正的 `config.php` 的情况下运行。正常安装时不要设置它。系统读取的另一个环境变量是 `RELOGIOS_SEMENTE`，同样只用于测试：有了它，抽签可以重复（同一个种子得到同样的抽签结果），好让一致性测试比较各个数据库。正常安装时不要设置它：抽签将不再随机。还有 `RELOGIOS_CONSULTAS`，同样用于测试：它指向一个文件，每个请求都在其中记下自己向数据库发送了多少条命令、哪些是重复的，供查询检查（`testes/consultas.php`）使用。它也可以用来排查服务器上某个缓慢的页面：打开它，使用该页面，读取文件，然后关闭它（文件会随每个请求增长）。
 
 ### 服务器上的推送目标与日历 {#destinos-e-agendas-no-servidor}
 
@@ -549,7 +549,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 3. **遵循代码的风格：** 纯 PHP 和 JavaScript，无依赖，注释和消息使用葡萄牙语（翻译放在 `textos/` 中）。关于手表的知识放进初始集合（`modelo.json`），而不是代码中。
 4. 修改了数据库？创建一个 `migracao_vN.sql` 并在 `lib.php` 的 `$MIGRACOES` 中登记：结构用 MySQL 方言，数据用四种数据库通用的 SQL（参见[数据库更新](#atualizações-do-banco)）。`testes/migracao.sh` 检查已有用户的升级路径：上一版本的数据库带着数据，通过迁移升级到当前版本（GitHub 在每次 push 时在四种数据库上运行它）。
 5. 修改了 API？在帮助的词典中**解释每个新字段**：`api/ajuda.php` 中 `recurso=ajuda` 的 `"campos"`（资源对应的部分，以字段路径为键）。它是唯一的来源：`api.php` 文件头中的词典由它生成，使用 `php testes/dicionario.php --gravar`（不要手动修改文件头）。
-6. 提交之前，**在四种数据库上运行一致性测试**（[`testes/`](testes/)）（GitHub 也会在每次 push 到 `main` 时运行：一致性测试、旧数据库升级、文档、轮换模式模拟、布局和滚动，见 [`.github/workflows/testes.yml`](.github/workflows/testes.yml)；结果显示在 **Actions** 标签页以及每个提交旁边的 ✓ / ✗ 中）：`testes/paridade.sh` 在数据库都运行时必须以 `Tudo igual.` 结束。它还会检查文档：文件头就是帮助生成的内容，响应的每个字段都有解释。它还检查架构（[`testes/arquitetura.php`](testes/arquitetura.php)，GitHub 也会在一个不需要数据库的快速步骤中运行它）：页面只提供骨架，界面的网络请求只经过 API，数据库只由核心、API 和 cron 访问，内部文件在 Web 上被屏蔽，每个操作和每个 `config.php` 常量都有文档，以及文件开头列出的其他规则。如果 PHP 在运行期间给出任何警告（Warning、Notice、Deprecated），它也会失败。修改了界面？还要运行布局检查（`testes/paridade.sh --layout sqlite`）：`0 problemas`，葡萄牙语和其他语言都要（`LAYOUT_LINGUA=fr testes/paridade.sh --layout sqlite`，`en`、`es`、`hi` 和 `zh-CN` 同理：GitHub 每种语言运行一个）；以及滚动检查（`testes/paridade.sh --rolagem sqlite`）：`A rolagem confere`。修改了轮换？运行模式模拟（`testes/simulacao.sh`，需安装 `faketime`）：`Os 19 modos conferem`。
+6. 提交之前，**在四种数据库上运行一致性测试**（[`testes/`](testes/)）（GitHub 也会在每次 push 到 `main` 时运行：一致性测试、旧数据库升级、文档、轮换模式模拟、布局、滚动和数据库查询，见 [`.github/workflows/testes.yml`](.github/workflows/testes.yml)；结果显示在 **Actions** 标签页以及每个提交旁边的 ✓ / ✗ 中）：`testes/paridade.sh` 在数据库都运行时必须以 `Tudo igual.` 结束。它还会检查文档：文件头就是帮助生成的内容，响应的每个字段都有解释。它还检查架构（[`testes/arquitetura.php`](testes/arquitetura.php)，GitHub 也会在一个不需要数据库的快速步骤中运行它）：页面只提供骨架，界面的网络请求只经过 API，数据库只由核心、API 和 cron 访问，内部文件在 Web 上被屏蔽，每个操作和每个 `config.php` 常量都有文档，以及文件开头列出的其他规则。如果 PHP 在运行期间给出任何警告（Warning、Notice、Deprecated），它也会失败。修改了界面？还要运行布局检查（`testes/paridade.sh --layout sqlite`）：`0 problemas`，葡萄牙语和其他语言都要（`LAYOUT_LINGUA=fr testes/paridade.sh --layout sqlite`，`en`、`es`、`hi` 和 `zh-CN` 同理：GitHub 每种语言运行一个）；以及滚动检查（`testes/paridade.sh --rolagem sqlite`）：`A rolagem confere`。修改了轮换？运行模式模拟（`testes/simulacao.sh`，需安装 `faketime`）：`Os 19 modos conferem`。修改了引擎、某个查询或 API 的某个写入？运行数据库查询检查（`testes/paridade.sh --consultas sqlite`）：`As consultas cabem no orçamento`（每个请求都有查询上限，手表增多也不能让查询成倍增加：数据库在另一台机器上时，每条查询都是一次网络往返）。
 7. **每个新文本都要经过 `t()`**（`api.js` 和 `textos/funcoes.php` 中都有这个函数），以葡萄牙语为键，参数放在花括号中：`t("Excluir {1}?", {1: nome})`，绝不要写 `"Excluir " + nome + "?"`。界面和 API 中不能有直接写死的文本：GitHub 用两种方式检查。`testes/arquitetura.php` 的第 11 条规则拒绝在 `t()` 之外进入界面的引号文本（故意不翻译的内容，例如品牌名，放在 `fixo("...")` 中）；`LINGUA=zh-CN testes/paridade.sh --textos sqlite` 把整个系统切换成中文后打开所有界面，凡是既不是用户数据、也不来自词典的拉丁字母单词都会被标出。然后在 `textos/` 的五个文件中翻译，并运行 `php testes/textos.php`（一致性测试也会运行它）：必须在没有任何缺失的情况下结束。修改了 README？它的翻译带有所翻译版本的标记（`textos/manual/<语言>.md` 和 `textos/readme/<语言>.md` 的第一行），`php testes/textos.php` 会指出落后的翻译：翻译修改的部分，换上新的标记（`php testes/textos.php --manual` 和 `php testes/readme.php --original` 会给出带标记的原文），然后运行 `php testes/readme.php`，它会重新生成各个 `README.<语言>.md`。
 8. 提交 pull request 时，说明对用户来说有什么变化以及你是如何测试的。
 

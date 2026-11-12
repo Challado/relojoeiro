@@ -2389,7 +2389,10 @@ fichier à la place : c'est ce qu'utilise le test de parité (`testes/paridade.s
 [`testes/config.teste.php`](testes/config.teste.php)), pour tourner sans toucher au vrai `config.php`. Sur une installation
 normale, ne la définissez pas. L'autre variable d'environnement que lit le système est `RELOGIOS_SEMENTE`, elle aussi réservée aux tests : avec
 elle les tirages se répètent (la même graine donne les mêmes tirages), pour que le test de parité compare les bases. Sur une
-installation normale, ne la définissez pas : les tirages cesseraient d'être aléatoires.
+installation normale, ne la définissez pas : les tirages cesseraient d'être aléatoires. Et `RELOGIOS_CONSULTAS`, elle aussi
+pour les tests : elle indique un fichier dans lequel chaque requête note combien de commandes elle a envoyées à la base et
+lesquelles se sont répétées, pour la vérification des requêtes (`testes/consultas.php`). Elle sert aussi à enquêter sur un
+écran lent sur un serveur : activez-la, utilisez l'écran, lisez le fichier et désactivez-la (il grossit à chaque requête).
 
 ### Destinations et agendas sur le serveur
 
@@ -2957,7 +2960,7 @@ Les améliorations sont les bienvenues, et le chemin passe toujours par ce dép�
    unique : le dictionnaire de l'en-tête du `api.php` est généré à partir de lui, avec `php testes/dicionario.php --gravar`
    (n'écrivez pas dans l'en-tête à la main).
 6. **Lancez le test de parité** ([`testes/`](testes/)) sur les quatre bases avant d'envoyer (GitHub le lance aussi, à chaque
-   push sur `main` : le test de parité, la mise à jour d'une ancienne base, la documentation, la simulation des modes de rotation, la mise en page et le défilement, dans
+   push sur `main` : le test de parité, la mise à jour d'une ancienne base, la documentation, la simulation des modes de rotation, la mise en page, le défilement et les requêtes à la base, dans
    [`.github/workflows/testes.yml`](.github/workflows/testes.yml) ; le résultat apparaît dans l'onglet **Actions** et dans le
    ✓ / ✗ à côté de chaque commit) : `testes/paridade.sh`, avec les bases en marche, doit finir par `Tudo igual.` Il vérifie
    aussi la documentation : l'en-tête est ce que génère l'aide, et chaque champ des réponses est expliqué. Il vérifie l'architecture ([`testes/arquitetura.php`](testes/arquitetura.php), que GitHub
@@ -2968,6 +2971,9 @@ Les améliorations sont les bienvenues, et le chemin passe toujours par ce dép�
    écrans ? Lancez aussi la vérification de la mise en page (`testes/paridade.sh --layout sqlite`) : `0 problemas`, en portugais et dans les autres langues (`LAYOUT_LINGUA=fr testes/paridade.sh --layout sqlite`, et de même avec `en`, `es`, `hi` et `zh-CN` : GitHub en lance un par langue) ; et celle du
    défilement (`testes/paridade.sh --rolagem sqlite`) : `A rolagem confere`. Vous avez
    modifié la rotation ? Lancez la simulation des modes (`testes/simulacao.sh`, avec `faketime` installé) : `Os 19 modos conferem`.
+   Vous avez modifié le moteur, une requête ou une écriture de l'API ? Lancez la vérification des requêtes à la base
+   (`testes/paridade.sh --consultas sqlite`) : `As consultas cabem no orçamento` (chaque requête a un plafond de commandes, et
+   des montres en plus ne doivent pas les multiplier : avec la base sur une autre machine, chaque commande est un aller-retour réseau).
 7. **Tout nouveau texte passe par `t()`** (le `api.js` et le `textos/funcoes.php` ont la fonction), avec le portugais comme clé
    et les paramètres entre accolades : `t("Excluir {1}?", {1: nome})`, jamais `"Excluir " + nome + "?"`. Aucun texte écrit en dur dans les écrans ni dans l'API : GitHub le vérifie de deux façons. La règle 11 de `testes/arquitetura.php` refuse le texte entre guillemets qui va à l'écran hors du `t()` (ce qui ne se traduit pas exprès, comme la marque, va dans `fixo("...")`), et `LINGUA=zh-CN testes/paridade.sh --textos sqlite` ouvre tous les écrans avec tout le système en chinois et signale tout mot en lettres latines qui n'est ni une donnée de l'utilisateur ni issu du dictionnaire. Ensuite, traduisez-le
    dans les cinq fichiers de `textos/` et lancez `php testes/textos.php` (le test de parité le lance aussi) : il doit finir sans

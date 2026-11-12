@@ -2349,7 +2349,10 @@ O sistema lê o `config.php` da pasta dele. Uma variável de ambiente do servido
 lugar: é o que o teste de paridade usa (`testes/paridade.sh`, com o [`testes/config.teste.php`](testes/config.teste.php)), para
 rodar sem tocar no `config.php` de verdade. Numa instalação normal, não a defina. A outra variável de ambiente que o sistema lê
 é a `RELOGIOS_SEMENTE`, também só dos testes: com ela os sorteios se repetem (a mesma semente dá os mesmos sorteios), para o teste
-de paridade comparar os bancos. Numa instalação normal, não a defina: os sorteios deixariam de ser ao acaso.
+de paridade comparar os bancos. Numa instalação normal, não a defina: os sorteios deixariam de ser ao acaso. E a
+`RELOGIOS_CONSULTAS`, também dos testes: aponta um arquivo em que cada pedido anota quantos comandos mandou ao banco e quais se
+repetiram, para a conferência das consultas (`testes/consultas.php`). Serve também para investigar uma tela lenta num servidor:
+ligue, use a tela, leia o arquivo e desligue (ele cresce a cada pedido).
 
 ### Destinos e agendas no servidor
 
@@ -2869,7 +2872,7 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    recurso, com o caminho do campo como chave). Ele é a fonte única: o dicionário do cabeçalho do `api.php` é gerado dele, com
    `php testes/dicionario.php --gravar` (não escreva no cabeçalho à mão).
 6. **Rode o teste de paridade** ([`testes/`](testes/)) nos quatro bancos antes de mandar (o GitHub também roda, a cada push
-   no `main`: o teste de paridade, a atualização de um banco antigo, a documentação, a simulação dos modos de rodízio, o layout e a rolagem, em [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
+   no `main`: o teste de paridade, a atualização de um banco antigo, a documentação, a simulação dos modos de rodízio, o layout, a rolagem e as consultas ao banco, em [`.github/workflows/testes.yml`](.github/workflows/testes.yml);
    o resultado aparece na aba **Actions** e no ✓ / ✗ ao lado de cada commit): `testes/paridade.sh`, com os
    bancos no ar, tem de terminar com `Tudo igual.` Ele confere também a documentação: o cabeçalho é o que a ajuda gera, e
    todo campo das respostas está explicado. Confere a arquitetura ([`testes/arquitetura.php`](testes/arquitetura.php), que
@@ -2880,7 +2883,9 @@ Melhorias são bem-vindas, e o caminho é sempre este repositório:
    (`testes/paridade.sh --layout sqlite`): `0 problemas`, em português e nos outros idiomas (`LAYOUT_LINGUA=fr testes/paridade.sh
    --layout sqlite`, e o mesmo com `en`, `es`, `hi` e `zh-CN`: o GitHub roda um por idioma); e a da rolagem (`testes/paridade.sh --rolagem sqlite`):
    `A rolagem confere`. Mexeu no rodízio? Rode a simulação dos modos (`testes/simulacao.sh`, com o `faketime` instalado):
-   `Os 19 modos conferem`.
+   `Os 19 modos conferem`. Mexeu no motor, numa consulta ou numa gravação da API? Rode a conferência das consultas ao banco
+   (`testes/paridade.sh --consultas sqlite`): `As consultas cabem no orçamento` (cada pedido tem um teto de consultas, e relógios
+   a mais não podem multiplicá-las: com o banco noutra máquina, cada consulta é uma ida e volta de rede).
 7. **Todo texto novo passa pelo `t()`** (o `api.js` e o `textos/funcoes.php` têm a função), com o português como chave e os
    parâmetros entre chaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Nenhum texto escrito direto nas telas nem na API: o GitHub confere de dois jeitos. A regra 11 do `testes/arquitetura.php` recusa o texto entre aspas que vai para a tela fora do `t()` (o que não se traduz de propósito, como a marca, vai no `fixo("...")`), e `LINGUA=zh-CN testes/paridade.sh --textos sqlite` abre todas as telas com o sistema inteiro em chinês e acusa qualquer palavra em letra latina que não seja dado de quem usa nem venha do dicionário. Depois, traduza nos cinco
    arquivos de `textos/` e rode `php testes/textos.php` (o teste de paridade também roda): tem de terminar sem falta.

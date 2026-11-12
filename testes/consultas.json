@@ -1,0 +1,916 @@
+{
+    "como": "O orçamento das consultas ao banco (testes/consultas.php): o máximo de comandos e de leituras idênticas repetidas que cada pedido fez no roteiro, e quantos comandos a mais cada pedido faz por relógio. Gravado por php testes/consultas.php ... --gravar (testes/paridade.sh --consultas --gravar sqlite). Um pedido falha quando passa de teto x folga.vezes + folga.mais; o que não está aqui vale até teto_sem_orcamento; por relógio, até o gravado + folga_por_relogio.",
+    "folga": {
+        "vezes": 1.3,
+        "mais": 20
+    },
+    "teto_sem_orcamento": 600,
+    "folga_por_relogio": 1,
+    "por_relogio": {
+        "hoje": 10,
+        "(tudo)": 41,
+        "totais": 10,
+        "previsao": 13,
+        "plano": 0,
+        "criterios": 3.8,
+        "cadastros": 0,
+        "estatisticas": 4,
+        "autonomia": 11,
+        "galeria": 1,
+        "relatorios": 0
+    },
+    "por_pedido": {
+        "GET ": {
+            "consultas": 675,
+            "identicas": 345
+        },
+        "GET acessorios": {
+            "consultas": 41,
+            "identicas": 0
+        },
+        "GET agendas": {
+            "consultas": 250,
+            "identicas": 158
+        },
+        "GET ajuda": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET ajuda/codigo": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET ajuda/manual": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET ajuda/reconstrucao": {
+            "consultas": 518,
+            "identicas": 0
+        },
+        "GET aprovacoes": {
+            "consultas": 27,
+            "identicas": 1
+        },
+        "GET arvore": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "GET autonomia": {
+            "consultas": 90,
+            "identicas": 10
+        },
+        "GET avisos": {
+            "consultas": 57,
+            "identicas": 1
+        },
+        "GET backup": {
+            "consultas": 19,
+            "identicas": 0
+        },
+        "GET cadastro": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "GET cadastros": {
+            "consultas": 92,
+            "identicas": 16
+        },
+        "GET calcular": {
+            "consultas": 48,
+            "identicas": 1
+        },
+        "GET calibres": {
+            "consultas": 29,
+            "identicas": 0
+        },
+        "GET codigo": {
+            "consultas": 19,
+            "identicas": 0
+        },
+        "GET colecoes": {
+            "consultas": 30,
+            "identicas": 1
+        },
+        "GET colunas": {
+            "consultas": 86,
+            "identicas": 3
+        },
+        "GET config": {
+            "consultas": 194,
+            "identicas": 34
+        },
+        "GET conta": {
+            "consultas": 45,
+            "identicas": 3
+        },
+        "GET conta/menu": {
+            "consultas": 24,
+            "identicas": 1
+        },
+        "GET criterios": {
+            "consultas": 81,
+            "identicas": 11
+        },
+        "GET cron": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "GET desejos": {
+            "consultas": 30,
+            "identicas": 0
+        },
+        "GET destinos": {
+            "consultas": 283,
+            "identicas": 186
+        },
+        "GET documento": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "GET documentos": {
+            "consultas": 34,
+            "identicas": 0
+        },
+        "GET entrar": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET estatisticas": {
+            "consultas": 61,
+            "identicas": 0
+        },
+        "GET eventos": {
+            "consultas": 48,
+            "identicas": 0
+        },
+        "GET ficha": {
+            "consultas": 128,
+            "identicas": 28
+        },
+        "GET foto": {
+            "consultas": 19,
+            "identicas": 0
+        },
+        "GET galeria": {
+            "consultas": 40,
+            "identicas": 0
+        },
+        "GET historico": {
+            "consultas": 54,
+            "identicas": 8
+        },
+        "GET hoje": {
+            "consultas": 456,
+            "identicas": 126
+        },
+        "GET hora_certa": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "GET importacao": {
+            "consultas": 19,
+            "identicas": 0
+        },
+        "GET instalacao": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "GET listas": {
+            "consultas": 140,
+            "identicas": 28
+        },
+        "GET manifest": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET manual": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET manutencao": {
+            "consultas": 45,
+            "identicas": 5
+        },
+        "GET marcas": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "GET migracoes": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET oficinas": {
+            "consultas": 24,
+            "identicas": 0
+        },
+        "GET passaporte": {
+            "consultas": 65,
+            "identicas": 6
+        },
+        "GET plano": {
+            "consultas": 31,
+            "identicas": 1
+        },
+        "GET precisao": {
+            "consultas": 37,
+            "identicas": 0
+        },
+        "GET previsao": {
+            "consultas": 65,
+            "identicas": 5
+        },
+        "GET programas": {
+            "consultas": 25,
+            "identicas": 0
+        },
+        "GET proximos": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "GET reconstrucao": {
+            "consultas": 518,
+            "identicas": 0
+        },
+        "GET relatorios": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "GET relatorios:acessorios": {
+            "consultas": 29,
+            "identicas": 0
+        },
+        "GET relatorios:avisos": {
+            "consultas": 58,
+            "identicas": 1
+        },
+        "GET relatorios:avulso": {
+            "consultas": 80,
+            "identicas": 3
+        },
+        "GET relatorios:calibres": {
+            "consultas": 27,
+            "identicas": 0
+        },
+        "GET relatorios:colecao": {
+            "consultas": 41,
+            "identicas": 0
+        },
+        "GET relatorios:criterios": {
+            "consultas": 74,
+            "identicas": 9
+        },
+        "GET relatorios:cron": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "GET relatorios:custos": {
+            "consultas": 68,
+            "identicas": 0
+        },
+        "GET relatorios:desejos": {
+            "consultas": 31,
+            "identicas": 0
+        },
+        "GET relatorios:documentos": {
+            "consultas": 29,
+            "identicas": 0
+        },
+        "GET relatorios:estatisticas": {
+            "consultas": 62,
+            "identicas": 0
+        },
+        "GET relatorios:gasto_oficinas": {
+            "consultas": 46,
+            "identicas": 5
+        },
+        "GET relatorios:historico": {
+            "consultas": 55,
+            "identicas": 8
+        },
+        "GET relatorios:manutencao_oficinas": {
+            "consultas": 46,
+            "identicas": 5
+        },
+        "GET relatorios:manutencoes": {
+            "consultas": 47,
+            "identicas": 5
+        },
+        "GET relatorios:nao_existe": {
+            "consultas": 19,
+            "identicas": 0
+        },
+        "GET relatorios:passaporte": {
+            "consultas": 63,
+            "identicas": 7
+        },
+        "GET relatorios:plano": {
+            "consultas": 30,
+            "identicas": 1
+        },
+        "GET relatorios:precisao": {
+            "consultas": 36,
+            "identicas": 1
+        },
+        "GET relatorios:r1": {
+            "consultas": 80,
+            "identicas": 3
+        },
+        "GET relatorios:r2": {
+            "consultas": 92,
+            "identicas": 3
+        },
+        "GET relatorios:reserva": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "GET relatorios:servicos": {
+            "consultas": 30,
+            "identicas": 0
+        },
+        "GET relatorios:timegrapher": {
+            "consultas": 23,
+            "identicas": 1
+        },
+        "GET relatorios:totais": {
+            "consultas": 87,
+            "identicas": 3
+        },
+        "GET reserva": {
+            "consultas": 39,
+            "identicas": 1
+        },
+        "GET rodizio_manual": {
+            "consultas": 35,
+            "identicas": 0
+        },
+        "GET roteiro": {
+            "consultas": 56,
+            "identicas": 2
+        },
+        "GET servicos": {
+            "consultas": 33,
+            "identicas": 0
+        },
+        "GET sql": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "GET sw": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET textos": {
+            "consultas": 18,
+            "identicas": 0
+        },
+        "GET timegrapher": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "GET totais": {
+            "consultas": 88,
+            "identicas": 0
+        },
+        "GET totais/pagina": {
+            "consultas": 87,
+            "identicas": 0
+        },
+        "GET totais/rodape": {
+            "consultas": 95,
+            "identicas": 8
+        },
+        "GET totais/teste": {
+            "consultas": 87,
+            "identicas": 0
+        },
+        "GET unidades": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "GET usuarios": {
+            "consultas": 32,
+            "identicas": 1
+        },
+        "GET winders": {
+            "consultas": 78,
+            "identicas": 5
+        },
+        "POST acessorios.excluir": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "POST acessorios.salvar": {
+            "consultas": 37,
+            "identicas": 0
+        },
+        "POST agendas.salvar": {
+            "consultas": 104,
+            "identicas": 12
+        },
+        "POST arvore.excluir": {
+            "consultas": 43,
+            "identicas": 1
+        },
+        "POST arvore.mover": {
+            "consultas": 23,
+            "identicas": 1
+        },
+        "POST arvore.novo": {
+            "consultas": 27,
+            "identicas": 4
+        },
+        "POST arvore.ordem": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "POST arvore.relogios": {
+            "consultas": 24,
+            "identicas": 0
+        },
+        "POST arvore.renomear": {
+            "consultas": 21,
+            "identicas": 1
+        },
+        "POST avisos.alterar": {
+            "consultas": 27,
+            "identicas": 0
+        },
+        "POST avisos.excluir": {
+            "consultas": 51,
+            "identicas": 0
+        },
+        "POST avisos.novo": {
+            "consultas": 26,
+            "identicas": 0
+        },
+        "POST cadastro.conferir_senha": {
+            "consultas": 19,
+            "identicas": 0
+        },
+        "POST cadastro.criar_conta": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "POST calibres.excluir": {
+            "consultas": 527,
+            "identicas": 0
+        },
+        "POST calibres.salvar": {
+            "consultas": 34,
+            "identicas": 0
+        },
+        "POST campos.alterar": {
+            "consultas": 47,
+            "identicas": 1
+        },
+        "POST campos.excluir": {
+            "consultas": 29,
+            "identicas": 1
+        },
+        "POST campos.novo": {
+            "consultas": 33,
+            "identicas": 0
+        },
+        "POST campos.ordem": {
+            "consultas": 84,
+            "identicas": 0
+        },
+        "POST colunas.descer": {
+            "consultas": 46,
+            "identicas": 0
+        },
+        "POST colunas.excluir": {
+            "consultas": 519,
+            "identicas": 0
+        },
+        "POST colunas.salvar": {
+            "consultas": 27,
+            "identicas": 0
+        },
+        "POST colunas.subir": {
+            "consultas": 46,
+            "identicas": 0
+        },
+        "POST config.evento_excluir": {
+            "consultas": 46,
+            "identicas": 0
+        },
+        "POST config.evento_salvar": {
+            "consultas": 25,
+            "identicas": 1
+        },
+        "POST config.salvar": {
+            "consultas": 55,
+            "identicas": 19
+        },
+        "POST conta.alterar": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "POST conta.aparelho_esquecer": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "POST conta.aparelho_lembrar": {
+            "consultas": 19,
+            "identicas": 0
+        },
+        "POST conta.smtp_salvar": {
+            "consultas": 22,
+            "identicas": 1
+        },
+        "POST conta.smtp_testar": {
+            "consultas": 19,
+            "identicas": 0
+        },
+        "POST criterios.conjunto_criar": {
+            "consultas": 89,
+            "identicas": 0
+        },
+        "POST criterios.conjunto_excluir": {
+            "consultas": 38,
+            "identicas": 0
+        },
+        "POST criterios.faixas": {
+            "consultas": 27,
+            "identicas": 0
+        },
+        "POST criterios.ordem": {
+            "consultas": 31,
+            "identicas": 0
+        },
+        "POST criterios.param_novo": {
+            "consultas": 40,
+            "identicas": 0
+        },
+        "POST criterios.param_pesos": {
+            "consultas": 40,
+            "identicas": 0
+        },
+        "POST criterios.restaurar": {
+            "consultas": 329,
+            "identicas": 0
+        },
+        "POST criterios.sub_excluir": {
+            "consultas": 26,
+            "identicas": 0
+        },
+        "POST criterios.sub_medida": {
+            "consultas": 25,
+            "identicas": 0
+        },
+        "POST criterios.sub_mover": {
+            "consultas": 34,
+            "identicas": 0
+        },
+        "POST criterios.sub_novo": {
+            "consultas": 30,
+            "identicas": 0
+        },
+        "POST destinos.salvar": {
+            "consultas": 114,
+            "identicas": 15
+        },
+        "POST documentos.alterar": {
+            "consultas": 27,
+            "identicas": 1
+        },
+        "POST documentos.enviar": {
+            "consultas": 31,
+            "identicas": 0
+        },
+        "POST documentos.excluir": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "POST formulas.alterar": {
+            "consultas": 27,
+            "identicas": 1
+        },
+        "POST formulas.excluir": {
+            "consultas": 26,
+            "identicas": 1
+        },
+        "POST formulas.nova": {
+            "consultas": 26,
+            "identicas": 1
+        },
+        "POST lancamento.alterar": {
+            "consultas": 59,
+            "identicas": 13
+        },
+        "POST lancamento.alternar": {
+            "consultas": 52,
+            "identicas": 2
+        },
+        "POST lancamento.encerrar": {
+            "consultas": 37,
+            "identicas": 1
+        },
+        "POST lancamento.excluir": {
+            "consultas": 24,
+            "identicas": 0
+        },
+        "POST lancamento.iniciar": {
+            "consultas": 41,
+            "identicas": 1
+        },
+        "POST lancamento.lancar": {
+            "consultas": 67,
+            "identicas": 18
+        },
+        "POST lancamento.medicao": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "POST lancamento.periodo": {
+            "consultas": 86,
+            "identicas": 31
+        },
+        "POST lancamento_tipos.alterar": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "POST lancamento_tipos.excluir": {
+            "consultas": 25,
+            "identicas": 0
+        },
+        "POST lancamento_tipos.novo": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "POST listas.excluir": {
+            "consultas": 531,
+            "identicas": 10
+        },
+        "POST listas.salvar": {
+            "consultas": 25,
+            "identicas": 4
+        },
+        "POST lote": {
+            "consultas": 44,
+            "identicas": 8
+        },
+        "POST manutencao.excluir": {
+            "consultas": 523,
+            "identicas": 0
+        },
+        "POST manutencao.salvar": {
+            "consultas": 253,
+            "identicas": 20
+        },
+        "POST manutencao.situacao": {
+            "consultas": 48,
+            "identicas": 1
+        },
+        "POST marcas.excluir": {
+            "consultas": 520,
+            "identicas": 0
+        },
+        "POST marcas.juntar": {
+            "consultas": 23,
+            "identicas": 1
+        },
+        "POST marcas.salvar": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "POST modos.ativar": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "POST modos.excluir": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "POST modos.salvar": {
+            "consultas": 42,
+            "identicas": 0
+        },
+        "POST movimentos.excluir": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "POST movimentos.salvar": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "POST oficinas.excluir": {
+            "consultas": 23,
+            "identicas": 1
+        },
+        "POST oficinas.salvar": {
+            "consultas": 27,
+            "identicas": 0
+        },
+        "POST programas.excluir": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "POST programas.montar": {
+            "consultas": 32,
+            "identicas": 1
+        },
+        "POST programas.salvar": {
+            "consultas": 24,
+            "identicas": 0
+        },
+        "POST relatorios.excluir": {
+            "consultas": 519,
+            "identicas": 0
+        },
+        "POST relatorios.salvar": {
+            "consultas": 24,
+            "identicas": 0
+        },
+        "POST relogio.excluir": {
+            "consultas": 543,
+            "identicas": 0
+        },
+        "POST relogio.foto": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "POST relogio.remover_foto": {
+            "consultas": 20,
+            "identicas": 0
+        },
+        "POST relogio.salvar": {
+            "consultas": 106,
+            "identicas": 13
+        },
+        "POST reserva.excluir": {
+            "consultas": 519,
+            "identicas": 0
+        },
+        "POST reserva.iniciar": {
+            "consultas": 25,
+            "identicas": 0
+        },
+        "POST reserva.observar": {
+            "consultas": 24,
+            "identicas": 0
+        },
+        "POST reserva.parou": {
+            "consultas": 25,
+            "identicas": 0
+        },
+        "POST reserva.salvar": {
+            "consultas": 26,
+            "identicas": 0
+        },
+        "POST reserva.usar": {
+            "consultas": 29,
+            "identicas": 0
+        },
+        "POST rodizio.apagar_tudo": {
+            "consultas": 174,
+            "identicas": 39
+        },
+        "POST rodizio.manual": {
+            "consultas": 330,
+            "identicas": 149
+        },
+        "POST rodizio.modo": {
+            "consultas": 33,
+            "identicas": 3
+        },
+        "POST rodizio.periodo": {
+            "consultas": 255,
+            "identicas": 76
+        },
+        "POST rodizio.periodo_livre": {
+            "consultas": 266,
+            "identicas": 78
+        },
+        "POST rodizio.periodo_sortear": {
+            "consultas": 331,
+            "identicas": 95
+        },
+        "POST rodizio.proxima_semana": {
+            "consultas": 136,
+            "identicas": 27
+        },
+        "POST rodizio.resortear": {
+            "consultas": 538,
+            "identicas": 170
+        },
+        "POST rodizio.resortear_hoje": {
+            "consultas": 159,
+            "identicas": 25
+        },
+        "POST rodizio.sem_relogio": {
+            "consultas": 33,
+            "identicas": 2
+        },
+        "POST rodizio.trocar_dia": {
+            "consultas": 325,
+            "identicas": 138
+        },
+        "POST rodizio.usando": {
+            "consultas": 284,
+            "identicas": 79
+        },
+        "POST secoes.excluir": {
+            "consultas": 520,
+            "identicas": 1
+        },
+        "POST secoes.ordem": {
+            "consultas": 30,
+            "identicas": 1
+        },
+        "POST secoes.salvar": {
+            "consultas": 24,
+            "identicas": 0
+        },
+        "POST servicos.excluir": {
+            "consultas": 521,
+            "identicas": 0
+        },
+        "POST servicos.salvar": {
+            "consultas": 46,
+            "identicas": 0
+        },
+        "POST sql.executar": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "POST timegrapher.excluir": {
+            "consultas": 519,
+            "identicas": 0
+        },
+        "POST timegrapher.importar": {
+            "consultas": 23,
+            "identicas": 0
+        },
+        "POST timegrapher.salvar": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "POST totais.excluir": {
+            "consultas": 519,
+            "identicas": 0
+        },
+        "POST totais.salvar": {
+            "consultas": 26,
+            "identicas": 0
+        },
+        "POST totais.subir": {
+            "consultas": 44,
+            "identicas": 0
+        },
+        "POST unidades.excluir": {
+            "consultas": 521,
+            "identicas": 1
+        },
+        "POST unidades.salvar": {
+            "consultas": 33,
+            "identicas": 2
+        },
+        "POST usuarios.alterar": {
+            "consultas": 21,
+            "identicas": 0
+        },
+        "POST usuarios.salvar": {
+            "consultas": 868,
+            "identicas": 19
+        },
+        "POST usuarios.senha": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "POST winder_posicoes.excluir": {
+            "consultas": 524,
+            "identicas": 0
+        },
+        "POST winder_posicoes.liberar": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "POST winder_posicoes.salvar": {
+            "consultas": 94,
+            "identicas": 28
+        },
+        "POST winders.excluir": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "POST winders.limite_ok": {
+            "consultas": 22,
+            "identicas": 0
+        },
+        "POST winders.salvar": {
+            "consultas": 31,
+            "identicas": 0
+        },
+        "cli cron.php": {
+            "consultas": 1829,
+            "identicas": 515
+        },
+        "cli instalar.php": {
+            "consultas": 29,
+            "identicas": 2
+        }
+    }
+}

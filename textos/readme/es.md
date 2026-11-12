@@ -1,4 +1,4 @@
-<!-- origem: 01fd95aec8314552411d03faea3a6eaec30ce5b5 -->
+<!-- origem: cdfdb12c56332be4704d605d63149b3440e0d502 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -449,7 +449,10 @@ El sistema lee el `config.php` de su carpeta. Una variable de entorno del servid
 su lugar: es lo que usa la prueba de paridad (`testes/paridade.sh`, con el [`testes/config.teste.php`](testes/config.teste.php)),
 para ejecutarse sin tocar el `config.php` de verdad. En una instalación normal, no la defina. La otra variable de entorno que lee el sistema es
 `RELOGIOS_SEMENTE`, también solo de las pruebas: con ella los sorteos se repiten (la misma semilla da los mismos sorteos), para que la
-prueba de paridad compare las bases de datos. En una instalación normal, no la defina: los sorteos dejarían de ser al azar.
+prueba de paridad compare las bases de datos. En una instalación normal, no la defina: los sorteos dejarían de ser al azar. Y
+`RELOGIOS_CONSULTAS`, también de las pruebas: apunta a un archivo en el que cada petición anota cuántos comandos envió a la
+base de datos y cuáles se repitieron, para la comprobación de las consultas (`testes/consultas.php`). Sirve también para
+investigar una pantalla lenta en un servidor: actívela, use la pantalla, lea el archivo y desactívela (crece con cada petición).
 
 ### Destinos y calendarios en el servidor {#destinos-e-agendas-no-servidor}
 
@@ -757,7 +760,7 @@ Las mejoras son bienvenidas, y el camino es siempre este repositorio:
    cabecera del `api.php` se genera a partir de él, con `php testes/dicionario.php --gravar` (no escriba en la cabecera a
    mano).
 6. **Ejecute la prueba de paridad** ([`testes/`](testes/)) en las cuatro bases antes de enviar (GitHub también la ejecuta, en
-   cada push al `main`: la prueba de paridad, la actualización de una base antigua, la documentación, la simulación de los modos de rotación, el diseño y el desplazamiento, en
+   cada push al `main`: la prueba de paridad, la actualización de una base antigua, la documentación, la simulación de los modos de rotación, el diseño, el desplazamiento y las consultas a la base de datos, en
    [`.github/workflows/testes.yml`](.github/workflows/testes.yml); el resultado aparece en la pestaña **Actions** y en el ✓ / ✗
    al lado de cada commit): `testes/paridade.sh`, con las bases en marcha, tiene que terminar con `Tudo igual.` También
    comprueba la documentación: la cabecera es lo que genera la ayuda, y todo campo de las respuestas está explicado. Comprueba la arquitectura ([`testes/arquitetura.php`](testes/arquitetura.php), que GitHub
@@ -768,6 +771,9 @@ Las mejoras son bienvenidas, y el camino es siempre este repositorio:
    pantallas? Ejecute también la comprobación del diseño (`testes/paridade.sh --layout sqlite`): `0 problemas`, en portugués y en los demás idiomas (`LAYOUT_LINGUA=fr testes/paridade.sh --layout sqlite`, y lo mismo con `en`, `es`, `hi` y `zh-CN`: GitHub ejecuta uno por idioma); y la del desplazamiento
    (`testes/paridade.sh --rolagem sqlite`): `A rolagem confere`. ¿Cambió la
    rotación? Ejecute la simulación de los modos (`testes/simulacao.sh`, con `faketime` instalado): `Os 19 modos conferem`.
+   ¿Cambió el motor, una consulta o una escritura de la API? Ejecute la comprobación de las consultas a la base de datos
+   (`testes/paridade.sh --consultas sqlite`): `As consultas cabem no orçamento` (cada petición tiene un techo de consultas, y
+   más relojes no pueden multiplicarlas: con la base de datos en otra máquina, cada consulta es una ida y vuelta de red).
 7. **Todo texto nuevo pasa por `t()`** (el `api.js` y el `textos/funcoes.php` tienen la función), con el portugués como clave
    y los parámetros entre llaves: `t("Excluir {1}?", {1: nome})`, nunca `"Excluir " + nome + "?"`. Ningún texto escrito directamente en las pantallas ni en la API: GitHub lo comprueba de dos formas. La regla 11 de `testes/arquitetura.php` rechaza el texto entre comillas que va a la pantalla fuera de `t()` (lo que no se traduce a propósito, como la marca, va en `fixo("...")`), y `LINGUA=zh-CN testes/paridade.sh --textos sqlite` abre todas las pantallas con el sistema entero en chino y señala cualquier palabra en letra latina que no sea un dato de quien lo usa ni venga del diccionario. Después, tradúzcalo en los
    cinco archivos de `textos/` y ejecute `php testes/textos.php` (la prueba de paridad también lo ejecuta): tiene que terminar
