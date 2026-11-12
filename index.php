@@ -27,10 +27,13 @@ topo("Relógio de hoje", "index.php");
         <div class="botoes">
           <button type="button" class="leve" id="colunas-abrir" aria-expanded="false" aria-controls="painel-colunas"><?= t("Colunas") ?></button>
           <button type="button" class="leve" id="limpar-filtros"><?= t("Limpar filtros") ?></button>
-          <a href="desejos.php" class="botao leve" id="link-desejos" hidden><?= t("Desejos") ?></a>
           <a href="index.php?novo=1" class="botao" data-novo><?= t("Novo relógio") ?></a>
         </div>
       </div>
+      <!-- as abas por situação (da API: uma por situação do cadastro que tem relógio; hoje.js e abas.js): a tabela mostra os da aba
+           escolhida; a dos desejados e as dos que saíram da coleção aparecem em #aba-conteudo, no lugar da tabela -->
+      <div class="abas-faixa" id="abas-relogios" hidden></div>
+      <div id="aba-conteudo" class="aba-conteudo" hidden></div>
       <!-- as colunas da tabela (o motor de colunas: hoje.js monta a lista com as colunas que a API entrega e grava a escolha da coleção) -->
       <div class="painel-colunas" id="painel-colunas" hidden></div>
       <div class="rolagem" id="rolagem-relogios">
@@ -178,4 +181,4 @@ document.addEventListener("change", function (ev) {
   }
 });
 </script>
-<?php rodape(["api.js", "foto.js", "painel.js", "tabela.js", "hoje.js"]); ?>
+<?php rodape(["api.js", "foto.js", "painel.js", "tabela.js", "abas.js", "hoje.js"]); ?>

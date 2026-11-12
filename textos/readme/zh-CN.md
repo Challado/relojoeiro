@@ -1,4 +1,4 @@
-<!-- origem: cdfdb12c56332be4704d605d63149b3440e0d502 -->
+<!-- origem: 9f941f2830989db9d0a6b10e65d5ebd5b03b4988 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -129,6 +129,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `arvore`、`cadastros` | 分组；定义页面显示的一切 |
 | `unidades` | 树的单位（定义里的**单位**标签），按物理量排序，每个单位附换算的文字说明，以及有多少字段、类型和公式在用它 |
 | `marcas` | 树的品牌（定义的**品牌**标签），每个都带国家、网站、备注和它的手表 |
+| `saidas` | 离开收藏的记录（借出的和已离开的）：每条含手表、状态、日期、收到的金额、去向、购买、保养、结果和在收藏中的时间；以及当前记录按状态的合计。`relogio=`（某块手表的历史）、`situacao=`、`abertas=1`（只返回当前的） |
 | `calcular` | 一个公式（`expressao=`）在手表上的结果（`relogio=` 一个或多个 id；没有时为全部），不保存，并给出计算的各部分；公式写错：返回 400 和错误 |
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
@@ -140,7 +141,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `timegrapher` | 校表仪测量（`relogio=<id>`：最近一次测量，含每项的平均值和各方位之间的差、测量记录以及 CSV 导入能识别的内容；不带则返回全部） |
 | `winders` | 收藏的上链盒（**上链盒**页面）：每个上链盒带有数据、备注、文档数量和位置，每个位置带有程序（每日圈数，总数和每个方向）、是否开启、现在在上面的手表（电量、每小时提供多少、何时充满、照片）、固定位置（归谁、它是否不在）以及表枕限制警告；上链盒和位置的字段、可以放上上链盒的手表（以及它们所在的位置、是否在上链盒上但没有位置）和可供选择的程序 |
 | `programas` | 上链盒的程序（**程序**页面）：每个程序带有录入方式、托座转速（或说明书的每日圈数）、全天还是分段运行、序列、完整计算（每一步、周期、每天次数、转动时间、每个方向的每日圈数）以及使用它的位置；动作（**动作**页面）以及使用每个动作的程序。带程序字段的 `previa=1`：只计算，不保存 |
-| `relatorios` | 报表的统一入口：不带 `tipo` 时为目录（每个报表的分组、名称、描述和参数，以及手表）；带 `tipo`（`colecao`、`passaporte`、`custos`、`desejos`、`acessorios`、`documentos`、`historico`、`estatisticas`、`plano`、`avisos`、`criterios`、`servicos`、`precisao`、`timegrapher`、`reserva`、`calibres`、`totais`、`cron`；已保存的，`r<id>`；`avulso`：请求中的定义，不保存）及其参数（`relogio`、`de`、`ate`、`posse`、`situacao`）时为生成好的报表（标题、副标题、摘要、表格或名值对形式的各部分、页脚，已是文字）；`csv=1`：表格。目录还带有已保存的报表（`cadastro`） |
+| `relatorios` | 报表的统一入口：不带 `tipo` 时为目录（每个报表的分组、名称、描述和参数，以及手表）；带 `tipo`（`colecao`、`passaporte`、`custos`、`desejos`、`saidas`、`acessorios`、`documentos`、`historico`、`estatisticas`、`plano`、`avisos`、`criterios`、`servicos`、`precisao`、`timegrapher`、`reserva`、`calibres`、`totais`、`cron`；已保存的，`r<id>`；`avulso`：请求中的定义，不保存）及其参数（`relogio`、`de`、`ate`、`posse`、`situacao`）时为生成好的报表（标题、副标题、摘要、表格或名值对形式的各部分、页脚，已是文字）；`csv=1`：表格。目录还带有已保存的报表（`cadastro`） |
 | `sql` | 仅限 master：数据库、通过 API 执行 SQL 当前接受的命令、表以及最近执行的日志（`limite`）；`tabela=`：该表的列 |
 | `documento` | 一个文档的文件（`id=<id>`）：用于显示（图片、视频、音频、PDF、文本）或下载（其他，或使用 `baixar=1`）；`mini=1` 是照片的缩略图。支持分段（Range），方便视频快进 |
 | `usuarios`、`migracoes` | master：账户面板，每个账户含其拥有的内容和密码哈希（用于以相同密码迁移：参见[用户与密码](#os-usuários-e-as-senhas)）；其他人只有自己的账户；尚待应用的迁移 |
@@ -160,7 +161,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 
 | 资源 | 操作 |
 |---|---|
-| `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto`；品牌，用 `marca_id` 或在 `marca` 中按名称 |
+| `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto`；品牌，用 `marca_id` 或在 `marca` 中按名称；状态，用 `posse`，带离开（`saida_data`、`saida_valor`、`saida_destino`、`saida_observacao`）和回归（`volta_data`） |
 | `documentos` | `enviar`（一个或多个文件，带类别、标题、日期、描述，照片还带缩略图）、`alterar`、`excluir` |
 | `servicos` | `salvar`（日期、类型、保养或维修店、工时费、零件、防水、前后走时、保修和文档；会标记记录的类型也会生成记录），`excluir` |
 | `manutencao` | `salvar`（登记即把表送到维修店）、`situacao`（结束类状态会变成服务）、`excluir` |
@@ -174,6 +175,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `secoes` | 档案分区：`salvar`（名称；`id=0` 在末尾新建）、`ordem`（`direcao=sobe` 或 `desce`）、`excluir`（其中的字段不再属于任何分区，排在末尾） |
 | `unidades` | `salvar`（符号、名称、基准和系数、零点以及同时显示为；新符号会同步到使用它的地方），`excluir`（仅在未使用时；换算成它的单位一起删除） |
 | `marcas` | `salvar`（名称，不与其他重复；国家、网站和备注）、`juntar`（`em_id`：手表转到另一个品牌，本品牌移除）、`excluir`（手表变为没有品牌） |
+| `saidas` | `salvar`（更正一条离开记录：`data`、`fim`、`valor`、`destino`、`observacao`；当前这次不能在这里设置 `fim`）、`excluir`（只能是历史中的一条）。开启和结束离开记录通过保存手表完成（`posse`） |
 | `relatorios` | `salvar`（名称，不与其他重复；描述；列，JSON 格式：标题、表达式、格式和页脚计算；筛选、排序、降序、分组、哪些手表和上限）、`excluir` |
 | `sql` | `executar`（仅限 master；`comando`：一条 MySQL 方言的 SQL 命令，每次一条；`limite`：SELECT 的行数）。见[通过 API 执行 SQL](#o-sql-pela-api) |
 | `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、晒太阳、充电器；上链盒要通过上链盒页面放上，即 `winder_posicoes`，除非手表的位置空闲：那时它会回到那里）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够；上链盒上只能在回到位置时打开）、`periodo`（已经过去的一段时间；上链盒上要带位置 `posicao_id`；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 在同类型的一段刚结束的同一时刻开始的 `iniciar` 会与其衔接（该段重新变为开放），没有 `fim` 的 `periodo` 保持开放，从开始一直到现在。 |
@@ -503,7 +505,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | 文件 | 是什么 |
 |---|---|
 | [`api.php`](api.php) | API，所有读写的入口（认证、格式、资源顺序、筛选、响应），文件头中有完整文档 |
-| [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`relatorios.php`、`unidades.php`、`ajuda.php`……），还有它的函数（`funcoes.php`，含报表的 `api_ler`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
+| [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`saidas.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`relatorios.php`、`unidades.php`、`ajuda.php`……），还有它的函数（`funcoes.php`，含报表的 `api_ler`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
 | [`lib.php`](lib.php) | 核心：登录、树、公式引擎、提醒、标准、轮换、排程、文档 |
 | [`colecoes.php`](colecoes.php) | 核心中的收藏部分：请求的作用范围、`modelo.json`、加密的机密、`sistema` 表、v25 迁移和删除的影响 |
 | [`alertas.php`](alertas.php) | 推送目标（webhook、电子邮件、Web Push）和日历（Google、CalDAV、Outlook、ICS） |

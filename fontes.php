@@ -59,6 +59,12 @@ $FONTES_TABELAS = [
         "orcamento_data" => ["data", tk("a data do orçamento"), ""],
         "encerrado" => ["data", tk("quando a manutenção foi encerrada"), ""],
     ]],
+    "relogio_saida" => [tk("Saídas da coleção (o relógio emprestado, vendido, presenteado, arquivado...)"), [
+        "id" => ["registro", tk("cada saída"), ""],
+        "data" => ["data", tk("quando o relógio saiu (ou foi emprestado)"), ""],
+        "fim" => ["data", tk("quando ele voltou ou mudou de situação (vazio: a saída de agora)"), ""],
+        "valor" => ["decimal", tk("o valor recebido na saída (a venda)"), "R$"],
+    ]],
     "timegrapher" => [tk("Medições do timegrapher"), [
         "id" => ["registro", tk("cada medição"), ""],
         "quando" => ["datahora", tk("quando a medição foi feita"), ""],
@@ -96,6 +102,7 @@ const FONTES_FORA = [
     "lancamento" => ["relogio_id", "tipo_id", "estado", "posicao", "origem", "criado"],
     "servico" => ["relogio_id", "manutencao_id", "tipo", "descricao", "estanqueidade", "observacao", "lancamento_id", "criado"],
     "manutencao" => ["relogio_id", "oficina_id", "situacao_id", "tipo_id", "problema", "os", "disponivel_antes", "observacao", "criado"],
+    "relogio_saida" => ["relogio_id", "situacao", "destino", "observacao", "criado"],
     "timegrapher" => ["relogio_id", "posicao", "origem", "observacao", "criado"],
     "reserva_teste" => ["relogio_id", "tipo", "protocolo", "observacao", "criado"],
     "documento" => ["relogio_id", "calibre_id", "winder_id", "categoria_id", "titulo", "descricao", "nome", "tipo", "arquivo", "miniatura", "criado", "no_banco", "hash", "copia_banco"],

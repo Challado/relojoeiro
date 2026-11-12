@@ -17,7 +17,7 @@
 --     configuração, na coleção;
 --   - o que pode ser cadastro é cadastro: as listas de escolha (lista_item: a situação na coleção, os tipos de acessório e de
 --     serviço, a estanqueidade, a reserva, a manutenção, as oficinas, os contatos) são itens da árvore, e o código só guarda o
---     que cada item faz (o comportamento). As colunas que guardam um item pelo identificador dele (relogio.posse,
+--     que cada item faz (o comportamento). As colunas que guardam um item pelo identificador dele (relogio.posse, relogio_saida.situacao,
 --     acessorio.tipo, campo.acessorio_tipo, servico.tipo e estanqueidade, reserva_teste.tipo e protocolo) são as de antes:
 --     o identificador não muda, e o item em uso não sai.
 SET NAMES utf8mb4;
@@ -544,6 +544,28 @@ CREATE TABLE relogio_marca (
     INDEX (marca_id),
     FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
     FOREIGN KEY (marca_id) REFERENCES marca(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- as saídas da coleção: cada vez que o relógio fica emprestado ou fora dela (vendido, presenteado, arquivado, os motivos do cadastro:
+-- a situação é o identificador de um item da lista relogio_situacao, como o relogio.posse), com a data, o valor recebido, para quem
+-- foi e a observação. O fim é a volta (ou a troca de situação): sem fim, é a saída de agora; o relógio emprestado ou fora da coleção
+-- tem sempre uma aberta (a API cuida), e as fechadas são o histórico
+CREATE TABLE relogio_saida (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    relogio_id  INT NOT NULL,
+    situacao    VARCHAR(20) NOT NULL,
+    data        DATE NULL,
+    fim         DATE NULL,
+    valor       DECIMAL(12,2) NULL,
+    destino     VARCHAR(120) NULL,
+    observacao  VARCHAR(2000) NULL,
+    criado      DATETIME NOT NULL,
+    INDEX (relogio_id, data),
+    FOREIGN KEY (relogio_id) REFERENCES relogio(id) ON DELETE CASCADE,
+    CONSTRAINT ck_relogio_saida_situacao CHECK (TRIM(situacao) <> ''),
+    CONSTRAINT ck_relogio_saida_datas CHECK (data IS NULL OR fim IS NULL OR fim >= data),
+    CONSTRAINT ck_relogio_saida_valor CHECK (valor IS NULL OR valor >= 0),
+    CONSTRAINT ck_relogio_saida_destino CHECK (destino IS NULL OR TRIM(destino) <> '')
 ) ENGINE=InnoDB;
 
 -- os calibres (o movimento), da árvore como o cadastro: nome, fabricante, o link do manual técnico, as recomendações e os

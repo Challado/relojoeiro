@@ -1325,12 +1325,48 @@ escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "va
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["auto2"], "posse" => "extraviado"], false);
 ler("desejos", ["recurso" => "desejos"]);
 ler("ficha do desejado", ["recurso" => "ficha", "relogio" => $desejo]);
-escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "emprestado"]);
-escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["manual"], "posse" => "vendido"]);
+// as saídas da coleção (relogio_saida): os campos da saída só valem numa saída (recusados na coleção), a data não pode ser no
+// futuro nem a volta vir numa saída; emprestar (com quem, desde quando) e vender (a data, o valor, para quem, a observação)
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "saida_valor" => "100"], false);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "emprestado", "saida_data" => "2999-01-01"], false);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "emprestado", "volta_data" => substr(dia(0, "00:00"), 0, 10)], false);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "emprestado", "saida_data" => substr(dia(5, "00:00"), 0, 10), "saida_destino" => "Meu irmão"]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["manual"], "posse" => "vendido", "saida_data" => substr(dia(3, "00:00"), 0, 10), "saida_valor" => "950,00",
+    "saida_destino" => "Fulano de Tal", "saida_observacao" => "Vendido pelo fórum, com a caixa."]);
 ler("hoje com emprestado e vendido", ["recurso" => "hoje"]);
 ler("plano depois de vender", ["recurso" => "plano", "dias" => 30]);
+ler("saidas", ["recurso" => "saidas"]);
+ler("saidas de agora dos vendidos", ["recurso" => "saidas", "situacao" => "vendido", "abertas" => 1]);
+ler("ficha do vendido", ["recurso" => "ficha", "relogio" => $rel["manual"]]);
+// a galeria por aba: a primeira, a dos vendidos, todos e uma que não existe
+ler("galeria da primeira aba", ["recurso" => "galeria", "aba" => "principal"]);
+ler("galeria dos vendidos", ["recurso" => "galeria", "aba" => "vendido"]);
+ler("galeria de todos", ["recurso" => "galeria", "aba" => "todos"]);
+ler("galeria de uma aba que nao existe", ["recurso" => "galeria", "aba" => "extraviado"]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $desejo, "posse" => "colecao", "valores" => ["data_compra" => substr(dia(0, "00:00"), 0, 10), "valor_compra" => "24500"]]);
+// o emprestado volta (com a data da volta): a saída vai para o histórico; emprestado de novo e devolvido, são duas no histórico
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "colecao", "volta_data" => substr(dia(2, "00:00"), 0, 10)]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "emprestado", "saida_data" => substr(dia(1, "00:00"), 0, 10), "saida_destino" => "Um amigo"]);
 escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "posse" => "colecao"]);
+// o recurso=saidas corrige o que foi anotado e exclui só o histórico: a de agora não se fecha nem se exclui por ali, a do
+// histórico não perde a volta nem volta antes de sair; a exclusão em dois passos (sem confirmar, só o que sai junto)
+$hist_s = ler("saidas do relogio de pilha", ["recurso" => "saidas", "relogio" => $rel["pilha"]]);
+$ids_s = array_column($hist_s["saidas"] ?? [], "id");
+$aberta_s = (int)(ler("saida de agora do vendido", ["recurso" => "saidas", "relogio" => $rel["manual"], "abertas" => 1])["saidas"][0]["id"] ?? 0);
+if (count($ids_s) !== 2 || $aberta_s === 0) {
+    $falhas[] = "saídas: o relógio de pilha devia ter duas no histórico e o vendido uma aberta (" . json_encode([$ids_s, $aberta_s]) . ")";
+}
+escrever(["recurso" => "saidas", "acao" => "salvar", "id" => $aberta_s, "fim" => substr(dia(0, "00:00"), 0, 10)], false);
+escrever(["recurso" => "saidas", "acao" => "excluir", "id" => $aberta_s, "confirmar" => 1], false);
+escrever(["recurso" => "saidas", "acao" => "salvar", "id" => $ids_s[1] ?? 0, "fim" => ""], false);
+escrever(["recurso" => "saidas", "acao" => "salvar", "id" => $ids_s[1] ?? 0, "data" => substr(dia(1, "00:00"), 0, 10)], false);
+escrever(["recurso" => "saidas", "acao" => "salvar", "id" => 999999, "valor" => "1"], false);
+escrever(["recurso" => "saidas", "acao" => "salvar", "id" => $ids_s[1] ?? 0, "destino" => "Meu irmão mais novo", "observacao" => "Devolveu com a pulseira trocada."]);
+escrever(["recurso" => "saidas", "acao" => "salvar", "id" => $aberta_s, "valor" => "980"]);
+escrever(["recurso" => "saidas", "acao" => "excluir", "id" => $ids_s[0] ?? 0], false);
+escrever(["recurso" => "saidas", "acao" => "excluir", "id" => $ids_s[0] ?? 0, "confirmar" => 1]);
+ler("saidas depois das correcoes", ["recurso" => "saidas"]);
+ler("ficha com o historico das saidas", ["recurso" => "ficha", "relogio" => $rel["pilha"]]);
 ler("desejos depois de comprar", ["recurso" => "desejos"]);
 ler("ficha do comprado", ["recurso" => "ficha", "relogio" => $desejo]);
 // e fora do rodízio daqui em diante: comprado hoje e sem corda, ele tem só segundos de linha do tempo e de reserva, e se a
@@ -1531,11 +1567,11 @@ ler("2 estatisticas recusadas", ["recurso" => "estatisticas", "de" => "2026-13-0
 // o período ao contrário)
 $cat_r = ler("2 relatorios", ["recurso" => "relatorios"]);
 $tipos_r = array_column($cat_r["relatorios"] ?? [], "tipo");
-if (count($tipos_r) !== 21) {
+if (count($tipos_r) !== 22) {
     $falhas[] = "relatórios: o catálogo tem " . count($tipos_r) . " (" . implode(", ", $tipos_r) . ")";
 }
 foreach ([["colecao", []], ["colecao", ["posse" => "todos"]], ["passaporte", ["relogio" => $rel["manual"]]], ["passaporte", ["relogio" => $rel["auto2"]]], ["custos", []],
-    ["desejos", []], ["acessorios", []], ["acessorios", ["relogio" => $rel["crono"]]], ["documentos", []], ["historico", ["relogio" => $rel["smart"]]],
+    ["desejos", []], ["saidas", []], ["acessorios", []], ["acessorios", ["relogio" => $rel["crono"]]], ["documentos", []], ["historico", ["relogio" => $rel["smart"]]],
     ["historico", ["de" => substr(dia(12, "00:00"), 0, 10), "ate" => substr(dia(1, "00:00"), 0, 10)]], ["estatisticas", ["de" => "tudo"]], ["estatisticas", []],
     ["plano", []], ["avisos", []], ["avisos", ["relogio" => $rel["smart"]]], ["criterios", []], ["servicos", []], ["servicos", ["relogio" => $rel["auto2"]]],
     ["precisao", []], ["precisao", ["relogio" => $rel["auto2"]]], ["timegrapher", []], ["timegrapher", ["relogio" => $rel["manual"]]], ["reserva", []],

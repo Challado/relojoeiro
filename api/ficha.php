@@ -70,6 +70,9 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $nota = (int)$r["disponivel"] === 1 ? nota_do_relogio($r, $agora) : null;
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
         "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r), "da_colecao" => da_colecao($r),
+        // as saídas da coleção: a de agora (emprestado ou fora dela: o motivo, a data, o valor recebido, para quem) e o histórico
+        "saida" => ($sa_f = saida_aberta($id)) === null ? null : saida_dados($sa_f),
+        "saidas" => array_map("saida_dados", saidas_mapa()[$id] ?? []),
         "acessorios" => acessorios_lista($id),
         // o winder é obrigatório: sem winder cadastrado, o Marcar não tem pôr nem período no winder; com winder, o pôr é pela
         // página Winders, e o período que já passou escolhe a posição onde ele esteve (todas as posições, quando ele tem um tipo

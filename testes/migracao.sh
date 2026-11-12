@@ -127,6 +127,9 @@ for b in "${BANCOS[@]}"; do
   curl -s -H "$TOKEN" -d recurso=servicos -d acao=salvar -d relogio_id="$R" -d tipo=revisao -d "data=$(date -d '-30 days' '+%Y-%m-%d')" \
     -d "responsavel=Relojoaria de antes" -d mao_de_obra=300 "$A" > /dev/null
   curl -s -H "$TOKEN" -d recurso=servicos -d acao=salvar -d relogio_id="$R" -d tipo=pilha -d "data=$(date -d '-10 days' '+%Y-%m-%d')" "$A" > /dev/null
+  # um relógio vendido e um emprestado pela versão anterior (a situação na coleção existe desde a v48): a v64 abre a saída de cada um
+  RV=$(curl -s -H "$TOKEN" -d recurso=relogio -d acao=salvar -d id=0 --data-urlencode "nome=Vendido de antes" -d no_id=0 -d posse=vendido "$A" | json id)
+  RE=$(curl -s -H "$TOKEN" -d recurso=relogio -d acao=salvar -d id=0 --data-urlencode "nome=Emprestado de antes" -d no_id=0 -d posse=emprestado "$A" | json id)
   SRV_ANTES=$(curl -s -H "$TOKEN" "$A?recurso=servicos&relogio=$R" | php -r 'echo count(json_decode(stream_get_contents(STDIN), true)["servicos"] ?? []);')
   LANC_ANTES=$(curl -s -H "$TOKEN" "$A?recurso=historico&relogio=$R" | json total)
   descer
@@ -167,6 +170,22 @@ for b in "${BANCOS[@]}"; do
       && erros+=("o SQL pela API não leu o relógio de antes depois da v55")
     [ "$(curl -s -H "$TOKEN" "$A?recurso=sql" | json execucoes.0.ok)" != "true" ] && erros+=("o registro do SQL não tem a execução depois da v55")
   fi
+  # a v64 aplicada agora: o vendido e o emprestado de antes ganharam a saída aberta, sem data; a aba de cada um existe; e a saída
+  # se corrige (a data e o valor) e fecha quando o emprestado volta
+  if case ", $PEND," in *", v64,"*) true ;; *) false ;; esac && [ -n "$RV" ] && [ -n "$RE" ]; then
+    SAI=$(curl -s -H "$TOKEN" "$A?recurso=saidas" | php -r '$j = json_decode(stream_get_contents(STDIN), true); $s = $j["saidas"] ?? [];
+      usort($s, function ($a, $b) { return strcmp($a["situacao"], $b["situacao"]); });
+      echo ($j["disponivel"] ?? false) ? "sim" : "nao", "|", implode(",", array_map(function ($x) { return $x["situacao"] . ":" . ($x["aberta"] ? "aberta" : "fechada") . ":" . ($x["data"] ?? "sem-data"); }, $s));')
+    [ "$SAI" != "sim|emprestado:aberta:sem-data,vendido:aberta:sem-data" ] && erros+=("a v64 não abriu as saídas do vendido e do emprestado de antes: $SAI")
+    ABAS=$(curl -s -H "$TOKEN" "$A?recurso=hoje" | php -r '$j = json_decode(stream_get_contents(STDIN), true); echo implode(",", array_map(function ($a) { return $a["chave"] . ":" . $a["quantos"]; }, $j["abas"] ?? []));')
+    case ",$ABAS," in *",vendido:1,"*) ;; *) erros+=("a aba dos vendidos não apareceu depois da v64: $ABAS") ;; esac
+    case ",$ABAS," in *",emprestado:1,"*) ;; *) erros+=("a aba dos emprestados não apareceu depois da v64: $ABAS") ;; esac
+    [ "$(curl -s -H "$TOKEN" -d recurso=relogio -d acao=salvar -d id="$RV" -d "saida_data=$(date -d '-5 days' '+%Y-%m-%d')" -d saida_valor=800 "$A" | json ok)" != "true" ] \
+      && erros+=("a saída do vendido de antes não aceitou a data e o valor depois da v64")
+    [ "$(curl -s -H "$TOKEN" -d recurso=relogio -d acao=salvar -d id="$RE" -d posse=colecao "$A" | json ok)" != "true" ] && erros+=("o emprestado de antes não voltou para a coleção depois da v64")
+    [ "$(curl -s -H "$TOKEN" "$A?recurso=saidas&relogio=$RE" | json saidas.0.aberta)" != "false" ] && erros+=("a saída do emprestado de antes não fechou na volta")
+    [ "$(curl -s -H "$TOKEN" "$A?recurso=saidas&relogio=$RV" | json saidas.0.valor)" != "800" ] && erros+=("o valor recebido do vendido de antes não ficou gravado")
+  fi
   [ "$(echo "$FICHA" | json relogio.acessorios.0.nome)" != "Pulseira de antes" ] && erros+=("o acessório de antes sumiu")
   [ "$(curl -s -H "$TOKEN" "$A?recurso=historico&relogio=$R" | json total)" != "$LANC_ANTES" ] && erros+=("o histórico mudou de tamanho")
   # os serviços de antes continuam, cada um a volta de uma manutenção encerrada; quem fez virou a oficina (sem ele, a sua)
@@ -183,7 +202,7 @@ for b in "${BANCOS[@]}"; do
   if [ "$SRV_ANTES" = "2" ] && case ", $PEND," in *", v48,"*) true ;; *) false ;; esac; then
     case ",$(echo "$MAN" | cut -d'|' -f3)," in *",Relojoaria de antes,"*) ;; *) erros+=("quem fez o serviço de antes não virou a oficina: $MAN") ;; esac
   fi
-  for q in "recurso=hoje" "foto=nao" "recurso=passaporte&relogio=$R" "recurso=documentos&relogio=$R" "recurso=listas" "recurso=oficinas"; do
+  for q in "recurso=hoje" "foto=nao" "recurso=passaporte&relogio=$R" "recurso=documentos&relogio=$R" "recurso=listas" "recurso=oficinas" "recurso=saidas" "recurso=galeria&aba=todos" "recurso=relatorios&tipo=saidas"; do
     c=$(curl -s -o /dev/null -w '%{http_code}' -H "$TOKEN" "$A?$q")
     [ "$c" != "200" ] && erros+=("$q respondeu $c")
   done

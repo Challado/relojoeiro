@@ -50,15 +50,20 @@ $rels = [];
 $uso_h = uso_total_mapa($agora);
 // os que não são da coleção (desejados, vendidos, arquivados): fora da tabela, numa lista à parte
 $fora_h = [];
-foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
+$todos_h = linhas("SELECT * FROM relogio ORDER BY nome");
+foreach ($todos_h as $r) {
     if (!da_colecao($r)) {
         $fora_h[] = ["id" => (int)$r["id"], "nome" => $r["nome"], "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
-            "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—", "foto" => $fotos[(int)$r["id"]] ?? null];
+            "aba" => aba_do_relogio($r), "tipo" => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : "—", "foto" => $fotos[(int)$r["id"]] ?? null];
         continue;
     }
     $linha_h = tabela_linha($r, $agora, ["nos" => $n, "hoje" => $hoje, "dia" => $dia, "pendentes" => $pendentes_h, "fotos" => $fotos, "uso" => $uso_h]);
     // as colunas cadastradas que aparecem, por chave: um objeto mesmo sem nenhuma (vazio sairia como lista)
     $linha_h["colunas_extras"] = (object)$linha_h["colunas_extras"];
+    // a aba da tabela em que ele aparece (a situação dele) e, no emprestado, a saída de agora (com quem está, desde quando)
+    $linha_h["aba"] = aba_do_relogio($r);
+    $saida_h = saida_aberta((int)$r["id"]);
+    $linha_h["saida"] = $saida_h === null ? null : saida_dados($saida_h);
     $rels[] = $linha_h;
 }
 // o destaque no alto da página (a Configuração): o relógio do dia ou o que está no pulso agora; cada relógio diz se é ele
@@ -124,6 +129,9 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "avisos_nomes" => array_values(array_unique($avisos_nomes)),
     "relogios" => $rels,
     "fora_da_colecao" => $fora_h,
+    // as abas em cima da tabela dos relógios: uma por situação do cadastro que tem relógio (a tabela mostra os da aba escolhida;
+    // a dos desejados e as dos que saíram vêm do recurso=desejos e do recurso=saidas)
+    "abas" => abas_situacao($todos_h),
     // os totais da coleção inteira (a tabela da página soma só o que os filtros dela deixam à mostra)
     "totais" => ["relogios" => count($rels), "disponiveis" => count(array_filter($rels, function ($r) { return $r["disponivel"]; })),
         "em_uso" => count(array_filter($rels, function ($r) { return $r["em_uso"]; })),

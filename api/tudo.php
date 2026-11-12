@@ -65,6 +65,8 @@ foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
         "foto" => $foto ? ["tipo" => $foto["tipo"], "atualizada_em" => $foto["atualizado"], "base64" => $com_foto ? base64_encode($foto["dados"]) : null] : null,
         "documentos" => array_map(function ($x) { return documento_info($x, false); }, documentos_do_relogio((int)$r["id"])),
         "campos" => $cs, "formulas" => $fs, "avisos" => avisos_do_relogio($r, time()),
+        // as saídas da coleção dele (emprestado, vendido...): a de agora primeiro, depois o histórico
+        "saidas" => array_map("saida_dados", saidas_mapa()[(int)$r["id"]] ?? []),
         "lancamento_tipos" => array_keys(lancamento_tipos_do_relogio($r)),
         "lancamentos" => array_map(function ($l) {
             return ["id" => (int)$l["id"], "tipo" => $l["tipo"], "inicio" => $l["inicio"], "fim" => $l["fim"], "valor" => $l["valor"] === null ? null : (float)$l["valor"],

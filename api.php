@@ -189,6 +189,15 @@
  *                            "site", "observacao", "relogios": [{"id", "nome"}]}]}. O relógio aponta para uma (marca_id na gravação),
  *                            e o nome dela aparece na coluna Marca da página Hoje, na ficha, na galeria e nas fórmulas (marca).
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=marcas"
+ *   recurso=saidas           as saídas da coleção (os relógios emprestados e os que saíram: vendidos, presenteados, arquivados e os
+ *                            motivos do cadastro): {"disponivel", "saidas": [{"id", "relogio_id", "relogio", "situacao",
+ *                            "situacao_texto", "comportamento", "data", "fim", "aberta", "dias", "valor", "destino", "observacao",
+ *                            "compra_data", "compra_valor", "custo_servicos", "resultado", "tempo_na_colecao", "dias_de_uso"}],
+ *                            "somas": [...], "abertas", "historico", "posse_colecao"}. O relógio emprestado ou fora da coleção tem
+ *                            sempre uma saída aberta (a de agora); as fechadas são o histórico. O resultado é o valor recebido menos
+ *                            a compra e os serviços. relogio=: só as de um relógio; situacao=: só as de uma situação; abertas=1: só
+ *                            as de agora. Quem abre e fecha uma saída é a gravação do relógio (posse e os campos saida_*).
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=saidas&situacao=vendido&abertas=1"
  *   recurso=colunas          as colunas cadastradas da tabela dos relógios (Cadastros › Colunas) e o que o construtor delas precisa:
  *                            {"colunas": [{"id", "chave" (c_<identificador>), "identificador", "nome", "modo" (guiado ou expert), "tabela",
  *                            "campo", "funcao", "expressao" (a conta de cada relógio, gravada nos dois modos), "formato", "formato_nome",
@@ -519,6 +528,12 @@
  *                            Ex. salvar: curl -u lucas:senha -d recurso=marcas -d acao=salvar -d id=0 -d nome=Seiko -d "pais=Japão" http://servidor/relojoeiro/api.php
  *                            Ex. juntar: curl -u lucas:senha -d recurso=marcas -d acao=juntar -d id=7 -d em_id=2 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=marcas -d acao=excluir -d id=7 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=saidas            salvar (id: a saída; data e fim, AAAA-MM-DD, não no futuro, o fim não antes da data; valor, o recebido,
+ *                             não negativo; destino, para quem foi, até 120; observacao, até 2000; só muda o que vier, e o vazio
+ *                             apaga; o fim só existe na saída do histórico e não se apaga, e a de agora não ganha fim por aqui),
+ *                             excluir (id: só uma do histórico). Abrir e fechar uma saída é pela gravação do relógio (posse)
+ *                            Ex. salvar: curl -u lucas:senha -d recurso=saidas -d acao=salvar -d id=3 -d valor=1500,00 -d "destino=Fulano de Tal" http://servidor/relojoeiro/api.php
+ *                            Ex. excluir: curl -u lucas:senha -d recurso=saidas -d acao=excluir -d id=3 -d confirmar=1 http://servidor/relojoeiro/api.php
  *   recurso=colunas           salvar (id: 0 cria; nome (até 80, sem repetir outra da árvore, sem diferença de maiúsculas), identificador
  *                             (a chave da coluna na escolha das colunas, c_<identificador>: a-z, 0-9 e _, até 18; vazio: sai do nome; não
  *                             muda depois de criada), modo (guiado ou expert), tabela, campo e funcao (guiado: a fonte do dicionário;
@@ -552,7 +567,10 @@
  *                             marca_id (a marca dele, do cadastro das marcas; 0 ou vazio tira) ou marca (o nome de uma marca
  *                             do cadastro; vazio tira; também em valores[marca]; um nome fora do cadastro é recusado),
  *                             valores[identificador]: só muda o que vier; valor vazio apaga; inválido fica o que estava e a
- *                             mensagem diz), excluir (id),
+ *                             mensagem diz; posse: a situação na coleção, um item da lista relogio_situacao; numa situação que é
+ *                             uma saída (emprestado ou fora da coleção), saida_data (AAAA-MM-DD; sem ela, hoje), saida_valor,
+ *                             saida_destino e saida_observacao ficam na saída aberta do relógio (recurso=saidas); voltando para a
+ *                             coleção, volta_data (sem ela, hoje) fecha a saída, que fica no histórico), excluir (id),
  *                             foto (id, foto_base64), remover_foto (id)
  *                            Ex. salvar: curl -u lucas:senha -d recurso=relogio -d acao=salvar -d id=10 -d "valores[preferencia]=80" -d disponivel=1 http://servidor/relojoeiro/api.php
  *                            Ex. foto: curl -u lucas:senha -d recurso=relogio -d acao=foto -d id=10 --data-urlencode foto_base64@foto.b64 http://servidor/relojoeiro/api.php
@@ -792,6 +810,26 @@
  *   segundos são inteiros.
  *
  *   api.php (sem recurso)
+ *     relogios[].saidas              as saídas da coleção dele: a de agora primeiro e depois as do histórico, da mais nova para a mais
+ *                                    antiga (vazio: nunca saiu)
+ *     relogios[].saidas[]            uma saída
+ *     relogios[].saidas[].id         o número da saída (o id das correções, recurso=saidas)
+ *     relogios[].saidas[].relogio_id o relógio
+ *     relogios[].saidas[].situacao   a situação (o motivo): o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas)
+ *     relogios[].saidas[].situacao_texto
+ *                                    a situação por extenso ("Vendido", "Emprestado")
+ *     relogios[].saidas[].comportamento
+ *                                    o que a situação faz: emprestado (continua da coleção, fora do rodízio) ou fora (saiu da coleção)
+ *     relogios[].saidas[].data       quando saiu ou foi emprestado (AAAA-MM-DD); null: sem a data anotada
+ *     relogios[].saidas[].fim        quando voltou ou mudou de situação (AAAA-MM-DD); null: é a saída de agora
+ *     relogios[].saidas[].aberta     verdadeiro: é a saída de agora (sem fim); falso: é do histórico
+ *     relogios[].saidas[].dias       quantos dias: na de agora, desde a saída até hoje; na do histórico, da saída à volta; null: sem a data
+ *     relogios[].saidas[].dias_texto os dias por extenso: na de agora, "hoje" ou "há 2m 3d"; na do histórico, quanto durou ("5d", "menos de
+ *                                    um dia"); null: sem a data
+ *     relogios[].saidas[].valor      o valor recebido, em R$; null: sem valor (emprestado, presenteado, não anotado)
+ *     relogios[].saidas[].destino    para quem foi (quem comprou, ganhou ou está com ele); null: não anotado
+ *     relogios[].saidas[].observacao a observação da saída; null: sem
  *     listas                         as listas que são cadastro, cada uma com os itens, na ordem (como em recurso=listas)
  *     listas.relogio_situacao        os itens da lista, na ordem (as listas que são cadastro: Cadastros › Listas e Manutenção › Listas)
  *     listas.relogio_situacao[]      um item da lista
@@ -2370,6 +2408,36 @@
  *                                    posse_comportamento
  *     fora_da_colecao[].posse_texto  a mesma por extenso ("Desejado", "Vendido", "Arquivado")
  *     fora_da_colecao[].tipo         o grupo do relógio (o nome; "—": na raiz)
+ *     fora_da_colecao[].aba          a aba em que ele aparece: a situação dele (uma chave de abas[])
+ *     abas                           as abas por situação, na ordem do cadastro (Cadastros › Listas): uma por situação que tem relógio; a
+ *                                    primeira que faz "na coleção" vem mesmo vazia
+ *     abas[]                         uma aba
+ *     abas[].chave                   a situação da aba: o identificador do item da lista (o que se pede em aba= e o que cada relógio traz
+ *                                    em aba)
+ *     abas[].nome                    o nome da situação ("Na coleção", "Vendido")
+ *     abas[].comportamento           o que a situação faz: colecao, emprestado, desejado ou fora; null: a aba Todos da galeria
+ *     abas[].tipo                    o que a aba mostra: relogios (os que são seus: a tabela dos relógios), desejos (a lista de desejos,
+ *                                    recurso=desejos), saidas (os que saíram, recurso=saidas) ou todos (a aba Todos da galeria)
+ *     abas[].quantos                 quantos relógios a aba tem
+ *     relogios[].aba                 a aba da tabela em que ele aparece: a situação dele (uma chave de abas[]); a tabela mostra os da aba
+ *                                    escolhida
+ *     relogios[].saida               a saída de agora (o emprestado: com quem está e desde quando); null: está na coleção
+ *     relogios[].saida.id            o número da saída (o id das correções, recurso=saidas)
+ *     relogios[].saida.relogio_id    o relógio
+ *     relogios[].saida.situacao      a situação (o motivo): o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas)
+ *     relogios[].saida.situacao_texto
+ *                                    a situação por extenso ("Vendido", "Emprestado")
+ *     relogios[].saida.comportamento o que a situação faz: emprestado (continua da coleção, fora do rodízio) ou fora (saiu da coleção)
+ *     relogios[].saida.data          quando saiu ou foi emprestado (AAAA-MM-DD); null: sem a data anotada
+ *     relogios[].saida.fim           quando voltou ou mudou de situação (AAAA-MM-DD); null: é a saída de agora
+ *     relogios[].saida.aberta        verdadeiro: é a saída de agora (sem fim); falso: é do histórico
+ *     relogios[].saida.dias          quantos dias: na de agora, desde a saída até hoje; na do histórico, da saída à volta; null: sem a data
+ *     relogios[].saida.dias_texto    os dias por extenso: na de agora, "hoje" ou "há 2m 3d"; na do histórico, quanto durou ("5d", "menos de
+ *                                    um dia"); null: sem a data
+ *     relogios[].saida.valor         o valor recebido, em R$; null: sem valor (emprestado, presenteado, não anotado)
+ *     relogios[].saida.destino       para quem foi (quem comprou, ganhou ou está com ele); null: não anotado
+ *     relogios[].saida.observacao    a observação da saída; null: sem
  *     estados[]                      os estados da tabela, na ordem (o filtro Estado): "Em uso", o nome de cada sessão que não é o pulso
  *                                    ("No sol", "No winder", "No carregador"...), "Em repouso", "Indisponível" e "Emprestado"
  *     comecou                        verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho, passou do
@@ -2644,6 +2712,55 @@
  *     teste.relogio                  o nome do relógio do teste
  *     teste.valor                    o valor calculado; null: vazio
  *     teste.texto                    o valor no formato da coluna
+ *   recurso=saidas
+ *     disponivel                     verdadeiro: a tabela das saídas existe (a migração v64 aplicada); falso: aplique em Configuração, e as
+ *                                    listas vêm vazias
+ *     saidas                         as saídas: as de agora primeiro; depois, da saída mais nova para a mais antiga (sem data, por último),
+ *                                    e pelo nome do relógio
+ *     saidas[]                       uma saída
+ *     saidas[].id                    o número da saída (o id das correções, recurso=saidas)
+ *     saidas[].relogio_id            o relógio
+ *     saidas[].situacao              a situação (o motivo): o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas)
+ *     saidas[].situacao_texto        a situação por extenso ("Vendido", "Emprestado")
+ *     saidas[].comportamento         o que a situação faz: emprestado (continua da coleção, fora do rodízio) ou fora (saiu da coleção)
+ *     saidas[].data                  quando saiu ou foi emprestado (AAAA-MM-DD); null: sem a data anotada
+ *     saidas[].fim                   quando voltou ou mudou de situação (AAAA-MM-DD); null: é a saída de agora
+ *     saidas[].aberta                verdadeiro: é a saída de agora (sem fim); falso: é do histórico
+ *     saidas[].dias                  quantos dias: na de agora, desde a saída até hoje; na do histórico, da saída à volta; null: sem a data
+ *     saidas[].dias_texto            os dias por extenso: na de agora, "hoje" ou "há 2m 3d"; na do histórico, quanto durou ("5d", "menos de
+ *                                    um dia"); null: sem a data
+ *     saidas[].valor                 o valor recebido, em R$; null: sem valor (emprestado, presenteado, não anotado)
+ *     saidas[].destino               para quem foi (quem comprou, ganhou ou está com ele); null: não anotado
+ *     saidas[].observacao            a observação da saída; null: sem
+ *     saidas[].relogio               o nome do relógio
+ *     saidas[].foto                  a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
+ *     saidas[].tipo                  o grupo (o nome; "sem grupo" na raiz)
+ *     saidas[].compra_data           quando ele foi comprado (AAAA-MM-DD, o campo data_compra); null: sem
+ *     saidas[].compra_valor          o valor pago, em R$ (o campo valor_compra); null: sem
+ *     saidas[].custo_servicos        a soma dos custos dos serviços dele (a mão de obra e as peças), em R$; 0: nenhum
+ *     saidas[].resultado             o valor recebido menos o valor pago e o custo dos serviços, em R$ (negativo: saiu por menos do que
+ *                                    custou); null: sem valor recebido
+ *     saidas[].tempo_na_colecao      quantos dias ficou na coleção: da compra (sem a data dela, do dia em que entrou no sistema) até a
+ *                                    saída; null: sem a data da saída, ou ela é de antes
+ *     saidas[].tempo_na_colecao_texto
+ *                                    o mesmo por extenso ("2a 3m", "menos de um dia"); null
+ *     saidas[].dias_de_uso           os dias de uso (a fórmula dias_de_uso; null)
+ *     somas                          as somas das saídas de agora da resposta, uma por situação
+ *     somas[]                        as somas de uma situação
+ *     somas[].situacao               a situação (o identificador)
+ *     somas[].situacao_texto         a situação por extenso
+ *     somas[].comportamento          o que a situação faz: emprestado ou fora
+ *     somas[].quantas                quantas saídas de agora
+ *     somas[].com_valor              quantas delas têm valor recebido
+ *     somas[].valor                  a soma do valor recebido, em R$
+ *     somas[].compra_valor           a soma do valor pago de todos os relógios da situação, em R$
+ *     somas[].custo_servicos         a soma dos custos dos serviços de todos os relógios da situação, em R$
+ *     somas[].resultado              a soma do resultado, só dos que têm valor recebido, em R$
+ *     abertas                        quantas saídas de agora a resposta traz
+ *     historico                      quantas saídas do histórico a resposta traz
+ *     posse_colecao                  a situação (o identificador) que o Voltar para a coleção grava (recurso=relogio, acao=salvar, posse):
+ *                                    a primeira que faz "na coleção"
  *   recurso=marcas
  *     marcas                         as marcas da árvore, pelo nome
  *     marcas[]                       uma marca
@@ -2741,6 +2858,42 @@
  *                                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
  *     relogio.posse_comportamento    o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
  *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
+ *     relogio.saida                  a saída da coleção de agora (o relógio emprestado ou fora dela: o motivo, a data, o valor recebido,
+ *                                    para quem); null: está na coleção, ou é desejado
+ *     relogio.saida.id               o número da saída (o id das correções, recurso=saidas)
+ *     relogio.saida.relogio_id       o relógio
+ *     relogio.saida.situacao         a situação (o motivo): o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas)
+ *     relogio.saida.situacao_texto   a situação por extenso ("Vendido", "Emprestado")
+ *     relogio.saida.comportamento    o que a situação faz: emprestado (continua da coleção, fora do rodízio) ou fora (saiu da coleção)
+ *     relogio.saida.data             quando saiu ou foi emprestado (AAAA-MM-DD); null: sem a data anotada
+ *     relogio.saida.fim              quando voltou ou mudou de situação (AAAA-MM-DD); null: é a saída de agora
+ *     relogio.saida.aberta           verdadeiro: é a saída de agora (sem fim); falso: é do histórico
+ *     relogio.saida.dias             quantos dias: na de agora, desde a saída até hoje; na do histórico, da saída à volta; null: sem a data
+ *     relogio.saida.dias_texto       os dias por extenso: na de agora, "hoje" ou "há 2m 3d"; na do histórico, quanto durou ("5d", "menos de
+ *                                    um dia"); null: sem a data
+ *     relogio.saida.valor            o valor recebido, em R$; null: sem valor (emprestado, presenteado, não anotado)
+ *     relogio.saida.destino          para quem foi (quem comprou, ganhou ou está com ele); null: não anotado
+ *     relogio.saida.observacao       a observação da saída; null: sem
+ *     relogio.saidas                 as saídas da coleção dele: a de agora primeiro e depois as do histórico, da mais nova para a mais
+ *                                    antiga (vazio: nunca saiu)
+ *     relogio.saidas[]               uma saída
+ *     relogio.saidas[].id            o número da saída (o id das correções, recurso=saidas)
+ *     relogio.saidas[].relogio_id    o relógio
+ *     relogio.saidas[].situacao      a situação (o motivo): o identificador de um item da lista Situações do relógio na coleção (Cadastros
+ *                                    › Listas)
+ *     relogio.saidas[].situacao_texto
+ *                                    a situação por extenso ("Vendido", "Emprestado")
+ *     relogio.saidas[].comportamento o que a situação faz: emprestado (continua da coleção, fora do rodízio) ou fora (saiu da coleção)
+ *     relogio.saidas[].data          quando saiu ou foi emprestado (AAAA-MM-DD); null: sem a data anotada
+ *     relogio.saidas[].fim           quando voltou ou mudou de situação (AAAA-MM-DD); null: é a saída de agora
+ *     relogio.saidas[].aberta        verdadeiro: é a saída de agora (sem fim); falso: é do histórico
+ *     relogio.saidas[].dias          quantos dias: na de agora, desde a saída até hoje; na do histórico, da saída à volta; null: sem a data
+ *     relogio.saidas[].dias_texto    os dias por extenso: na de agora, "hoje" ou "há 2m 3d"; na do histórico, quanto durou ("5d", "menos de
+ *                                    um dia"); null: sem a data
+ *     relogio.saidas[].valor         o valor recebido, em R$; null: sem valor (emprestado, presenteado, não anotado)
+ *     relogio.saidas[].destino       para quem foi (quem comprou, ganhou ou está com ele); null: não anotado
+ *     relogio.saidas[].observacao    a observação da saída; null: sem
  *     relogio.manutencao_aberta      a manutenção aberta (o relógio na oficina agora: o quadro Manutenção); null: não está em manutenção
  *     relogio.manutencao_aberta.id   o número da manutenção
  *     relogio.manutencao_aberta.relogio_id
@@ -6798,7 +6951,20 @@
  *                                    o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
  *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
  *     gerado_em                      quando foi gerado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
- *     todos                          verdadeiro: com os de fora da coleção (posse=todos)
+ *     todos                          verdadeiro: com os de fora da coleção (posse=todos ou aba=todos)
+ *     abas                           as abas por situação, na ordem do cadastro (Cadastros › Listas): uma por situação que tem relógio; a
+ *                                    primeira que faz "na coleção" vem mesmo vazia
+ *     abas[]                         uma aba
+ *     abas[].chave                   a situação da aba: o identificador do item da lista (o que se pede em aba= e o que cada relógio traz
+ *                                    em aba)
+ *     abas[].nome                    o nome da situação ("Na coleção", "Vendido")
+ *     abas[].comportamento           o que a situação faz: colecao, emprestado, desejado ou fora; null: a aba Todos da galeria
+ *     abas[].tipo                    o que a aba mostra: relogios (os que são seus: a tabela dos relógios), desejos (a lista de desejos,
+ *                                    recurso=desejos), saidas (os que saíram, recurso=saidas) ou todos (a aba Todos da galeria)
+ *     abas[].quantos                 quantos relógios a aba tem
+ *     aba                            a aba que a resposta mostra: a situação pedida (ou a primeira, com aba=principal), todos, ou vazio
+ *                                    (sem aba: os da coleção, na coleção e emprestados)
+ *     grupos[].relogios[].aba        a aba do relógio: a situação dele (uma chave de abas[])
  *     total                          quantos relógios
  *     valor_total                    a soma do valor pago, em R$
  *     com_foto                       quantos têm foto
@@ -8238,6 +8404,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/colunas.php";
 } elseif ($recurso === "marcas") {
     require __DIR__ . "/api/marcas.php";
+} elseif ($recurso === "saidas") {
+    require __DIR__ . "/api/saidas.php";
 } elseif ($recurso === "unidades") {
     require __DIR__ . "/api/unidades.php";
 } elseif ($recurso === "servicos") {
@@ -8337,7 +8505,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "colunas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "saidas", "colunas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

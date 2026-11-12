@@ -1310,6 +1310,7 @@ $MIGRACOES = [
     "v63" => ["migracao_v63.sql", tk("o total vale embaixo de qualquer coluna do cadastro de colunas, as de sempre e as que você monta (antes, só as 14 de sempre), e só aceita um formato que combine com o que a coluna mostra; excluir uma coluna solta os totais dela, que ficam só na página de totais"), "sistema.chave=migracao_v63", "migracao_v63_dados"],
     "v62" => ["migracao_v62.sql", tk("as colunas de sempre da tabela dos relógios (código, relógio, marca, tipo, estado, carga, última vez usado, tempo de uso, próxima manutenção, em, o que fazer, encostado, comprado em e valor) passam a morar no cadastro de colunas (Cadastros › Colunas), como colunas do sistema: só mudam de lugar e de aparecer de início; toda coluna nova nasce ali, e uma árvore nova já nasce com as de sempre"), "sistema.chave=migracao_v62", "migracao_v62_dados"],
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
+    "v64" => ["migracao_v64.sql", tk("as saídas da coleção: cada vez que um relógio é emprestado ou sai (vendido, presenteado, arquivado e os motivos do seu cadastro), ficam a data, o valor recebido, para quem foi e a observação, e a volta fecha a saída sem apagar o histórico; e as abas por situação em cima da tabela dos relógios e da galeria (na coleção, emprestado, desejado, vendido...), cada uma com o que é dela"), "sistema.chave=migracao_v64", "migracao_v64_dados"],
 ];
 
 // O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
@@ -1321,6 +1322,25 @@ $MIGRACOES = [
 // sobe 1000: as de sistema ficam de 10 a 140). Uma instalação nova já tem tudo (o modelo, ao criar a árvore)
 // A regra do banco da coluna de um total deixa de listar as 14 pelo nome: só pede um texto não vazio (a API confere a coluna e o formato).
 // Uma instalação nova já tem a regra nova (o schema.sql)
+// Os relógios que já estavam emprestados ou fora da coleção ganham a saída aberta deles (sem a data, que ninguém anotou: a
+// pessoa preenche na ficha). Uma instalação nova não tem relógio nenhum
+function migracao_v64_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            foreach (linhas("SELECT r.id, r.posse, c.no_id AS raiz FROM relogio r JOIN colecao c ON c.id = r.colecao_id ORDER BY r.id") as $r) {
+                $item = lista_itens("relogio_situacao", (int)$r["raiz"])[(string)$r["posse"]] ?? null;
+                // o item que não está na lista vale como o posse_de diz (os vendido e arquivado de antes: fora)
+                $comp = $item !== null ? $item["comportamento"] : (in_array((string)$r["posse"], ["vendido", "arquivado"], true) ? "fora" : (in_array((string)$r["posse"], ["emprestado", "fora"], true) ? (string)$r["posse"] : "colecao"));
+                if (posse_e_saida($comp) && valor("SELECT id FROM relogio_saida WHERE relogio_id = ? AND fim IS NULL", [(int)$r["id"]]) === null) {
+                    sql("INSERT INTO relogio_saida (relogio_id, situacao, criado) VALUES (?, ?, NOW())", [(int)$r["id"], (string)$r["posse"]]);
+                }
+            }
+        });
+    }
+    sis_set("migracao_v64", "1");
+}
+
 function migracao_v63_dados($nova = false)
 {
     if (!$nova) {
@@ -6986,6 +7006,290 @@ function da_colecao($r)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// As saídas da coleção (relogio_saida, a v64). O relógio emprestado ou fora da coleção (os comportamentos "emprestado" e
+// "fora" da lista relogio_situacao) tem sempre uma saída aberta (sem fim): a situação (o motivo), a data, o valor recebido,
+// para quem foi e a observação. Quando ele volta para a coleção (ou vira desejado), a aberta ganha o fim; quando troca de
+// uma situação de saída para outra, a aberta fecha e outra abre (no mesmo dia, é uma correção: a aberta só muda de
+// situação). As fechadas são o histórico. Quem abre e fecha é a gravação do relógio (op_relogio, salvar: a porta única da
+// situação); o recurso=saidas só corrige o que foi anotado.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// a tabela existe (entre o git pull e o Aplicar da v64, o sistema continua funcionando sem as saídas)
+function saidas_tem()
+{
+    return banco_tem_tabela("relogio_saida");
+}
+
+// o comportamento que é uma saída (o relógio não está com a pessoa)
+function posse_e_saida($comportamento)
+{
+    return in_array($comportamento, ["emprestado", "fora"], true);
+}
+
+// uma data AAAA-MM-DD que existe no calendário
+function data_iso_valida($v)
+{
+    return preg_match("/^\\d{4}-\\d{2}-\\d{2}$/", (string)$v) === 1 && checkdate((int)substr($v, 5, 2), (int)substr($v, 8, 2), (int)substr($v, 0, 4));
+}
+
+// As saídas dos relógios que o escopo alcança, lidas uma vez por pedido (e de novo depois de uma gravação de cadastro:
+// BANCO_CADASTRO): [relogio_id => as linhas, a aberta primeiro e depois as fechadas, da mais nova para a mais antiga]
+function saidas_mapa()
+{
+    static $guardado = [];
+    if (!saidas_tem()) {
+        return [];
+    }
+    $k = (string)($GLOBALS["BANCO_ESCOPO"]["colecao"] ?? "sem") . "/" . ($GLOBALS["BANCO_CADASTRO"] ?? 0);
+    if (!isset($guardado[$k])) {
+        $mapa = [];
+        foreach (linhas("SELECT * FROM relogio_saida ORDER BY CASE WHEN fim IS NULL THEN 0 ELSE 1 END, fim DESC, id DESC") as $s) {
+            $mapa[(int)$s["relogio_id"]][] = $s;
+        }
+        $guardado = [$k => $mapa];
+    }
+    return $guardado[$k];
+}
+
+// a saída aberta de um relógio (a de agora), ou null
+function saida_aberta($relogio_id)
+{
+    $l = saidas_mapa()[(int)$relogio_id][0] ?? null;
+    return $l !== null && $l["fim"] === null ? $l : null;
+}
+
+// O que a API devolve de uma saída: a situação com o nome e o comportamento, as datas, quantos dias durou (até o fim, ou até
+// hoje na aberta; sem a data, null) e o texto disso, o valor, para quem e a observação
+function saida_dados($s)
+{
+    $item = lista_itens("relogio_situacao")[(string)$s["situacao"]] ?? null;
+    $ate = $s["fim"] !== null ? (string)$s["fim"] : hoje_da_colecao()->format("Y-m-d");
+    $dias = $s["data"] !== null ? max(0, (int)round((strtotime($ate . " 12:00:00") - strtotime($s["data"] . " 12:00:00")) / 86400)) : null;
+    return ["id" => (int)$s["id"], "relogio_id" => (int)$s["relogio_id"], "situacao" => (string)$s["situacao"],
+        "situacao_texto" => lista_nome("relogio_situacao", (string)$s["situacao"]), "comportamento" => $item["comportamento"] ?? "fora",
+        "data" => $s["data"], "fim" => $s["fim"], "aberta" => $s["fim"] === null, "dias" => $dias,
+        // na de agora, há quanto tempo ("hoje", "há 2m 3d"); na do histórico, quanto durou
+        "dias_texto" => $dias === null ? null : ($s["fim"] === null ? ($dias === 0 ? t("hoje") : t("há {1}", [1 => duracao_texto($dias)])) : ($dias === 0 ? t("menos de um dia") : duracao_texto($dias))),
+        "valor" => $s["valor"] === null ? null : round((float)$s["valor"], 2), "destino" => $s["destino"], "observacao" => $s["observacao"]];
+}
+
+// O que o pedido diz da saída, conferido: devolve [campo => valor] só do que veio no pedido (o texto vazio vira null: apaga)
+// e junta os erros. Os nomes no pedido: na gravação do relógio, saida_data, saida_valor, saida_destino, saida_observacao e
+// volta_data ($prefixo true); no recurso=saidas, data, valor, destino, observacao e fim
+function saida_do_pedido($d, &$erros, $prefixo = true)
+{
+    $hoje = hoje_da_colecao()->format("Y-m-d");
+    $res = [];
+    $nome = function ($col) use ($prefixo) { return !$prefixo ? $col : ($col === "fim" ? "volta_data" : "saida_" . $col); };
+    foreach (["data" => t("Data da saída"), "fim" => t("Data da volta")] as $col => $rotulo) {
+        $k = $nome($col);
+        if (array_key_exists($k, $d)) {
+            $v = substr(trim((string)$d[$k]), 0, 10);
+            if ($v !== "" && !data_iso_valida($v)) {
+                $erros[] = t("{1}: AAAA-MM-DD.", [1 => $rotulo]);
+            } elseif ($v !== "" && $v > $hoje) {
+                $erros[] = t("{1}: não pode ser no futuro.", [1 => $rotulo]);
+            }
+            $res[$col] = $v !== "" ? $v : null;
+        }
+    }
+    if (array_key_exists($nome("valor"), $d)) {
+        $v = trim((string)$d[$nome("valor")]);
+        $n = $v === "" ? null : numero_br($v);
+        if ($v !== "" && ($n === null || $n < 0)) {
+            $erros[] = t("O valor recebido é um número, não negativo.");
+        }
+        $res["valor"] = $n;
+    }
+    foreach (["destino" => [120, t("Para quem foi")], "observacao" => [2000, t("A observação da saída")]] as $col => [$max, $rotulo]) {
+        $k = $nome($col);
+        if (array_key_exists($k, $d)) {
+            $v = trim((string)$d[$k]);
+            if (mb_strlen($v) > $max) {
+                $erros[] = t("{1}: até {2} caracteres.", [1 => $rotulo, 2 => $max]);
+            }
+            $res[$col] = $v !== "" ? $v : null;
+        }
+    }
+    return $res;
+}
+
+// A gravação do relógio chama esta: a situação mudou (ou ele nasceu já fora), e a saída abre, fecha ou é corrigida. $antes é
+// a linha do relógio antes da gravação (null: relógio novo), $item o item da situação de agora, $p o que o pedido disse
+// (saida_do_pedido). Devolve a nota
+function saida_registrar($id, $antes, $item, $p)
+{
+    if (!saidas_tem()) {
+        return "";
+    }
+    $id = (int)$id;
+    $hoje = hoje_da_colecao()->format("Y-m-d");
+    $agora = $item["comportamento"];
+    $aberta = linha("SELECT * FROM relogio_saida WHERE relogio_id = ? AND fim IS NULL ORDER BY id DESC", [$id]);
+    $ident = (string)$item["identificador"];
+    // os dados que o pedido trouxe para a saída (o fim é só da volta)
+    $dados = array_intersect_key($p, ["data" => 1, "valor" => 1, "destino" => 1, "observacao" => 1]);
+    if (!posse_e_saida($agora)) {
+        // voltou (para a coleção, ou virou desejado): a aberta fecha, na data da volta (hoje, se o pedido não disse; nunca antes da saída)
+        if ($aberta === null) {
+            return "";
+        }
+        $fim = $p["fim"] ?? $hoje;
+        if ($aberta["data"] !== null && $fim < $aberta["data"]) {
+            $fim = (string)$aberta["data"];
+        }
+        sql("UPDATE relogio_saida SET fim = ? WHERE id = ?", [$fim, (int)$aberta["id"]]);
+        return t(" A saída ({1}) ficou no histórico, com a volta em {2}.", [1 => mb_strtolower(lista_nome("relogio_situacao", (string)$aberta["situacao"]), "UTF-8"), 2 => data_txt($fim)]);
+    }
+    // a data desta saída: a do pedido; sem ela, hoje se a situação mudou agora (no relógio que já nasce fora, ou que já estava
+    // assim sem a saída anotada, não se sabe: fica vazia)
+    $mudou = $antes !== null && (string)$antes["posse"] !== $ident;
+    $data = array_key_exists("data", $dados) ? $dados["data"] : ($mudou ? $hoje : null);
+    if ($aberta !== null && (string)$aberta["situacao"] === $ident) {
+        // a mesma saída: só o que o pedido trouxe muda
+        if (count($dados) > 0) {
+            sql("UPDATE relogio_saida SET " . implode(", ", array_map(function ($c) { return $c . " = ?"; }, array_keys($dados))) . " WHERE id = ?", array_merge(array_values($dados), [(int)$aberta["id"]]));
+        }
+        return "";
+    }
+    if ($aberta !== null && ($aberta["data"] === null || $data === null || (string)$aberta["data"] >= $data)) {
+        // trocou o motivo no mesmo dia (ou sem data para separar as duas): é a mesma saída, corrigida
+        $novo = array_merge(["situacao" => $ident], $dados);
+        sql("UPDATE relogio_saida SET " . implode(", ", array_map(function ($c) { return $c . " = ?"; }, array_keys($novo))) . " WHERE id = ?", array_merge(array_values($novo), [(int)$aberta["id"]]));
+        return t(" A saída passou a ser: {1}.", [1 => mb_strtolower((string)$item["nome"], "UTF-8")]);
+    }
+    if ($aberta !== null) {
+        // de uma saída para outra (o emprestado que foi vendido): a de antes fecha no dia em que a nova começa
+        sql("UPDATE relogio_saida SET fim = ? WHERE id = ?", [$data, (int)$aberta["id"]]);
+    }
+    sql("INSERT INTO relogio_saida (relogio_id, situacao, data, valor, destino, observacao, criado) VALUES (?, ?, ?, ?, ?, ?, NOW())",
+        [$id, $ident, $data, $dados["valor"] ?? null, $dados["destino"] ?? null, $dados["observacao"] ?? null]);
+    return t(" Saída anotada: {1}{2}{3}{4}.", [1 => mb_strtolower((string)$item["nome"], "UTF-8"), 2 => $data !== null ? t(" em {1}", [1 => data_txt($data)]) : t(" (sem a data: preencha na ficha)"),
+        3 => ($dados["destino"] ?? null) !== null ? t(", para {1}", [1 => $dados["destino"]]) : "", 4 => ($dados["valor"] ?? null) !== null ? t(", por {1}", [1 => dinheiro_txt($dados["valor"])]) : ""]);
+}
+
+// As abas por situação (em cima da tabela dos relógios da página Hoje e da Galeria): uma por item da lista relogio_situacao
+// que tem relógio, na ordem do cadastro; a primeira que faz "na coleção" aparece mesmo vazia. O tipo diz o que a aba mostra:
+// relogios (os que são da pessoa: a tabela de sempre), desejos (a lista de desejos) ou saidas (os que saíram, com o motivo,
+// a data, o valor e para quem)
+const ABA_TIPOS = ["colecao" => "relogios", "emprestado" => "relogios", "desejado" => "desejos", "fora" => "saidas"];
+
+// a aba de um relógio: a situação dele; a situação que não está mais na lista cai na primeira aba que faz o mesmo
+function aba_do_relogio($r)
+{
+    $p = (string)($r["posse"] ?? "colecao");
+    if (isset(lista_itens("relogio_situacao")[$p])) {
+        return $p;
+    }
+    return lista_com_comportamento("relogio_situacao", posse_de($r))["identificador"] ?? $p;
+}
+
+// as abas, com quantos relógios cada uma tem: [{chave, nome, comportamento, tipo, quantos}]
+function abas_situacao($relogios = null)
+{
+    $conta = [];
+    foreach ($relogios ?? linhas("SELECT id, posse FROM relogio") as $r) {
+        $a = aba_do_relogio($r);
+        $conta[$a] = ($conta[$a] ?? 0) + 1;
+    }
+    $abas = [];
+    $tem_principal = false;
+    foreach (lista_itens("relogio_situacao") as $x) {
+        $n = $conta[$x["identificador"]] ?? 0;
+        unset($conta[$x["identificador"]]);
+        $principal = !$tem_principal && $x["comportamento"] === "colecao";
+        $tem_principal = $tem_principal || $principal;
+        if ($n > 0 || $principal) {
+            $abas[] = ["chave" => (string)$x["identificador"], "nome" => $x["nome"], "comportamento" => $x["comportamento"], "tipo" => ABA_TIPOS[$x["comportamento"]] ?? "relogios", "quantos" => $n];
+        }
+    }
+    // uma situação gravada que a lista não tem mais, nem outra que faça o mesmo: a aba dela, pelo identificador
+    foreach ($conta as $ident => $n) {
+        $comp = posse_de(["posse" => $ident]);
+        $abas[] = ["chave" => (string)$ident, "nome" => (string)$ident, "comportamento" => $comp, "tipo" => ABA_TIPOS[$comp] ?? "relogios", "quantos" => $n];
+    }
+    return $abas;
+}
+
+// As saídas com o relógio e as contas de cada uma (recurso=saidas): a compra (a data e o valor), o custo dos serviços, o
+// resultado (o valor recebido menos a compra e os serviços; sem valor recebido, null), o tempo que ficou na coleção (da
+// compra, ou do cadastro, até a saída) e os dias de uso. $f: relogio (id), situacao (identificador), abertas (só as de agora)
+function saidas_lista($f = [])
+{
+    $rels = [];
+    foreach (linhas("SELECT * FROM relogio ORDER BY nome") as $r) {
+        $rels[(int)$r["id"]] = $r;
+    }
+    $nos = nos_todos();
+    $fotos = [];
+    foreach (linhas("SELECT relogio_id, atualizado FROM foto") as $x) {
+        $fotos[(int)$x["relogio_id"]] = strtotime($x["atualizado"]);
+    }
+    $custos = [];
+    foreach (servicos_lista(null) as $s) {
+        $custos[(int)$s["relogio_id"]] = ($custos[(int)$s["relogio_id"]] ?? 0) + (float)($s["custo"] ?? 0);
+    }
+    $agora = time();
+    $lista = [];
+    foreach (saidas_mapa() as $rid => $linhas_s) {
+        $r = $rels[$rid] ?? null;
+        if ($r === null || (isset($f["relogio"]) && (int)$f["relogio"] !== $rid)) {
+            continue;
+        }
+        $v = valores_do_relogio($rid);
+        $compra_valor = ($v["valor_compra"] ?? "") !== "" ? round((float)$v["valor_compra"], 2) : null;
+        $compra_data = ($v["data_compra"] ?? "") !== "" ? substr((string)$v["data_compra"], 0, 10) : null;
+        $custo = round($custos[$rid] ?? 0, 2);
+        $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => $v];
+        $du = isset(formulas_todas()["dias_de_uso"]) ? variavel_valor("dias_de_uso", $ctx) : null;
+        foreach ($linhas_s as $s) {
+            if ((isset($f["situacao"]) && (string)$f["situacao"] !== (string)$s["situacao"]) || (!empty($f["abertas"]) && $s["fim"] !== null)) {
+                continue;
+            }
+            $x = saida_dados($s);
+            // o tempo na coleção: da compra (sem a data dela, do dia em que entrou no sistema) até a saída
+            $desde = $compra_data ?? substr((string)$r["criado"], 0, 10);
+            $tempo = $x["data"] !== null && $x["data"] >= $desde ? (int)round((strtotime($x["data"] . " 12:00:00") - strtotime($desde . " 12:00:00")) / 86400) : null;
+            $lista[] = array_merge($x, ["relogio" => $r["nome"], "foto" => $fotos[$rid] ?? null,
+                "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : t("sem grupo"),
+                "compra_data" => $compra_data, "compra_valor" => $compra_valor, "custo_servicos" => $custo,
+                "resultado" => $x["valor"] === null ? null : round($x["valor"] - ($compra_valor ?? 0) - $custo, 2),
+                "tempo_na_colecao" => $tempo, "tempo_na_colecao_texto" => $tempo === null ? null : ($tempo === 0 ? t("menos de um dia") : duracao_texto($tempo)),
+                "dias_de_uso" => is_numeric($du) ? (int)round((float)$du) : null]);
+        }
+    }
+    // as de agora primeiro; depois, da saída mais nova para a mais antiga (sem data, por último), e pelo nome
+    usort($lista, function ($a, $b) {
+        return ($a["aberta"] ? 0 : 1) <=> ($b["aberta"] ? 0 : 1) ?: strcmp((string)($b["data"] ?? ""), (string)($a["data"] ?? "")) ?: strcmp($a["relogio"], $b["relogio"]) ?: $b["id"] <=> $a["id"];
+    });
+    return $lista;
+}
+
+// As somas das saídas de agora de cada situação (o rodapé de cada aba e o resumo do relatório): quantas, o que foi recebido, o
+// que os relógios custaram (a compra e os serviços) e o resultado (só das que têm valor recebido)
+function saidas_somas($lista)
+{
+    $somas = [];
+    foreach ($lista as $x) {
+        if (!$x["aberta"]) {
+            continue;
+        }
+        $k = $x["situacao"];
+        $somas[$k] = $somas[$k] ?? ["situacao" => $k, "situacao_texto" => $x["situacao_texto"], "comportamento" => $x["comportamento"], "quantas" => 0, "com_valor" => 0,
+            "valor" => 0.0, "compra_valor" => 0.0, "custo_servicos" => 0.0, "resultado" => 0.0];
+        $somas[$k]["quantas"]++;
+        $somas[$k]["compra_valor"] = round($somas[$k]["compra_valor"] + ($x["compra_valor"] ?? 0), 2);
+        $somas[$k]["custo_servicos"] = round($somas[$k]["custo_servicos"] + $x["custo_servicos"], 2);
+        if ($x["valor"] !== null) {
+            $somas[$k]["com_valor"]++;
+            $somas[$k]["valor"] = round($somas[$k]["valor"] + $x["valor"], 2);
+            $somas[$k]["resultado"] = round($somas[$k]["resultado"] + $x["resultado"], 2);
+        }
+    }
+    return array_values($somas);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Os winders da coleção (a página Winders). Cada um tem as posições, e cada posição o programa dela (da página Programas),
 // os campos livres dela, o relógio que está nela agora (a sessão aberta de um tipo marcado como winder, ligada à posição),
 // com a carga dele, o que cada hora ali dá e quanto falta para encher (as fórmulas energia, winder_ganho e winder_falta, as
@@ -8075,7 +8379,9 @@ function lista_item_em_uso($item, $raiz)
         $ident = (string)$item["identificador"];
         switch ($item["lista"]) {
             case "relogio_situacao":
-                return valor("SELECT COUNT(*) FROM relogio WHERE posse = ? AND colecao_id IN (" . $col . ")", [$ident]);
+                // o que os relógios têm agora e o que as saídas guardadas (o histórico) citam
+                return (int)valor("SELECT COUNT(*) FROM relogio WHERE posse = ? AND colecao_id IN (" . $col . ")", [$ident])
+                    + (saidas_tem() ? (int)valor("SELECT COUNT(*) FROM relogio_saida WHERE situacao = ? AND relogio_id IN (" . $rel . ") AND relogio_id NOT IN (SELECT id FROM relogio WHERE posse = ?)", [$ident, $ident]) : 0);
             case "acessorio_tipo":
                 return (int)valor("SELECT COUNT(*) FROM acessorio WHERE tipo = ? AND colecao_id IN (" . $col . ")", [$ident])
                     + (int)valor("SELECT COUNT(*) FROM campo WHERE acessorio_tipo = ? AND no_id IN (" . implode(", ", arvore_nos($raiz)) . ")", [$ident]);

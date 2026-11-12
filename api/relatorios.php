@@ -243,6 +243,33 @@ $RELATORIOS["desejos"] = [$g_colecao, t("Lista de desejos"), t("Os relógios des
                 }, $d["fora"]), t("Nenhum."))]];
     }];
 
+// as saídas da coleção: os emprestados e os que saíram, com o que foi recebido e o resultado, e o histórico
+$RELATORIOS["saidas"] = [$g_colecao, t("Saídas da coleção"), t("Os relógios emprestados e os que saíram da coleção (vendidos, presenteados, arquivados e os motivos do seu cadastro): quando, para quem, o valor recebido, o que cada um custou (a compra e os serviços), o resultado, o tempo que ficou na coleção e os dias de uso; as somas por situação; e o histórico das saídas que já terminaram."),
+    [],
+    function ($p) use ($ler, $tabela, $reais, $data) {
+        $d = $ler("saidas");
+        $linha = function ($x) use ($reais, $data) {
+            return [$x["relogio"], $x["situacao_texto"], $data($x["data"]), $x["destino"], $reais($x["valor"]), $reais($x["compra_valor"]), $x["custo_servicos"] > 0 ? $reais($x["custo_servicos"]) : null,
+                $reais($x["resultado"]), $x["tempo_na_colecao_texto"], $x["dias_de_uso"] === null ? null : (string)$x["dias_de_uso"]];
+        };
+        $abertas = array_values(array_filter($d["saidas"], function ($x) { return $x["aberta"]; }));
+        $fechadas = array_values(array_filter($d["saidas"], function ($x) { return !$x["aberta"]; }));
+        $recebido = round(array_sum(array_column($d["somas"], "valor")), 2);
+        $resultado = round(array_sum(array_column($d["somas"], "resultado")), 2);
+        $com_valor = array_sum(array_column($d["somas"], "com_valor"));
+        return ["subtitulo" => null,
+            "resumo" => array_merge(array_map(function ($s) { return [$s["situacao_texto"], (string)$s["quantas"]]; }, $d["somas"]),
+                [[t("Recebido"), $com_valor > 0 ? $reais($recebido) : null], [t("Resultado"), $com_valor > 0 ? $reais($resultado) : null]]),
+            "secoes" => [$tabela(t("Fora da coleção agora"), [t("Relógio"), t("Situação"), t("Saiu em"), t("Para quem"), [t("Recebido"), true], [t("Valor pago"), true], [t("Serviços"), true], [t("Resultado"), true],
+                    [t("Tempo na coleção"), true], [t("Dias de uso"), true]],
+                    array_map($linha, $abertas), t("Nenhum relógio emprestado nem fora da coleção."),
+                    $com_valor > 0 ? [t("Total"), "", "", "", $reais($recebido), "", "", $reais($resultado), "", ""] : null,
+                    t("O resultado é o valor recebido menos o valor pago e os serviços; sem valor recebido, não há resultado.")),
+                $tabela(t("Histórico (saídas que terminaram)"), [t("Relógio"), t("Situação"), t("Saiu em"), t("Voltou em"), t("Para quem"), [t("Recebido"), true], t("Observação")],
+                    array_map(function ($x) use ($reais, $data) { return [$x["relogio"], $x["situacao_texto"], $data($x["data"]), $data($x["fim"]), $x["destino"], $reais($x["valor"]), $x["observacao"]]; }, $fechadas),
+                    t("Nenhuma saída no histórico."))]];
+    }];
+
 // os acessórios: de cada relógio e os soltos
 $RELATORIOS["acessorios"] = [$g_colecao, t("Acessórios"), t("Os acessórios (pulseiras, caixas, estojos, ferramentas...) de cada relógio e os soltos, e quantos de cada tipo."),
     [$p_relogio(false)],

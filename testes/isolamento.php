@@ -143,7 +143,15 @@ $dwd_a = (int)((preparar($ana, ["recurso" => "documentos", "acao" => "enviar", "
     "arquivo_nome" => "w.pdf", "arquivo_base64" => base64_encode("%PDF-1.4 SEGREDOANA")])["ids"] ?? [0])[0] ?? 0);
 // e uma medição do timegrapher (a observação com a marca)
 $tgr_a = (int)(preparar($ana, ["recurso" => "timegrapher", "acao" => "salvar", "relogio_id" => $rel_m, "marcha" => 4, "amplitude" => 280, "observacao" => "Timegrapher SEGREDOANA"])["id"] ?? 0);
-$ids = ["colecao" => $col_a, "relogio" => $rel_a, "aparelho" => $apa_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
+// e uma saída no histórico dela (o mecânico emprestado e devolvido: com quem e a observação com a marca)
+preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => $rel_m, "posse" => "emprestado", "saida_destino" => "Irmão SEGREDOANA", "saida_observacao" => "Saída SEGREDOANA"]);
+preparar($ana, ["recurso" => "relogio", "acao" => "salvar", "id" => $rel_m, "posse" => "colecao"]);
+$sai_a = (int)(pedir($ana, "GET", ["recurso" => "saidas", "relogio" => $rel_m])["json"]["saidas"][0]["id"] ?? 0);
+if ($sai_a === 0) {
+    fwrite(STDERR, "A preparação falhou: a saída da ana não apareceu no recurso=saidas.\n");
+    exit(1);
+}
+$ids = ["colecao" => $col_a, "saida" => $sai_a, "relogio" => $rel_a, "aparelho" => $apa_a, "lancamento" => $lan_a, "acessorio" => $ace_a, "evento" => $evt_a, "destino" => $des_a, "agenda" => $agd_a,
     "documento" => $doc_a, "no" => $no_a, "usuario" => $uid_a, "smartwatch" => $rel_s, "medicao" => $med_a, "calibre" => $cal_a, "doc_calibre" => $doc_cal_a, "servico" => $srv_a,
     "mecanico" => $rel_m, "reserva" => $rst_a, "timegrapher" => $tgr_a, "unidade" => $uni_a, "secao" => $sec_a, "campo_multiplo" => $cmp_a,
     "automatico" => $rel_w, "winder" => $wnd_a, "winder_posicao" => $wps_a, "lancamento_winder" => $lwd_a, "movimento" => $mov_a, "programa" => $prg_a,
@@ -153,16 +161,16 @@ $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"
 
 // os recursos de leitura e as variações de parâmetro com as coisas da ana
 $recursos = ["", "importacao", "backup", "foto", "documento", "documentos", "criterios", "avisos", "autonomia", "hoje", "ficha", "config", "historico", "previsao",
-    "plano", "desejos", "estatisticas", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "winders", "programas", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
+    "plano", "desejos", "saidas", "estatisticas", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "winders", "programas", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
     "usuarios", "conta", "colecoes", "acessos", "pedidos", "convites", "aprovacoes", "cron", "arvore", "cadastros", "calcular", "migracoes", "instalacao",
     "cadastro", "entrar"];
 $variacoes = [[], ["colecao" => $col_a], ["relogio" => $rel_a], ["id" => $rel_a], ["relogio_id" => $rel_a], ["como" => "ana"], ["usuario" => "ana"],
     ["login" => "ana"], ["usuario_id" => $uid_a], ["documento" => $doc_a], ["id" => $doc_a], ["calibre" => $cal_a], ["id" => $doc_cal_a], ["id" => $des_a], ["id" => $agd_a], ["id" => $evt_a],
-    ["no" => $no_a], ["no_id" => $no_a], ["arvore_id" => $no_a], ["relogio" => $rel_a, "baixar" => 1], ["id" => $wnd_a], ["id" => $wps_a], ["relogio" => $rel_w], ["winder" => $wnd_a], ["id" => $prg_a], ["id" => $prg_a, "previa" => 1], ["id" => $dwd_a]];
+    ["no" => $no_a], ["no_id" => $no_a], ["arvore_id" => $no_a], ["relogio" => $rel_a, "baixar" => 1], ["id" => $wnd_a], ["id" => $wps_a], ["relogio" => $rel_w], ["winder" => $wnd_a], ["id" => $prg_a], ["id" => $prg_a, "previa" => 1], ["id" => $dwd_a], ["id" => $sai_a], ["relogio" => $rel_m], ["situacao" => "emprestado"]];
 $n = 0;
 // os relatórios (recurso=relatorios): cada tipo, sem relógio, com os relógios da ana, com a coleção dela e na planilha
 foreach (["bia", "caio"] as $quem) {
-    foreach (["colecao", "passaporte", "custos", "desejos", "acessorios", "documentos", "historico", "estatisticas", "plano", "avisos", "criterios", "servicos", "precisao",
+    foreach (["colecao", "passaporte", "custos", "desejos", "saidas", "acessorios", "documentos", "historico", "estatisticas", "plano", "avisos", "criterios", "servicos", "precisao",
         "timegrapher", "reserva", "calibres", "totais", "cron"] as $tp) {
         foreach ([[], ["relogio" => $rel_a], ["relogio" => $rel_m], ["relogio" => $rel_s], ["colecao" => $col_a], ["relogio" => $rel_m, "csv" => 1], ["posse" => "todos", "de" => "tudo"]] as $v) {
             $p = array_merge(["recurso" => "relatorios", "tipo" => $tp], $v);
@@ -260,6 +268,9 @@ $tentativas = [
     ["recurso" => "documentos", "acao" => "enviar", "winder_id" => $wnd_a, "categoria_id" => $cat_w, "titulo" => "INVADIDO", "arquivo_nome" => "x.pdf",
         "arquivo_base64" => base64_encode("%PDF-1.4 INVADIDO")],
     ["recurso" => "documentos", "acao" => "excluir", "id" => $dwd_a, "confirmar" => 1],
+    ["recurso" => "saidas", "acao" => "salvar", "id" => $sai_a, "destino" => "INVADIDO"],
+    ["recurso" => "saidas", "acao" => "excluir", "id" => $sai_a, "confirmar" => 1],
+    ["recurso" => "relogio", "acao" => "salvar", "id" => $rel_m, "posse" => "vendido", "saida_destino" => "INVADIDO"],
     ["recurso" => "config", "acao" => "evento_salvar", "id" => $evt_a, "nome" => "INVADIDO", "repeticao" => "semanal", "hora" => "10:00", "dias_semana" => "6"],
     ["recurso" => "config", "acao" => "evento_excluir", "evento_id" => $evt_a, "confirmar" => 1],
     ["recurso" => "destinos", "acao" => "salvar", "id" => $des_a, "tipo" => "webhook", "nome" => "INVADIDO", "url" => "https://x.invalid/"],

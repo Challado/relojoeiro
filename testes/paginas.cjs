@@ -17,6 +17,11 @@ module.exports = [
   { nome: 'ficha-10', url: 'ficha.php?id=10' },
   { nome: 'hoje-painel-10', url: 'index.php?r=10' },
   { nome: 'desejos', url: 'desejos.php' },
+  // as abas por situação da página Hoje: a dos desejados (a lista de desejos) e a dos vendidos (os que saíram, com a data, o valor e
+  // para quem), e o painel do vendido por cima dela
+  { nome: 'hoje-aba-desejado', url: 'index.php?aba=desejado' },
+  { nome: 'hoje-aba-vendido', url: 'index.php?aba=vendido' },
+  { nome: 'hoje-aba-vendido-painel', url: 'index.php?aba=vendido&r=4' },
   { nome: 'estatisticas', url: 'estatisticas.php?de=tudo' },
   { nome: 'hora', url: 'hora.php' },
   { nome: 'acessorios', url: 'acessorios.php' },
@@ -36,9 +41,11 @@ module.exports = [
   { nome: 'passaporte-3', url: 'passaporte.php?id=3' },
   { nome: 'passaporte-1', url: 'passaporte.php?id=1' },
   { nome: 'galeria', url: 'galeria.php?posse=todos' },
+  { nome: 'galeria-principal', url: 'galeria.php' },
+  { nome: 'galeria-vendido', url: 'galeria.php?aba=vendido' },
   // os relatórios: o menu sozinho e cada relatório gerado (o relógio 4, o vendido, tem o timegrapher e a reserva medida)
   { nome: 'relatorios', url: 'relatorios.php' },
-  ...['colecao', 'custos', 'desejos', 'acessorios', 'documentos', 'historico', 'estatisticas', 'plano', 'avisos', 'criterios', 'servicos', 'precisao', 'timegrapher',
+  ...['colecao', 'custos', 'desejos', 'saidas', 'acessorios', 'documentos', 'historico', 'estatisticas', 'plano', 'avisos', 'criterios', 'servicos', 'precisao', 'timegrapher',
     'reserva', 'calibres', 'totais', 'cron', 'r1'].map((t) => ({ nome: 'relatorio-' + t, url: 'relatorios.php?tipo=' + t })),
   { nome: 'relatorio-passaporte-4', url: 'relatorios.php?tipo=passaporte&relogio=4' },
   { nome: 'relatorio-timegrapher-4', url: 'relatorios.php?tipo=timegrapher&relogio=4' },

@@ -4,6 +4,14 @@
 var recados = {};
 var CURTO = ["", t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb"), t("dom")];
 
+// Uma saída da coleção numa linha (texto puro: quem usa escapa): "Vendido · para Fulano · em 10/11/2026 · R$ 1.500,00";
+// no emprestado, "com Fulano · desde 10/11/2026"
+function saidaResumo(s) {
+  var fora = s.comportamento === "fora";
+  return [s.situacao_texto, s.destino !== null ? (fora ? t("para {1}", {1: s.destino}) : t("com {1}", {1: s.destino})) : "",
+    s.data !== null ? (fora ? t("em {1}", {1: dataBr(s.data)}) : t("desde {1}", {1: dataBr(s.data)})) : "", s.valor !== null ? t("R$ ") + reais(s.valor) : ""].filter(function (p) { return p !== ""; }).join(" · ");
+}
+
 function mostrarCamposDoTipo(form) {
   var sel = form.querySelector(".campo-subtipo");
   // a situação na coleção: os campos da lista de desejos (data-desejo) só no desejado; o disponível só na coleção
@@ -22,8 +30,15 @@ function mostrarCamposDoTipo(form) {
   form.querySelectorAll("[data-so-colecao]").forEach(function (el) {
     el.hidden = faz !== null && faz !== "colecao";
   });
+  // a saída da coleção (a data, para quem, o valor, a observação) só numa situação que é uma saída (emprestado ou fora); a data
+  // da volta, só no relógio que está fora e deixa de estar. O que está escondido não vai no envio
+  var eSaida = faz === "emprestado" || faz === "fora";
+  form.querySelectorAll("[data-so-saida], [data-so-volta]").forEach(function (el) {
+    el.hidden = el.hasAttribute("data-so-saida") ? !eSaida : !(form.hasAttribute("data-saida-aberta") && !eSaida);
+    el.querySelectorAll("input, textarea").forEach(function (campo) { campo.disabled = el.hidden; });
+  });
   // a divisória sem nenhum campo à vista (todos de outro grupo, ou só dos desejados) some inteira
-  form.querySelectorAll("fieldset.secao-cadastro").forEach(function (fs) {
+  form.querySelectorAll("fieldset.secao-cadastro:not(.saida-campos)").forEach(function (fs) {
     fs.hidden = fs.querySelector("[data-sub]:not([hidden])") === null;
   });
 }
@@ -413,6 +428,28 @@ function abrirNoPainel(id) {
           [t("Garantia"), c.garantia_ate !== null ? (c.garantia_ate >= hoje ? t("até {1}", {1: dataBr(c.garantia_ate)}) : t("vencida em {1}", {1: dataBr(c.garantia_ate)})) : "—"],
           [t("Custo por uso"), c.custo_por_uso !== null ? el("strong", {}, t("R$ ") + reais(c.custo_por_uso)) + el("small", {}, c.dias_de_uso + (c.dias_de_uso === 1 ? t(" dia de uso") : t(" dias de uso")))
             : nada(c.dias_de_uso === 0 ? t("ainda não foi ao pulso") : t("sem o valor pago"))]]));
+      // as saídas da coleção: a de agora e as do histórico (cada vez que ele foi emprestado ou saiu); as do histórico se corrigem
+      // e se excluem aqui (recurso=saidas); a de agora muda no Editar cadastro
+      if (r.saidas.length > 0) {
+        secoes.cadastro += quadro(t("Saídas da coleção"), el("ul", {"class": "lista-historico-saidas"}, r.saidas.map(function (s) {
+          // cada saída numa linha (o motivo, para quem, quando e por quanto) e, embaixo, até quando foi e quanto durou
+          return el("li", {}, el("strong", {}, h(saidaResumo(s)))
+            + el("small", {"class": "nota bloco"}, s.aberta ? t("a de agora{1}: muda no Editar cadastro", {1: s.dias_texto !== null ? " (" + h(s.dias_texto) + ")" : ""})
+              : t("até {1}{2}", {1: dataBr(s.fim), 2: s.dias_texto !== null ? " (" + h(s.dias_texto) + ")" : ""}))
+            + (s.observacao !== null ? el("small", {"class": "nota bloco"}, h(s.observacao)) : "")
+            + (s.aberta ? "" : el("details", {"class": "corrigir-saida"}, el("summary", {}, t("Corrigir"))
+              + el("form", {"data-recurso": "saidas", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": s.id})
+                + el("input", {"type": "hidden", "name": "r", "value": id})
+                + el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "data", "value": s.data || "", "max": hoje})}))
+                + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "fim", "value": s.fim, "max": hoje, "required": true})}))
+                + el("label", {}, t("Para quem {1}", {1: el("input", {"name": "destino", "maxlength": "120", "value": s.destino !== null ? s.destino : ""})}))
+                + el("label", {}, t("Recebido (R$) {1}", {1: el("input", {"name": "valor", "inputmode": "decimal", "class": "curto", "value": s.valor !== null ? String(s.valor).replace(".", ",") : ""})}))
+                + el("label", {}, t("Observação {1}", {1: el("input", {"name": "observacao", "maxlength": "2000", "value": s.observacao !== null ? s.observacao : ""})}))
+                + el("div", {"class": "botoes"}, el("button", {}, t("Salvar"))))
+              + el("form", {"data-recurso": "saidas", "class": "inline"}, el("input", {"type": "hidden", "name": "acao", "value": "excluir"}) + el("input", {"type": "hidden", "name": "id", "value": s.id})
+                + el("input", {"type": "hidden", "name": "r", "value": id}) + el("button", {"class": "leve discreto"}, t("Excluir do histórico"))))));
+        }).join("")), linkRelatorio("saidas", {}, t("Relatório das saídas"), true));
+      }
       // os documentos: quantos em cada categoria, cada uma abrindo a página Documentos (numa aba nova) já nela
       var dc = r.documentos;
       var quadroDocs = quadro(t("Documentos"), (dc.total === 0 ? el("p", {"class": "nota"}, t("Nenhum ainda: o manual, a nota fiscal, fotos, vídeos..."))
@@ -684,8 +721,8 @@ function abrirNoPainel(id) {
           el("p", {"class": "nota"}, t("Comprou? Em \"Editar cadastro\", mude a situação para \"Na coleção\" e preencha a compra.")), "quadro-desejo") + quadroDocs;
       }
       // o atalho do pulso, na cabeça: um botão só, "Pôr" quando ele não está no pulso e "Tirar" quando está (agora; a hora
-      // certa e o resto ficam no quadro Marcar)
-      var pulso = r.posse_comportamento === "desejado" || r.manutencao_aberta ? null : r.tipos.filter(function (item) { return item.identificador === "pulso" && item.formato === "sessao"; })[0] || null;
+      // certa e o resto ficam no quadro Marcar); o desejado e o que saiu da coleção não têm
+      var pulso = r.posse_comportamento === "desejado" || r.posse_comportamento === "fora" || r.manutencao_aberta ? null : r.tipos.filter(function (item) { return item.identificador === "pulso" && item.formato === "sessao"; })[0] || null;
       var atalho = "";
       if (pulso) {
         var noPulso = pulso.aberta !== null;
@@ -704,7 +741,10 @@ function abrirNoPainel(id) {
             + (r.manutencao_aberta ? " " + el("span", {"class": "estado estado-manutencao"}, t("em manutenção")) : "")
             + (r.posse_comportamento !== "colecao" ? " " + el("span", {"class": "estado estado-posse"}, h(minusculo(r.posse_texto)))
               : (r.disponivel || r.manutencao_aberta ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, t("indisponível"))))
-            + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : "")) + atalho
+            + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : ""))
+          // a saída de agora (emprestado ou fora da coleção): o motivo, para quem, quando e por quanto
+          + (r.saida ? el("p", {"class": "nota saida-resumo"}, h(saidaResumo(r.saida)) + (r.saida.observacao !== null ? el("small", {"class": "bloco"}, h(r.saida.observacao)) : "")) : "")
+          + atalho
           // no painel da página Hoje, o caminho para a ficha (o mesmo relógio numa página só dele, numa aba nova)
           + (document.querySelector(".painel") ? el("p", {"class": "ficha-link"}, el("a", {"href": "ficha.php?id=" + id, "target": "_blank", "rel": "noopener", "class": "botao leve"}, t("Abrir a ficha ↗"))) : "")))
         + "<!--editar-cadastro-->" + "<!--secoes-->";
@@ -721,6 +761,19 @@ function abrirNoPainel(id) {
     cad += el("label", {}, t("Situação na coleção {1} {2}", {1: el("select", {"name": "posse", "class": "campo-posse"}, d.posses.map(function (p) {
       return el("option", {"value": p.valor, "data-comportamento": p.comportamento, "selected": p.valor === posseForm}, h(p.nome));
     }).join("")), 2: el("small", {}, t("fora da coleção, ele sai do rodízio e dos avisos; a ficha e o histórico ficam"))}));
+    // a saída da coleção (só numa situação que é uma saída: emprestado, vendido, presenteado...): quando, para quem, por quanto
+    // e a observação; no relógio que já está fora, o que foi anotado (para corrigir); e a data da volta, no que volta
+    var sd = !novo && r.saida ? r.saida : null;
+    cad += el("fieldset", {"class": "secao-cadastro saida-campos", "data-so-saida": true}, el("legend", {}, t("Saída da coleção"))
+      + el("label", {}, t("Data da saída {1} {2}", {1: el("input", {"type": "date", "name": "saida_data", "value": sd ? (sd.data || "") : (novo ? "" : d.hoje), "max": d.hoje}),
+        2: el("small", {}, t("quando ele saiu ou foi emprestado; vazio: não sei"))}))
+      + el("label", {}, t("Para quem {1} {2}", {1: el("input", {"name": "saida_destino", "maxlength": "120", "value": sd && sd.destino !== null ? sd.destino : ""}),
+        2: el("small", {}, t("quem comprou, ganhou ou está com ele"))}))
+      + el("label", {}, t("Valor recebido (R$) {1} {2}", {1: el("input", {"name": "saida_valor", "inputmode": "decimal", "class": "curto", "value": sd && sd.valor !== null ? String(sd.valor).replace(".", ",") : ""}),
+        2: el("small", {}, t("se foi vendido; vazio: sem valor"))}))
+      + el("label", {}, t("Observação da saída {1}", {1: el("textarea", {"name": "saida_observacao", "rows": "2", "maxlength": "2000"}, sd && sd.observacao !== null ? h(sd.observacao) : "")})))
+      + el("label", {"data-so-volta": true}, t("Data da volta {1} {2}", {1: el("input", {"type": "date", "name": "volta_data", "value": d.hoje, "max": d.hoje}),
+        2: el("small", {}, t("a saída de agora vai para o histórico dele"))}));
     // a marca (a aba Marcas dos Cadastros)
     var marcaForm = novo || !r.marca ? 0 : r.marca.id;
     cad += el("label", {}, t("Marca {1} {2}", {1: el("select", {"name": "marca_id"}, el("option", {"value": "0"}, t("— sem marca")) + d.marcas.map(function (m) {
@@ -755,12 +808,15 @@ function abrirNoPainel(id) {
       + (d.copia_sistema === null ? el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
         + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": !novo && r.copia_banco}) + t(" Guardar no banco a cópia de todos os documentos dele")) : "")
       + el("div", {"class": "botoes"}, el("button", {}, novo ? t("Cadastrar relógio") : t("Salvar alterações")));
-    var cadastro = el("form", {"data-recurso": "relogio", "class": "cadastro"}, cad);
+    var cadastro = el("form", {"data-recurso": "relogio", "class": "cadastro", "data-saida-aberta": sd !== null}, cad);
     if (novo) {
       res += cadastro;
     } else {
       // (com função no replace: um "$" nos dados, como em "R$", não vira padrão de troca)
-      var editarCadastro = el("details", {"class": "cadastro-painel"}, el("summary", {}, t("Editar cadastro")) + ondeMuda("cadastro-relogio", [
+      // o atalho da situação, logo acima do Editar cadastro: abre-o na Situação na coleção (a saída e a volta se gravam ali)
+      var atalhoSituacao = r.posse_comportamento === "desejado" ? "" : el("p", {"class": "ficha-situacao"}, el("button", {"type": "button", "class": "leve", "data-editar-situacao": true},
+        r.saida ? t("Voltar para a coleção…") : t("Tirar da coleção…")));
+      var editarCadastro = atalhoSituacao + el("details", {"class": "cadastro-painel"}, el("summary", {}, t("Editar cadastro")) + ondeMuda("cadastro-relogio", [
           [t("Os valores deste relógio"), t("aqui, e Salvar alterações")],
           [t("Quais campos aparecem, o nome, o tipo, os valores possíveis e o padrão de cada um"), lugar("cadastros.php?aba=campos", t("Cadastros › Campos"))],
           [t("As divisórias (Construção, Compra...)"), lugar("cadastros.php?aba=secoes", t("Cadastros › Divisórias"))],
@@ -1120,6 +1176,17 @@ document.addEventListener("click", function (ev) {
     var secao = irSecao.closest(".detalhe").querySelector("[data-secao=\"" + irSecao.getAttribute("data-ir-secao") + "\"]");
     if (secao) {
       secao.scrollIntoView({behavior: "smooth", block: "start"});
+    }
+    return;
+  }
+  var situacao = ev.target.closest("[data-editar-situacao]");
+  if (situacao) {
+    var editar = document.querySelector("#detalhe details.cadastro-painel, .detalhe details.cadastro-painel");
+    var campo = editar ? editar.querySelector(".campo-posse") : null;
+    if (editar && campo) {
+      editar.open = true;
+      campo.scrollIntoView({block: "center"});
+      campo.focus();
     }
     return;
   }

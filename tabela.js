@@ -24,9 +24,12 @@
       }
     };
 
+    // a aba escolhida (a situação: hoje.js chama window.filtrarTabelaPorAba): só os relógios dela aparecem e contam; null, todos
+    var abaDaTabela = null;
+    var daAba = function (tr) { return abaDaTabela === null || tr.dataset.aba === abaDaTabela; };
     var passa = function (tr) {
       var f = st.f;
-      var ok = true;
+      var ok = daAba(tr);
       var agora = Date.now() / 1000;
       var hoje = new Date();
       hoje.setHours(0, 0, 0, 0);
@@ -264,24 +267,29 @@
       }
       var visiveis = 0;
       var emUso = 0;
+      var naAba = 0;
       lista.forEach(function (tr) {
         corpo.appendChild(tr);
         tr.hidden = !passa(tr);
         if (!tr.hidden) {
           visiveis++;
         }
-        if (tr.dataset.estado === "0") {
-          emUso++;
+        if (daAba(tr)) {
+          naAba++;
+          if (tr.dataset.estado === "0") {
+            emUso++;
+          }
         }
       });
       var conta = document.getElementById("conta-relogios");
-      if (conta) {
-        conta.textContent = t("{1} de {2} relógios · {3} em uso", {1: visiveis, 2: lista.length, 3: emUso});
+      // (com uma aba que não é a tabela aberta, quem escreve a conta é o hoje.js)
+      if (conta && !tabela.hasAttribute("data-fora-da-aba")) {
+        conta.textContent = t("{1} de {2} relógios · {3} em uso", {1: visiveis, 2: naAba, 3: emUso});
       }
       pedirTotais();
       var vazia = document.getElementById("tabela-vazia");
       if (vazia) {
-        vazia.hidden = visiveis > 0;
+        vazia.hidden = visiveis > 0 || tabela.hasAttribute("data-fora-da-aba");
       }
       tabela.querySelectorAll("[data-ordena]").forEach(function (b) {
         var ativa = b.dataset.ordena === st.col;
@@ -454,6 +462,10 @@
         }
       });
       guardar();
+    };
+    window.filtrarTabelaPorAba = function (chave) {
+      abaDaTabela = chave;
+      aplicar();
     };
     window.trocarLinhasDaTabela = function (html, colunas) {
       if (colunas) {

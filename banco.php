@@ -231,6 +231,7 @@ const ESCOPO_CONDICOES = [
     "relatorio" => "no_id IN ({NR})",
     "coluna" => "no_id IN ({NR})",
     "relogio_marca" => "relogio_id IN ({RC})",
+    "relogio_saida" => "relogio_id IN ({RC})",
     "aviso" => "no_id IN ({NR})",
     "documento_categoria" => "no_id IN ({NR})",
     "campo_opcao" => "campo_id IN (SELECT id FROM campo WHERE no_id IN ({NR}))",

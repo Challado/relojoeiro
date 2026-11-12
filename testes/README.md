@@ -25,6 +25,14 @@ para garantir que o crescimento do conteúdo seja acomodado antes da pintura, se
 
 ## Como rodar
 
+`php testes/saidas.php` confere as saídas da coleção e as abas por situação, numa base SQLite descartável: a saída que abre quando o
+relógio é emprestado ou sai (vendido, presenteado, arquivado), com a data, o valor recebido, para quem foi e a observação; a correção no
+mesmo dia e a troca de motivo noutro dia (a de antes fecha, a nova abre); a volta, que fecha a saída e a deixa no histórico; os pedidos
+recusados (a data no futuro, o valor negativo, os campos da saída numa situação que não é saída, a volta numa saída); as contas (o
+resultado, o tempo na coleção, as somas por situação); a correção e a exclusão do histórico (a de agora não se fecha nem se exclui por
+ali); as abas (uma por situação com relógio, a principal sempre, a vazia some); o item da lista que o histórico cita não sai; e o passo
+da migração v64, rodado duas vezes (quem já estava fora ganha a saída aberta, sem data, uma vez só).
+
 `php testes/menos_usado.php` confere o menos usado: o critério (a fórmula e o parâmetro nas notas, com peso 0), a forma de escolha (menos
 dias de uso no total; empate, o mais tempo parado; quem nunca foi usado primeiro), a escala inteligente que escolhe a forma e os critérios
 que contam na nota (as validações, a escolha de cada critério, a escala gerada) e a migração v59 (a fórmula e o critério voltam, sem repetir).
@@ -298,9 +306,11 @@ Criar conta, sem login, não lista contas nem coleções. O `paridade.sh` o roda
 O [`migracao.sh`](migracao.sh) confere o caminho de quem já usa o sistema: o `git pull` e o **Aplicar** da Configuração. Para
 cada banco, ele tira uma cópia da versão anterior do código (pelo `git worktree`, numa pasta temporária), instala com ela um
 banco vazio, cria o usuário de teste e lança dados pela API dela (um relógio com valores, leituras de carga, uma sessão no
-pulso, um documento e um acessório). Depois sobe o código de agora no mesmo banco, lista as migrações pendentes, aplica e
+pulso, um documento e um acessório; e um relógio vendido e um emprestado). Depois sobe o código de agora no mesmo banco, lista as migrações pendentes, aplica e
 confere: nenhuma pendente depois, o relógio, o documento, o acessório e o histórico de antes lidos pela API de agora, a
-ficha, a página Hoje e o passaporte respondendo, e nenhum aviso do PHP. Sem migração nova entre as duas versões, confere do
+ficha, a página Hoje e o passaporte respondendo, e nenhum aviso do PHP. Com a v64 entre as pendentes, confere também o passo
+dos dados dela: o vendido e o emprestado de antes ganham a saída aberta, sem data, a aba de cada um aparece, a saída aceita
+a data e o valor, e fecha quando o emprestado volta. Sem migração nova entre as duas versões, confere do
 mesmo jeito (o banco já fica em dia). Termina com 0 se tudo passou (uns 10 segundos):
 
 ```sh
@@ -407,7 +417,7 @@ O [`.github/workflows/testes.yml`](../.github/workflows/testes.yml) roda os test
 quando pedido na aba **Actions**, em "Run workflow"), em sete trabalhos ao mesmo tempo:
 
 - **Arquitetura, idiomas e documentação (sem banco):** o `arquitetura.php`, o `textos.php` (os dicionários, com as listas
-  traduzidas no uso, `t(LISTA[...])`, os manuais e os READMEs traduzidos), o `dicionario.php`, o `backup.php`, o `motores.php` e o `previsao.php`;
+  traduzidas no uso, `t(LISTA[...])`, os manuais e os READMEs traduzidos), o `dicionario.php`, o `backup.php`, o `motores.php`, o `previsao.php` e as regressões em banco descartável (o rodízio, as opções, as colunas, as fontes, o construtor e as saídas da coleção, `saidas.php`);
 - **Paridade (SQLite, PostgreSQL, MariaDB):** os bancos como serviços do GitHub e o `testes/paridade.sh` (com as conferências
   da documentação); depois, o `testes/migracao.sh` nos três, a partir da versão de antes do push (`github.event.before`);
 - **Paridade (SQLite e Firebird):** o mesmo com o Firebird 3, e o `testes/migracao.sh firebird`;

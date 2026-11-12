@@ -384,7 +384,7 @@ function recarregarHoje() {
         var texto = ex ? h(ex.texto) : "—";
         celulasCad += el("td", {"data-col": c.chave, "data-rotulo": c.titulo, "class": c.numero ? "col-num" : ""}, c.formato === "duracao" || c.formato === "moeda" ? texto.replace(/ /g, "&nbsp;") : texto);
       });
-      var attrsLinha = {"data-id": x.id, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-marca": x.marca === null ? "" : x.marca, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
+      var attrsLinha = {"data-id": x.id, "data-aba": x.aba, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-marca": x.marca === null ? "" : x.marca, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
         "data-carga": x.carga === null ? "" : x.carga, "data-ultimo": x.ultimo, "data-uso": x.uso, "data-manut": m ? m.data : "", "data-em": m && m.momento > 0 ? m.momento : "", "data-fazer": m ? m.nome : "",
         "data-encostado": e && e.momento > 0 ? e.momento : "", "data-encostado-estado": !e ? "" : (e.estado === "ok" ? "prazo" : "sim"),
         "data-compra": x.compra.data || "", "data-valor": x.compra.valor === null ? "" : x.compra.valor,
@@ -396,7 +396,8 @@ function recarregarHoje() {
           + el("a", {"href": "index.php?r=" + x.id, "title": x.nome}, h(x.nome))))
         + el("td", {"data-col": "marca", "class": "col-marca", "data-rotulo": t("Marca")}, x.marca !== null ? h(x.marca) : "—")
         + el("td", {"data-col": "tipo", "data-rotulo": t("Tipo")}, h(x.tipo))
-        + el("td", {"data-col": "estado", "data-rotulo": t("Estado")}, el("span", {"class": "estado estado-" + (x.estado)}, h(x.estado_texto)))
+        // (no emprestado, com quem está e desde quando: a saída de agora, da API)
+        + el("td", {"data-col": "estado", "data-rotulo": t("Estado")}, el("span", {"class": "estado estado-" + (x.estado), "title": x.saida ? saidaResumo(x.saida) : null}, h(x.estado_texto)))
         + el("td", {"data-col": "carga", "data-rotulo": t("Carga")}, x.carga !== null
           ? el("div", {"class": "carga-cel" + (x.carga <= 20 ? " baixa" : ""), "title": x.carga_de}, el("div", {"class": "carga-linha"}, el("span", {"class": "barra"}, el("span", {"style": "width: " + (x.carga) + "%"}, ""))
             + " " + el("strong", {}, x.carga + "%")))
@@ -412,18 +413,93 @@ function recarregarHoje() {
         + el("td", {"data-col": "valor", "class": "col-valor", "data-rotulo": t("Valor")}, x.compra.valor !== null ? t("R$ ") + reais(x.compra.valor) : "—")
         + celulasCad);
     }).join("");
-    // o botão da página Desejos, com quantos estão na lista de desejos e fora da coleção (só quando há algum)
-    var desejos = document.getElementById("link-desejos");
-    if (desejos) {
-      desejos.hidden = d.totais.fora === 0;
-      desejos.textContent = [d.totais.desejados > 0 ? t("Desejos ({1})", {1: d.totais.desejados}) : "", d.totais.fora > d.totais.desejados ? t("Fora da coleção ({1})", {1: d.totais.fora - d.totais.desejados}) : ""]
-        .filter(function (item) { return item !== ""; }).join(" · ");
-    }
     // as colunas que valem (o motor de colunas: a opção colunas_hoje; api.js colunasAplicar, pelo tabela.js) e o que o painel Colunas mostra
     colunasHoje = {lista: d.colunas, escolha: d.colunas_escolha, herdado: d.colunas_herdado, origem: d.colunas_origem_herdado};
     window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "14", "data-colspan-colunas": true}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""), d.colunas);
+    // as abas por situação (em cima da tabela): a faixa e o que a aba escolhida mostra
+    return mostrarAbas(d.abas || []);
   });
 }
+
+// As abas por situação. A escolhida fica guardada na sessão do navegador, para a página voltar nela; a aba que é a tabela
+// (os relógios que são seus) filtra a tabela de sempre; a dos desejados e as dos que saíram trocam a tabela pela lista delas
+// (recurso=desejos e recurso=saidas, pelo abas.js)
+var abaAtual = (function () {
+  // a do endereço (index.php?aba=vendido: os links de outras páginas) vale e sai dele (o painel do relógio cuida do endereço);
+  // sem ela, a última escolhida nesta sessão do navegador
+  var p = new URLSearchParams(window.location.search);
+  var pedida = p.get("aba");
+  if (pedida !== null) {
+    p.delete("aba");
+    history.replaceState(null, "", "index.php" + (p.toString() !== "" ? "?" + p.toString() : "") + window.location.hash);
+    guardarAba(pedida);
+    return pedida;
+  }
+  try {
+    return sessionStorage.getItem("relogios-aba") || "";
+  } catch (e) {
+    // sem sessão disponível: a primeira aba
+    return "";
+  }
+})();
+function guardarAba(chave) {
+  try {
+    sessionStorage.setItem("relogios-aba", chave);
+  } catch (e) {
+    // sem sessão disponível: só não guarda
+  }
+}
+function mostrarAbas(abas) {
+  var faixa = document.getElementById("abas-relogios");
+  var outra = document.getElementById("aba-conteudo");
+  var tabela = document.getElementById("tabela-relogios");
+  var aba = abaEscolhida(abas, abaAtual);
+  // uma aba só (a coleção inteira numa situação): sem faixa, a tabela de sempre
+  faixa.hidden = abas.length < 2;
+  porHtml(faixa, abas.length < 2 ? "" : abasFaixaHtml(abas, aba.chave, function (chave) { return "index.php?aba=" + encodeURIComponent(chave); }));
+  if (!faixa.hidden) {
+    abasFaixaLigar(faixa);
+  }
+  var eTabela = aba === null || aba.tipo === "relogios";
+  // o que é só da tabela: ela, as colunas, os filtros e o aviso de tabela vazia
+  document.getElementById("rolagem-relogios").hidden = !eTabela;
+  ["colunas-abrir", "limpar-filtros"].forEach(function (id) { document.getElementById(id).hidden = !eTabela; });
+  if (!eTabela) {
+    document.getElementById("painel-colunas").hidden = true;
+    document.getElementById("colunas-abrir").setAttribute("aria-expanded", "false");
+    tabela.setAttribute("data-fora-da-aba", "1");
+  } else {
+    tabela.removeAttribute("data-fora-da-aba");
+  }
+  outra.hidden = eTabela;
+  window.filtrarTabelaPorAba(aba !== null && abas.length > 1 ? aba.chave : null);
+  if (eTabela) {
+    porHtml(outra, "");
+    return null;
+  }
+  document.getElementById("conta-relogios").textContent = aba.quantos === 1 ? t("1 relógio") : t("{1} relógios", {1: aba.quantos});
+  var pedido = aba.tipo === "desejos" ? api({recurso: "desejos"}).then(desejosListaHtml)
+    : api({recurso: "saidas", situacao: aba.chave, abertas: 1}).then(function (d) { return saidasListaHtml(d, aba); });
+  return pedido.then(function (html) {
+    // (a aba pode ter mudado enquanto a resposta vinha: só a escolhida escreve)
+    if (abaEscolhida(abas, abaAtual) === aba) {
+      porHtml(outra, (aba.tipo === "desejos" ? el("p", {"class": "botoes"}, el("a", {"class": "botao", "href": "index.php?novo=1&posse=" + encodeURIComponent(aba.chave)}, t("Novo desejo"))
+        + " " + linkRelatorio("desejos", {}, t("Relatório dos desejos"))) : "") + html);
+    }
+  }).catch(function (e) {
+    porHtml(outra, el("p", {"class": "acao"}, t("Não consegui ler os relógios desta aba: {1}", {1: h(e.message)})));
+  });
+}
+// trocar de aba sem recarregar a página: a tabela é remontada com o que já veio
+document.addEventListener("click", function (ev) {
+  var link = ev.target.closest("#abas-relogios a[data-aba]");
+  if (link && dadosHoje) {
+    ev.preventDefault();
+    abaAtual = link.getAttribute("data-aba");
+    guardarAba(abaAtual);
+    mostrarAbas(dadosHoje.abas || []);
+  }
+});
 
 // a cada minuto, sozinha (api.js): a página e o relógio aberto no painel; não com o quadro do modo de rodízio aberto (os
 // formulários dele se remontariam fechados)

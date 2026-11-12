@@ -55,6 +55,8 @@ jobs:
         run: php testes/fontes.php
       - name: Construtor de colunas (guiado e expert)
         run: php testes/construtor.php
+      - name: Saídas da coleção e abas por situação
+        run: php testes/saidas.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

@@ -1127,6 +1127,55 @@ function op_calibres($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// As saídas da coleção (relogio_saida): quem abre e fecha uma saída é a gravação do relógio (recurso=relogio, salvar, com
+// a situação: posse); aqui só se corrige o que foi anotado. Ações: salvar (id; data e fim, AAAA-MM-DD, não no futuro; valor,
+// o recebido, não negativo; destino, para quem foi, até 120; observacao, até 2000; só muda o que vier, e o vazio apaga; o
+// fim só existe na saída fechada, e não some: para fechar a de agora, volte o relógio para a coleção), excluir (id: só uma
+// do histórico; a de agora é a situação do relógio)
+// ---------------------------------------------------------------------------------------------------------------------
+function op_saidas($acao, $d)
+{
+    $erros = [];
+    $msg = "";
+    $id = (int)($d["id"] ?? 0);
+    $atual = $id > 0 && saidas_tem() ? linha("SELECT s.*, r.nome AS relogio FROM relogio_saida s JOIN relogio r ON r.id = s.relogio_id WHERE s.id = ?", [$id]) : null;
+    if (!saidas_tem()) {
+        $erros[] = t("As saídas da coleção chegam com a migração v64: aplique em Configuração.");
+    } elseif (!$atual) {
+        $erros[] = t("Saída não encontrada.");
+    } elseif ($acao === "salvar") {
+        $p = saida_do_pedido($d, $erros, false);
+        if (array_key_exists("fim", $p) && $atual["fim"] === null && $p["fim"] !== null) {
+            $erros[] = t("Esta é a saída de agora: para fechá-la, volte o relógio para a coleção (no cadastro dele, a Situação na coleção).");
+        } elseif (array_key_exists("fim", $p) && $atual["fim"] !== null && $p["fim"] === null) {
+            $erros[] = t("A saída do histórico tem a data da volta: corrija a data, não apague.");
+        }
+        $data = array_key_exists("data", $p) ? $p["data"] : $atual["data"];
+        $fim = array_key_exists("fim", $p) ? $p["fim"] : $atual["fim"];
+        if (count($erros) === 0 && $data !== null && $fim !== null && $fim < $data) {
+            $erros[] = t("A volta não pode ser antes da saída.");
+        }
+        if (count($erros) === 0) {
+            if (count($p) > 0) {
+                sql("UPDATE relogio_saida SET " . implode(", ", array_map(function ($c) { return $c . " = ?"; }, array_keys($p))) . " WHERE id = ?", array_merge(array_values($p), [$id]));
+            }
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            $msg = t("Saída do {1} ({2}) salva.", [1 => $atual["relogio"], 2 => mb_strtolower(lista_nome("relogio_situacao", (string)$atual["situacao"]), "UTF-8")]);
+        }
+    } elseif ($acao === "excluir") {
+        if ($atual["fim"] === null) {
+            $erros[] = t("Esta é a saída de agora, a situação do relógio: para tirá-la, volte o relógio para a coleção. Só as do histórico se excluem.");
+        } else {
+            sql("DELETE FROM relogio_saida WHERE id = ?", [$id]);
+            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            $msg = t("Saída do {1} ({2}, de {3} a {4}) excluída do histórico.", [1 => $atual["relogio"], 2 => mb_strtolower(lista_nome("relogio_situacao", (string)$atual["situacao"]), "UTF-8"),
+                3 => $atual["data"] !== null ? data_txt($atual["data"]) : "—", 4 => data_txt($atual["fim"])]);
+        }
+    }
+    return resultado($erros, $msg, ["id" => $id]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // As marcas (Cadastros › Marcas), da árvore como os calibres. Ações: salvar (id: 0 ou ausente cria; nome, até 80, sem
 // repetir outra marca sem diferença de maiúsculas nem de espaços; pais, até 80; site, um endereço http:// ou https://;
 // observacao, até 4000; só muda o que vier), juntar (id, em_id: os relógios da marca id passam para a em_id, e a id sai;
@@ -1279,7 +1328,10 @@ function op_formulas($acao, $d)
 // de todos os documentos dele), calibre_id (o calibre dele; 0 ou vazio tira), marca_id (a marca dele, do cadastro das marcas;
 // 0 ou vazio tira) ou marca (o nome de uma marca do cadastro; vazio tira; também em valores[marca], como antes da v52),
 // valores[identificador]: só muda o que vier no
-// pedido; valor vazio apaga; valor inválido fica o que estava, e a mensagem diz quais), excluir (id), foto
+// pedido; valor vazio apaga; valor inválido fica o que estava, e a mensagem diz quais; posse: a situação na coleção, um
+// item da lista relogio_situacao; numa situação que é uma saída (emprestado ou fora da coleção), saida_data (AAAA-MM-DD;
+// sem ela, hoje), saida_valor (o valor recebido), saida_destino (para quem foi) e saida_observacao ficam na saída aberta
+// do relógio (relogio_saida); voltando, volta_data (sem ela, hoje) fecha a saída, que fica no histórico), excluir (id), foto
 // (id, foto_base64: JPEG, PNG ou WebP, até 4 MB), remover_foto (id). Os documentos do relógio: op_documentos.
 // ---------------------------------------------------------------------------------------------------------------------
 function op_relogio($acao, $d)
@@ -1320,6 +1372,17 @@ function op_relogio($acao, $d)
         }
         if ($no === false) {
             $erros[] = t("O ponto da árvore não existe.");
+        }
+        // a saída (o relógio emprestado ou fora da coleção): a data, o valor recebido, para quem foi e a observação; na volta, a data dela
+        $p_saida = saida_do_pedido($d, $erros);
+        if ($item_posse !== null) {
+            $so_saida = array_filter(array_intersect_key($p_saida, ["data" => 1, "valor" => 1, "destino" => 1, "observacao" => 1]), function ($v) { return $v !== null; });
+            if (!posse_e_saida($comp) && count($so_saida) > 0) {
+                $erros[] = t("A data, o valor recebido, para quem foi e a observação da saída só valem numa situação de saída (emprestado ou fora da coleção): {1} não é.", [1 => $item_posse["nome"]]);
+            }
+            if (posse_e_saida($comp) && ($p_saida["fim"] ?? null) !== null) {
+                $erros[] = t("A data da volta só vale quando o relógio volta para a coleção.");
+            }
         }
         // o calibre (o movimento): calibre_id, um da árvore; 0 ou vazio tira
         $calibre = array_key_exists("calibre_id", $d) ? (int)$d["calibre_id"] : null;
@@ -1366,6 +1429,21 @@ function op_relogio($acao, $d)
             // "trocar por…" ou pelo "Sortear de novo")
             if ($posse_antes === "colecao" && $comp !== "colecao" && $em_manut === null) {
                 $nota_posse .= relogio_sai_do_rodizio($id, false);
+            }
+            // a saída da coleção (relogio_saida): abre quando ele é emprestado ou sai, fecha quando volta, e guarda o que o pedido disse
+            $nota_posse .= saida_registrar($id, $atual, $item_posse, $p_saida);
+            if ($comp === "fora" && $posse_antes !== null && $posse_antes !== "fora") {
+                // saiu de vez: o lugar fixo dele no winder fica livre, e os acessórios continuam na coleção (ligados a ele)
+                $lugar = winder_lugar_do_relogio($id);
+                if ($lugar !== null) {
+                    sql("DELETE FROM winder_lugar WHERE relogio_id = ?", [$id]);
+                    $nota_posse .= t(" O lugar dele no winder ({1} · {2}) ficou livre.", [1 => $lugar["winder"], 2 => $lugar["nome"]]);
+                }
+                $n_aces_s = (int)valor("SELECT COUNT(*) FROM acessorio WHERE relogio_id = ?", [$id]);
+                if ($n_aces_s > 0) {
+                    $nota_posse .= " " . ($n_aces_s === 1 ? t("O acessório dele continua na coleção, ligado a ele: se foi junto, mude em Acessórios.")
+                        : t("Os {1} acessórios dele continuam na coleção, ligados a ele: se foram junto, mude em Acessórios.", [1 => $n_aces_s]));
+                }
             }
             // os valores: só dos campos que valem para o relógio (no ponto e na situação em que ficou)
             $campos = campos_do_relogio(["no_id" => $no, "posse" => $posse]);
