@@ -1228,6 +1228,8 @@
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
+ *     config.pulso_um_so             1: ao pôr um relógio no pulso à mão (o Pôs, o atalho, o período aberto), os outros que estão no pulso
+ *                                    saem no mesmo instante; 0 (ou vazio, de fábrica): cada relógio só sai pelo Tirou dele
  *     config.sol_auto_fim            1 (ou vazio): o solar sai do sol sozinho na hora de sol_fim (o "fecha às" do tipo No sol); 0: só pelo
  *                                    Tirar do sol
  *     config.sol_fim                 a hora em que a sessão no sol esquecida aberta fecha (HH:MM), guardada mesmo com o sol_auto_fim
@@ -4345,6 +4347,8 @@
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
+ *     config.pulso_um_so             1: ao pôr um relógio no pulso à mão (o Pôs, o atalho, o período aberto), os outros que estão no pulso
+ *                                    saem no mesmo instante; 0 (ou vazio, de fábrica): cada relógio só sai pelo Tirou dele
  *     config.sol_auto_fim            1 (ou vazio): o solar sai do sol sozinho na hora de sol_fim (o "fecha às" do tipo No sol); 0: só pelo
  *                                    Tirar do sol
  *     config.sol_fim                 a hora em que a sessão no sol esquecida aberta fecha (HH:MM), guardada mesmo com o sol_auto_fim

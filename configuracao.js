@@ -312,6 +312,8 @@ function recarregarConfig(aplicadas, manterPosicao) {
               + t("<strong>Tirou do pulso</strong> (esquecido, continua contando como no pulso). O horário de uso vale sempre para o plano e as previsões. Fora do pulso, o relógio conta como guardado.")))
           + campoOpcao(oc.uso_fim, "uso_fim", null)
           + campoOpcao(oc.pulso_auto_fim, "pulso_auto_fim", null, ajudaRef("pulso-auto"))
+          + campoOpcao(oc.pulso_um_so, "pulso_um_so", null, ex("pulso-um-so", t("Um relógio só no pulso"), t("Ligado, ao marcar <strong>Pôs no pulso</strong> num relógio (na tela, no atalho ou pela API), os outros que estão no pulso saem no mesmo instante: ")
+              + t("não fica um esquecido contando horas. Desligado, cada relógio só sai pelo <strong>Tirou do pulso</strong> dele (dá para ter dois no pulso). O relógio do dia que o sistema põe sozinho não tira ninguém.")))
           + campoOpcao(oc.sol_fim, "sol_fim", null)
           + campoOpcao(oc.sol_auto_fim, "sol_auto_fim", null, ex("sol-auto", t("Tirar do sol sozinho"), t("Sem <strong>tirar do sol sozinho</strong>, o solar só sai do sol pelo <strong>Tirar do sol</strong> (esquecido, continua carregando na conta).")))
           // a semana do rodízio: o horizonte do plano, o ciclo, a próxima semana e os blocos contam dela

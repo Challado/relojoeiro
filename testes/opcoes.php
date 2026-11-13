@@ -170,14 +170,53 @@ try {
     exigir_opcoes(op_conta("alterar", ["opcoes" => ["painel_modo" => ""]])["ok"], "Não limpou o painel.");
 
     // ---- a migração leva o valor igual ao padrão de fábrica para o vazio: todas as opções com padrão que existiam na v58
-    // estão nela (as que nasceram depois, como a abas_vazias, da v64, nunca tiveram o padrão gravado no config: nada a limpar)
+    // estão nela (as que nasceram depois, como a abas_vazias e a pulso_um_so, nunca tiveram o padrão gravado no config: nada a limpar)
     $sql = (string)file_get_contents(dirname(__DIR__) . "/migracao_v58.sql");
-    $depois_da_v58 = ["abas_vazias"];
+    $depois_da_v58 = ["abas_vazias", "pulso_um_so"];
     foreach (OPCOES as $k => [, , $padrao]) {
         if ($padrao !== "" && !in_array($k, array_merge(["gasto_motor", "documentos_copia"], $depois_da_v58), true)) {
             exigir_opcoes(strpos($sql, "chave = '" . $k . "' AND valor = '" . $padrao . "'") !== false, "A migração v58 não limpa " . $k . ".");
         }
     }
+
+    // ---- um relógio só no pulso (pulso_um_so): desligada (de fábrica), dois relógios ficam no pulso; ligada, o Pôs de um tira
+    // o outro no mesmo instante; o Pôs lançado para trás tira quem já estava e deixa quem foi posto depois; o período fechado
+    // (o uso de ontem) não tira ninguém
+    $grupo_p = (int)valor("SELECT id FROM no ORDER BY id LIMIT 1");
+    $rp = [];
+    foreach (["Pulso A", "Pulso B", "Pulso C"] as $nome_p) {
+        $x = op_relogio("salvar", ["nome" => $nome_p, "no_id" => $grupo_p, "disponivel" => 1]);
+        exigir_opcoes($x["ok"], "Não criou o " . $nome_p . ": " . json_encode($x["erros"]));
+        $rp[$nome_p] = (int)$x["id"];
+    }
+    $no_pulso = function () {
+        return array_column(linhas("SELECT r.nome FROM lancamento l JOIN relogio r ON r.id = l.relogio_id JOIN lancamento_tipo t ON t.id = l.tipo_id
+            WHERE t.identificador = 'pulso' AND (l.fim IS NULL OR l.fim > ?) ORDER BY r.nome", [date("Y-m-d H:i:s")]), "nome");
+    };
+    $ha = function ($min) { return date("Y-m-d H:i", time() - $min * 60); };
+    exigir_opcoes(cfg("pulso_um_so") === "0", "A pulso_um_so não nasce desligada.");
+    // (sem tirar sozinho no fim do horário: o teste não depende da hora em que roda; com ele, o roteiro confere)
+    exigir_opcoes(op_config("salvar", ["pulso_auto_fim" => "0"])["ok"], "Não desligou o tirar sozinho.");
+    exigir_opcoes(op_lancamento("iniciar", ["relogio_id" => $rp["Pulso A"], "tipo" => "pulso", "quando" => $ha(180)])["ok"]
+        && op_lancamento("iniciar", ["relogio_id" => $rp["Pulso B"], "tipo" => "pulso", "quando" => $ha(120)])["ok"] && $no_pulso() === ["Pulso A", "Pulso B"], "Desligada, os dois deviam ficar no pulso: " . json_encode($no_pulso()));
+    exigir_opcoes(op_config("salvar", ["pulso_um_so" => "1"])["ok"] && cfg("pulso_um_so") === "1", "A pulso_um_so não ligou.");
+    // o período fechado, de ontem, não mexe em quem está no pulso
+    $x = op_lancamento("periodo", ["relogio_id" => $rp["Pulso C"], "tipo" => "pulso", "inicio" => date("Y-m-d", time() - 86400 * 2) . " 08:00", "fim" => date("Y-m-d", time() - 86400 * 2) . " 18:00"]);
+    exigir_opcoes($x["ok"] && $no_pulso() === ["Pulso A", "Pulso B"] && strpos($x["mensagem"], "Tirado do pulso") === false, "O período fechado tirou alguém: " . json_encode($x));
+    // o Pôs para trás (há 150 min): o A (posto há 180) sai nesse instante; o B (posto há 120, depois) fica
+    $x = op_lancamento("periodo", ["relogio_id" => $rp["Pulso C"], "tipo" => "pulso", "inicio" => $ha(150)]);
+    exigir_opcoes($x["ok"] && $no_pulso() === ["Pulso B", "Pulso C"] && strpos($x["mensagem"], "Tirado do pulso no mesmo instante: Pulso A.") !== false
+        && strpos($x["mensagem"], "Continua no pulso (foi posto depois desse instante): Pulso B.") !== false, "O Pôs para trás: " . json_encode([$x, $no_pulso()]));
+    $fim_a = valor("SELECT l.fim FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.identificador = 'pulso' ORDER BY l.id DESC LIMIT 1", [$rp["Pulso A"]]);
+    exigir_opcoes(substr((string)$fim_a, 0, 16) === $ha(150), "O A não saiu no instante em que o C entrou: " . json_encode($fim_a));
+    // o Pôs (de 5 minutos atrás): os dois que estão no pulso saem, e só o A fica
+    $x = op_lancamento("iniciar", ["relogio_id" => $rp["Pulso A"], "tipo" => "pulso", "quando" => $ha(5)]);
+    exigir_opcoes($x["ok"] && $no_pulso() === ["Pulso A"] && strpos($x["mensagem"], "Tirado do pulso no mesmo instante: Pulso C, Pulso B.") !== false, "O Pôs: " . json_encode([$x, $no_pulso()]));
+    // o atalho (alternar), agora, num relógio fora do pulso é um Pôs: tira o outro; de novo, é o Tirou dele, e ninguém volta
+    $x = op_lancamento("alternar", ["relogio_id" => $rp["Pulso B"], "tipo" => "pulso"]);
+    exigir_opcoes($x["ok"] && $no_pulso() === ["Pulso B"], "O atalho não tirou o outro: " . json_encode([$x, $no_pulso()]));
+    exigir_opcoes(op_lancamento("alternar", ["relogio_id" => $rp["Pulso B"], "tipo" => "pulso"])["ok"] && $no_pulso() === [], "O atalho não tirou o próprio: " . json_encode($no_pulso()));
+    exigir_opcoes(op_config("salvar", ["pulso_um_so" => "", "pulso_auto_fim" => ""])["ok"] && cfg("pulso_um_so") === "0", "A pulso_um_so não voltou a herdar.");
 
     echo "Opções em três níveis: " . count(OPCOES) . " opções (sistema, usuário e coleção), conferidor, permissões, cascata, efeitos e recusa conferem.\n";
     $codigo = 0;

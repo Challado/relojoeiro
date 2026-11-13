@@ -1,4 +1,4 @@
-<!-- origem: 21058b6df230ca2ecf6a38b35fdad9bd93bb4bcd -->
+<!-- origem: ec90bfda07fce0e386608108afc7f09b41778518 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1528,6 +1528,7 @@ Les cartes remplissent les espaces disponibles selon la largeur de l’écran et
 | **Horaire de port, début et fin** (`uso_inicio`, `uso_fim`) | la période de la journée où une montre est au poignet. Elle vaut pour le plan, les prévisions et le « jour d'usage » de la consommation mesurée (de 7 h à 22 h, 15 heures). Par défaut : 07:00 et 22:00. |
 | **Mettre au poignet tout seul** (`pulso_auto_inicio`) | le choix à côté du début : activé, la montre du jour va toute seule au poignet au début de l'horaire de port ; désactivé, seulement par **Mise au poignet**. Si à cette heure elle est ailleurs (sur le chargeur, au soleil, sur le remontoir), elle attend qu'elle en sorte, et la période au poignet commence quand elle en est sortie. Par défaut : activé. |
 | **Retirer du poignet tout seul** (`pulso_auto_fim`) | le choix à côté de la fin : activé, elle quitte le poignet toute seule à la fin de l'horaire de port (c'est le « se ferme à » du type Au poignet) ; désactivé, seulement par **Retirée du poignet**. Par défaut : activé. |
+| **En mettant une montre au poignet, retirer les autres** (`pulso_um_so`) | activé : quand vous marquez **Mise au poignet** sur une montre (à l'écran, par le raccourci ou par l'API), les autres qui sont au poignet en sortent au même instant, et le message dit lesquelles : aucune ne reste oubliée à compter des heures. Désactivé : chaque montre ne sort que par son propre **Retirée** (on peut en avoir deux au poignet). La montre du jour que le système met toute seule ne retire personne. Par défaut : désactivé. |
 | **Passage du matin** (`horario_manha`) | l'heure où le cron envoie le message du jour (la montre d'aujourd'hui et les alertes) et refait le plan avec ce qui s'est passé. Par défaut : 06:30. |
 | **Passage du soir** (`horario_noite`) | l'heure du message de la veille : la montre de demain et quoi préparer. Par défaut : 20:00. |
 | **La session de soleil oubliée se ferme à** (`sol_fim`, qui enregistre le « se ferme à » du type Au soleil) | si vous l'avez mise au soleil et oublié le **Retirée**, la session se ferme à cette heure. Par défaut : 18:00. |

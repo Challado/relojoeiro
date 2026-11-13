@@ -9680,6 +9680,43 @@ function sessao_do_dia($agora)
     }
 }
 
+// Um relógio só no pulso (a opção pulso_um_so, opcoes.php: sistema, usuário, coleção): ao pôr um relógio no pulso à mão (o
+// Pôs, o atalho, o período aberto: op_lancamento), os outros que estão no pulso agora saem no instante $q em que este entrou,
+// e as medições de cada um se refazem. O que foi posto depois de $q (um Pôs lançado para trás) fica: tirá-lo daria uma sessão
+// de trás para a frente. Antes, as esquecidas que já tinham passado do "fecha às" nesse instante fecham na hora delas (como o
+// cron faria): quem tira sozinho no fim do horário não ganha o fim no Pôs do dia seguinte. A sessão que o cron abre sozinho
+// (sessao_do_dia) não tira ninguém: quem pôs outro à mão o quis ali. Devolve [os nomes dos que saíram, os nomes dos que ficaram]
+function pulso_tirar_os_outros($rid, $q, $agora)
+{
+    $tipo = lancamento_tipos()["pulso"] ?? null;
+    if (cfg("pulso_um_so") !== "1" || !$tipo) {
+        return [[], []];
+    }
+    fechar_esquecidas($q);
+    $sairam = [];
+    $ficaram = [];
+    foreach (linhas("SELECT l.id, l.relogio_id, l.inicio, r.nome FROM lancamento l JOIN relogio r ON r.id = l.relogio_id
+        WHERE l.tipo_id = ? AND l.relogio_id <> ? AND l.inicio <= ? AND (l.fim IS NULL OR l.fim > ?) ORDER BY l.inicio, l.id",
+        [(int)$tipo["id"], (int)$rid, date("Y-m-d H:i:s", $agora), date("Y-m-d H:i:s", $agora)]) as $x) {
+        if (strtotime($x["inicio"]) >= $q) {
+            $ficaram[] = $x["nome"];
+            continue;
+        }
+        sql("UPDATE lancamento SET fim = ? WHERE id = ?", [date("Y-m-d H:i:s", $q), (int)$x["id"]]);
+        sincronizar_medicoes((int)$x["relogio_id"], true, [], $q);
+        $sairam[] = $x["nome"];
+    }
+    return [array_values(array_unique($sairam)), array_values(array_unique($ficaram))];
+}
+
+// o que o pulso_tirar_os_outros fez, para o recado de quem pôs o relógio no pulso
+function pulso_tirados_texto($feito)
+{
+    [$sairam, $ficaram] = $feito;
+    return (count($sairam) > 0 ? t(" Tirado do pulso no mesmo instante: {1}.", [1 => implode(", ", $sairam)]) : "")
+        . (count($ficaram) > 0 ? t(" Continua no pulso (foi posto depois desse instante): {1}.", [1 => implode(", ", $ficaram)]) : "");
+}
+
 // Um dia livre do plano (Deixar o período livre): sem relógio e sem sorteio, para escolher à mão
 function dia_livre($data)
 {

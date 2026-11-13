@@ -2171,6 +2171,29 @@ escrever(["recurso" => "lote", "acao" => "", "atomico" => "talvez", "operacoes" 
 ler("a emenda, o período aberto e o lote", ["recurso" => "historico", "relogio" => $rel_e, "limite" => 1000]);
 escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $rel_e, "confirmar" => 1]);
 
+// um relógio só no pulso (a opção pulso_um_so da Configuração), com três relógios só disto, que saem no fim: ligada, o Pôs
+// do segundo tira o primeiro no instante em que entrou; o Pôs para trás do terceiro deixa quem foi posto depois; o Pôs do
+// dia seguinte não tira ninguém (os de anteontem, esquecidos, fecharam sozinhos no fim do horário); o valor que não existe é
+// recusado; e desligada (de fábrica), dois ficam no pulso
+escrever(["recurso" => "config", "acao" => "salvar", "pulso_um_so" => 1]);
+$rel_p = [];
+foreach (["um", "dois", "três"] as $nome_p) {
+    $rel_p[] = escrever(["recurso" => "relogio", "acao" => "salvar", "id" => 0, "nome" => "Relógio do pulso " . $nome_p, "no_id" => G(2), "disponivel" => 0]);
+}
+escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel_p[0], "tipo" => "pulso", "quando" => dia(2, "08:00")]);
+escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel_p[1], "tipo" => "pulso", "quando" => dia(2, "12:00")]);
+escrever(["recurso" => "lancamento", "acao" => "periodo", "relogio_id" => $rel_p[2], "tipo" => "pulso", "inicio" => dia(2, "10:00")]);
+escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel_p[0], "tipo" => "pulso", "quando" => dia(1, "08:00")]);
+escrever(["recurso" => "config", "acao" => "salvar", "pulso_um_so" => "talvez"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "pulso_um_so" => ""]);
+escrever(["recurso" => "lancamento", "acao" => "iniciar", "relogio_id" => $rel_p[1], "tipo" => "pulso", "quando" => dia(1, "09:00")]);
+foreach ($rel_p as $n_p => $id_p) {
+    ler("um relogio so no pulso, o " . ($n_p + 1), ["recurso" => "historico", "relogio" => $id_p, "limite" => 1000]);
+}
+foreach ($rel_p as $id_p) {
+    escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $id_p, "confirmar" => 1]);
+}
+
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {
     fwrite(STDERR, "Não consegui gravar a fotografia: " . json_last_error_msg() . "\n");

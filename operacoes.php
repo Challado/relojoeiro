@@ -3677,10 +3677,13 @@ function op_lancamento($acao, $d)
                     if ($pos_w !== null) {
                         $posicao_gravar($id);
                     }
+                    // um relógio só no pulso (a opção pulso_um_so): os outros saem no instante em que este entrou
+                    $tirados_txt = $t["identificador"] === "pulso" ? pulso_tirados_texto(pulso_tirar_os_outros($rid, $q, $agora)) : "";
                     $msg = $emenda !== null ? t("{1}: {2} desde {3}, emendado com o trecho que tinha acabado às {4}.{5}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt(strtotime($emenda["inicio"]), true, true),
                         4 => data_txt(strtotime($emenda["fim"]), true, true), 5 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""])
                         . ($pos_w !== null ? t(" Na posição {1}.", [1 => $pos_w["texto"]]) : "") : t("{1}: {2} desde {3}.{4}", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($q, true, true), 4 => count($fechadas) > 0 ? t(" Fechado no mesmo instante: {1}.", [1 => implode(", ", $fechadas)]) : ""])
                         . ($pos_w !== null ? t(" Na posição {1}.", [1 => $pos_w["texto"]]) : "");
+                    $msg .= $tirados_txt;
                 }
             }
         } elseif ($acao === "encerrar") {
@@ -3736,6 +3739,9 @@ function op_lancamento($acao, $d)
                 // no pulso, o relógio do dia está em uso pelo rodízio (como no Pôs), não "fora do plano"
                 $p_dia = plano_do_dia(date("Y-m-d", $ini));
                 $origem = $t["identificador"] === "pulso" && $p_dia && (int)$p_dia["relogio_id"] === $rid ? "rodizio" : "manual";
+                // (o início pedido, antes de juntar com o que já estava marcado: é nele que os outros saem do pulso)
+                $ini_pedido = $ini;
+                $aberto_pedido = $fim === null;
                 // os trechos do mesmo tipo que o período cobre ou em que ele encosta (o Pôs aberto que começou depois, o período
                 // que acaba quando ele começa) viram um só: do primeiro início ao último fim (aberto, se um deles está aberto)
                 $juntar = linhas("SELECT id, inicio, fim, origem FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio <= ? AND (fim IS NULL OR fim >= ?) ORDER BY inicio, id",
@@ -3769,6 +3775,10 @@ function op_lancamento($acao, $d)
                     $msg = $aberto
                         ? t("Juntado no {1}: {2} desde {3} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true)])
                         : t("Juntado no {1}: {2} de {3} a {4} (com o que já estava marcado).", [1 => $r["nome"], 2 => $t["nome"], 3 => data_txt($ini, true, true), 4 => data_txt($fim, true, true)]);
+                }
+                // um relógio só no pulso (a opção pulso_um_so): o período aberto é um Pôs para trás, e os outros saem no início dele
+                if ($t["identificador"] === "pulso" && $aberto_pedido) {
+                    $msg .= pulso_tirados_texto(pulso_tirar_os_outros($rid, $ini_pedido, $agora));
                 }
             } else {
                 // a marcação da leitura (uso ou repouso; vazio: nenhuma) muda só se vier

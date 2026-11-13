@@ -1,4 +1,4 @@
-<!-- origem: 21058b6df230ca2ecf6a38b35fdad9bd93bb4bcd -->
+<!-- origem: ec90bfda07fce0e386608108afc7f09b41778518 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1479,6 +1479,7 @@ Los cuadros ocupan los espacios disponibles según la anchura de la pantalla y l
 | **Horario de uso, inicio y fin** (`uso_inicio`, `uso_fim`) | el período del día en que un reloj está en la muñeca. Vale para el plan, las previsiones y el "día de uso" del consumo medido (de 7 a 22 h, 15 horas). Predeterminado: 07:00 y 22:00. |
 | **Poner en la muñeca solo** (`pulso_auto_inicio`) | la elección al lado del inicio: activado, el reloj del día va solo a la muñeca al inicio del horario de uso; desactivado, solo con **Me lo puse**. Si a esa hora está en otro lugar (en el cargador, al sol, en el winder), espera a que salga, y el período en la muñeca empieza cuando salió. Predeterminado: activado. |
 | **Quitar de la muñeca solo** (`pulso_auto_fim`) | la elección al lado del fin: activado, sale solo de la muñeca al final del horario de uso (es el "se cierra a las" del tipo En la muñeca); desactivado, solo con **Me lo quité**. Predeterminado: activado. |
+| **Al poner un reloj en la muñeca, quitar los demás** (`pulso_um_so`) | activado, al marcar **Me lo puse** en un reloj (en la pantalla, en el atajo o por la API), los demás que están en la muñeca salen en el mismo instante, y el mensaje dice cuáles: no queda uno olvidado contando horas. Desactivado, cada reloj solo sale con su propio **Me lo quité** (se pueden tener dos en la muñeca). El reloj del día que el sistema pone solo no quita a nadie. Por defecto: desactivado. |
 | **Vuelta de la mañana** (`horario_manha`) | la hora en que el cron envía el mensaje del día (el reloj de hoy y los avisos) y rehace el plan con lo que pasó. Predeterminado: 06:30. |
 | **Vuelta de la noche** (`horario_noite`) | la hora del mensaje de la víspera: el reloj de mañana y qué preparar. Predeterminado: 20:00. |
 | **La sesión de sol olvidada se cierra a las** (`sol_fim`, que guarda el "se cierra a las" del tipo Al sol) | a quien lo puso al sol y olvidó el **Lo quité**, la sesión se le cierra a esta hora. Predeterminado: 18:00. |
