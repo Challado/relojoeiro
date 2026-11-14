@@ -116,6 +116,7 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     // o relógio de hoje se troca no próprio dia? (a Configuração; não: o trocar por…, o Usando hoje, o inclusive hoje e o Sem
     // relógio hoje não aparecem, e a troca vale a partir de amanhã)
     "trocar_hoje" => trocar_hoje_permitido(),
+    "dia_sem_relogio" => dia_sem_relogio_permitido(),
     "proxima_semana" => ["inicio" => $ini_s->format("Y-m-d"), "fim" => $ini_s->modify("+6 days")->format("Y-m-d"),
         "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$ini_s->format("Y-m-d"), $ini_s->modify("+6 days")->format("Y-m-d")]) > 1],
     // as colunas da tabela dos relógios (o motor de colunas, colunas.php): todas as que existem, as que valem primeiro, na ordem em que

@@ -4521,6 +4521,9 @@ function op_rodizio($acao, $d)
             . dias_guardados_texto($guardados, $sobrescrever);
     } elseif (($acao === "sem_relogio" || $acao === "usando") && $trava_hoje) {
         $erros[] = $recusa_hoje;
+    } elseif (($acao === "sem_relogio" || $acao === "periodo_livre") && !dia_sem_relogio_permitido()) {
+        // a folga desligada na Configuração: nenhuma porta deixa um dia sem relógio
+        $erros[] = dia_sem_relogio_recusa();
     } elseif ($acao === "sem_relogio") {
         // hoje sem relógio: o dia fica livre (sem relógio e sem sorteio, como os dias livres do plano) e a sessão do rodízio de
         // hoje termina agora (o tempo que ele já ficou no pulso conta; a que ainda nem começou sai). Os outros dias não mudam.
@@ -4571,8 +4574,10 @@ function op_rodizio($acao, $d)
         // dele, com o dia fixo); relogio_id 0 desfaz a escolha à mão e o dia volta a ser sorteado
         $data = (string)($d["data"] ?? "");
         $dt = DateTimeImmutable::createFromFormat("!Y-m-d", $data);
-        // relogio_id: o id; 0 (volta a sortear); ou sortear:<forma> (o dia é sorteado agora por essa forma de escolha)
+        // relogio_id: o id; 0 (volta a sortear); sortear:<forma> (o dia é sorteado agora por essa forma de escolha); ou livre (o
+        // dia fica sem relógio e sem sorteio: um dia de folga)
         $forma = preg_match("/^sortear:([a-z]+)$/", trim((string)($d["relogio_id"] ?? "")), $m_f) === 1 ? $m_f[1] : null;
+        $livre_d = strtolower(trim((string)($d["relogio_id"] ?? ""))) === "livre";
         $novo = $forma === null ? (int)($d["relogio_id"] ?? 0) : 0;
         $r = $novo > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$novo]) : null;
         if (!$dt || $dt->format("Y-m-d") !== $data) {
@@ -4581,6 +4586,24 @@ function op_rodizio($acao, $d)
             $erros[] = t("O dia {1} já passou: o que foi usado nele se corrige nas marcações (o quadro \"Corrigir marcações\" no painel do relógio).", [1 => $dt->format("d/m")]);
         } elseif ($dt == $hoje && $trava_hoje) {
             $erros[] = $recusa_hoje;
+        } elseif ($livre_d && !dia_sem_relogio_permitido()) {
+            $erros[] = dia_sem_relogio_recusa();
+        } elseif ($livre_d && $dt == $hoje) {
+            // hoje sem relógio: o mesmo "Sem relógio hoje" (a sessão do rodízio de hoje termina agora)
+            return op_rodizio("sem_relogio", []);
+        } elseif ($livre_d) {
+            // um dia que vem, sem relógio: só ele sai do plano e fica livre (sem relógio e sem sorteio); os outros dias ficam com
+            // o relógio que têm (na escala, só o que fazer deles é refeito). Desfaz: escolher um relógio nele ou voltar a sortear
+            $antes_l = plano_do_dia($data);
+            sql("DELETE FROM plano WHERE data = ?", [$data]);
+            sql("DELETE FROM plano_livre WHERE data = ?", [$data]);
+            plano_livre_marcar($data);
+            if ($escala) {
+                gerar_escala($dt, $dt);
+            } else {
+                garantir_plano($hoje);
+            }
+            $msg = t("{1}: sem relógio, o dia ficou livre{2}. Mudou de ideia? Escolha um relógio nesse dia (o \"escolher…\") ou volte a sortear.", [1 => $dt->format("d/m"), 2 => $antes_l ? t(" (era o {1})", [1 => $antes_l["nome"]]) : ""]);
         } elseif ($forma !== null && !isset(formas_de_escolha()[$forma])) {
             $erros[] = t("Forma de escolha: {1}.", [1 => implode(", ", array_keys(formas_de_escolha()))]);
         } elseif ($forma !== null) {
@@ -4799,7 +4822,10 @@ function op_rodizio($acao, $d)
                 } else {
                     $erros[] = t("{1}: escolha um relógio disponível, \"auto\" (Decida por mim), \"livre\" ou \"sortear:<forma>\" ({2}).", [1 => $dia->format("d/m"), 2 => implode(", ", array_keys(formas_de_escolha()))]);
                 }
-                if (($escolhas[$data] ?? null) === "livre" && $dia == $hoje) {
+                if ($v === "livre" && !dia_sem_relogio_permitido() && !dia_livre($data)) {
+                    // a folga desligada: o dia que já estava livre fica; um dia novo não entra
+                    $erros[] = t("{1}: {2}", [1 => $dia->format("d/m"), 2 => dia_sem_relogio_recusa()]);
+                } elseif (($escolhas[$data] ?? null) === "livre" && $dia == $hoje) {
                     $erros[] = t("Hoje não pode ficar livre: hoje já tem o relógio do pulso (troque por outro, ou Decida por mim).");
                 } elseif ($dia == $hoje && $trava_hoje && $v !== null && $v !== "auto" && $v !== "livre"
                     && (!ctype_digit($v) || (int)$v !== (int)(plano_do_dia($data)["relogio_id"] ?? 0))) {

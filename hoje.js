@@ -36,7 +36,7 @@ function proximosHtml(px) {
     + el("tbody", {}, px.dias.map(function (p) {
       return el("tr", {"class": p.dia_semana >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto))
         + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
-        + el("td", {"class": "trocar"}, formTrocarDia(p, dadosHoje.relogios, dadosHoje.data, dadosHoje.trocar_hoje)));
+        + el("td", {"class": "trocar"}, formTrocarDia(p, dadosHoje.relogios, dadosHoje.data, dadosHoje.trocar_hoje, dadosHoje.dia_sem_relogio)));
     }).join("") + (px.total === 0 ? el("tr", {}, el("td", {"colspan": "4"}, t("Neste modo o sorteio é feito dia a dia."))) : "")))
     + navPaginas(px.pagina, px.paginas, "proximos-pagina")
     + (px.paginas > 1 ? el("p", {"class": "nota"}, t("Página {1} de {2} · {3} dias no plano, {4} por página (o \"Mostrar até\" da {5}).", {1: px.pagina, 2: px.paginas, 3: px.total, 4: px.por_pagina, 5: el("a", {"href": "configuracao.php"}, t("Configuração"))})) : "");
@@ -143,8 +143,9 @@ function recarregarHoje() {
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, h(d.dia.ate)) + " " + h(item && item.tipo !== "—" ? item.tipo : ""))
         + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "")
         + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, t("Por que ele: ")) + h(d.dia.motivo)) : "")
-        // sem relógio hoje: o dia fica livre e a sessão do rodízio termina agora (só com a troca no próprio dia ligada)
-        + (!d.trocar_hoje ? "" : el("form", {"data-recurso": "rodizio", "class": "sem-relogio", "onsubmit": "return confirm(" + JSON.stringify(t("Hoje sem relógio? O dia fica livre: o {1} sai do rodízio de hoje (se já está no pulso pelo rodízio, sai agora; o tempo que ficou conta). Os outros dias não mudam.", {1: d.dia.relogio})) + ")"},
+        // sem relógio hoje: o dia fica livre e a sessão do rodízio termina agora (só com a troca no próprio dia ligada, e com os
+        // dias sem relógio ligados na Configuração)
+        + (!d.trocar_hoje || !d.dia_sem_relogio ? "" : el("form", {"data-recurso": "rodizio", "class": "sem-relogio", "onsubmit": "return confirm(" + JSON.stringify(t("Hoje sem relógio? O dia fica livre: o {1} sai do rodízio de hoje (se já está no pulso pelo rodízio, sai agora; o tempo que ficou conta). Os outros dias não mudam.", {1: d.dia.relogio})) + ")"},
           el("input", {"type": "hidden", "name": "acao", "value": "sem_relogio"}) + el("button", {"class": "leve"}, t("Sem relógio hoje"))));
     } else if (!rodizioAtivo) {
       texto += el("h1", {}, t("Rodízio desligado")) + el("p", {}, t("O plano está pausado. As marcações manuais continuam disponíveis."))
@@ -155,7 +156,7 @@ function recarregarHoje() {
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, t("dia livre")))
         + el("p", {}, d.trocar_hoje ? t("Nenhum relógio vai ao pulso pelo rodízio hoje. Quer usar um? Escolha abaixo, ou sorteie de novo (inclusive hoje) no quadro do modo de rodízio.")
           : t("Nenhum relógio vai ao pulso pelo rodízio hoje. O relógio de hoje não se troca no próprio dia (Configuração): escolha o de amanhã nos Próximos dias."))
-        + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data, d.trocar_hoje);
+        + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data, d.trocar_hoje, d.dia_sem_relogio);
     } else {
       texto += el("h1", {}, t("Nenhum relógio para hoje"))
         + el("p", {}, t("Nenhum relógio disponível no grupo deste dia. Mude o grupo no modo de rodízio ou marque um relógio como disponível."));
@@ -407,7 +408,7 @@ function recarregarHoje() {
           : el("small", {"class": "sem-carga"}, h(x.carga_de)))
         + el("td", {"data-col": "ultimo", "data-rotulo": t("Última vez usado")}, h(x.ultimo_txt))
         // o tempo de uso total (a API manda o texto pronto: "1d 4h 30m"; sem uso, "—"); as partes não quebram a linha
-        + el("td", {"data-col": "uso", "class": "col-uso", "data-rotulo": t("Tempo de uso")}, x.uso > 0 ? h(x.uso_texto).replace(/ /g, "&nbsp;") : "—")
+        + el("td", {"data-col": "uso", "class": "col-uso", "data-rotulo": t("Tempo de uso")}, x.uso > 0 ? h(x.uso_texto) : "—")
         + el("td", {"data-col": "manut", "data-rotulo": t("Próxima manutenção")}, m ? (m.data === d.data ? "hoje" : dataBr(m.data)) : "—")
         + el("td", {"data-col": "em", "class": "col-em" + (atrasado ? " atrasado" : ""), "data-rotulo": t("Em"), "data-momento": m && m.momento > 0 ? m.momento : null}, m ? h(m.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
         + el("td", {"data-col": "fazer", "class": m ? "fazer" : "", "data-rotulo": t("O que fazer")}, m ? h(m.nome) : "—")
@@ -575,7 +576,8 @@ function manualHtml(r) {
         return el("option", {"value": String(x.id), "selected": atual === String(x.id)}, h(x.nome));
       }).join(""))
       + opcoesSortearDia(atual)
-      + (dia.hoje ? "" : el("option", {"value": "livre", "selected": atual === "livre"}, t("Sem relógio (dia livre)")));
+      // (com os dias sem relógio desligados na Configuração, só o dia que já está livre mostra a opção, para ficar como está)
+      + (dia.hoje || (!r.dia_sem_relogio && atual !== "livre") ? "" : el("option", {"value": "livre", "selected": atual === "livre"}, t("Sem relógio (dia livre)")));
     // hoje, sem trocar o relógio no próprio dia (a Configuração): o seletor fica parado no que hoje já tem
     var fixo = dia.hoje && !r.trocar_hoje;
     var agora = dia.livre ? el("span", {"class": "nota"}, t("dia livre")) : (dia.relogio !== null ? h(dia.relogio) + " " + el("small", {"class": "a-mao"}, dia.origem === "manual" ? t("à mão") : t("sorteado")) : el("span", {"class": "nota"}, "—"));

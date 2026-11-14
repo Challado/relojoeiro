@@ -192,6 +192,9 @@ label.check input[type=checkbox], label.check input[type=radio] { width: auto; f
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
 }
+/* o tempo de uso ("1d 19h 10m 25s"): numa linha só na tabela; nos cartões (a regra do em-cartoes, mais específica, deixa
+   quebrar), ele quebra em vez de vazar do quadrinho estreito */
+#tabela-relogios td.col-uso { white-space: nowrap; }
 /* a Sugestão para agora (sugestao.js): o cartão entre os avisos de hoje e os Próximos dias */
 .sugestao-agora { background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 12px; padding: .9rem 1rem 1rem; display: flex; flex-direction: column; gap: .7rem; }
 .sugestao-agora[hidden] { display: none; }

@@ -68,7 +68,7 @@ function montarPlano() {
     linhas += el("tr", {"class": (p.dia_semana >= 6 ? "fds" : "") + (p.hoje ? " de-hoje" : "")},
       el("td", {"class": "dia"}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto) + (p.hoje ? " " + el("small", {}, t("hoje")) : ""))
       + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
-      + el("td", {"class": "trocar"}, rodizioAtivo ? formTrocarDia(p, d.relogios, d.hoje, d.trocar_hoje) : ""));
+      + el("td", {"class": "trocar"}, rodizioAtivo ? formTrocarDia(p, d.relogios, d.hoje, d.trocar_hoje, d.dia_sem_relogio) : ""));
   });
   fecha();
   res += el("section", {}, el("h2", {}, t("Dia a dia{1}", {1: filtro.relogio !== "" ? t(" (só os dias do relógio escolhido)") : ""}))

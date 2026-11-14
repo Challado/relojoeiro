@@ -1,4 +1,4 @@
-<!-- origem: 398d7f904025bf047d1db26208b259e804d9c105 -->
+<!-- origem: 9b7d42ec276236a39c9b2c8b79f9c609efb07447 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1515,6 +1515,7 @@ Los cuadros ocupan los espacios disponibles según la anchura de la pantalla y l
 | **La escala inteligente empieza** (`escala_inicio`) | desde dónde la [escala inteligente](#a-escala-inteligente) cuenta los días del modo: **Mañana, si el día de hoy ya empezó en la muñeca** (`amanha`, el predeterminado: el día de hoy que ya empezó queda fuera de la cuenta, y la escala de 7 días va de mañana hasta dentro de 7, con el día de la semana de hoy apareciendo de nuevo al final) o **Siempre hoy** (`hoje`: hoy es el 1.er día, y la escala de 7 días va hasta dentro de 6). El reloj de hoy que ya empezó en la muñeca no cambia en ninguno de los dos casos. ¿Lo cambió? El fin de la escala se quita, y el próximo armado (la página Hoy, el cron) rehace la escala contando desde el nuevo primer día. |
 | **La escala inteligente cierra** (`escala_periodo`) | dónde termina el período de la [escala inteligente](#a-escala-inteligente): **En los días corridos del período** (`corridos`, el predeterminado: los días del modo contados desde su primer día; la de una semana, un martes, va hasta el martes siguiente), **Al final de la semana (semanas enteras)** (`semana`: los días ÷ 7, redondeado; la de una semana va hasta el último día de la semana, según **La semana empieza**, y el último día de la semana arma la semana siguiente entera) o **Al final del mes (meses enteros)** (`mes`: los días ÷ 30,4, redondeado; la de un mes va hasta el último día del mes, la de medio año hasta el fin del 6.º mes contando el actual; el último día del mes, hasta el fin del mes siguiente; con menos de 4 semanas, como al final de la semana). Cuando el período termina, el siguiente empieza el día después del fin, de la misma forma. ¿Lo cambió (o cambió la semana, cerrando en la semana o en el mes)? El fin de la escala se quita, y el próximo armado rehace la escala. |
 | **El último día de la semana, los modos por semana arman** (`semana_ultimo_dia`) | en los modos que planean por semana (fuera de la escala): **Solo el día siguiente** (`dia_seguinte`, el predeterminado: el último día de la semana el plan trae el día de mañana, y la semana siguiente entra entera el día en que empieza) o **La semana siguiente entera** (`semana_seguinte`: el último día de la semana, las semanas del modo cuentan desde la semana que viene, que viene armada entera; con la semana empezando el lunes, el domingo el plan trae de lunes a domingo). La lista de las semanas de la página Modos de rotación sigue la elección. |
+| **Días sin reloj (descanso)** (`dia_sem_relogio`) | activado (lo predeterminado), se puede dejar un día **sin reloj**, el descanso: **Sin reloj (día libre)** aparece en el **cambiar por…** de cada día (Próximos días y Plan) y en la Rotación manual, y **Sin reloj hoy**, en el día de hoy (con el cambio el mismo día activado). Desactivado, esas opciones no aparecen y la API rechaza el descanso (`sem_relogio`, `periodo_livre`, `trocar_dia` con `relogio_id=livre` y `manual` con `livre` en un día nuevo); los días que ya están libres siguen libres, hasta que usted elija un reloj para ellos o vuelva a sortear. Predeterminado: activado. |
 | **Cambiar el reloj de hoy el mismo día** (`trocar_hoje`) | desactivado (lo predeterminado), el reloj de hoy se queda: el **cambiar por…** y el **elegir…** del día de hoy, el **Usando hoy**, el **Sortear de nuevo** *incluyendo hoy*, el **Sin reloj hoy** y el **Incluyendo hoy** de Borrar todo no aparecen, en la Rotación manual el día de hoy queda fijo, y el **Sortear de nuevo** vale a partir de mañana aunque el día aún no haya empezado (la API rechaza lo que cambiaría el de hoy): el reloj de mañana se elige hasta hoy. Activado, el de hoy también se cambia el mismo día, y el nuevo pasa a ser el de la muñeca desde ese momento. Las marcaciones de la muñeca (**Puso** y **Quitó**) siguen libres en los dos casos. Predeterminado: desactivado. |
 | **Límite de carga** (`carga_limiar`) | la carga (%) en la que los avisos dicen cargar o dar cuerda; el campo **Límite de carga** de un reloj ocupa su lugar. De 1 a 99. Predeterminado: 20. |
 | **Límite del solar** (`sol_limiar`) | la carga (%) en la que el solar debe ir al sol. De 1 a 99. Predeterminado: 70. |
@@ -2017,6 +2018,19 @@ momento (el tiempo que ya se usó cuenta como uso; lo que ni había empezado no 
 Los demás días no cambian. ¿Cambió de idea? El cuadro pasa a mostrar **Hoy sin reloj** con el **elegir…**: el reloj elegido va
 a la muñeca desde ese momento; o **Sortear de nuevo** *incluyendo hoy*, en el modo de rotación. Por la API:
 `recurso=rodizio`, `acao=sem_relogio`. Solo con el cambio el mismo día activado en la Configuración (**Cambiar el reloj de hoy el mismo día**).
+
+**¿Y un día que viene: se puede dejar sin reloj (un día libre)?**
+Sí. En el **cambiar por…** de ese día (en **Próximos días** o en la página **Plan**), elija **Sin reloj (día libre)** y haga
+clic en **Cambiar**: solo ese día queda **libre**, sin reloj y sin sorteo, y los demás días no cambian. ¿Cambió de idea? El
+**elegir…** del día pone un reloj en él, y **↺ volver a sortear** lo devuelve al sorteo. Para varios días de una vez, use la
+Rotación manual. En el día de hoy, la misma opción hace lo que hace **Sin reloj hoy** (y, como él, solo con el cambio el
+mismo día activado). Por la API: `recurso=rodizio`, `acao=trocar_dia`, `relogio_id=livre`.
+
+**¿Y si no quiero ningún día sin reloj?**
+En la **Configuración**, en **Rutina del día**, desactive **Días sin reloj (descanso)**. **Sin reloj (día libre)**
+desaparece del **cambiar por…** y de la Rotación manual, **Sin reloj hoy** desaparece de la página Hoy, y la API rechaza el
+descanso. Los días que ya estaban libres siguen libres, hasta que usted elija un reloj para ellos o vuelva a sortear. La
+opción viene activada, y vale en los tres niveles (el sistema, su cuenta y la colección).
 
 **¿Y si quiero elegir yo los relojes de un período?**
 En el cuadro **Modo de rotación** de la página Hoy, elija **Rotación manual**, ponga el inicio y el fin y haga clic en **OK**:

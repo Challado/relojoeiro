@@ -297,7 +297,8 @@ function simular_matriz($semana_inicio, $dia)
         // o dia de hoje, com o trocar no próprio dia desligado: tudo recusado
         $outro = $REL["Auto B"];
         foreach ([["acao" => "resortear_hoje"], ["acao" => "usando", "relogio_id" => $outro], ["acao" => "sem_relogio"],
-            ["acao" => "apagar_tudo", "hoje" => "1"], ["acao" => "trocar_dia", "data" => $dia, "relogio_id" => $outro]] as $campos) {
+            ["acao" => "apagar_tudo", "hoje" => "1"], ["acao" => "trocar_dia", "data" => $dia, "relogio_id" => $outro],
+            ["acao" => "trocar_dia", "data" => $dia, "relogio_id" => "livre"]] as $campos) {
             $rodizio($campos, $campos["acao"] . " hoje (recusado)", false);
         }
         $conferir("as ações de hoje recusadas");

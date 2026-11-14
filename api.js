@@ -409,7 +409,8 @@ function opcoesSortearDia(atual) {
   }).join(""));
 }
 
-function formTrocarDia(p, relogios, hoje, trocaHoje) {
+// semRelogio: o dia_sem_relogio da API (falso: a lista não oferece o "Sem relógio (dia livre)")
+function formTrocarDia(p, relogios, hoje, trocaHoje, semRelogio) {
   if (p.data === hoje && !trocaHoje) {
     return el("span", {"class": "nota", "title": t("Configuração: Trocar o relógio de hoje no próprio dia")}, t("hoje fica (troca a partir de amanhã)"));
   }
@@ -418,6 +419,8 @@ function formTrocarDia(p, relogios, hoje, trocaHoje) {
       return el("option", {"value": r.id}, h(r.nome));
     }).join(""))
     + opcoesSortearDia("")
+    // o dia de folga: sem relógio e sem sorteio (o dia que já é livre não precisa; com a folga desligada na Configuração, não há)
+    + (semRelogio && p.origem !== "livre" ? el("option", {"value": "livre"}, t("Sem relógio (dia livre)")) : "")
     + ((p.origem === "manual" || p.origem === "livre") && p.data > hoje ? el("option", {"value": "0"}, t("↺ voltar a sortear")) : "");
   return el("form", {"data-recurso": "rodizio", "class": "trocar-dia"}, el("input", {"type": "hidden", "name": "acao", "value": "trocar_dia"})
     + el("input", {"type": "hidden", "name": "data", "value": p.data})

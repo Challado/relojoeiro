@@ -32,6 +32,9 @@
  *   O relógio de hoje não se troca no próprio dia, a não ser que a Configuração deixe (trocar_hoje=1; o padrão é 0): desligado,
  *   o recurso=rodizio recusa usando, trocar_dia de hoje, resortear_hoje, sem_relogio, apagar_tudo com hoje=1, periodo começando
  *   hoje e manual que mude hoje, e o resortear vale de amanhã. As marcações do pulso continuam livres.
+ *   Os dias sem relógio (a folga: o dia livre, sem relógio e sem sorteio) são uma opção da Configuração (dia_sem_relogio=1, o
+ *   padrão): desligada (0), o recurso=rodizio recusa sem_relogio, periodo_livre, trocar_dia com relogio_id=livre e manual com
+ *   livre num dia que ainda não está livre; o dia que já está livre continua livre.
  *
  * ---------------------------------------------------------------------------------------------
  * FORMATO
@@ -669,6 +672,7 @@
  *                             (inclusive hoje: o sorteado passa a ser o do pulso a partir de agora), usando (relogio_id: o
  *                             relógio de hoje a partir de agora; motivo, opcional: a frase que fica no plano), trocar_dia (data,
  *                             relogio_id: o relógio daquele dia, à mão; hoje, como o usando; 0: o dia volta a ser sorteado;
+ *                             livre: o dia fica sem relógio e sem sorteio (um dia de folga; hoje, como o sem_relogio);
  *                             sortear:<forma>, inteligente, ponderado, aleatorio, fifo ou menos_usado: o dia é sorteado agora por essa forma,
  *                             entre os disponíveis do bloco do modo ativo que cobre o dia, sem o que o dia tinha, e fica à mão
  *                             com o motivo "Sorteado à mão (<forma>): ..."), proxima_semana (em qualquer dia: a semana
@@ -725,7 +729,8 @@
  *                             100); medicao_janela_dias (1 a 3650: intervalos inteiros nestes últimos dias);
  *                             medicao_meia_vida_dias (0 a 3650: metade do peso após N dias; padrão 0, desligado);
  *                             encostado_dias; trocar_hoje (1 ou 0: o relógio de hoje se troca no próprio dia, ou só a partir de
- *                             amanhã; vazio: 0); calibre_campos (movimento ou todos: os campos do formulário do calibre); url_sistema
+ *                             amanhã; vazio: 0); dia_sem_relogio (1 ou 0: dá para deixar um dia sem relógio, a folga, ou as telas
+ *                             não oferecem e o rodizio recusa; vazio herda, e de fábrica é 1); calibre_campos (movimento ou todos: os campos do formulário do calibre); url_sistema
  *                             (do sistema inteiro: só o master); parametros[<chave>] (só o master: os parâmetros de operação
  *                             do sistema, o que era só do config.php: cadastro_aberto, demo_dias, convite_dias,
  *                             documentos_limite, api_espera, lote_maximo, backup_ativo, backup_manter, backup_documentos e
@@ -1217,6 +1222,9 @@
  *     config.rodizio_retomado_em     instante Unix da retomada da coleção: evita registrar uso automático durante a pausa
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
+ *     config.dia_sem_relogio         1 (ou vazio, de fábrica): dá para deixar um dia sem relógio (a folga: o Sem relógio (dia livre) do
+ *                                    trocar por… e do Rodízio manual, e o Sem relógio hoje); 0: as telas não oferecem e o recurso=rodizio
+ *                                    recusa
  *     config.idioma                  o idioma padrão da instalação (pt-BR, en, zh-CN, hi, es, fr; vazio: o do navegador, senão português)
  *     config.painel_modo             como o relógio abre na página Hoje: lado (no painel à direita da lista) ou flutuante (numa janela
  *                                    grande por cima da página); vazio: lado
@@ -2572,6 +2580,9 @@
  *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
  *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
  *                                    hoje fica parado)
+ *     dia_sem_relogio                verdadeiro (o padrão): dá para deixar um dia sem relógio (a Configuração, dia_sem_relogio); falso: as
+ *                                    telas não mostram o Sem relógio (dia livre) do trocar por… e do Rodízio manual nem o Sem relógio hoje,
+ *                                    e o recurso=rodizio recusa
  *     relogios[]                     a tabela dos relógios
  *     relogios[].agora               o estado por extenso, desde quando ("Em uso desde 07:00", "No sol desde 09:12", "Em repouso desde
  *                                    21:40")
@@ -4384,6 +4395,9 @@
  *     config.rodizio_retomado_em     instante Unix da retomada da coleção: evita registrar uso automático durante a pausa
  *     config.trocar_hoje             1: o relógio de hoje se troca no próprio dia; 0 ou vazio (o padrão): só a partir de amanhã (o que
  *                                    trocaria o de hoje é recusado, e o Sortear de novo vale de amanhã)
+ *     config.dia_sem_relogio         1 (ou vazio, de fábrica): dá para deixar um dia sem relógio (a folga: o Sem relógio (dia livre) do
+ *                                    trocar por… e do Rodízio manual, e o Sem relógio hoje); 0: as telas não oferecem e o recurso=rodizio
+ *                                    recusa
  *     fuso_sistema                   o fuso do sistema (o FUSO do config.php, ou o do PHP): o das datas gravadas no banco e o de quem não
  *                                    escolheu outro
  *     fusos[]                        os fusos horários que o PHP conhece, em ordem alfabética (as listas Fuso horário da Configuração e de
@@ -5124,6 +5138,9 @@
  *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
  *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
  *                                    hoje fica parado)
+ *     dia_sem_relogio                verdadeiro (o padrão): dá para deixar um dia sem relógio (a Configuração, dia_sem_relogio); falso: as
+ *                                    telas não mostram o Sem relógio (dia livre) do trocar por… e do Rodízio manual nem o Sem relógio hoje,
+ *                                    e o recurso=rodizio recusa
  *     resumo                         o resumo do período (os dias da resposta de hoje em diante), como a página Plano mostra
  *     resumo.ate                     o último dia contado (null: nenhum)
  *     resumo.de                      o primeiro dia contado (null: nenhum)
@@ -7179,6 +7196,9 @@
  *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
  *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
  *                                    hoje fica parado)
+ *     dia_sem_relogio                verdadeiro (o padrão): dá para deixar um dia sem relógio (a Configuração, dia_sem_relogio); falso: as
+ *                                    telas não mostram o Sem relógio (dia livre) do trocar por… e do Rodízio manual nem o Sem relógio hoje,
+ *                                    e o recurso=rodizio recusa
  *     formas[]                       as formas de escolha do "Sortear este dia por" do seletor de cada dia
  *                                    (dias[AAAA-MM-DD]=sortear:<chave> no acao=manual; o mesmo relogio_id=sortear:<chave> no
  *                                    acao=trocar_dia)

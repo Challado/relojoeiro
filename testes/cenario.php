@@ -479,6 +479,7 @@ ler("hoje sem trocar no próprio dia", ["recurso" => "hoje", "incluir" => "troca
 escrever(["recurso" => "rodizio", "acao" => "usando", "relogio_id" => $rel["crono"]], false);
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $hoje_t, "relogio_id" => $rel["pilha"]], false);
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $hoje_t, "relogio_id" => "sortear:aleatorio"], false);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $hoje_t, "relogio_id" => "livre"], false);
 escrever(["recurso" => "rodizio", "acao" => "resortear_hoje"], false);
 escrever(["recurso" => "rodizio", "acao" => "sem_relogio"], false);
 escrever(["recurso" => "rodizio", "acao" => "apagar_tudo", "hoje" => 1], false);
@@ -1263,12 +1264,31 @@ escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(13), "re
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(13), "relogio_id" => "sortear:x"], false);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 ler("plano com livres", ["recurso" => "plano", "dias" => 30]);
+// um dia de folga pelo "trocar por…" (relogio_id=livre): só aquele dia fica sem relógio e sem sorteio, e os outros ficam como
+// estavam; o dia que já passou é recusado; e o dia volta a ser sorteado (relogio_id=0)
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(20), "relogio_id" => "livre"]);
+ler("plano com um dia de folga", ["recurso" => "plano", "dias" => 30]);
+ler("proximos com o dia de folga", ["recurso" => "proximos", "por_pagina" => 30]);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => substr(dia(1, "00:00"), 0, 10), "relogio_id" => "livre"], false);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(20), "relogio_id" => 0]);
 // o rodízio manual: os dias de um período de 7 em 7; gravar com um relógio escolhido, um dia livre e o resto no Decida por
 // mim (decidido ao gravar, pela nota, sem repetir o de ontem e o de amanhã). Um período no passado e um relógio que não
 // existe são recusados
 ler("rodizio manual", ["recurso" => "rodizio_manual", "de" => $em(16), "ate" => $em(25), "pagina" => 2]);
 escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(25), "dias" => [$em(16) => $rel["manual"], $em(18) => "livre", $em(19) => "auto", $em(20) => "sortear:fifo", $em(21) => "sortear:inteligente"]]);
 ler("rodizio manual gravado", ["recurso" => "rodizio_manual", "de" => $em(16), "ate" => $em(25)]);
+// os dias sem relógio desligados (a opção dia_sem_relogio da Configuração): a API recusa a folga por todas as portas (o
+// trocar por…, o período livre e o Rodízio manual num dia novo), o dia que já estava livre continua livre (e o Rodízio manual
+// o grava como está) e as leituras dizem dia_sem_relogio falso; o valor que não existe é recusado, e a opção volta ao padrão
+escrever(["recurso" => "config", "acao" => "salvar", "dia_sem_relogio" => 0]);
+ler("plano sem a folga", ["recurso" => "plano", "dias" => 30]);
+ler("rodizio manual sem a folga", ["recurso" => "rodizio_manual", "de" => $em(16), "ate" => $em(25)]);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(22), "relogio_id" => "livre"], false);
+escrever(["recurso" => "rodizio", "acao" => "periodo_livre", "de" => $em(22), "ate" => $em(23)], false);
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(25), "dias" => [$em(18) => "livre", $em(22) => "livre"]], false);
+escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(25), "dias" => [$em(18) => "livre"]]);
+escrever(["recurso" => "config", "acao" => "salvar", "dia_sem_relogio" => "talvez"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "dia_sem_relogio" => ""]);
 ler("rodizio manual recusado", ["recurso" => "rodizio_manual", "de" => substr(dia(3, "00:00"), 0, 10), "ate" => $em(2)]);
 escrever(["recurso" => "rodizio", "acao" => "manual", "de" => $em(16), "ate" => $em(17), "dias" => [$em(17) => 99999]], false);
 // as listas em páginas (o "Mostrar até" da Configuração): os Próximos dias e o dia a dia do Plano, com o filtro de relógio
@@ -1546,6 +1566,11 @@ escrever(["recurso" => "documentos", "acao" => "excluir", "id" => $doc_c, "confi
 escrever(["recurso" => "config", "acao" => "salvar", "encostado_dias" => 0], false);
 ler("avisos com encostado", ["recurso" => "avisos"]);
 // hoje sem relógio: o dia fica livre (o cron não põe ninguém no pulso nem sorteia de novo) e depois volta, escolhendo um
+// (com os dias sem relógio desligados na Configuração, a API recusa, e a Hoje diz dia_sem_relogio falso)
+escrever(["recurso" => "config", "acao" => "salvar", "dia_sem_relogio" => 0]);
+escrever(["recurso" => "rodizio", "acao" => "sem_relogio"], false);
+ler("hoje com a folga desligada", ["recurso" => "hoje", "incluir" => "data,trocar_hoje,dia_sem_relogio"]);
+escrever(["recurso" => "config", "acao" => "salvar", "dia_sem_relogio" => ""]);
 escrever(["recurso" => "rodizio", "acao" => "sem_relogio"]);
 cron();
 ler("hoje sem relogio", ["recurso" => "hoje"]);

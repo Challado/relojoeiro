@@ -6308,7 +6308,7 @@ function rodizio_manual_pagina($de, $ate, $pagina)
             "motivo" => $p ? $p["motivo"] : null, "livre" => $livre, "escolha" => rodizio_manual_escolha($p, $livre)];
     }
     return ["de" => $de->format("Y-m-d"), "ate" => $ate->format("Y-m-d"), "total_dias" => $total, "por_pagina" => RODIZIO_MANUAL_POR_PAGINA,
-        "pagina" => $pagina, "paginas" => $paginas, "dias" => $dias, "trocar_hoje" => trocar_hoje_permitido(),
+        "pagina" => $pagina, "paginas" => $paginas, "dias" => $dias, "trocar_hoje" => trocar_hoje_permitido(), "dia_sem_relogio" => dia_sem_relogio_permitido(),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio WHERE disponivel = 1 ORDER BY nome")),
         "decida_por_mim" => rodizio_manual_criterio(),
         "formas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(formas_de_escolha()), formas_de_escolha())];
@@ -9632,6 +9632,21 @@ function fechar_esquecidas($agora, $relogio = null)
 function trocar_hoje_permitido()
 {
     return rodizio_ativo() && cfg("trocar_hoje") === "1";
+}
+
+// Os dias sem relógio (a Configuração, dia_sem_relogio: sistema, usuário, coleção): 1 (ou vazio, de fábrica), o sistema oferece
+// deixar um dia sem relógio e sem sorteio, a folga (o "Sem relógio (dia livre)" do trocar por… e do Rodízio manual, o "Sem
+// relógio hoje", o periodo_livre da API); 0, não oferece e a API recusa. Os dias que já estão livres continuam livres até
+// alguém pôr um relógio neles ou voltar a sortear
+function dia_sem_relogio_permitido()
+{
+    return cfg("dia_sem_relogio") !== "0";
+}
+
+// a recusa de um dia sem relógio com a opção desligada: uma frase só, para todas as portas
+function dia_sem_relogio_recusa()
+{
+    return t("Os dias sem relógio estão desligados na Configuração (Dias sem relógio (folga)).");
 }
 
 // O dia de hoje já começou no pulso: pondo sozinho, passou o início do horário de uso; senão, o relógio do dia já foi posto
