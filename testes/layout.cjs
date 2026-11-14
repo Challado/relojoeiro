@@ -53,6 +53,11 @@ function examinar(seletorRaiz) {
   // abre os <details> aqui, no mesmo instante da medição: aberto antes (noutra chamada), a tela que se redesenha no meio do caminho
   // (o atualizar sozinho) devolve o <details> fechado, e o conteúdo dele, que não aparece mas tem posição, caía "por cima" do que vem depois
   document.querySelectorAll('details').forEach((d) => { d.open = true; });
+  // a Configuração arruma os quadros dela em colunas pela altura de cada um (ajustarQuadrosConfig), e refaz a conta quando um
+  // <details> abre, mas só depois desta chamada (o toggle e o ResizeObserver rodam antes da pintura): o <details> que voltou
+  // fechado de um redesenho e é aberto aqui era medido com a altura de antes, e o quadro do Cron aparecia "por cima" do
+  // vizinho, numa tela que ninguém vê. A mesma arrumação da página roda aqui, antes de medir
+  if (typeof ajustarQuadrosConfig === 'function') { ajustarQuadrosConfig(); }
   const raiz = (seletorRaiz && document.querySelector(seletorRaiz)) || document.body;
   const probs = [];
   const vw = document.documentElement.clientWidth;
