@@ -44,7 +44,15 @@ body {
 .topo .menu-sub a.ativo { border-bottom: 0; color: #fff; background: #27323f; box-shadow: inset 3px 0 0 #fff; }
 .menu-sub a[hidden] { display: none; }
 
-main { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+/* a página usa a largura toda da janela, com a margem mínima dos lados (a mesma da página Hoje): no computador, nada de
+   coluna estreita no meio com o resto vazio. O que não deve esticar (um texto corrido, um campo sozinho) tem o limite dele */
+main { max-width: none; margin: 0; padding: 1.5rem .75rem 4rem; }
+/* na página larga, o campo de uma linha que ocupa a linha inteira não estica a janela toda (uma fórmula, que é comprida, e a
+   área de texto vão mais longe); numa grade de campos, cada um continua do tamanho da coluna dele */
+main select, main input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=range]) { max-width: min(100%, 44rem); }
+main input.formula, main textarea { max-width: min(100%, 80rem); }
+/* e o texto corrido (uma nota, uma observação) para numa largura que dá para ler */
+main p.nota, main p.observacao, main p.explicacao { max-width: 80rem; }
 
 section { margin-bottom: 2.25rem; }
 
@@ -329,7 +337,6 @@ a.nome-hoje { color: inherit; text-decoration: none; }
 a.nome-hoje:hover { text-decoration: underline; }
 
 /* ---------- ficha do relógio ---------- */
-main.ficha { max-width: 72rem; }
 .seletor { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.25rem; }
 .seletor select { min-width: 0; width: 18rem; max-width: 100%; flex: 0 1 auto; }
 .seletor { min-width: 0; }
@@ -385,7 +392,6 @@ form.excluir { margin-top: .9rem; padding-top: .6rem; border-top: 1px solid var(
 form.excluir button { color: #9b2c2c; }
 
 /* ---------- configuração ---------- */
-main.config { max-width: 76rem; }
 .config-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; align-items: start; }
 .config-grade section { margin: 0; }
 .config-grade .modo, .previa-msg {
@@ -644,7 +650,6 @@ fieldset.dias-semana legend { font-size: .9rem; color: var(--cinza); padding: 0 
 .erro-cron pre { white-space: pre-wrap; word-break: break-all; font-size: .8rem; margin: .3rem 0; color: #7a2019; }
 
 /* ---------- execuções do cron ---------- */
-main.execucoes { max-width: 72rem; }
 .execucoes h1 { font-size: 1.5rem; margin: 0; }
 .filtros-execucoes { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .7rem; margin: 1rem 0; }
 .filtros-execucoes label { display: flex; flex-direction: column; gap: .2rem; font-size: .88rem; }
@@ -743,7 +748,6 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 
 
 /* página do histórico (historico.php): tela cheia, fonte normal, nada cortado */
-main.pagina-historico { max-width: 80rem; }
 .cabeca-historico { display: flex; align-items: center; gap: 1.2rem; margin-bottom: 1rem; }
 .cabeca-historico img { width: 6rem; height: 6rem; object-fit: cover; border-radius: 12px; border: 1px solid var(--aco-escuro); background: #fff; }
 .cabeca-historico h1 { margin: .1rem 0 .2rem; }
@@ -764,7 +768,6 @@ table.lista-historico td small { color: var(--cinza); margin-left: .3rem; }
 
 
 /* ---------- página dos critérios ---------- */
-main.pagina-criterios { max-width: 80rem; }
 .erros-form { border: 1px solid #e3b4ae; background: #fdf0ee; color: #7a2419; border-radius: 10px; padding: .7rem 1rem; margin: 0 0 1rem; }
 .erros-form p { margin: .25rem 0 0; }
 .opcao-selecao { display: block; margin: .3rem 0; }
@@ -885,13 +888,16 @@ td.celula-peso { white-space: nowrap; }
 .abas a.ativa { background: var(--safira); color: #fff; }
 .form-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr)); gap: .6rem 1rem; align-items: end; }
 .form-grade label { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; color: var(--cinza); }
+/* a opção de marcar (caixa ou bolinha) num formulário em grade: a marca ao lado do texto, não em cima dele */
+.form-grade label.check { flex-direction: row; align-items: center; gap: .45rem; }
 .form-grade textarea { min-height: 4rem; }
 .dias-semana label { display: inline-flex; flex-direction: row; gap: .2rem; margin-right: .5rem; }
 td.num, th.num { text-align: right; white-space: nowrap; }
 
 
 /* ajuda: o texto do README, com o sumário no alto e as tabelas que rolam de lado no celular */
-main.ajuda { max-width: 60rem; }
+/* (o manual é texto corrido: fica numa coluna de leitura, no meio) */
+main.ajuda { max-width: 60rem; margin: 0 auto; }
 main.ajuda h2 { font-size: 1.45rem; margin: 2.4rem 0 .6rem; padding-top: 1rem; border-top: 1px solid var(--aco-escuro); }
 main.ajuda h3 { font-size: 1.12rem; margin: 1.8rem 0 .5rem; }
 main.ajuda h4 { font-size: 1rem; margin: 1.3rem 0 .4rem; }
@@ -949,7 +955,6 @@ small.a-mao { color: var(--ambar); font-weight: 600; }
 p.motivo { font-size: .88rem; margin: .5rem 0 0; }
 p.motivo strong { color: var(--tinta); font-weight: 600; }
 h2 a.ver-plano { font-size: .85rem; font-weight: 400; margin-left: .6rem; color: var(--safira); }
-main.plano { max-width: 76rem; }
 main.plano h3 { margin: 1.4rem 0 .4rem; font-size: 1rem; }
 .filtros-plano { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; margin: .8rem 0 1.2rem; }
 .filtros-plano label { display: flex; flex-direction: column; gap: .2rem; font-size: .9rem; }
@@ -1079,7 +1084,6 @@ table.resumo-plano { max-width: 44rem; }
 
 /* os documentos de um relógio: a galeria das fotos, o visor em tela cheia, o player dos vídeos, o PDF e os cartões */
 .documentos .doc-secao { margin: 1.2rem 0; }
-main.documentos { max-width: 76rem; }
 .documentos .envio-docs { background: var(--papel); border: 1px solid var(--aco); border-radius: 10px; padding: .6rem .9rem; margin: .8rem 0; }
 .documentos .envio-docs summary { cursor: pointer; font-weight: 600; }
 .galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .6rem; }
@@ -1375,6 +1379,10 @@ a.botao:hover { filter: brightness(1.08); }
    fonte, idioma ou largura; a ordem do documento e do foco continua a mesma. Sem a medição, vale a grade normal. */
 .config-grade.config-colunas, .parametros-sistema.config-colunas { grid-auto-rows: 4px; row-gap: 0; grid-auto-flow: dense; }
 .config-grade.config-colunas > .cartao-config { margin: 0; }
+/* a Configuração do master mostra um nível por vez (as abas do alto: Esta coleção ou Sistema): o quadro do outro nível some */
+#configuracao[data-nivel-visto="colecao"] [data-nivel="sistema"], #configuracao[data-nivel-visto="sistema"] [data-nivel="colecao"] { display: none; }
+.abas-nivel { margin-bottom: .4rem; }
+.nota-nivel { margin: 0 0 1rem; }
 .campos.parametros-sistema { max-width: none; grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr)); column-gap: 1rem; align-items: start; }
 /* O título, o corpo e o pé seguem a altura de cada cartão; os modelos de mensagem também usam esta estrutura. */
 .config-grade > .cartao-config, .modelos > .cartao-config { display: flex; flex-direction: column; gap: .6rem; }
@@ -1395,7 +1403,8 @@ a.botao:hover { filter: brightness(1.08); }
 .par-campo .controle { display: flex; min-width: 0; }
 .par-campo .controle input:not([type=checkbox]), .par-campo .controle select { width: 100%; }
 .par-campo .controle .opcao { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; min-width: 0; width: 100%; }
-.par-campo .controle .opcao input, .par-campo .controle .opcao select { flex: 1 1 8rem; width: auto; min-width: 0; }
+/* (a caixa de marcar não é um campo de texto: esticada, a marca fica no meio dela, cada linha num lugar) */
+.par-campo .controle .opcao input:not([type=checkbox]):not([type=radio]), .par-campo .controle .opcao select { flex: 1 1 8rem; width: auto; min-width: 0; }
 .par-campo .controle .opcao .herdado { flex-basis: 100%; overflow-wrap: anywhere; }
 /* a lista que se escolhe e se põe na ordem (as colunas de uma tabela): as caixas de marcar, os botões ▲ ▼ e o Herdar */
 .lista-ordenavel { display: flex; flex-direction: column; gap: .4rem; width: 100%; min-width: 0; }
@@ -1770,7 +1779,8 @@ details.corrigir-saida form { margin-top: .5rem; }
 .tendencia-sem_dados { color: var(--cinza); }
 .graficos-estatisticas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.2rem; }
 .graficos-estatisticas section.cartao-config { margin: 0; }
-svg.grafico-barras { display: block; width: 100%; height: auto; }
+/* (o gráfico não cresce além do tamanho em que foi desenhado: na página larga, as letras dele ficariam maiores que as da página) */
+svg.grafico-barras { display: block; width: 100%; max-width: 40rem; height: auto; margin: 0 auto; }
 svg.grafico-barras rect { fill: var(--safira); }
 svg.grafico-barras .eixo { stroke: var(--aco-escuro); stroke-width: 1; }
 svg.grafico-barras text { font-size: 22px; fill: var(--cinza); text-anchor: middle; font-variant-numeric: tabular-nums; }
@@ -1892,7 +1902,8 @@ svg.mostrador .visor-hora { font: 700 16px/1 ui-monospace, Menlo, Consolas, mono
 .pagina-winders #form-posicao, .pagina-winders #form { margin-top: 1.2rem; }
 
 /* ---------- páginas para imprimir: o Passaporte do relógio e a Galeria ---------- */
-.pagina-impressa { max-width: 60rem; }
+/* (a Galeria e os Relatórios usam a largura toda; o Passaporte é uma folha: fica na largura de uma página, no meio) */
+main#passaporte.pagina-impressa { max-width: 60rem; margin: 0 auto; }
 .barra-impressao { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-bottom: 1rem; }
 .cabeca-impressa { display: flex; gap: 1.2rem; align-items: flex-start; margin-bottom: 1rem; }
 .cabeca-impressa img { width: 9rem; height: 9rem; object-fit: cover; border-radius: 10px; border: 1px solid var(--aco-escuro); flex: none; }

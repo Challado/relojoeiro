@@ -190,6 +190,49 @@ document.addEventListener("toggle", function (ev) {
 }, true);
 if (document.fonts) { document.fonts.ready.then(agendarQuadrosConfig); }
 
+// Os níveis da página, para o master: as opções das três hierarquias existem na coleção (os quadros Rotina do dia, Limites e
+// contas, Telas e Sorteios) e no sistema (Padrões do sistema e Sistema); lado a lado na mesma página, cada opção aparecia duas
+// vezes. A página mostra um nível por vez, pelas abas do alto: "colecao" (o que vale nesta coleção) ou "sistema" (o que é do
+// sistema inteiro: os padrões, os parâmetros, as senhas, o cron, a cópia de segurança e o SQL). Quem não é master não tem o
+// nível do sistema para mudar: vê tudo numa página só, como sempre. O nível vai no endereço (nivel=sistema ou nivel=colecao),
+// para a página voltar no mesmo depois de recarregar (ao trocar o idioma); sem ele, a âncora de um quadro do sistema (#copia,
+// #sql) abre no do sistema, e o resto, no da coleção
+var nivelConfig = (function () {
+  var pedido = (/(?:^|[?&])nivel=(sistema|colecao)(?:&|$)/.exec(window.location.search) || [])[1];
+  return pedido || (/^#(copia|sql)$/.test(window.location.hash) ? "sistema" : "colecao");
+}());
+function noNivel(html, nivel) {
+  if (!html) { return html; }
+  // o quadro marcado pelo próprio navegador (e não por uma troca de texto, que dependeria de como o el() escreve a marca)
+  var molde = document.createElement("div");
+  molde.innerHTML = html;
+  if (molde.firstElementChild) { molde.firstElementChild.setAttribute("data-nivel", nivel); }
+  return molde.innerHTML;
+}
+function verNivelConfig(nivel) {
+  nivelConfig = nivel === "sistema" ? "sistema" : "colecao";
+  var raiz = document.getElementById("configuracao");
+  if (!raiz || !raiz.querySelector(".abas-nivel")) { return; }
+  raiz.setAttribute("data-nivel-visto", nivelConfig);
+  raiz.querySelectorAll(".abas-nivel a").forEach(function (a) {
+    var ativa = a.getAttribute("data-nivel-ir") === nivelConfig;
+    a.classList.toggle("ativa", ativa);
+    if (ativa) { a.setAttribute("aria-current", "page"); } else { a.removeAttribute("aria-current"); }
+  });
+  if (ajustarQuadrosConfig) { ajustarQuadrosConfig(); }
+}
+document.addEventListener("click", function (ev) {
+  var a = ev.target.closest ? ev.target.closest(".abas-nivel a[data-nivel-ir]") : null;
+  if (!a) { return; }
+  // sem recarregar: o que já foi digitado nos dois níveis continua na página, e o Salvar grava tudo de uma vez
+  ev.preventDefault();
+  verNivelConfig(a.getAttribute("data-nivel-ir"));
+  // o nível escolhido fica no endereço (o resto dele, a âncora e o que a página guarda no histórico continuam)
+  var url = new URL(window.location.href);
+  url.searchParams.set("nivel", nivelConfig);
+  history.replaceState(history.state, "", url.href);
+});
+
 function cartao(titulo, corpo, pe, explica) {
   return el("section", {"class": "cartao-config"}, el("h2", {}, h(titulo) + (explica || "")) + el("div", {"class": "cartao-corpo"}, corpo) + (pe ? el("div", {"class": "cartao-pe"}, pe) : ""));
 }
@@ -274,6 +317,15 @@ function recarregarConfig(aplicadas, manterPosicao) {
         ajudaGrupo("pagina", t("Configuração"));
         var ex = function (chave, titulo, html) { return ajuda(chave, titulo, el("p", {}, html)); };
         var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Configuração")) + ajudaBotao());
+        // os dois níveis da página (só o master tem o do sistema): as abas, e a nota do que cada um guarda
+        var comNiveis = d.sistema.pode_mudar === true;
+        if (comNiveis) {
+          res += el("nav", {"class": "abas abas-nivel", "aria-label": t("Nível das opções")},
+              el("a", {"href": "configuracao.php", "data-nivel-ir": "colecao", "class": nivelConfig === "colecao" ? "ativa" : null, "aria-current": nivelConfig === "colecao" ? "page" : null}, t("Esta coleção"))
+              + el("a", {"href": "configuracao.php?nivel=sistema", "data-nivel-ir": "sistema", "class": nivelConfig === "sistema" ? "ativa" : null, "aria-current": nivelConfig === "sistema" ? "page" : null}, t("Sistema")))
+            + el("p", {"class": "nota nota-nivel", "data-nivel": "colecao"}, t("O que vale nesta coleção. A opção vazia (Herdar) segue o padrão do dono (Minha conta) e, sem ele, o do sistema."))
+            + el("p", {"class": "nota nota-nivel", "data-nivel": "sistema"}, t("O que é do sistema inteiro (só o master muda): o padrão de cada opção para todas as coleções, os parâmetros, as senhas, o cron, a cópia de segurança e o SQL."));
+        }
         // ---------- Geral ----------
         // a situação do cron vem da API (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando
         var ce = d.cron_estado;
@@ -426,13 +478,17 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var alertas = cartao(t("Avisos, lembretes e mensagens"), el("div", {"class": "campos"},
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
+        if (comNiveis) {
+          rotina = noNivel(rotina, "colecao"); limites = noNivel(limites, "colecao"); tela = noNivel(tela, "colecao"); sorteios = noNivel(sorteios, "colecao"); alertas = noNivel(alertas, "colecao");
+          senhas = noNivel(senhas, "sistema"); quadroCron = noNivel(quadroCron, "sistema"); parametros = noNivel(parametros, "sistema"); padroes = noNivel(padroes, "sistema");
+        }
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
           + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + quadroCron + sorteios + alertas)
           + parametros + padroes
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
-        res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia", "class": "cartao-config"}, el("h2", {}, t("Cópia de segurança"))
+        res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia", "class": "cartao-config", "data-nivel": comNiveis ? "sistema" : null}, el("h2", {}, t("Cópia de segurança"))
           + (bk.pasta_ok
             ? el("p", {"class": "nota"}, t("Uma cópia do banco inteiro por dia, na rodada da noite, guardando as {1} mais novas, {2} o conteúdo dos documentos (os arquivos já ficam na pasta deles). A cópia volta em qualquer um dos três bancos, na mesma versão do sistema. {3}", {1: bk.manter, 2: bk.documentos ? t("com") : t("sem"), 3: bk.ultima ? t("Última: {1} {2}.", {1: dataBr(bk.ultima), 2: horaBr(bk.ultima)}) : t("Nenhuma feita ainda.")}))
             : el("p", {"class": "alerta-cron"}, t("A cópia automática está desligada: {1}. Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada.", {1: h(bk.pasta_erro)})))
@@ -445,8 +501,13 @@ function recarregarConfig(aplicadas, manterPosicao) {
             }).join("")), "largo")) : "")
           + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Fazer uma cópia agora")))) : ""));
         // ---------- o SQL pela API (só o master): montado depois, pelo recurso=sql ----------
-        res += d.sistema.pode_mudar ? el("section", {"id": "sql", "class": "cartao-config"}, el("p", {"class": "nota"}, t("Lendo…"))) : "";
+        res += d.sistema.pode_mudar ? el("section", {"id": "sql", "class": "cartao-config", "data-nivel": "sistema"}, el("p", {"class": "nota"}, t("Lendo…"))) : "";
         document.getElementById("configuracao").innerHTML = res;
+        if (comNiveis) {
+          document.getElementById("configuracao").setAttribute("data-nivel-visto", nivelConfig);
+        } else {
+          document.getElementById("configuracao").removeAttribute("data-nivel-visto");
+        }
         organizarQuadrosConfig();
         montarSql(null);
         if (!manterPosicao && !retornoConfig && window.location.hash) {

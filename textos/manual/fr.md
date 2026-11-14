@@ -1,4 +1,4 @@
-<!-- origem: 971e6a399e6a3c5a59a7290fb14d123d2e3e6ace -->
+<!-- origem: ad1300cac2e8e16c4af07ea7d3e4885f93baa0fc -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -672,6 +672,14 @@ l'enlever. Par l'API : `recurso=documentos` avec `calibre=` (et `calibre_id` dan
 `calibre_campos` et `recurso=campos` avec `calibre`.
 
 **Les options en trois niveaux.** Chaque option de la collection qui n’est pas du système entier (les horaires, les limites, la consommation de la batterie, la semaine et l’échelle, les écrans : 33 au total) suit la hiérarchie **système → utilisateur → collection**, la même que la rotation : le **master** choisit la valeur par défaut du système (dans le cadre **Valeurs par défaut du système**), chaque **propriétaire** choisit celle de ses collections (dans **Mon compte**, **Valeurs par défaut de mes collections**) et chaque **collection** peut choisir la sienne. Le plus spécifique l’emporte ; celle du dessus n’est qu’une valeur par défaut, jamais un blocage. Un champ vide **hérite** (l’étiquette dit d’où vient la valeur actuelle : de l’utilisateur, du système ou la valeur d’usine) ; dans les listes, le premier choix est **Hériter (…)** ; dans les champs d’heure et de nombre, le bouton **Hériter** vide le champ. Cela vaut aussi pour les membres et pour le cron, qui suivent le propriétaire de la collection. Une collection nouvelle naît en héritant de tout ; celles qui existaient déjà gardent la valeur qu’elles avaient, et la migration v58 met à vide celles qui étaient égales à la valeur d’usine. Changer une valeur par défaut refait ce qui en dépend dans chaque collection qui hérite (le « se ferme à » du poignet et du soleil, la fin de l’échelle intelligente) ; un horaire d’usage qui laisserait une collection avec la fin avant le début est refusé et rien ne change. Par l’API : `config/salvar` avec la clé de l’option (la collection), `conta/alterar` avec `opcoes[<chave>]` (le propriétaire) et `config/salvar` avec `padroes[<chave>]` (le système, master uniquement) ; la réponse de `recurso=config` apporte `opcoes` avec le choix de chaque niveau, ce qu’il hérite et d’où.
+
+**Un niveau à la fois.** Pour le master, la Configuration a deux onglets en haut : **Cette collection** (ce qui vaut pour
+cette collection : les cadres **Routine du jour**, **Limites et calculs**, **Écrans**, **Tirages** et **Alertes, rappels et
+messages**) et **Système** (ce qui relève de tout le système : **Mots de passe**, **Cron**, **Système**, **Valeurs par
+défaut du système**, **Sauvegarde** et le **SQL**). Ainsi chaque option n'apparaît qu'une fois à l'écran, au lieu de celle
+de la collection et celle du système l'une sous l'autre. Changer d'onglet ne perd pas ce que vous avez saisi, et
+**Enregistrer la configuration** écrit les deux niveaux d'un coup. Qui n'est pas master n'a pas le niveau du système à
+changer et voit tout sur une seule page.
 
 Restent à l’écart, volontairement : ce qui est du système entier par nature (la force du mot de passe, l’adresse du système, les tours du cron et les paramètres du cadre **Système**), la langue et le fuseau horaire (ils suivent la personne qui regarde : le sien, puis celui de la collection, puis celui du système), la rotation et la montre d’hier non portée (elles ont déjà les trois niveaux, avec la colonne propre de l’utilisateur) et ce qui ne peut rester que dans `config.php` (la base, les clés, les dossiers et l’e-mail).
 
@@ -1795,6 +1803,10 @@ montre ouvert.
 sous-écrans repliables, un par **Vaut pour** : toutes les montres ensemble dans le premier, puis chaque groupe dans l'ordre
 de l'arbre (et, pour les champs, les accessoires par type, les remontoirs et les positions des remontoirs). Pour une
 formule, le Vaut pour est sa version pour ce point de l'arbre. Un sous-écran fermé reste aussi fermé sur cet appareil.
+
+Sur ordinateur, toutes les pages utilisent toute la largeur de la fenêtre, avec une marge minimale sur les côtés, comme la
+page Aujourd'hui ; seules l'**Aide** et le **Passeport**, qui sont des feuilles de lecture, restent dans une colonne au
+milieu.
 
 | Page | À quoi elle sert |
 |---|---|

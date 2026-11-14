@@ -46,9 +46,12 @@ document.addEventListener('submit',function(ev){var f=ev.target;if(ev.defaultPre
 
 `;
 const estilo = `.parametros-sistema{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(20rem,100%),1fr));column-gap:20px;align-items:start}.config-grade.config-colunas,.parametros-sistema.config-colunas{grid-auto-rows:4px;row-gap:0;grid-auto-flow:dense;align-items:start}.config-grade.config-colunas>.cartao-config{margin:0}*{box-sizing:border-box}body{margin:0;font:16px system-ui}nav{padding:20px;background:#ddd}main{max-width:1000px;margin:auto;padding:20px}.config-grade{display:grid;grid-template-columns:1fr;gap:20px}.cartao-config{border:1px solid #bbb;border-radius:8px;padding:20px}.par-campo{display:grid;grid-template-columns:1fr 52%;gap:10px;padding:12px 0}.par-campo.largo{grid-template-columns:1fr}.controle>*:not([type=checkbox]){max-width:100%;width:100%}select,input,button{padding:10px;min-height:40px}input[type=hidden]{display:none}.barra-salvar{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #999;padding:10px;z-index:10;display:flex;justify-content:space-between}.nota{line-height:1.6}#copia{min-height:350px;margin:30px 0 100px}pre{white-space:pre-wrap}@media(min-width:1000px){.config-grade{grid-template-columns:1fr 1fr}}`;
+// a regra dos níveis da página (o quadro do outro nível some) é a do estilo.css de verdade, não uma cópia
+const estiloNiveis = fs.readFileSync(path.join(__dirname, '..', 'estilo.css'), 'utf8').split('\n').filter((l) => l.includes('data-nivel-visto')).join('\n');
+if (!/display:\s*none/.test(estiloNiveis)) { throw new Error('o estilo.css não tem a regra dos níveis da Configuração (data-nivel-visto)'); }
 async function montar(page, fixture) {
   // document.open (setContent) descarta os listeners da montagem anterior; cada recarga tem novo estado de JS.
-  await page.setContent('<!doctype html><html lang="'+fixture.lingua+'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+estilo+'</style><body><nav id="menu">'+fixture.lingua+'</nav><main id="configuracao"></main></body></html>');
+  await page.setContent('<!doctype html><html lang="'+fixture.lingua+'"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+estilo+estiloNiveis+'</style><body><nav id="menu">'+fixture.lingua+'</nav><main id="configuracao"></main></body></html>');
   await page.evaluate(({f,salvas})=>{
     window.fixture=f;
     window.fixtureAPI=p=>Promise.resolve(structuredClone(p.recurso==='config'?f.dados:p.recurso==='migracoes'?{pendentes:[]}:
@@ -135,7 +138,13 @@ async function recarga(page){
     // Cookie automático antigo, parâmetro lingua= na URL, âncora e armazenamento indisponível.
     const ctx=await browser.newContext({viewport:{width:390,height:844}});const page=await ctx.newPage();
     const f=inicial();f.url='http://relojoeiro.test/configuracao.php?lingua=pt-BR&outro=1#copia';f.semStorage=true;f.cookies.lingua_auto='pt-BR';
-    await montar(page,f);await page.selectOption('[name=idioma]','fr');await page.evaluate(()=>window.scrollTo(0,800));
+    // (a âncora de um quadro do sistema abre a página do master no nível do sistema: o Idioma é da coleção, na outra aba; o
+    // nível escolhido vai no endereço, e a página volta nele depois de recarregar)
+    await montar(page,f);
+    assert.equal(await page.getAttribute('#configuracao','data-nivel-visto'),'sistema');
+    await page.click('.abas-nivel a[data-nivel-ir=colecao]');
+    assert.equal(new URL((await estado(page)).url).searchParams.get('nivel'),'colecao');
+    await page.selectOption('[name=idioma]','fr');await page.evaluate(()=>window.scrollTo(0,800));
     const pos=await page.evaluate(()=>appTeste.posicao());await salvar(page);await recarga(page);
     const depois=await estado(page);assert.equal(new URL(depois.url).searchParams.has('lingua'),false);assert.equal(new URL(depois.url).hash,'#copia');
     assert.equal(depois.cookies.lingua,'fr');assert.equal(depois.cookies.lingua_auto,undefined);
@@ -166,6 +175,7 @@ async function recarga(page){
     const sistema=inicial();sistema.dados.sistema.parametros=[{chave:'rodizio_ativo',nome:'Rodízio: padrão do sistema',descricao:'1 ligado; 0 desligado',tipo:'sim_nao',valor:0,origem:'sistema',config_php:null,config_valor:null,padrao:1,minimo:0,maximo:1}];
     await montar(page,sistema);
     assert.equal(await page.locator('[name="parametros[rodizio_ativo]"] option[value=""]').textContent(),'Padrão: sim');
+    await page.click('.abas-nivel a[data-nivel-ir=sistema]');
     await page.selectOption('[name="parametros[rodizio_ativo]"]','');await salvar(page);await page.locator('#aviso-config').waitFor();
     assert.equal((await estado(page)).posts.at(-1)['parametros[rodizio_ativo]'],'');total++;
     // As opções em três níveis: vazio herda (a primeira escolha da lista diz de onde), o botão Herdar esvazia o campo de hora e de
@@ -179,8 +189,21 @@ async function recarga(page){
     assert.equal(await page.inputValue('[name=painel_modo]'),'flutuante');
     await page.click('[data-herdar=uso_fim]');await page.click('[data-herdar=carga_limiar]');
     assert.equal(await page.inputValue('[name=uso_fim]'),'');assert.equal(await page.inputValue('[name=carga_limiar]'),'');
+    // Para o master, a página mostra um nível por vez (as abas do alto): abre em "Esta coleção", com os quadros do sistema
+    // escondidos; a aba Sistema troca sem recarregar (o que foi digitado na coleção continua), e nenhum rótulo fica duas vezes à vista.
+    const rotulosRepetidos=()=>page.evaluate(()=>{const v={};document.querySelectorAll('#configuracao .par-campo').forEach(p=>{const r=p.querySelector(':scope > .rotulo');if(!r||p.offsetParent===null)return;const c=r.cloneNode(true);c.querySelectorAll('button, small').forEach(x=>x.remove());const t=c.textContent.replace(/\s+/g,' ').trim();v[t]=(v[t]||0)+1;});return Object.keys(v).filter(k=>v[k]>1);});
+    assert.equal(await page.getAttribute('#configuracao','data-nivel-visto'),'colecao');
+    assert.equal((await page.textContent('.abas-nivel a.ativa')).trim(),'Esta coleção');
+    assert.equal(await page.isVisible('[name="padroes[uso_fim]"]'),false);assert.equal(await page.isVisible('[name=uso_fim]'),true);
+    assert.deepEqual(await rotulosRepetidos(),[]);
+    await page.click('.abas-nivel a[data-nivel-ir=sistema]');
+    assert.equal(await page.getAttribute('#configuracao','data-nivel-visto'),'sistema');
+    assert.equal(await page.isVisible('[name="padroes[uso_fim]"]'),true);assert.equal(await page.isVisible('[name=uso_fim]'),false);
+    assert.deepEqual(await rotulosRepetidos(),[]);
     assert.equal(await page.inputValue('[name="padroes[uso_fim]"]'),'23:00');
     await page.fill('[name="padroes[carga_limiar]"]','35');await page.selectOption('[name="padroes[painel_modo]"]','flutuante');
+    await page.click('.abas-nivel a[data-nivel-ir=colecao]');
+    assert.equal(await page.inputValue('[name="padroes[carga_limiar]"]'),'35');assert.equal(await page.isVisible('[name=uso_fim]'),true);
     await salvar(page);await page.locator('#aviso-config').waitFor();
     const gravado=(await estado(page)).posts.at(-1);
     assert.equal(gravado.uso_fim,'');assert.equal(gravado.carga_limiar,'');assert.equal(gravado.semana_inicio,'');
@@ -188,7 +211,9 @@ async function recarga(page){
     // quem não é master não vê os padrões do sistema
     const semMaster=inicial();semMaster.dados.sistema.pode_mudar=false;semMaster.dados.sistema.padroes=null;
     await montar(page,semMaster);
-    assert.equal(await page.locator('[name^="padroes["]').count(),0);total++;
+    assert.equal(await page.locator('[name^="padroes["]').count(),0);
+    // (e não tem as abas dos níveis: vê tudo numa página só)
+    assert.equal(await page.locator('.abas-nivel').count(),0);assert.equal(await page.getAttribute('#configuracao','data-nivel-visto'),null);total++;
     // O empilhamento acompanha largura, texto e altura sem trocar a ordem dos campos nem sobrepor cartões.
     const layout=inicial();layout.dados.sistema.parametros=Array.from({length:6},(_,i)=>({chave:'teste'+i,nome:'Parâmetro '+i,descricao:'Descrição da opção. '.repeat(i+2),tipo:'sim_nao',valor:1,origem:'padrao',config_php:null,config_valor:null,padrao:1,minimo:0,maximo:1}));
     await page.setViewportSize({width:1440,height:900});await montar(page,layout);

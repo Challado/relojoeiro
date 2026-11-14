@@ -69,6 +69,9 @@ module.exports = [
   { nome: 'modos', url: 'modos.php' },
   { nome: 'modos-editar', url: 'modos.php?editar=2' },
   { nome: 'configuracao', url: 'configuracao.php' },
+  // a Configuração do master mostra um nível por vez (as abas do alto): este é o do sistema (os padrões, os parâmetros, as
+  // senhas, o cron, a cópia de segurança e o SQL)
+  { nome: 'configuracao-sistema', url: 'configuracao.php?nivel=sistema' },
   { nome: 'avisos', url: 'avisos.php' },
   { nome: 'avisos-editar', url: 'avisos.php?editar=1&evento=1' },
   { nome: 'documentos', url: 'documentos.php?relogio=1' },

@@ -704,6 +704,14 @@ con `calibre`.
 
 **Las opciones en tres niveles.** Cada opción de la colección que no es del sistema entero (los horarios, los límites, el gasto de la batería, la semana y la escala, las pantallas: 33 en total) sigue la jerarquía **sistema → usuario → colección**, la misma de la rotación: el **master** elige el valor predeterminado del sistema (en el cuadro **Valores predeterminados del sistema**), cada **dueño** elige el de sus colecciones (en **Mi cuenta**, **Valores predeterminados de mis colecciones**) y cada **colección** puede elegir el suyo. Prevalece lo más específico; lo de arriba es solo un valor predeterminado, nunca un bloqueo. Un campo vacío **hereda** (la etiqueta dice de dónde viene el valor actual: del usuario, del sistema o el valor de fábrica); en las listas, la primera opción es **Heredar (…)**; en los campos de hora y de número, el botón **Heredar** vacía el campo. Vale también para los miembros y para el cron, que siguen al dueño de la colección. Una colección nueva nace heredando todo; las que ya existían siguen con el valor que tenían, y la migración v58 pasa a vacío los que eran iguales al valor de fábrica. Cambiar un valor predeterminado rehace lo que depende de él en cada colección que hereda (el «cierra a las» de la muñeca y del sol, el fin de la escala inteligente); un horario de uso que dejaría alguna colección con el fin antes del inicio se rechaza y no cambia nada. Por la API: `config/salvar` con la clave de la opción (la colección), `conta/alterar` con `opcoes[<chave>]` (el dueño) y `config/salvar` con `padroes[<chave>]` (el sistema, solo el master); la respuesta de `recurso=config` trae `opcoes` con la elección de cada nivel, lo que hereda y de dónde.
 
+**Un nivel a la vez.** Para el master, la Configuración tiene dos pestañas arriba: **Esta colección** (lo que vale en esta
+colección: los recuadros **Rutina del día**, **Límites y cálculos**, **Pantallas**, **Sorteos** y **Avisos, recordatorios y
+mensajes**) y **Sistema** (lo que es de todo el sistema: **Contraseñas**, **Cron**, **Sistema**, **Valores predeterminados
+del sistema**, **Copia de seguridad** y el **SQL**). Así cada opción aparece una sola vez en la pantalla, y no la de la
+colección y la del sistema una debajo de la otra. Cambiar de pestaña no pierde lo que usted escribió, y **Guardar
+configuración** graba los dos niveles de una vez. Quien no es master no tiene el nivel del sistema para cambiar y ve todo en
+una sola página.
+
 Quedan fuera, a propósito: lo que es del sistema entero por naturaleza (la fuerza de la contraseña, la dirección del sistema, las rondas del cron y los parámetros del cuadro **Sistema**), el idioma y la zona horaria (siguen a la persona que mira: la suya, después la de la colección, después la del sistema), la rotación y el reloj de ayer sin uso (ya tienen los tres niveles, con la columna propia del usuario) y lo que solo puede quedar en el `config.php` (la base de datos, las claves, las carpetas y el e-mail).
 
 ### Las marcas
@@ -1824,6 +1832,9 @@ explicaciones del panel del reloj abierto.
 subpantallas que se recogen, una por **Vale para**: todos los relojes juntos en la primera, después cada grupo en el orden
 del árbol (y, en los campos, los accesorios por tipo, los winders y las posiciones de los winders). En la fórmula, el Vale
 para es su versión para ese punto del árbol. La subpantalla cerrada también queda cerrada en ese aparato.
+
+En el ordenador, todas las páginas usan todo el ancho de la ventana, con un margen mínimo a los lados, como la página Hoy;
+solo la **Ayuda** y el **Pasaporte**, que son hojas de lectura, quedan en una columna en el centro.
 
 | Página | Para qué sirve |
 |---|---|

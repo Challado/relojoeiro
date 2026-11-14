@@ -254,6 +254,65 @@ function examinar(seletorRaiz) {
       probs.push({ tipo: 'ajuda-solta', det: 'o ⓘ não encosta no rótulo nem no campo que explica', quem: nomear(b.parentElement) });
     }
   }
+  // A mesma opção duas vezes à vista na mesma página: dois campos (cada um num .par-campo) com o mesmo rótulo. A opção que
+  // existe em mais de um nível (a coleção, o dono, o sistema) aparece num nível por vez (as abas da Configuração), e não uma
+  // embaixo da outra; e um formulário não repete um campo
+  {
+    const rotulos = new Map();
+    for (const par of raiz.querySelectorAll('.par-campo')) {
+      const rot = par.querySelector(':scope > .rotulo');
+      if (!rot || !visivel(par) || !par.querySelector('input:not([type=hidden]), select, textarea, .lista-ordenavel')) continue;
+      // o texto do rótulo sem o ⓘ (a última palavra vai colada a ele, num elemento: conta o texto todo, menos o botão)
+      const copia = rot.cloneNode(true);
+      copia.querySelectorAll('button, small').forEach((x) => x.remove());
+      const texto = copia.textContent.replace(/\s+/g, ' ').trim();
+      if (texto.length < 4) continue;
+      // (os formulários que se repetem de propósito, um por linha de cadastro, não são a mesma opção: conta-se por formulário)
+      const chave = texto + '\u0001' + ([...document.forms].indexOf(par.closest('form')));
+      if (!rotulos.has(chave)) rotulos.set(chave, []);
+      rotulos.get(chave).push(par);
+    }
+    for (const [chave, pares] of rotulos) {
+      if (pares.length > 1) {
+        probs.push({ tipo: 'opcao-repetida', det: 'a opção «' + chave.split('\u0001')[0].slice(0, 60) + '» aparece ' + pares.length + ' vezes à vista no mesmo formulário', quem: nomear(pares[1].closest('section, fieldset, form') || pares[1]) });
+      }
+    }
+  }
+  // As caixas de marcar (checkbox e radio) em coluna. Dois defeitos que deixam uma lista "toda torta":
+  // 1. a caixa esticada: uma regra de largura feita para os campos de texto (flex: 1, width: 100%) pega também a caixa, que
+  //    fica com dezenas de px de largura e a marca desenhada no meio dela, cada linha num lugar (a esquerda da caixa é a
+  //    mesma em todas as linhas: só a largura denuncia). As chaves desenhadas pelo CSS (appearance: none) têm a forma delas
+  for (const cx of raiz.querySelectorAll('input[type=checkbox], input[type=radio]')) {
+    if (!visivel(cx) || getComputedStyle(cx).appearance === 'none') continue;
+    const r = cx.getBoundingClientRect();
+    if (r.width > r.height * 1.6 + 2) {
+      probs.push({ tipo: 'caixa-esticada', det: 'a caixa de marcar com ' + Math.round(r.width) + 'x' + Math.round(r.height) + 'px: a marca fica no meio dela, fora da coluna das outras linhas', quem: nomear(cx.closest('label, li') || cx.parentElement) });
+    }
+  }
+  // 2. a coluna das caixas: nas linhas irmãs de uma lista (três ou mais filhos do mesmo tipo, um embaixo do outro, com a
+  //    mesma esquerda), a primeira caixa de cada linha fica na mesma distância do começo da linha (a linha recuada de propósito,
+  //    como o nível de uma árvore, leva o recuo dela junto: conta-se do começo do conteúdo da linha)
+  for (const pai of raiz.querySelectorAll('*')) {
+    if (pai.children.length < 3) continue;
+    const grupos = new Map();
+    for (const f of pai.children) {
+      const k = f.tagName + '.' + f.className;
+      if (!grupos.has(k)) grupos.set(k, []);
+      grupos.get(k).push(f);
+    }
+    for (const irmaos of grupos.values()) {
+      const linhas = irmaos.filter(visivel).map((f) => ({ f, r: f.getBoundingClientRect(), cx: [...f.querySelectorAll('input[type=checkbox], input[type=radio]')].filter(visivel)[0] })).filter((x) => x.cx);
+      if (linhas.length < 3) continue;
+      // um embaixo do outro, na mesma esquerda (as etiquetas lado a lado, que quebram de linha, não são uma coluna)
+      const empilhadas = linhas.every((x, i) => Math.abs(x.r.left - linhas[0].r.left) <= 1 && (i === 0 || x.r.top >= linhas[i - 1].r.bottom - 1));
+      if (!empilhadas) continue;
+      const pos = linhas.map((x) => { const c = x.cx.getBoundingClientRect(); return Math.round(c.left + c.width / 2 - x.r.left - parseFloat(getComputedStyle(x.f).paddingLeft || 0)); });
+      const min = Math.min(...pos), max = Math.max(...pos);
+      if (max - min > 2) {
+        probs.push({ tipo: 'caixas-desalinhadas', det: 'a caixa de marcar de cada linha num lugar: de ' + min + ' a ' + max + 'px do começo da linha (' + linhas.length + ' linhas)', quem: nomear(pai) });
+      }
+    }
+  }
   // Cartões independentes: uma linha da grade não pode deixar uma coluna vazia até o cartão vizinho terminar.
   // O fim mais baixo da coluna é natural; o defeito é um vão interno em que o próximo cartão poderia começar antes.
   for (const grade of raiz.querySelectorAll('#form-config .config-grade, #form-config .parametros-sistema')) {

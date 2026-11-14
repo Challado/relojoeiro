@@ -710,6 +710,13 @@ so it can be removed. Through the API: `recurso=documentos` with `calibre=` (and
 
 **The options in three levels.** Each collection option that is not for the whole system (the times, the limits, the battery drain, the week and the schedule, the screens: 33 in all) follows the hierarchy **system → user → collection**, the same as the rotation: the **master** chooses the system default (in the **System defaults** card), each **owner** chooses the default of their collections (in **My account**, **Defaults for my collections**) and each **collection** can choose its own. The most specific wins; the one above is only a default, never a block. An empty field **inherits** (the label says where the current value comes from: the user, the system or the factory default); in lists, the first choice is **Inherit (…)**; in time and number fields, the **Inherit** button empties the field. It also applies to members and to the cron, which follow the collection's owner. A new collection is born inheriting everything; the ones that already existed keep the value they had, and migration v58 turns to empty the ones that were equal to the factory default. Changing a default redoes what depends on it in every collection that inherits (the "closes at" of the wrist and the sun, the end of the smart schedule); a usage time that would leave any collection with the end before the start is refused and nothing changes. Through the API: `config/salvar` with the option key (the collection), `conta/alterar` with `opcoes[<chave>]` (the owner) and `config/salvar` with `padroes[<chave>]` (the system, master only); the `recurso=config` response brings `opcoes` with each level's choice, what it inherits and from where.
 
+**One level at a time.** For the master, Settings has two tabs at the top: **This collection** (what applies to this
+collection: the cards **Daily routine**, **Limits and calculations**, **Screens**, **Draws** and **Alerts, reminders and
+messages**) and **System** (what belongs to the whole system: **Passwords**, **Cron**, **System**, **System defaults**,
+**Backup** and the **SQL**). This way each option appears only once on the screen, instead of the collection's and the
+system's one below the other. Changing tabs does not lose what you typed, and **Save settings** writes both levels at once.
+Whoever is not the master has no system level to change and sees everything on a single page.
+
 Left out on purpose: what belongs to the whole system by nature (the password strength, the system address, the cron rounds and the parameters of the **System** card), the language and the time zone (they follow the person looking: their own choice, then the collection's, then the system's), the rotation and yesterday's unused watch (they already have the three levels, with the user's own column) and what can only stay in `config.php` (the database, the keys, the folders and the e-mail).
 
 ### Brands
@@ -1827,6 +1834,9 @@ explanations of the open watch panel.
 collapse, one per **Applies to**: all watches together in the first, then each group in tree order (and, for the fields,
 the accessories by type, the winders and the winder positions). For a formula, the Applies to is its version for that point
 of the tree. A closed sub-panel also stays closed on that device.
+
+On a computer, every page uses the whole width of the window, with a minimum margin on the sides, like the Today page; only
+**Help** and the **Passport**, which are reading sheets, stay in a column in the middle.
 
 | Page | What it's for |
 |---|---|

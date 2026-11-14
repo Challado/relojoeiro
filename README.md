@@ -1544,6 +1544,13 @@ o fim antes do início é recusado e nada muda. Pela API: `config/salvar` com a 
 `opcoes[<chave>]` (o dono) e `config/salvar` com `padroes[<chave>]` (o sistema, só o master); a resposta de `recurso=config` traz
 `opcoes` com a escolha de cada nível, o que herda e de onde.
 
+**Um nível por vez.** Para o master, a Configuração tem duas abas no alto: **Esta coleção** (o que vale nesta coleção: os
+quadros **Rotina do dia**, **Limites e contas**, **Telas**, **Sorteios** e **Avisos, lembretes e mensagens**) e **Sistema**
+(o que é do sistema inteiro: **Senhas**, **Cron**, **Sistema**, **Padrões do sistema**, **Cópia de segurança** e o **SQL**).
+Assim cada opção aparece uma vez só na tela, e não a da coleção e a do sistema uma embaixo da outra. Trocar de aba não perde
+o que você digitou, e o **Salvar configuração** grava os dois níveis de uma vez. Quem não é master não tem o nível do
+sistema para mudar e vê tudo numa página só.
+
 Ficam de fora, de propósito: o que é do sistema inteiro por natureza (a força da senha, o endereço do sistema, as rodadas do cron e
 os parâmetros do quadro **Sistema**), o idioma e o fuso (seguem a pessoa que olha: a escolha dela, depois a da coleção, depois a do
 sistema), o rodízio e o relógio de ontem sem uso (já têm os três níveis, com a coluna própria do usuário) e o que só pode ficar no
@@ -1857,6 +1864,9 @@ Grupos**; e assim por diante). Na Hoje, a gaveta traz também as explicações d
 que recolhem, uma por **Vale para**: todos os relógios juntos na primeira, depois cada grupo na ordem da árvore (e, nos
 campos, os acessórios por tipo, os winders e as posições dos winders). Na fórmula, o Vale para é a versão dela para aquele
 ponto da árvore. A subtela fechada também fica fechada naquele aparelho.
+
+No computador, todas as páginas usam a largura toda da janela, com uma margem mínima dos lados, como a página Hoje; só a
+**Ajuda** e o **Passaporte**, que são folhas de leitura, ficam numa coluna no meio.
 
 | Página | Para que serve |
 |---|---|
