@@ -1,4 +1,4 @@
-<!-- origem: 9b7d42ec276236a39c9b2c8b79f9c609efb07447 -->
+<!-- origem: 971e6a399e6a3c5a59a7290fb14d123d2e3e6ace -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -379,10 +379,13 @@ generador de PHP, porque un número que viaja por internet no sirve para secreto
 Al pie de la página **Plan** (el lugar principal: el cuadro **Borrar la programación**, al final de la página, después del día
 a día) y en el cuadro **Modo de rotación** de la página Hoy (cada uno debajo de una línea, como **Sortear de nuevo**):
 
-- **Borrar un período**: **Desde** y **Hasta**; uno de los dos puede quedar vacío (solo **Desde** borra desde él hasta el
-  final del plan; solo **Hasta**, desde mañana hasta él). Los días del período salen del plan, de mañana en adelante (los
-  elegidos a mano, los sorteados y los libres), y el modo de rotación vuelve a montar esos días, solo ellos: los demás días quedan como están (también en la escala
-  inteligente). El botón **Borrar** pide confirmación.
+- **Borrar un período**: la lista **Qué hacer**, **Desde** y **Hasta**; uno de los dos puede quedar vacío (solo **Desde**
+  borra desde él hasta el final del plan; solo **Hasta**, desde mañana hasta él). Los días del período salen del plan, de
+  mañana en adelante (los elegidos a mano, los sorteados y los libres), y la lista dice qué queda en su lugar: en **Borrar y
+  quitar los registros** (la inicial), el modo de rotación vuelve a montar esos días, solo ellos: los demás días quedan como
+  están (también en la escala inteligente); en **Borrar y dejar los días libres**, quedan libres, sin reloj y sin sorteo,
+  para que usted elija a mano (con los **Días sin reloj (descanso)** desactivados en la Configuración, esa opción queda
+  deshabilitada). El botón **Borrar** pide confirmación.
 - **Borrar todo**: limpia toda la programación, de mañana en adelante: los días elegidos a mano, los sorteados y los libres.
   Marcando **Incluyendo hoy**, borra de hoy en adelante (si sale otro reloj para hoy, pasa a ser el de la muñeca desde ese
   momento). Después el modo de rotación vuelve a armar el plan, desde cero: hasta el último día de la última de las semanas del modo (las
@@ -2042,13 +2045,14 @@ relojes en orden, N días seguidos cada uno.)
 **No me gustó lo que salió en un período. ¿Cómo lo borro?**
 Al pie de la página **Plan** (o en el cuadro **Modo de rotación** de la página Hoy), en **Borrar un período**: ponga el
 inicio, el final o los dos (solo el inicio: desde él hasta el final del plan; solo el final: desde mañana hasta él) y haga
-clic en **Borrar**. Los días salen del plan (los elegidos a mano, los sorteados y los libres) y el modo de rotación vuelve a
-montar esos días. Vale de mañana en adelante (hoy ya tiene el reloj en la muñeca: para él, el **Sortear de nuevo** del modo
-de rotación o el **cambiar por…**). Para dejar días sin reloj, marque *libre* en la Rotación manual: aparecen como *libre:
-elija a mano*, ni el sorteo ni la escala les ponen reloj, cada uno se elige en el **elegir…** del propio día y **↺ volver a
-sortear** devuelve el día al sorteo. En un día libre que llega, no hay reloj del día: la muñeca automática no pone ninguno, y
-usted elige. Para empezar de cero: **Borrar todo** (con **Incluyendo hoy**, también hoy). Vea [Borrar la
-programación](#apagar-a-programação).
+clic en **Borrar**. Los días salen del plan (los elegidos a mano, los sorteados y los libres) y, en **Borrar y quitar los
+registros** (la opción inicial de la lista), el modo de rotación vuelve a montar esos días. Vale de mañana en adelante (hoy
+ya tiene el reloj en la muñeca: para él, el **Sortear de nuevo** del modo de rotación o el **cambiar por…**). Para dejar sin
+reloj los días del período, elija **Borrar y dejar los días libres** en la lista (o marque *libre* en la Rotación manual):
+aparecen como *libre: elija a mano*, ni el sorteo ni la escala les ponen reloj, cada uno se elige en el **elegir…** del
+propio día y **↺ volver a sortear** devuelve el día al sorteo. En un día libre que llega, no hay reloj del día: la muñeca
+automática no pone ninguno, y usted elige. Para empezar de cero: **Borrar todo** (con **Incluyendo hoy**, también hoy). Vea
+[Borrar la programación](#apagar-a-programação).
 
 **El reloj está en el cargador (o al sol): ¿qué aparece?**
 El estado muestra dónde está (*En el cargador desde 06:30*). En el smartwatch, la batería sube según el campo *En el cargador:

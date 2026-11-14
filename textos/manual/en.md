@@ -1,4 +1,4 @@
-<!-- origem: 9b7d42ec276236a39c9b2c8b79f9c609efb07447 -->
+<!-- origem: 971e6a399e6a3c5a59a7290fb14d123d2e3e6ace -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -385,10 +385,13 @@ secrets.
 At the bottom of the **Plan** page (the main place: the **Erase the schedule** box, at the end of the page, after the day by
 day) and in the **Rotation mode** box on the Today page (each below a line, like **Draw again**):
 
-- **Erase a period**: **From** and **To**; one of the two can stay empty (only **From** erases from it to the end of the
-  plan; only **To**, from tomorrow to it). The period's days leave the plan, from tomorrow on (the ones chosen by hand, the
-  drawn ones and the free ones), and the rotation mode builds these days again, only them: the other days stay as they are (in the smart schedule too). The
-  **Erase** button asks for confirmation.
+- **Clear a period**: the **What to do** list, **From** and **To**; one of the two can stay empty (only **From** erases from
+  it to the end of the plan; only **To**, from tomorrow to it). The period's days leave the plan, from tomorrow on (the ones
+  chosen by hand, the drawn ones and the free ones), and the list says what takes their place: with **Clear and remove the
+  records** (the initial one), the rotation mode builds these days again, only them: the other days stay as they are (in the
+  smart schedule too); with **Clear and leave the days free**, they stay free, with no watch and no draw, for you to choose
+  by hand (with **Days without a watch (day off)** turned off in Settings, this choice is disabled). The **Clear** button
+  asks for confirmation.
 - **Erase all**: clears the whole schedule, from tomorrow on: the days chosen by hand, the drawn ones and the free ones.
   Ticking **Including today**, it erases from today on (if another watch comes up for today, it becomes the one on the wrist
   from now on). Then the rotation mode builds the plan again, from scratch: up to the last day of the last of the mode's weeks (the
@@ -2046,15 +2049,16 @@ you draw again or build the next week. (Through the API, there is also the `peri
 in order, N days in a row each.)
 
 **I didn't like what came up in a period. How do I erase it?**
-At the bottom of the **Plan** page (or in the **Rotation mode** box on the Today page), in **Erase a period**: set the start,
-the end or both (only the start: from it to the end of the plan; only the end: from tomorrow to it) and click **Erase**. The
-days leave the plan (the ones chosen by hand, the drawn ones and the free ones) and the rotation mode builds these days again.
-It applies from tomorrow on (today already has the watch on the wrist: for it, the rotation mode's **Draw again** or the
-**change to…**). To leave days without a watch, mark *free* in the Manual rotation: they show as *free: choose by hand*,
-neither the draw nor the schedule puts a watch on them, each one is chosen in the day's own **choose…**, and **↺ draw again**
-returns the day to the draw. On a free day that arrives, there is no watch of the day: the automatic wrist doesn't put any,
-and you choose. To start over from scratch: **Erase all** (with **Including today**, today too). See [Erase the
-schedule](#apagar-a-programação).
+At the bottom of the **Plan** page (or in the **Rotation mode** box on the Today page), in **Clear a period**: set the
+start, the end or both (only the start: from it to the end of the plan; only the end: from tomorrow to it) and click
+**Clear**. The days leave the plan (the ones chosen by hand, the drawn ones and the free ones) and, with **Clear and remove
+the records** (the list's initial choice), the rotation mode builds these days again. It applies from tomorrow on (today
+already has the watch on the wrist: for it, the rotation mode's **Draw again** or the **change to…**). To leave the period's
+days without a watch, choose **Clear and leave the days free** in the list (or mark *free* in the Manual rotation): they
+show as *free: choose by hand*, neither the draw nor the schedule puts a watch on them, each one is chosen in the day's own
+**choose…**, and **↺ draw again** returns the day to the draw. On a free day that arrives, there is no watch of the day: the
+automatic wrist doesn't put any, and you choose. To start over from scratch: **Erase all** (with **Including today**, today
+too). See [Erase the schedule](#apagar-a-programação).
 
 **The watch is on the charger (or in the sun): what shows?**
 The state shows where it is (*On the charger since 06:30*). On the smartwatch, the battery goes up by the *On the charger:

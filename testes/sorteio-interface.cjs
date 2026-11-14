@@ -1,7 +1,9 @@
 // A lista do "Sortear de novo" (página Hoje), no navegador, sobre o servidor do cenário: todas as opções ficam na lista, e a que não vale
 // agora fica desabilitada, com o motivo no próprio texto e no title (a partir de hoje, a partir de amanhã, inclusive hoje e a
 // próxima semana). Confere quatro situações (trocar_hoje desligado e ligado, modo de 2 semanas, escala inteligente),
-// que a explicação acompanha a escolhida e que o clique em Sortear roda a próxima semana. Restaura a Configuração e o modo.
+// que a explicação acompanha a escolhida e que o clique em Sortear roda a próxima semana. Confere também a lista "O que fazer"
+// do Apagar um período (Hoje e Plano): as duas escolhas, e a de deixar os dias livres desabilitada, com o motivo, quando os
+// dias sem relógio estão desligados na Configuração. Restaura a Configuração e o modo.
 //   BASE=http://127.0.0.1:8101/ node testes/sorteio-interface.cjs    (RELOGIOS_USUARIO, RELOGIOS_SENHA, RELOGIOS_TOKEN: os do config de teste)
 const { chromium } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const BASE = process.argv[2] || process.env.BASE;
@@ -74,6 +76,27 @@ async function api(p, post) {
   console.log('opções desabilitadas na lista:', off);
   await conf({ trocar_hoje: '0' });
   if (modoAntes) await api({ recurso: 'modos', acao: 'ativar', id: modoAntes.id }, true);
+  // a lista "O que fazer" do Apagar um período (Hoje e Plano): as duas escolhas ficam na lista; com os dias sem relógio
+  // desligados na Configuração, a de deixar os dias livres fica desabilitada, com o motivo no texto e no title
+  async function apagar(url) {
+    const pa = await c.newPage();
+    await pa.goto(BASE + url, { waitUntil: 'networkidle' });
+    const o = await pa.$$eval('form.apagar-periodo select[name="acao"] option', (os) => os.map((x) => ({ valor: x.value, texto: x.textContent.trim(), off: x.disabled, titulo: x.title, sel: x.selected })));
+    await pa.close();
+    return o;
+  }
+  for (const url of ['', 'plano.php']) {
+    await conf({ dia_sem_relogio: '' });
+    let a = await apagar(url);
+    console.log('\nApagar um período em ' + (url || 'index.php') + ':');
+    a.forEach((x) => console.log('  ' + (x.off ? '[desabilitada] ' : '[ok]           ') + x.texto));
+    if (!(a.length === 2 && a[0].valor === 'periodo_sortear' && a[0].sel && !a[0].off && a[1].valor === 'periodo_livre' && !a[1].off)) falhas.push('Apagar um período (' + (url || 'index.php') + '): a lista devia ter as duas escolhas habilitadas, com a de remover os registros escolhida :: ' + JSON.stringify(a));
+    await conf({ dia_sem_relogio: '0' });
+    a = await apagar(url);
+    a.forEach((x) => console.log('  sem os dias sem relógio: ' + (x.off ? '[desabilitada] ' : '[ok]           ') + x.texto));
+    if (!(a.length === 2 && !a[0].off && a[1].valor === 'periodo_livre' && a[1].off && /indisponível: .+/.test(a[1].texto) && a[1].titulo !== '')) falhas.push('Apagar um período (' + (url || 'index.php') + '): com os dias sem relógio desligados, a de deixar os dias livres devia ficar desabilitada, com o motivo :: ' + JSON.stringify(a));
+  }
+  await conf({ dia_sem_relogio: '' });
   await b.close();
   console.log('\nfalhas:', falhas.length); falhas.forEach((f) => console.log(' -', f));
   process.exit(falhas.length ? 1 : 0);

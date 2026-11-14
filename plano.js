@@ -78,7 +78,7 @@ function montarPlano() {
 
   // o rodapé: apagar os dias de um período (o modo monta de novo) e apagar tudo, depois de tudo o mais
   if (rodizioAtivo) {
-    res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje) + formApagarTudo(d.trocar_hoje));
+    res += el("footer", {"class": "cartao-config apagar-plano", "id": "apagar"}, el("h2", {}, t("Apagar a programação")) + formApagarPeriodo(d.hoje, d.dia_sem_relogio) + formApagarTudo(d.trocar_hoje));
   }
 
   var main = document.getElementById("plano");

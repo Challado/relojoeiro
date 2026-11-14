@@ -455,18 +455,26 @@ function navPaginas(pagina, paginas, atributo) {
   return el("nav", {"class": "paginas", "aria-label": t("Páginas")}, res);
 }
 
-// Apagar um período do plano (página Plano e quadro Modo de rodízio): os dias saem da tabela, de amanhã em diante, e o modo de
-// rodízio monta esses dias de novo (rodizio periodo_sortear). Um dos lados pode ficar vazio: sem o começo, de amanhã até o
-// fim; sem o fim, do começo até o último dia do plano. hoje: AAAA-MM-DD
-function formApagarPeriodo(hoje) {
-  return el("form", {"data-recurso": "rodizio", "class": "apagar-periodo", "onsubmit": "return confirm(this.getAttribute('data-confirma'))",
-      "data-confirma": t("Apagar os dias deste período do plano (escolhidos à mão, sorteados e livres)? O modo de rodízio monta esses dias de novo.")},
-    el("input", {"type": "hidden", "name": "acao", "value": "periodo_sortear"})
-    + el("span", {"class": "campo-principal"}, t("Apagar um período"))
-    + el("div", {"class": "linha-apagar"}, el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "min": hoje})}))
+// Apagar um período do plano (página Plano e quadro Modo de rodízio): os dias saem da tabela, de amanhã em diante, e a lista
+// diz o que fica no lugar: "Apagar e remover os registros" (rodizio periodo_sortear: o modo de rodízio monta esses dias de
+// novo) ou "Apagar e deixar os dias livres" (rodizio periodo_livre: sem relógio e sem sorteio). Um dos lados pode ficar
+// vazio: sem o começo, de amanhã até o fim; sem o fim, do começo até o último dia do plano. hoje: AAAA-MM-DD; semRelogio: o
+// dia_sem_relogio da API (falso: o "deixar os dias livres" fica na lista, desabilitado, com o motivo)
+function formApagarPeriodo(hoje, semRelogio) {
+  var livres = t("Apagar e deixar os dias livres");
+  var motivo = t("os dias sem relógio estão desligados na Configuração");
+  return el("form", {"data-recurso": "rodizio", "class": "apagar-periodo", "onsubmit": "return confirm(this.getAttribute(this.acao.value === 'periodo_livre' ? 'data-confirma-livre' : 'data-confirma'))",
+      "data-confirma": t("Apagar os dias deste período do plano (escolhidos à mão, sorteados e livres)? O modo de rodízio monta esses dias de novo."),
+      "data-confirma-livre": t("Apagar os dias deste período do plano (escolhidos à mão, sorteados e livres) e deixar todos livres? Eles ficam sem relógio e sem sorteio, até você escolher um relógio para cada um ou apagar o período de novo.")},
+    el("span", {"class": "campo-principal"}, t("Apagar um período"))
+    + el("div", {"class": "linha-apagar"}, el("label", {}, t("O que fazer {1}", {1: el("select", {"name": "acao"},
+        el("option", {"value": "periodo_sortear", "selected": true}, t("Apagar e remover os registros"))
+        + (semRelogio ? el("option", {"value": "periodo_livre"}, livres)
+          : el("option", {"value": "periodo_livre", "disabled": true, "title": motivo}, h(t("{1} — indisponível: {2}", {1: livres, 2: motivo})))))}))
+      + el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "min": hoje})}))
       + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "ate", "min": hoje})}))
       + el("button", {"class": "leve"}, t("Apagar")))
-    + ajudaNota("apagar-periodo", t("Apagar um período"), t("Os dias do período saem do plano, de amanhã em diante (os escolhidos à mão, os sorteados e os livres), e o modo de rodízio monta esses dias de novo. Pode deixar um lado vazio: só o começo apaga dele até o fim do plano; só o fim apaga de amanhã até ele.")));
+    + ajudaNota("apagar-periodo", t("Apagar um período"), t("Os dias do período saem do plano, de amanhã em diante (os escolhidos à mão, os sorteados e os livres). Em <strong>Apagar e remover os registros</strong>, o modo de rodízio monta esses dias de novo; em <strong>Apagar e deixar os dias livres</strong>, eles ficam sem relógio e sem sorteio, para você escolher à mão (o <strong>escolher…</strong> de cada dia ou o Rodízio manual). Pode deixar um lado vazio: só o começo apaga dele até o fim do plano; só o fim apaga de amanhã até ele.")));
 }
 
 // Apagar tudo (página Plano e quadro Modo de rodízio): toda a programação de amanhã em diante (com "Excluindo hoje", de hoje

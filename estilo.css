@@ -1643,6 +1643,9 @@ form.apagar-periodo, form.apagar-tudo { display: flex; flex-direction: column; g
 .apagar-plano form.apagar-periodo { margin-top: 0; padding-top: 0; border-top: 0; }
 .linha-apagar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .6rem 1rem; }
 .linha-apagar label.check { flex-direction: row; align-items: center; gap: .35rem; padding-bottom: .45rem; }
+/* a lista "O que fazer" do Apagar um período: no celular estreito, encolhe até a largura do quadro (o rótulo não a segura) */
+.linha-apagar label { min-width: 0; max-width: 100%; }
+.linha-apagar label select { min-width: 0; }
 /* na página Plano, o apagar é o rodapé: depois de tudo, separado por uma linha mais forte */
 footer.apagar-plano { margin-top: 3rem; border-top: 3px solid var(--aco-escuro); }
 footer.apagar-plano h2 { margin-top: 0; }

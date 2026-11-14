@@ -438,10 +438,12 @@ para segredo.
 No rodapé da página **Plano** (o lugar principal: o quadro **Apagar a programação**, no fim da página, depois do dia a dia) e
 no quadro **Modo de rodízio** da página Hoje (cada um abaixo de uma linha, como o **Sortear de novo**):
 
-- **Apagar um período**: **De** e **Até**; um dos dois pode ficar vazio (só o **De** apaga dele até o fim do plano; só o
-  **Até**, de amanhã até ele). Os dias do período saem do plano, de amanhã em diante (os escolhidos à mão, os sorteados e os
-  livres), e o modo de rodízio monta esses dias de novo, só eles: os outros dias ficam como estão (na escala inteligente também). O
-botão **Apagar** pede confirmação.
+- **Apagar um período**: a lista **O que fazer**, **De** e **Até**; um dos dois pode ficar vazio (só o **De** apaga dele até
+  o fim do plano; só o **Até**, de amanhã até ele). Os dias do período saem do plano, de amanhã em diante (os escolhidos à
+  mão, os sorteados e os livres), e a lista diz o que fica no lugar: em **Apagar e remover os registros** (a de início), o
+  modo de rodízio monta esses dias de novo, só eles: os outros dias ficam como estão (na escala inteligente também); em
+  **Apagar e deixar os dias livres**, eles ficam livres, sem relógio e sem sorteio, para você escolher à mão (com os **Dias
+  sem relógio (folga)** desligados na Configuração, essa escolha fica desabilitada). O botão **Apagar** pede confirmação.
 - **Apagar tudo**: limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres.
   Marcando **Excluindo hoje**, apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir
   de agora). Depois, o modo de rodízio monta o plano de novo, do zero: até o último dia da última das semanas do modo (as
@@ -2649,12 +2651,14 @@ ordem, N dias seguidos cada.)
 **Não gostei do que saiu num período. Como apago?**
 No rodapé da página **Plano** (ou no quadro **Modo de rodízio** da página Hoje), em **Apagar um período**: ponha o começo, o
 fim ou os dois (só o começo: dele até o fim do plano; só o fim: de amanhã até ele) e clique em **Apagar**. Os dias saem do
-plano (os escolhidos à mão, os sorteados e os livres) e o modo de rodízio monta esses dias de novo. Vale de amanhã em diante
-(hoje já tem o relógio no pulso: para ele, o **Sortear de novo** do modo de rodízio ou o **trocar por…**). Para deixar dias
-sem relógio, marque *livre* no Rodízio manual: eles aparecem como *livre: escolha à mão*, nem o sorteio nem a escala põem
-relógio neles, cada um se escolhe no **escolher…** do próprio dia e **↺ voltar a sortear** devolve o dia ao sorteio. Num dia
-livre que chega, não há relógio do dia: o pulso sozinho não põe nenhum, e você escolhe.
-Para recomeçar do zero: **Apagar tudo** (com **Excluindo hoje**, também hoje). Veja [Apagar a programação](#apagar-a-programação).
+plano (os escolhidos à mão, os sorteados e os livres) e, em **Apagar e remover os registros** (a escolha de início da
+lista), o modo de rodízio monta esses dias de novo. Vale de amanhã em diante (hoje já tem o relógio no pulso: para ele, o
+**Sortear de novo** do modo de rodízio ou o **trocar por…**). Para deixar os dias do período sem relógio, escolha **Apagar e
+deixar os dias livres** na lista (ou marque *livre* no Rodízio manual): eles aparecem como *livre: escolha à mão*, nem o
+sorteio nem a escala põem relógio neles, cada um se escolhe no **escolher…** do próprio dia e **↺ voltar a sortear** devolve
+o dia ao sorteio. Num dia livre que chega, não há relógio do dia: o pulso sozinho não põe nenhum, e você escolhe. Para
+recomeçar do zero: **Apagar tudo** (com **Excluindo hoje**, também hoje). Veja [Apagar a
+programação](#apagar-a-programação).
 
 **O relógio está no carregador (ou no sol): o que aparece?**
 O estado mostra onde ele está (*No carregador desde 06:30*). No smartwatch, a bateria sobe pelo campo *No carregador: horas

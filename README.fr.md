@@ -438,10 +438,13 @@ continuent d'utiliser le générateur de PHP, car un nombre qui voyage sur inter
 En bas de la page **Plan** (l'endroit principal : le cadre **Effacer la programmation**, à la fin de la page, après le jour
 par jour) et dans le cadre **Mode de rotation** de la page Aujourd'hui (chacun sous une ligne, comme **Refaire le tirage**) :
 
-- **Effacer une période** : **De** et **À** ; l'un des deux peut rester vide (seulement **De** efface de lui jusqu'à la fin
-  du plan ; seulement **À**, de demain jusqu'à lui). Les jours de la période quittent le plan, à partir de demain (ceux
-  choisis à la main, ceux tirés et les libres), et le mode de rotation refait ces jours, eux seuls : les autres jours restent tels quels (dans le planning intelligent
-  aussi). Le bouton **Effacer** demande confirmation.
+- **Effacer une période** : la liste **Que faire**, **De** et **À** ; l'un des deux peut rester vide (seulement **De**
+  efface de lui jusqu'à la fin du plan ; seulement **À**, de demain jusqu'à lui). Les jours de la période quittent le plan,
+  à partir de demain (ceux choisis à la main, ceux tirés et les libres), et la liste dit ce qui prend leur place : avec
+  **Effacer et supprimer les enregistrements** (le choix initial), le mode de rotation refait ces jours, eux seuls : les
+  autres jours restent tels quels (dans le planning intelligent aussi) ; avec **Effacer et laisser les jours libres**, ils
+  restent libres, sans montre et sans tirage, pour que vous choisissiez à la main (avec les **Jours sans montre (repos)**
+  désactivés dans la Configuration, ce choix est désactivé). Le bouton **Effacer** demande confirmation.
 - **Tout effacer** : vide toute la programmation, à partir de demain : les jours choisis à la main, les tirés et les libres.
   En cochant **Y compris aujourd'hui**, il efface à partir d'aujourd'hui (si une autre montre sort pour aujourd'hui, elle
   devient celle au poignet dès maintenant). Ensuite le mode de rotation reconstruit le plan, de zéro : jusqu'au dernier jour de la
@@ -2718,13 +2721,15 @@ d'affilée chacune.)
 **Ce qui est sorti sur une période ne me plaît pas. Comment l'effacer ?**
 En bas de la page **Plan** (ou dans le cadre **Mode de rotation** de la page Aujourd'hui), dans **Effacer une période** :
 indiquez le début, la fin ou les deux (seulement le début : de lui jusqu'à la fin du plan ; seulement la fin : de demain
-jusqu'à elle) et cliquez sur **Effacer**. Les jours quittent le plan (ceux choisis à la main, ceux tirés et les libres) et le
-mode de rotation refait ces jours. Cela vaut à partir de demain (aujourd'hui a déjà la montre au poignet : pour elle, le
-**Refaire le tirage** du mode de rotation ou le **remplacer par…**). Pour laisser des jours sans montre, cochez *libre* dans
-la Rotation manuelle : ils apparaissent comme *libre : choisissez à la main*, ni le tirage ni le planning n'y mettent de
-montre, chacun se choisit dans le **choisir…** du jour même et **↺ retirer au sort** rend le jour au tirage. Un jour libre
-qui arrive n'a pas de montre du jour : le poignet automatique n'en met aucune, et vous choisissez. Pour repartir de zéro :
-**Tout effacer** (avec **Y compris aujourd'hui**, aujourd'hui aussi). Voir [Effacer la programmation](#effacer-la-programmation).
+jusqu'à elle) et cliquez sur **Effacer**. Les jours quittent le plan (ceux choisis à la main, ceux tirés et les libres) et,
+avec **Effacer et supprimer les enregistrements** (le choix initial de la liste), le mode de rotation refait ces jours. Cela
+vaut à partir de demain (aujourd'hui a déjà la montre au poignet : pour elle, le **Refaire le tirage** du mode de rotation
+ou le **remplacer par…**). Pour laisser sans montre les jours de la période, choisissez **Effacer et laisser les jours
+libres** dans la liste (ou cochez *libre* dans la Rotation manuelle) : ils apparaissent comme *libre : choisissez à la
+main*, ni le tirage ni le planning n'y mettent de montre, chacun se choisit dans le **choisir…** du jour même et **↺ retirer
+au sort** rend le jour au tirage. Un jour libre qui arrive n'a pas de montre du jour : le poignet automatique n'en met
+aucune, et vous choisissez. Pour repartir de zéro : **Tout effacer** (avec **Y compris aujourd'hui**, aujourd'hui aussi).
+Voir [Effacer la programmation](#effacer-la-programmation).
 
 **La montre est sur le chargeur (ou au soleil) : qu'est-ce qui s'affiche ?**
 L'état montre où elle est (*Sur le chargeur depuis 06:30*). Sur la smartwatch, la batterie monte selon le champ *Sur le
