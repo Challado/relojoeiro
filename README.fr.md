@@ -1350,6 +1350,34 @@ Colonnes : *Sorties de la collection*), pour une colonne ou un total à vous. Pa
 corriger) et `recurso=relogio`, `acao=salvar`, avec `posse` et les champs `saida_data`, `saida_valor`, `saida_destino`,
 `saida_observacao` et `volta_data` (ouvrir et clore la sortie).
 
+### Suggestion pour maintenant
+
+Parfois vous voulez une montre **hors du planning** : une occasion, un rendez-vous, une envie. Avec l'option **Suggestion
+pour maintenant** activée dans la Configuration (Écrans), la page **Aujourd'hui** gagne une carte, juste sous les alertes du
+jour et avant les Prochains jours :
+
+- **Choisir par** : la méthode de choix, les mêmes que la rotation (la meilleure note, le tirage selon la note, l'aléatoire,
+  la file de la plus longtemps sans usage, la moins utilisée).
+- **Type** : les types de montre que vous avez dans la collection (Automatique, Pile, Smartwatch...), chacun avec le nombre
+  de disponibles. Ils sont tous cochés ; décochez ceux que vous ne voulez pas maintenant. Le type sans aucune disponible est
+  désactivé.
+- **Suggérer** : affiche une montre, avec la photo, où elle est (rangée, sur le remontoir, sur le chargeur), la charge, la
+  dernière fois au poignet et **pourquoi elle**.
+
+Elle vous plaît ? **Mettre au poignet** marque la montre au poignet maintenant. Elle ne vous plaît pas ? **Autre
+suggestion** affiche la suivante, sans répéter celles déjà apparues ; quand il n'y en a plus, la carte le dit et propose
+**Recommencer**. Changer la méthode ou les types relance le tour, et le navigateur retient votre dernier choix.
+
+Ce que la suggestion respecte : seules les montres **disponibles** qui sont **dans la collection** participent. Sont
+écartées, et la carte dit lesquelles et pourquoi, celle qui est **déjà au poignet** et celles dont la **charge est à la
+limite ou en dessous** (la limite de chaque montre est celle des définitions : celle de la montre, sinon celle de la
+Configuration). Le **plan ne change pas** : la montre du jour reste la même, et la montre suggérée qui va au poignet compte
+comme usage hors du plan. Rien n'est enregistré tant que vous n'appuyez pas sur Mettre au poignet. Avec **En mettant une
+montre au poignet, retirer les autres** activée, celle qui était au poignet en sort au même moment.
+
+Sur le téléphone, un raccourci vers `index.php?sugerir=1` ouvre la page déjà avec une suggestion, selon votre dernier choix.
+Par l'API : `recurso=sugestao` (avec `forma`, `tipos` et `pular`).
+
 ### Smartwatch
 
 La « charge » de la smartwatch est la batterie, en %. Le système ne lit pas la batterie de la montre : il l'**estime** à
@@ -1613,6 +1641,7 @@ Les cartes remplissent les espaces disponibles selon la largeur de l’écran et
 | **Ouvrir la montre sur la page Aujourd'hui** (`painel_modo`) | **À côté de la liste** (`lado`) : la montre cliquée s'ouvre dans un panneau à droite, et la liste reste visible. **Dans une grande fenêtre flottante** (`flutuante`) : elle s'ouvre au milieu de l'écran, par-dessus la page, avec le fond assombri et les cadres côte à côte ; elle se ferme avec le ×, Échap ou un clic à l'extérieur. Sur le téléphone, les deux occupent tout l'écran. Par défaut : à côté de la liste. |
 | **Mise en avant en haut de la page Aujourd'hui** (`destaque_hoje`) | **La montre du jour** (`dia`) : le grand cadre en haut de la page Aujourd'hui montre la montre du jour (celle du plan), avec jusqu'à quand elle reste et pourquoi elle est sortie. **La montre au poignet maintenant** (`pulso`) : il montre la montre qui est au poignet, même si ce n'est pas celle du jour (avec *au poignet maintenant* et, en dessous, *Montre du jour : …*, qui ouvre celle du jour) ; avec plus d'une au poignet, la dernière mise ; sans aucune au poignet, celle du jour reste, avec l'avis *Aucune montre au poignet maintenant*. Les données en dessous (état, charge, le bouton Mise au poignet/Retirée du poignet, la photo) sont celles de la montre mise en avant. Sous la photo, un petit tableau de deux cases dit ce qu'il y a là : **Du jour** | **Au poignet**. La case qui compte s'allume avec un ✓ (bleu *Du jour*, vert *Au poignet*) et l'autre reste éteinte ; la montre du jour au poignet allume les deux. En posant la souris dessus, la phrase du pourquoi (*Au poignet maintenant ; la montre du jour est une autre.*...). Par défaut : la montre du jour. |
 | **Onglets des statuts sans montre** (`abas_vazias`) | les onglets au-dessus du tableau des montres (pages Aujourd'hui et Galerie) sont les statuts des définitions. **Toujours afficher** (`sempre`) : tous apparaissent, et celui du statut sans montre est désactivé (grisé, non cliquable), avec le motif au survol de la souris. **Masquer** (`com_relogio`) : seuls les statuts qui ont une montre apparaissent ; avec toutes les montres dans un seul statut, la bande d'onglets disparaît. |
+| **Suggestion pour maintenant (page Aujourd'hui)** (`sugestao_agora`) | activée, la page Aujourd'hui gagne la carte **Suggestion pour maintenant**, entre les alertes du jour et les Prochains jours : vous choisissez la méthode de choix et les types de montre, et le système en suggère une à porter maintenant, hors du planning (voir [Suggestion pour maintenant](#suggestion-pour-maintenant)). Par défaut : désactivée. |
 | **Petite montre de la barre** (`relojinho_modo`) | la petite montre du coin de la barre et de l'onglet a 24 modèles, un pour chaque heure du jour. **Normal** (`hora`) : chaque heure a le sien (à 0 h la Classique, à 16 h la Numérique, à 23 h la Futuriste). **Aléatoire** (`aleatorio`) : chaque heure en tire un des 24, et il peut se répéter. **Aléatoire sans répétition** (`sem_repeticao`) : les 24 mélangés, chacun apparaît une fois dans la journée. Le tirage est celui du jour : le même sur chaque page et appareil, et un autre le lendemain. Par défaut : normal. |
 
 Sur la page, chaque option tient sur une ligne, avec le nom à gauche et le champ à droite, dans des cadres (Routine du jour,
@@ -2144,6 +2173,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `unidades` | les unités de l'arbre (l'onglet **Unités** des Définitions), dans l'ordre des grandeurs, chacune avec la conversion en texte et combien de champs, de types et de formules l'utilisent |
 | `marcas` | les marques de l’arbre (l’onglet **Marques** des Définitions), chacune avec le pays, le site, l’observation et ses montres |
 | `saidas` | les sorties de la collection (les prêtées et celles qui sont sorties) : pour chacune, la montre, le statut, les dates, le montant reçu, à qui, l’achat, les services, le résultat et le temps dans la collection ; et les sommes de celles en cours par statut. `relogio=` (l’historique d’une montre), `situacao=`, `abertas=1` (seulement celles en cours) |
+| `sugestao` | la Suggestion pour maintenant (la carte de la page Aujourd'hui) : une montre à porter maintenant, hors du planning, selon la méthode de choix (`forma`) et les types (`tipos`) demandés, avec le motif ; `pular` ne répète pas celles déjà suggérées. Sont écartées celle qui est au poignet et celles dont la charge est à la limite ou en dessous (`fora[]` dit pourquoi). N'enregistre rien. |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
@@ -2953,7 +2983,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | Fichier | Ce que c'est |
 |---|---|
 | [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
-| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
+| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `sugestao.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
 | [`lib.php`](lib.php) | le noyau : identification, arbre, moteur de formules, alertes, critères, rotation, planning, documents |
 | [`colecoes.php`](colecoes.php) | les collections dans le noyau : la portée de la requête, le `modelo.json`, les secrets chiffrés, la table `sistema`, la migration v25 et l'impact des suppressions |
 | [`alertas.php`](alertas.php) | les destinations (webhook, e-mail, Web Push) et les agendas (Google, CalDAV, Outlook, ICS) |
@@ -2966,7 +2996,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | `sw.js`, `offline.html`, `icone-*.png` | l'application sur le téléphone : le *service worker* (servi par `recurso=sw`, avec la version devant : le cache des écrans, la page sans connexion et le Web Push), la page **Pas de connexion** et les icônes (192, 512 et 180 px) |
 | `ajuda.php` | la page d'aide : seulement le squelette ; le `ajuda.js` demande le texte à l'API (`recurso=manual` : les sections du README pour les utilisateurs, déjà en HTML, converties dans le `lib.php`) |
 | [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages ; `topo()` vérifie la connexion avant d'envoyer quoi que ce soit (`pagina_login()`) |
-| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |
+| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `sugestao.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |
 | [`estilo.css`](estilo.css) | l'apparence |
 | [`textos/`](textos/) | les langues : `funcoes.php` (la fonction `t()`, la liste des langues, la langue de la requête, les dates et les nombres de chaque langue) et un fichier par langue (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php` : le texte en portugais => la traduction, par partie) ; ouverts directement, ils ne font rien |
 | [`schema.sql`](schema.sql) | la structure de la base (seulement la structure : sans données) |

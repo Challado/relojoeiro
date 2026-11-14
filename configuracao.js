@@ -368,6 +368,8 @@ function recarregarConfig(aplicadas, manterPosicao) {
               + t("mesmo que seja outro (o do dia aparece embaixo do nome). Sem nenhum relógio no pulso, fica o do dia.")))
           + campoOpcao(oc.abas_vazias, "abas_vazias", "largo", ex("abas-vazias", t("Abas vazias"), t("As abas em cima da tabela dos relógios (páginas Hoje e Galeria) são as situações do cadastro: Na coleção, Emprestado, Desejado, Vendido... ")
               + t("<strong>Mostrar sempre:</strong> todas aparecem, e a da situação sem relógio fica desabilitada (apagada, sem clique), com o motivo. <strong>Esconder:</strong> só aparecem as situações que têm relógio; com todos os relógios numa situação só, a faixa de abas some.")))
+          + campoOpcao(oc.sugestao_agora, "sugestao_agora", null, ex("sugestao-agora", t("Sugestão para agora"), t("Ligada, a página Hoje ganha o cartão <strong>Sugestão para agora</strong>, entre os avisos de hoje e os Próximos dias: você escolhe a forma de escolha ")
+              + t("(a maior nota, o sorteio, a fila, o menos usado) e os tipos de relógio, e o sistema sugere um para usar agora, fora da escala. Ficam de fora o que está no pulso e o que está com a carga no limite ou abaixo dele. O plano não muda: pôr o sugerido no pulso é um uso fora do plano.")))
           // o formulário do calibre (Cadastros › Calibres): só os campos do movimento (a marca do campo) ou todos
           + campoOpcao(oc.calibre_campos, "calibre_campos", "largo")
           // o reloginho da barra (e da aba): um modelo por hora do dia, na ordem, sorteado ou sorteado sem repetir

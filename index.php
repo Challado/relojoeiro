@@ -1,5 +1,6 @@
 <?php
-// Hoje, como no sistema antigo: no meio, o relógio do dia, os avisos de hoje, os próximos dias, o modo de rodízio e a
+// Hoje, como no sistema antigo: no meio, o relógio do dia, os avisos de hoje, a Sugestão para agora (se a Configuração a
+// liga), os próximos dias, o modo de rodízio e a
 // tabela dos relógios; à direita, o painel com tudo sobre o relógio escolhido. Esta página só confere o login e traz o
 // esqueleto: os dados vêm do api.php (recurso=hoje e recurso=ficha), montados pelo hoje.js e pelo painel.js, e as
 // gravações vão para o api.php.
@@ -15,6 +16,9 @@ topo("Relógio de hoje", "index.php");
     <section class="hoje" id="bloco-hoje"></section>
 
     <div id="bloco-avisos"></div>
+
+    <!-- a Sugestão para agora (a opção sugestao_agora da Configuração; sugestao.js): um relógio para usar agora, fora da escala -->
+    <section class="sugestao-agora" id="bloco-sugestao" hidden></section>
 
     <section id="bloco-proximos"></section>
 
@@ -181,4 +185,4 @@ document.addEventListener("change", function (ev) {
   }
 });
 </script>
-<?php rodape(["api.js", "foto.js", "painel.js", "tabela.js", "abas.js", "hoje.js"]); ?>
+<?php rodape(["api.js", "foto.js", "painel.js", "tabela.js", "abas.js", "sugestao.js", "hoje.js"]); ?>

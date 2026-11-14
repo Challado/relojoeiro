@@ -192,6 +192,29 @@ label.check input[type=checkbox], label.check input[type=radio] { width: auto; f
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
 }
+/* a Sugestão para agora (sugestao.js): o cartão entre os avisos de hoje e os Próximos dias */
+.sugestao-agora { background: var(--papel); border: 1px solid var(--aco-escuro); border-radius: 12px; padding: .9rem 1rem 1rem; display: flex; flex-direction: column; gap: .7rem; }
+.sugestao-agora[hidden] { display: none; }
+.sugestao-agora h2, .sugestao-agora .nota { margin: 0; }
+.sugestao-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .7rem 1.2rem; }
+.sugestao-form .sugestao-forma { display: flex; flex-direction: column; gap: .2rem; font-size: .88rem; color: var(--cinza); min-width: 0; max-width: 100%; }
+.sugestao-form .sugestao-forma select { font-size: 1rem; max-width: 100%; }
+.sugestao-form .sugestao-tipos { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1rem; border: 0; padding: 0; margin: 0; min-width: 0; }
+.sugestao-form .sugestao-tipos legend { font-size: .88rem; color: var(--cinza); padding: 0; margin-bottom: .2rem; }
+.sugestao-form .sugestao-tipos label { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
+.sugestao-form .sugestao-tipos label.desabilitado { color: var(--cinza); cursor: not-allowed; }
+.sugestao-resultado { display: flex; flex-direction: column; gap: .6rem; }
+.sugestao-resultado:empty { display: none; }
+.sugestao-relogio { display: flex; gap: .9rem; align-items: flex-start; border-top: 1px solid var(--aco); padding-top: .8rem; }
+.sugestao-relogio img, .sugestao-relogio .sem-foto-sugestao { width: 84px; height: 84px; border-radius: 10px; object-fit: cover; flex: none; }
+.sugestao-relogio .sem-foto-sugestao { background: var(--aco); display: inline-block; }
+.sugestao-texto { display: flex; flex-direction: column; gap: .3rem; min-width: 0; }
+.sugestao-nome { font-size: 1.15rem; font-weight: 700; overflow-wrap: anywhere; color: var(--tinta); text-decoration: none; }
+.sugestao-nome:hover { text-decoration: underline; }
+.sugestao-texto .motivo { margin: 0; }
+.sugestao-texto .botoes { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .2rem; }
+.sugestao-resultado .acao { margin: 0; }
+.sugestao-resultado > button { align-self: flex-start; }
 /* modo de rodízio: quadro embaixo de "Próximos dias"; fechado mostra o modo atual, aberto edita */
 .modo-rodizio details {
   background: var(--papel);

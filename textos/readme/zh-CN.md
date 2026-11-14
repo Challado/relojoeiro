@@ -1,4 +1,4 @@
-<!-- origem: 9f941f2830989db9d0a6b10e65d5ebd5b03b4988 -->
+<!-- origem: 9c9c797311fc65b4d3a38ab0cd483274c4ba68ba -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -130,6 +130,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `unidades` | 树的单位（定义里的**单位**标签），按物理量排序，每个单位附换算的文字说明，以及有多少字段、类型和公式在用它 |
 | `marcas` | 树的品牌（定义的**品牌**标签），每个都带国家、网站、备注和它的手表 |
 | `saidas` | 离开收藏的记录（借出的和已离开的）：每条含手表、状态、日期、收到的金额、去向、购买、保养、结果和在收藏中的时间；以及当前记录按状态的合计。`relogio=`（某块手表的历史）、`situacao=`、`abertas=1`（只返回当前的） |
+| `sugestao` | 当下推荐（“今天”页面的卡片）：一块现在佩戴、排班之外的手表，按所请求的选择方式（`forma`）和类型（`tipos`），并附原因；`pular` 不重复已推荐过的。正在手腕上的和电量在下限或以下的不参与（`fora[]` 说明原因）。不记录任何内容。 |
 | `calcular` | 一个公式（`expressao=`）在手表上的结果（`relogio=` 一个或多个 id；没有时为全部），不保存，并给出计算的各部分；公式写错：返回 400 和错误 |
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
@@ -505,7 +506,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | 文件 | 是什么 |
 |---|---|
 | [`api.php`](api.php) | API，所有读写的入口（认证、格式、资源顺序、筛选、响应），文件头中有完整文档 |
-| [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`saidas.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`relatorios.php`、`unidades.php`、`ajuda.php`……），还有它的函数（`funcoes.php`，含报表的 `api_ler`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
+| [`api/`](api/) | API 中较大的资源，每个一个文件（`hoje.php`、`ficha.php`、`configuracao.php`、`desejos.php`、`saidas.php`、`sugestao.php`、`estatisticas.php`、`hora_certa.php`、`passaporte.php`、`galeria.php`、`relatorios.php`、`unidades.php`、`ajuda.php`……），还有它的函数（`funcoes.php`，含报表的 `api_ler`）和写入（`escrita.php`）：它们在 `api.php` 内部运行，直接打开则什么都不做（`.htaccess` 和 `nginx-relogios.conf` 会阻止该文件夹） |
 | [`lib.php`](lib.php) | 核心：登录、树、公式引擎、提醒、标准、轮换、排程、文档 |
 | [`colecoes.php`](colecoes.php) | 核心中的收藏部分：请求的作用范围、`modelo.json`、加密的机密、`sistema` 表、v25 迁移和删除的影响 |
 | [`alertas.php`](alertas.php) | 推送目标（webhook、电子邮件、Web Push）和日历（Google、CalDAV、Outlook、ICS） |
@@ -518,7 +519,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | `sw.js`、`offline.html`、`icone-*.png` | 手机上的应用：*service worker*（由 `recurso=sw` 提供，前面带版本号：界面缓存、无连接页面和 Web Push）、**没有网络连接**页面和图标（192、512 和 180 px） |
 | `ajuda.php` | 帮助页面：只有骨架；`ajuda.js` 向 API 请求文本（`recurso=manual`：README 中面向用户的章节，已在 `lib.php` 中转换为 HTML） |
 | [`pagina.php`](pagina.php) | 页面顶部的菜单和页面结尾；`topo()` 在输出任何内容之前检查登录（`pagina_login()`） |
-| `api.js`、`hoje.js`、`painel.js`、`tabela.js`、`foto.js`…… | 各个界面，在浏览器中根据 API 生成 |
+| `api.js`、`hoje.js`、`painel.js`、`tabela.js`、`sugestao.js`、`foto.js`…… | 各个界面，在浏览器中根据 API 生成 |
 | [`estilo.css`](estilo.css) | 外观 |
 | [`textos/`](textos/) | 语言：`funcoes.php`（`t()` 函数、语言列表、请求的语言、每种语言的日期和数字格式）以及每种语言一个文件（`en.php`、`zh-CN.php`、`hi.php`、`es.php`、`fr.php`：葡萄牙语文本 => 译文，按部分划分）；直接打开则什么都不做 |
 | [`schema.sql`](schema.sql) | 数据库结构（只有结构：不含数据） |

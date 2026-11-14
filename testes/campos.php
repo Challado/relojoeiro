@@ -104,6 +104,7 @@ $consultas = [
     "proximos" => ["recurso=proximos", "recurso=proximos&pagina=2&por_pagina=3"],
     "desejos" => ["recurso=desejos"],
     "saidas" => array_merge(["recurso=saidas", "recurso=saidas&abertas=1", "recurso=saidas&situacao=vendido"], $para_cada("recurso=saidas&relogio=%d")),
+    "sugestao" => ["recurso=sugestao", "recurso=sugestao&forma=menos_usado", "recurso=sugestao&forma=aleatorio&pular=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"],
     "estatisticas" => ["recurso=estatisticas", "recurso=estatisticas&de=tudo"],
     "precisao" => array_merge(["recurso=precisao"], $para_cada("recurso=precisao&relogio=%d")),
     "calibres" => ["recurso=calibres"],

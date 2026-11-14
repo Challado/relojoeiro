@@ -132,6 +132,9 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     // as abas em cima da tabela dos relógios: uma por situação do cadastro que tem relógio (a tabela mostra os da aba escolhida;
     // a dos desejados e as dos que saíram vêm do recurso=desejos e do recurso=saidas)
     "abas" => abas_situacao($todos_h),
+    // a Sugestão para agora (a opção sugestao_agora): o que o cartão oferece para escolher (a sugestão vem do recurso=sugestao); null: desligada
+    "sugestao_agora" => cfg("sugestao_agora") === "1" ? ["formas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(formas_de_escolha()), formas_de_escolha()),
+        "tipos" => sugestao_tipos()] : null,
     // os totais da coleção inteira (a tabela da página soma só o que os filtros dela deixam à mostra)
     "totais" => ["relogios" => count($rels), "disponiveis" => count(array_filter($rels, function ($r) { return $r["disponivel"]; })),
         "em_uso" => count(array_filter($rels, function ($r) { return $r["em_uso"]; })),

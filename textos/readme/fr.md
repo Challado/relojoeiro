@@ -1,4 +1,4 @@
-<!-- origem: 9f941f2830989db9d0a6b10e65d5ebd5b03b4988 -->
+<!-- origem: 9c9c797311fc65b4d3a38ab0cd483274c4ba68ba -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -164,6 +164,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `unidades` | les unités de l'arbre (l'onglet **Unités** des Définitions), dans l'ordre des grandeurs, chacune avec la conversion en texte et combien de champs, de types et de formules l'utilisent |
 | `marcas` | les marques de l’arbre (l’onglet **Marques** des Définitions), chacune avec le pays, le site, l’observation et ses montres |
 | `saidas` | les sorties de la collection (les prêtées et celles qui sont sorties) : pour chacune, la montre, le statut, les dates, le montant reçu, à qui, l’achat, les services, le résultat et le temps dans la collection ; et les sommes de celles en cours par statut. `relogio=` (l’historique d’une montre), `situacao=`, `abertas=1` (seulement celles en cours) |
+| `sugestao` | la Suggestion pour maintenant (la carte de la page Aujourd'hui) : une montre à porter maintenant, hors du planning, selon la méthode de choix (`forma`) et les types (`tipos`) demandés, avec le motif ; `pular` ne répète pas celles déjà suggérées. Sont écartées celle qui est au poignet et celles dont la charge est à la limite ou en dessous (`fora[]` dit pourquoi). N'enregistre rien. |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
@@ -724,7 +725,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | Fichier | Ce que c'est |
 |---|---|
 | [`api.php`](api.php) | l'API, la porte de toute lecture et écriture (l'authentification, le format, l'ordre des ressources, les filtres, la réponse), avec la documentation complète dans l'en-tête |
-| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
+| [`api/`](api/) | les grosses ressources de l'API, un fichier chacune (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `sugestao.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus ses fonctions (`funcoes.php`, avec le `api_ler` des rapports) et les écritures (`escrita.php`) : elles tournent dans le `api.php`, et ouvertes directement elles ne font rien (le `.htaccess` et le `nginx-relogios.conf` bloquent le dossier) |
 | [`lib.php`](lib.php) | le noyau : identification, arbre, moteur de formules, alertes, critères, rotation, planning, documents |
 | [`colecoes.php`](colecoes.php) | les collections dans le noyau : la portée de la requête, le `modelo.json`, les secrets chiffrés, la table `sistema`, la migration v25 et l'impact des suppressions |
 | [`alertas.php`](alertas.php) | les destinations (webhook, e-mail, Web Push) et les agendas (Google, CalDAV, Outlook, ICS) |
@@ -737,7 +738,7 @@ vérifie aussi les cycles plus grands, qu'aucun `CHECK` n'atteint) et celles des
 | `sw.js`, `offline.html`, `icone-*.png` | l'application sur le téléphone : le *service worker* (servi par `recurso=sw`, avec la version devant : le cache des écrans, la page sans connexion et le Web Push), la page **Pas de connexion** et les icônes (192, 512 et 180 px) |
 | `ajuda.php` | la page d'aide : seulement le squelette ; le `ajuda.js` demande le texte à l'API (`recurso=manual` : les sections du README pour les utilisateurs, déjà en HTML, converties dans le `lib.php`) |
 | [`pagina.php`](pagina.php) | le haut avec le menu et la fin des pages ; `topo()` vérifie la connexion avant d'envoyer quoi que ce soit (`pagina_login()`) |
-| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |
+| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `sugestao.js`, `foto.js`, ... | les écrans, construits dans le navigateur à partir de l'API |
 | [`estilo.css`](estilo.css) | l'apparence |
 | [`textos/`](textos/) | les langues : `funcoes.php` (la fonction `t()`, la liste des langues, la langue de la requête, les dates et les nombres de chaque langue) et un fichier par langue (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php` : le texte en portugais => la traduction, par partie) ; ouverts directement, ils ne font rien |
 | [`schema.sql`](schema.sql) | la structure de la base (seulement la structure : sans données) |

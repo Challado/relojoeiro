@@ -1308,6 +1308,32 @@ the collection*), for a column or a total of your own. Through the API: `recurso
 `recurso=relogio`, `acao=salvar`, with `posse` and the fields `saida_data`, `saida_valor`, `saida_destino`,
 `saida_observacao` and `volta_data` (open and close the exit).
 
+### Suggestion for now
+
+Sometimes you want a watch **outside the schedule**: an occasion, an appointment, a whim. With the option **Suggestion for
+now** turned on in Settings (Screens), the **Today** page gets a card, right below today's alerts and before the Next days:
+
+- **Choose by**: the selection method, the same ones the rotation uses (the highest score, the draw by score, the random
+  one, the queue of the longest without use, the least used).
+- **Type**: the types of watch you have in the collection (Automatic, Battery, Smartwatch...), each with how many are
+  available. They all come checked; uncheck the ones you don't want now. A type with none available is disabled.
+- **Suggest**: shows a watch, with the photo, where it is (stored, on the winder, on the charger), the charge, the last time
+  on the wrist and **why this one**.
+
+Like it? **Put on the wrist** marks the watch on the wrist now. Don't like it? **Another suggestion** shows the next one,
+without repeating the ones that already appeared; when they run out, the card says so and offers **Start over**. Changing
+the method or the types restarts the round, and the browser remembers your last choice.
+
+What the suggestion respects: only the **available** watches that are **in the collection** take part. Left out, and the
+card says which and why, are the one that is **already on the wrist** and any whose **charge is at or below its limit**
+(each watch's limit is the one in the definitions: the watch's own, otherwise the one in Settings). The **plan does not
+change**: the watch of the day stays the same, and the suggested watch that goes on the wrist counts as use outside the
+plan. Nothing is recorded until you press Put on the wrist. With **When putting a watch on the wrist, take the others off**
+turned on, the one that was on the wrist comes off at the same moment.
+
+On the phone, a shortcut to `index.php?sugerir=1` opens the page already with a suggestion, by your last choice. Through the
+API: `recurso=sugestao` (with `forma`, `tipos` and `pular`).
+
 ### Smartwatch
 
 The smartwatch's "charge" is the battery, in %. The system doesn't read the watch's battery: it is **estimated** from the last
@@ -1568,6 +1594,7 @@ Cards fill the available spaces according to screen width and content height. Th
 | **Open the watch on the Today page** (`painel_modo`) | **Next to the list** (`lado`): the clicked watch opens in a panel on the right, and the list stays in view. **In a large floating window** (`flutuante`): it opens in the middle of the screen, over the page, with the background darkened and the boxes side by side; it closes with the ×, Esc or a click outside. On the phone, both cover the whole screen. Default: next to the list. |
 | **Highlight at the top of the Today page** (`destaque_hoje`) | **The watch of the day** (`dia`): the big box at the top of the Today page shows the watch of the day (the plan's), with until when it stays and why it came up. **The watch on the wrist now** (`pulso`): it shows the watch that is on the wrist, even if it isn't the day's (with *on the wrist now* and, below, *Watch of the day: …*, which opens the day's); with more than one on the wrist, the last one put on; with none on the wrist, the day's stays, with the notice *No watch on the wrist now*. The data below (state, charge, the Put on/Took off the wrist button, the photo) are those of the highlighted watch. Under the photo, a little two-cell table says what is there: **Of the day** | **On the wrist**. The cell that applies lights up with a ✓ (blue *Of the day*, green *On the wrist*) and the other stays dim; the watch of the day on the wrist lights both. Resting the mouse on it, the sentence of why (*On the wrist now; the watch of the day is another.*...). Default: the watch of the day. |
 | **Tabs of statuses with no watches** (`abas_vazias`) | the tabs above the watch table (Today and Gallery pages) are the statuses of your definitions. **Always show** (`sempre`): all of them appear, and the one of a status with no watches is disabled (dimmed, not clickable), with the reason on mouse-over. **Hide** (`com_relogio`): only the statuses that have watches appear; with all the watches in a single status, the tab strip disappears. |
+| **Suggestion for now (Today page)** (`sugestao_agora`) | on: the Today page gets the **Suggestion for now** card, between today's alerts and the Next days: you choose the selection method and the watch types, and the system suggests one to wear now, outside the schedule (see [Suggestion for now](#suggestion-for-now)). Default: off. |
 | **Little watch in the bar** (`relojinho_modo`) | the little watch in the corner of the bar and in the tab has 24 models, one for each hour of the day. **Normal** (`hora`): each hour has its own (at 0 the Classic, at 16 the Digital, at 23 the Futuristic). **Random** (`aleatorio`): each hour draws one of the 24, and it may repeat. **Random without repetition** (`sem_repeticao`): the 24 shuffled, each appears once in the day. The draw is the day's: the same on every page and device, and another the next day. Default: normal. |
 
 On the page, each option is on one line, with the name on the left and the field on the right, in boxes (Daily routine,
@@ -2084,6 +2111,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `unidades` | the tree's units (the **Units** tab of Definitions), in the order of the quantities, each one with the conversion as text and how many fields, types and formulas use it |
 | `marcas` | the tree's brands (the **Brands** tab of Definitions), each with the country, the website, the note and its watches |
 | `saidas` | the exits from the collection (the ones on loan and the ones that left): for each one, the watch, the status, the dates, the amount received, to whom, the purchase, the services, the result and the time in the collection; and the sums of the current ones by status. `relogio=` (one watch's history), `situacao=`, `abertas=1` (only the current ones) |
+| `sugestao` | the Suggestion for now (the card on the Today page): a watch to wear now, outside the schedule, by the selection method (`forma`) and the types (`tipos`) requested, with the reason; `pular` does not repeat the ones already suggested. Left out: the one on the wrist and any whose charge is at or below its limit (`fora[]` says why). It records nothing. |
 | `calcular` | the result of a formula (`expressao=`) on the watches (`relogio=` one id or several; without it, all), without saving, with the parts of the calculation; a badly written formula: 400 with the errors |
 | `foto` | a watch's photo (`relogio=<id>`): the image, not JSON |
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
@@ -2850,7 +2878,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | File | What it is |
 |---|---|
 | [`api.php`](api.php) | the API, the door for every read and write (the authentication, the format, the order of the resources, the filters, the response), with the complete documentation in the header |
-| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus its functions (`funcoes.php`, with the reports' `api_ler`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
+| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `sugestao.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus its functions (`funcoes.php`, with the reports' `api_ler`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
 | [`lib.php`](lib.php) | the core: login, tree, formula engine, alerts, criteria, rotation, schedule, documents |
 | [`colecoes.php`](colecoes.php) | the collections in the core: the request's scope, `modelo.json`, the encrypted secrets, the `sistema` table, migration v25 and the impact of deletions |
 | [`alertas.php`](alertas.php) | the destinations (webhook, e-mail, Web Push) and the calendars (Google, CalDAV, Outlook, ICS) |
@@ -2863,7 +2891,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | `sw.js`, `offline.html`, `icone-*.png` | the app on the phone: the *service worker* (served by `recurso=sw`, with the version in front: the screens' cache, the no-connection page and the Web Push), the **No connection** page and the icons (192, 512 and 180 px) |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |
 | [`pagina.php`](pagina.php) | the top with the menu and the end of the pages ; `topo()` checks the login before sending anything (`pagina_login()`) |
-| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | the screens, built in the browser from the API |
+| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `sugestao.js`, `foto.js`, ... | the screens, built in the browser from the API |
 | [`estilo.css`](estilo.css) | the look |
 | [`textos/`](textos/) | the languages: `funcoes.php` (the `t()` function, the list of languages, the request's language, each language's dates and numbers) and one file per language (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: the Portuguese text => the translation, by part); opened directly they do nothing |
 | [`schema.sql`](schema.sql) | the database structure (only the structure: no data) |

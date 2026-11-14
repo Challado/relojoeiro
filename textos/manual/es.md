@@ -1,4 +1,4 @@
-<!-- origem: ec90bfda07fce0e386608108afc7f09b41778518 -->
+<!-- origem: 398d7f904025bf047d1db26208b259e804d9c105 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1254,6 +1254,33 @@ historial. Y el valor recibido y las fechas de la salida son fuentes del constru
 `recurso=relogio`, `acao=salvar`, con `posse` y los campos `saida_data`, `saida_valor`, `saida_destino`,
 `saida_observacao` y `volta_data` (abrir y cerrar la salida).
 
+### Sugerencia para ahora {#sugestão-para-agora}
+
+A veces quiere un reloj **fuera de la escala**: una ocasión, un compromiso, un antojo. Con la opción **Sugerencia para
+ahora** activada en la Configuración (Pantallas), la página **Hoy** gana una tarjeta, justo debajo de los avisos de hoy y
+antes de los Próximos días:
+
+- **Elegir por**: la forma de elección, las mismas de la rotación (la mayor nota, el sorteo por la nota, el aleatorio, la
+  fila del más tiempo sin uso, el menos usado).
+- **Tipo**: los tipos de reloj que tiene en la colección (Automático, Pila, Smartwatch...), cada uno con cuántos están
+  disponibles. Todos vienen marcados; desmarque los que no quiere ahora. El tipo sin ninguno disponible queda deshabilitado.
+- **Sugerir**: muestra un reloj, con la foto, dónde está (guardado, en el winder, en el cargador), la carga, la última vez
+  en la muñeca y **por qué él**.
+
+¿Le gustó? **Ponérmelo** marca el reloj en la muñeca ahora. ¿No le gustó? **Otra sugerencia** muestra el siguiente, sin
+repetir los que ya aparecieron; cuando se acaban, la tarjeta avisa y ofrece **Empezar de nuevo**. Cambiar la forma o los
+tipos reinicia la ronda, y el navegador recuerda su última elección.
+
+Lo que la sugerencia respeta: solo entran los relojes **disponibles** que están **en la colección**. Quedan fuera, y la
+tarjeta dice cuáles y por qué, el que **ya está en la muñeca** y el que tiene la **carga en el límite o por debajo de él**
+(el límite de cada reloj es el de las definiciones: el del propio reloj, si no el de la Configuración). El **plan no
+cambia**: el reloj del día sigue siendo el mismo, y el sugerido que va a la muñeca cuenta como uso fuera del plan. Nada se
+graba hasta que pulse Ponérmelo. Con **Al poner un reloj en la muñeca, quitar los demás** activada, el que estaba en la
+muñeca sale en el mismo momento.
+
+En el móvil, un atajo a `index.php?sugerir=1` abre la página ya con una sugerencia, por su última elección. Por la API:
+`recurso=sugestao` (con `forma`, `tipos` y `pular`).
+
 ### Smartwatch {#smartwatch}
 
 La "carga" del smartwatch es la batería, en %. El sistema no lee la batería del reloj: la **estima** a partir de la última
@@ -1512,6 +1539,7 @@ Los cuadros ocupan los espacios disponibles según la anchura de la pantalla y l
 | **Abrir el reloj en la página Hoy** (`painel_modo`) | **Al lado de la lista** (`lado`): el reloj pulsado se abre en un panel a la derecha, y la lista sigue a la vista. **En una ventana flotante, grande** (`flutuante`): se abre en el centro de la pantalla, sobre la página, con el fondo oscurecido y los cuadros lado a lado; se cierra con la ×, Esc o un clic fuera. En el móvil, los dos ocupan toda la pantalla. Predeterminado: al lado de la lista. |
 | **Destacado arriba de la página Hoy** (`destaque_hoje`) | **El reloj del día** (`dia`): el cuadro grande de arriba de la página Hoy muestra el reloj del día (el del plan), con hasta cuándo se queda y por qué salió. **El reloj en la muñeca ahora** (`pulso`): muestra el reloj que está en la muñeca, aunque no sea el del día (con *en la muñeca ahora* y, debajo, *Reloj del día: …*, que abre el del día); con más de uno en la muñeca, el último puesto; sin ninguno en la muñeca, se queda el del día, con el aviso *Ningún reloj en la muñeca ahora*. Los datos de debajo (estado, carga, el botón Me lo puse/Me lo quité, la foto) son los del reloj destacado. Debajo de la foto, una tablita de dos casillas dice qué hay ahí: **Del día** | **En la muñeca**. La casilla que vale se enciende con un ✓ (azul *Del día*, verde *En la muñeca*) y la otra queda apagada; el reloj del día en la muñeca enciende las dos. Al detener el ratón sobre ella, la frase del porqué (*En la muñeca ahora; el reloj del día es otro.*...). Predeterminado: el reloj del día. |
 | **Pestañas de las situaciones sin relojes** (`abas_vazias`) | las pestañas encima de la tabla de los relojes (páginas Hoy y Galería) son las situaciones de las definiciones. **Mostrar siempre** (`sempre`): aparecen todas, y la de la situación sin relojes queda deshabilitada (apagada, sin clic), con el motivo al pasar el ratón. **Ocultar** (`com_relogio`): solo aparecen las situaciones que tienen relojes; con todos los relojes en una sola situación, la franja de pestañas desaparece. |
+| **Sugerencia para ahora (página Hoy)** (`sugestao_agora`) | activada, la página Hoy gana la tarjeta **Sugerencia para ahora**, entre los avisos de hoy y los Próximos días: usted elige la forma de elección y los tipos de reloj, y el sistema sugiere uno para usar ahora, fuera de la escala (vea [Sugerencia para ahora](#sugestão-para-agora)). Por defecto: desactivada. |
 | **Relojito de la barra** (`relojinho_modo`) | el relojito de la esquina de la barra y de la pestaña tiene 24 modelos, uno para cada hora del día. **Normal** (`hora`): cada hora tiene el suyo (a las 0 el Clásico, a las 16 el Digital, a las 23 el Futurista). **Aleatorio** (`aleatorio`): cada hora sortea uno de los 24, y puede repetir. **Aleatorio sin repetición** (`sem_repeticao`): los 24 barajados, cada uno aparece una vez en el día. El sorteo es del día: el mismo en toda página y aparato, y otro al día siguiente. Predeterminado: normal. |
 
 En la página, cada opción está en una línea, con el nombre a la izquierda y el campo a la derecha, en recuadros (Rutina del

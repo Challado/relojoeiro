@@ -1290,6 +1290,32 @@ valor recebido e as datas da saída são fontes do construtor de colunas (Cadast
 coluna ou um total seu. Pela API: `recurso=saidas` (ler e corrigir) e `recurso=relogio`, `acao=salvar`, com `posse` e os
 campos `saida_data`, `saida_valor`, `saida_destino`, `saida_observacao` e `volta_data` (abrir e fechar a saída).
 
+### Sugestão para agora
+
+Às vezes você quer um relógio **fora da escala**: uma ocasião, um compromisso, uma vontade. Com a opção **Sugestão para
+agora** ligada na Configuração (Telas), a página **Hoje** ganha um cartão, logo abaixo dos avisos de hoje e antes dos
+Próximos dias:
+
+- **Escolher por**: a forma de escolha, as mesmas do rodízio (a maior nota, o sorteio pela nota, o aleatório, a fila do mais
+  tempo sem uso, o menos usado).
+- **Tipo**: os tipos de relógio que você tem na coleção (Automático, Pilha, Smartwatch...), cada um com quantos estão
+  disponíveis. Todos vêm marcados; desmarque os que não quer agora. O tipo sem nenhum disponível fica desabilitado.
+- **Sugerir**: mostra um relógio, com a foto, onde ele está (guardado, no winder, no carregador), a carga, a última vez
+  no pulso e **por que ele**.
+
+Gostou? **Pôr no pulso** marca o relógio no pulso agora. Não gostou? **Outra sugestão** mostra o próximo, sem repetir os que
+já apareceram; quando acabam, o cartão avisa e oferece **Começar de novo**. Mudar a forma ou os tipos recomeça a rodada, e o
+navegador lembra a sua última escolha.
+
+O que a sugestão respeita: só entram os relógios **disponíveis** que estão **na coleção**. Ficam de fora, e o cartão diz
+quais e por quê, o que **já está no pulso** e o que está com a **carga no limite ou abaixo dele** (o limite de cada relógio
+é o do cadastro: o do próprio relógio, senão o da Configuração). O **plano não muda**: o relógio do dia continua o mesmo, e
+o sugerido que vai ao pulso conta como uso fora do plano. Nada é gravado até você apertar Pôr no pulso. Com **Ao pôr um
+relógio no pulso, tirar os outros** ligada, o que estava no pulso sai na mesma hora.
+
+No celular, um atalho para `index.php?sugerir=1` abre a página já com uma sugestão, pela última escolha. Pela API:
+`recurso=sugestao` (com `forma`, `tipos` e `pular`).
+
 ### Smartwatch
 
 A "carga" do smartwatch é a bateria, em %. O sistema não lê a bateria do relógio: ela é **estimada** a partir da última
@@ -1568,6 +1594,7 @@ de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
 | **Abrir o relógio na página Hoje** (`painel_modo`) | **Ao lado da lista** (`lado`): o relógio clicado abre num painel à direita, e a lista continua à vista. **Numa janela flutuante, grande** (`flutuante`): abre no meio da tela, por cima da página, com o fundo escurecido e os quadros lado a lado; fecha no ×, no Esc ou num clique fora. No celular, os dois cobrem a tela inteira. Padrão: ao lado. |
 | **Destaque no alto da página Hoje** (`destaque_hoje`) | **O relógio do dia** (`dia`): o quadro grande no alto da página Hoje mostra o relógio do dia (o do plano), com até quando ele fica e por que saiu. **O relógio no pulso agora** (`pulso`): mostra o relógio que está no pulso, mesmo que não seja o do dia (com *no pulso agora* e, embaixo, *Relógio do dia: …*, que abre o do dia); com mais de um no pulso, o que foi por último; sem nenhum no pulso, fica o do dia, com o aviso *Nenhum relógio no pulso agora*. Os dados embaixo (estado, carga, o botão Pôs/Tirou do pulso, a foto) são os do relógio do destaque. Embaixo da foto, uma tabelinha de duas casas diz o que está ali: **Do dia** | **No pulso**. A casa que vale fica acesa, com ✓ (azul o *Do dia*, verde o *No pulso*), e a outra apagada; o relógio do dia que está no pulso acende as duas. Parando o mouse nela, a frase do porquê (*No pulso agora; o relógio do dia é outro.*...). Padrão: o relógio do dia. |
 | **Abas das situações sem relógio** (`abas_vazias`) | as abas em cima da tabela dos relógios (páginas Hoje e Galeria) são as situações do cadastro. **Mostrar sempre** (`sempre`): todas aparecem, e a da situação sem relógio fica desabilitada (apagada, sem clique), com o motivo ao passar o mouse. **Esconder** (`com_relogio`): só aparecem as situações que têm relógio; com todos os relógios numa situação só, a faixa de abas some. |
+| **Sugestão para agora (página Hoje)** (`sugestao_agora`) | ligada, a página Hoje ganha o cartão **Sugestão para agora**, entre os avisos de hoje e os Próximos dias: você escolhe a forma de escolha e os tipos de relógio, e o sistema sugere um para usar agora, fora da escala (veja [Sugestão para agora](#sugestão-para-agora)). Padrão: desligada. |
 | **Reloginho da barra** (`relojinho_modo`) | o reloginho do canto da barra e da aba tem 24 modelos, um para cada hora do dia. **Normal** (`hora`): cada hora tem o seu (à 0 o Clássico, às 16 o Digital, às 23 o Futurista). **Aleatório** (`aleatorio`): cada hora sorteia um dos 24, e pode repetir. **Aleatório sem repetição** (`sem_repeticao`): os 24 embaralhados, cada um aparece uma vez no dia. O sorteio é do dia: o mesmo em toda página e aparelho, e outro no dia seguinte. Padrão: normal. |
 
 Na página, cada opção fica numa linha, com o nome à esquerda e o campo à direita, em quadros (Rotina do dia, Limites e contas,
@@ -2108,6 +2135,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `unidades` | as unidades da árvore (a aba **Unidades** dos Cadastros), na ordem das grandezas, cada uma com a conversão em texto e quantos campos, tipos e fórmulas a usam |
 | `marcas` | as marcas da árvore (a aba **Marcas** dos Cadastros), cada uma com o país, o site, a observação e os relógios dela |
 | `saidas` | as saídas da coleção (os emprestados e os que saíram): de cada uma, o relógio, a situação, as datas, o valor recebido, para quem, a compra, os serviços, o resultado e o tempo na coleção; e as somas das de agora por situação. `relogio=` (o histórico de um), `situacao=`, `abertas=1` (só as de agora) |
+| `sugestao` | a Sugestão para agora (o cartão da página Hoje): um relógio para usar agora, fora da escala, pela forma de escolha (`forma`) e pelos tipos (`tipos`) pedidos, com o motivo; `pular` não repete os já sugeridos. Ficam de fora o que está no pulso e o que está com a carga no limite ou abaixo dele (`fora[]` diz por quê). Não grava nada. |
 | `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios (`relogio=` um id ou vários; sem ele, todos), sem gravar, com as partes da conta; fórmula mal escrita: 400 com os erros |
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
@@ -2863,7 +2891,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | Arquivo | O que é |
 |---|---|
 | [`api.php`](api.php) | a API, a porta de toda leitura e escrita (a autenticação, o formato, a ordem dos recursos, os filtros, a resposta), com a documentação completa no cabeçalho |
-| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`, com o `api_ler` dos relatórios) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
+| [`api/`](api/) | os recursos grandes da API, um arquivo cada (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `sugestao.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), mais as funções dela (`funcoes.php`, com o `api_ler` dos relatórios) e as escritas (`escrita.php`): rodam dentro do `api.php`, e abertos direto não fazem nada (o `.htaccess` e o `nginx-relogios.conf` bloqueiam a pasta) |
 | [`lib.php`](lib.php) | o núcleo: login, árvore, motor de fórmulas, avisos, critérios, rodízio, escala, documentos |
 | [`colecoes.php`](colecoes.php) | as coleções no núcleo: o escopo do pedido, o `modelo.json`, os segredos cifrados, a tabela `sistema`, a migração v25 e o impacto das exclusões |
 | [`alertas.php`](alertas.php) | os destinos (webhook, e-mail, Web Push) e as agendas (Google, CalDAV, Outlook, ICS) |
@@ -2876,7 +2904,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | `sw.js`, `offline.html`, `icone-*.png` | o aplicativo no celular: o *service worker* (entregue por `recurso=sw`, com a versão na frente: o cache das telas, a página sem conexão e o Web Push), a página **Sem conexão** e os ícones (192, 512 e 180 px) |
 | `ajuda.php` | a página de ajuda: só o esqueleto; o `ajuda.js` pede o texto à API (`recurso=manual`: as seções do README para quem usa, já em HTML, convertidas no `lib.php`) |
 | [`pagina.php`](pagina.php) | o topo com o menu e o fim das páginas; o `topo()` confere o login antes de mandar qualquer coisa (`pagina_login()`) |
-| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
+| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `sugestao.js`, `foto.js`, ... | as telas, montadas no navegador a partir da API |
 | [`estilo.css`](estilo.css) | o visual |
 | [`textos/`](textos/) | os idiomas: `funcoes.php` (a função `t()`, a lista dos idiomas, o idioma do pedido, as datas e os números de cada idioma) e um arquivo por idioma (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: o texto em português => a tradução, por parte); abertos direto não fazem nada |
 | [`schema.sql`](schema.sql) | a estrutura do banco (só a estrutura: sem dados) |

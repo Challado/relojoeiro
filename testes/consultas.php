@@ -30,7 +30,7 @@ $TOKEN = getenv("RELOGIOS_TOKEN") ?: "token-de-teste-123";
 $ARQUIVO = __DIR__ . "/consultas.json";
 // quantos relógios a mais, e os pedidos medidos antes e depois deles (a consulta sem recurso devolve tudo)
 const RELOGIOS_A_MAIS = 10;
-const PEDIDOS_POR_RELOGIO = ["hoje", "", "totais", "previsao", "plano", "criterios", "cadastros", "estatisticas", "autonomia", "galeria", "relatorios"];
+const PEDIDOS_POR_RELOGIO = ["hoje", "", "totais", "previsao", "plano", "criterios", "cadastros", "estatisticas", "autonomia", "galeria", "relatorios", "sugestao"];
 
 function sair($texto)
 {

@@ -198,6 +198,17 @@
  *                            a compra e os serviços. relogio=: só as de um relógio; situacao=: só as de uma situação; abertas=1: só
  *                            as de agora. Quem abre e fecha uma saída é a gravação do relógio (posse e os campos saida_*).
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=saidas&situacao=vendido&abertas=1"
+ *   recurso=sugestao         a Sugestão para agora (o cartão da página Hoje; a opção sugestao_agora da Configuração o mostra): um
+ *                            relógio para usar agora, fora da escala, sem mexer no plano e sem gravar nada: {"ativa", "formas":
+ *                            [{"chave", "nome"}], "tipos": [{"id", "nome", "quantos", "disponiveis"}], "forma", "forma_nome",
+ *                            "tipos_escolhidos", "pulados", "candidatos", "fora": [{"relogio_id", "relogio", "motivo", "texto"}],
+ *                            "sugestao": {"relogio_id", "relogio", "marca", "tipo", "foto", "estado", "estado_texto", "carga",
+ *                            "carga_de", "ultimo_txt", "motivo"} ou null, "aviso"}. forma=: inteligente (o padrão), ponderado,
+ *                            aleatorio, fifo ou menos_usado; tipos=: os ids dos tipos (os grupos; 0: a raiz), vazio: todos;
+ *                            pular=: os ids já sugeridos (a Outra sugestão). Concorrem os disponíveis que estão na coleção; ficam
+ *                            de fora o que está no pulso e o que está com a carga no limite ou abaixo dele (fora[] diz por quê).
+ *                            Pôr o sugerido no pulso é o recurso=lancamento, acao=iniciar, tipo=pulso (um uso fora do plano).
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=sugestao&forma=menos_usado&tipos=5,8"
  *   recurso=colunas          as colunas cadastradas da tabela dos relógios (Cadastros › Colunas) e o que o construtor delas precisa:
  *                            {"colunas": [{"id", "chave" (c_<identificador>), "identificador", "nome", "modo" (guiado ou expert), "tabela",
  *                            "campo", "funcao", "expressao" (a conta de cada relógio, gravada nos dois modos), "formato", "formato_nome",
@@ -1213,6 +1224,8 @@
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
  *     config.abas_vazias             as abas das situações sem relógio (páginas Hoje e Galeria): sempre (aparecem desabilitadas, com o
  *                                    motivo) ou com_relogio (só aparecem as situações que têm relógio); vazio: sempre
+ *     config.sugestao_agora          1: a página Hoje mostra o cartão Sugestão para agora (um relógio para usar agora, fora da escala:
+ *                                    recurso=sugestao); 0 (ou vazio, de fábrica): não mostra
  *     config.calibre_campos          os campos do formulário do calibre (Cadastros › Calibres): movimento (só os campos marcados como do
  *                                    movimento, e os que o calibre já define) ou todos; vazio: movimento
  *     config.relojinho_modo          o reloginho da barra e da aba: hora (cada hora do dia tem o seu modelo), aleatorio (um sorteado a cada
@@ -2427,6 +2440,20 @@
  *     abas[].disponivel              se a aba abre: false na situação sem relógio (a tela a mostra desabilitada, sem link)
  *     abas[].motivo                  por que a aba não abre, no idioma do pedido: o que falta e como pôr um relógio nela; null na aba que
  *                                    abre
+ *     sugestao_agora                 a Sugestão para agora (a opção sugestao_agora da Configuração): o que o cartão oferece para escolher;
+ *                                    a sugestão vem do recurso=sugestao; null: a opção está desligada
+ *     sugestao_agora.formas          as formas de escolha, na ordem em que o cartão as mostra
+ *     sugestao_agora.formas[]        uma forma de escolha
+ *     sugestao_agora.formas[].chave  a chave da forma (o que se manda em forma=): inteligente, ponderado, aleatorio, fifo ou menos_usado
+ *     sugestao_agora.formas[].nome   o nome da forma, no idioma do pedido
+ *     sugestao_agora.tipos           os tipos com relógio na coleção (os grupos da árvore onde eles estão: a coluna Tipo), pelo nome
+ *     sugestao_agora.tipos[]         um tipo
+ *     sugestao_agora.tipos[].id      o id do grupo (o que se manda em tipos=); 0: os que estão na raiz, sem grupo
+ *     sugestao_agora.tipos[].nome    o nome do grupo ("sem grupo" na raiz)
+ *     sugestao_agora.tipos[].quantos quantos relógios da coleção o tipo tem
+ *     sugestao_agora.tipos[].disponiveis
+ *                                    quantos deles estão disponíveis (os que podem ser sugeridos, antes de tirar o que está no pulso e o
+ *                                    que está sem carga)
  *     relogios[].aba                 a aba da tabela em que ele aparece: a situação dele (uma chave de abas[]); a tabela mostra os da aba
  *                                    escolhida
  *     relogios[].saida               a saída de agora (o emprestado: com quem está e desde quando); null: está na coleção
@@ -2720,6 +2747,46 @@
  *     teste.relogio                  o nome do relógio do teste
  *     teste.valor                    o valor calculado; null: vazio
  *     teste.texto                    o valor no formato da coluna
+ *   recurso=sugestao
+ *     ativa                          verdadeiro: a opção sugestao_agora da Configuração está ligada (a página Hoje mostra o cartão); a
+ *                                    resposta vem dos dois jeitos
+ *     formas                         as formas de escolha, na ordem em que o cartão as mostra
+ *     formas[]                       uma forma de escolha
+ *     formas[].chave                 a chave da forma (o que se manda em forma=): inteligente, ponderado, aleatorio, fifo ou menos_usado
+ *     formas[].nome                  o nome da forma, no idioma do pedido
+ *     tipos                          os tipos com relógio na coleção (os grupos da árvore onde eles estão: a coluna Tipo), pelo nome
+ *     tipos[]                        um tipo
+ *     tipos[].id                     o id do grupo (o que se manda em tipos=); 0: os que estão na raiz, sem grupo
+ *     tipos[].nome                   o nome do grupo ("sem grupo" na raiz)
+ *     tipos[].quantos                quantos relógios da coleção o tipo tem
+ *     tipos[].disponiveis            quantos deles estão disponíveis (os que podem ser sugeridos, antes de tirar o que está no pulso e o
+ *                                    que está sem carga)
+ *     forma                          a forma de escolha usada
+ *     forma_nome                     o nome da forma usada, no idioma do pedido
+ *     tipos_escolhidos               os tipos pedidos em tipos= (vazio: todos)
+ *     tipos_escolhidos[]             o id de um tipo pedido
+ *     pulados                        quantos candidatos ficaram de fora por estarem em pular=
+ *     candidatos                     quantos relógios concorreram à sugestão
+ *     fora                           os que ficaram de fora, entre os disponíveis dos tipos pedidos, com o motivo
+ *     fora[]                         um relógio que ficou de fora
+ *     fora[].relogio_id              o id do relógio
+ *     fora[].relogio                 o nome do relógio
+ *     fora[].motivo                  por que ficou de fora: pulso (está no pulso agora) ou carga (a carga no limite ou abaixo dele)
+ *     fora[].texto                   o motivo por extenso, no idioma do pedido ("carga em 12%, no limite de 20% ou abaixo dele")
+ *     sugestao                       o relógio sugerido; null: nenhum (aviso diz por quê)
+ *     sugestao.relogio_id            o id do relógio
+ *     sugestao.relogio               o nome do relógio
+ *     sugestao.marca                 a marca dele; null: sem marca
+ *     sugestao.tipo                  o tipo dele: o nome do grupo ("sem grupo" na raiz)
+ *     sugestao.foto                  a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
+ *     sugestao.estado                onde ele está agora: repouso (guardado) ou sessao (no winder, no carregador, no sol)
+ *     sugestao.estado_texto          onde ele está agora, por extenso ("Em repouso", "No winder · Quarto, Pos. 1")
+ *     sugestao.carga                 a carga dele agora, em %; null: sem medida de carga ou sem dados
+ *     sugestao.carga_de              de onde vem a carga ("bateria do smartwatch", "reserva de marcha do mecânico")
+ *     sugestao.ultimo_txt            a última vez no pulso, por extenso ("nunca": ainda não foi)
+ *     sugestao.motivo                por que ele: o motivo da escolha, escrito como o dos dias do plano ("A maior nota (57,8), entre 4
+ *                                    candidatos.")
+ *     aviso                          por que não há sugestão (nenhum disponível, todos de fora, todos já vistos); null: há sugestão
  *   recurso=saidas
  *     disponivel                     verdadeiro: a tabela das saídas existe (a migração v64 aplicada); falso: aplique em Configuração, e as
  *                                    listas vêm vazias
@@ -4332,6 +4399,8 @@
  *                                    agora; sem nenhum no pulso, o do dia); vazio: dia
  *     config.abas_vazias             as abas das situações sem relógio (páginas Hoje e Galeria): sempre (aparecem desabilitadas, com o
  *                                    motivo) ou com_relogio (só aparecem as situações que têm relógio); vazio: sempre
+ *     config.sugestao_agora          1: a página Hoje mostra o cartão Sugestão para agora (um relógio para usar agora, fora da escala:
+ *                                    recurso=sugestao); 0 (ou vazio, de fábrica): não mostra
  *     config.calibre_campos          os campos do formulário do calibre (Cadastros › Calibres): movimento (só os campos marcados como do
  *                                    movimento, e os que o calibre já define) ou todos; vazio: movimento
  *     config.relojinho_modo          o reloginho da barra e da aba: hora (cada hora do dia tem o seu modelo), aleatorio (um sorteado a cada
@@ -6978,6 +7047,20 @@
  *     abas[].disponivel              se a aba abre: false na situação sem relógio (a tela a mostra desabilitada, sem link)
  *     abas[].motivo                  por que a aba não abre, no idioma do pedido: o que falta e como pôr um relógio nela; null na aba que
  *                                    abre
+ *     sugestao_agora                 a Sugestão para agora (a opção sugestao_agora da Configuração): o que o cartão oferece para escolher;
+ *                                    a sugestão vem do recurso=sugestao; null: a opção está desligada
+ *     sugestao_agora.formas          as formas de escolha, na ordem em que o cartão as mostra
+ *     sugestao_agora.formas[]        uma forma de escolha
+ *     sugestao_agora.formas[].chave  a chave da forma (o que se manda em forma=): inteligente, ponderado, aleatorio, fifo ou menos_usado
+ *     sugestao_agora.formas[].nome   o nome da forma, no idioma do pedido
+ *     sugestao_agora.tipos           os tipos com relógio na coleção (os grupos da árvore onde eles estão: a coluna Tipo), pelo nome
+ *     sugestao_agora.tipos[]         um tipo
+ *     sugestao_agora.tipos[].id      o id do grupo (o que se manda em tipos=); 0: os que estão na raiz, sem grupo
+ *     sugestao_agora.tipos[].nome    o nome do grupo ("sem grupo" na raiz)
+ *     sugestao_agora.tipos[].quantos quantos relógios da coleção o tipo tem
+ *     sugestao_agora.tipos[].disponiveis
+ *                                    quantos deles estão disponíveis (os que podem ser sugeridos, antes de tirar o que está no pulso e o
+ *                                    que está sem carga)
  *     aba                            a aba que a resposta mostra: a situação pedida (ou a primeira, com aba=principal), todos, ou vazio
  *                                    (sem aba: os da coleção, na coleção e emprestados)
  *     grupos[].relogios[].aba        a aba do relógio: a situação dele (uma chave de abas[])
@@ -8422,6 +8505,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/marcas.php";
 } elseif ($recurso === "saidas") {
     require __DIR__ . "/api/saidas.php";
+} elseif ($recurso === "sugestao") {
+    require __DIR__ . "/api/sugestao.php";
 } elseif ($recurso === "unidades") {
     require __DIR__ . "/api/unidades.php";
 } elseif ($recurso === "servicos") {
@@ -8521,7 +8606,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "saidas", "colunas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "saidas", "sugestao", "colunas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

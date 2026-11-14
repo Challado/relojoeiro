@@ -172,7 +172,7 @@ try {
     // ---- a migração leva o valor igual ao padrão de fábrica para o vazio: todas as opções com padrão que existiam na v58
     // estão nela (as que nasceram depois, como a abas_vazias e a pulso_um_so, nunca tiveram o padrão gravado no config: nada a limpar)
     $sql = (string)file_get_contents(dirname(__DIR__) . "/migracao_v58.sql");
-    $depois_da_v58 = ["abas_vazias", "pulso_um_so"];
+    $depois_da_v58 = ["abas_vazias", "pulso_um_so", "sugestao_agora"];
     foreach (OPCOES as $k => [, , $padrao]) {
         if ($padrao !== "" && !in_array($k, array_merge(["gasto_motor", "documentos_copia"], $depois_da_v58), true)) {
             exigir_opcoes(strpos($sql, "chave = '" . $k . "' AND valor = '" . $padrao . "'") !== false, "A migração v58 não limpa " . $k . ".");

@@ -57,6 +57,8 @@ jobs:
         run: php testes/construtor.php
       - name: Saídas da coleção e abas por situação
         run: php testes/saidas.php
+      - name: Sugestão para agora (as formas, os tipos, o pulso, a carga e nada gravado)
+        run: php testes/sugestao.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

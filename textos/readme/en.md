@@ -1,4 +1,4 @@
-<!-- origem: 9f941f2830989db9d0a6b10e65d5ebd5b03b4988 -->
+<!-- origem: 9c9c797311fc65b4d3a38ab0cd483274c4ba68ba -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -159,6 +159,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `unidades` | the tree's units (the **Units** tab of Definitions), in the order of the quantities, each one with the conversion as text and how many fields, types and formulas use it |
 | `marcas` | the tree's brands (the **Brands** tab of Definitions), each with the country, the website, the note and its watches |
 | `saidas` | the exits from the collection (the ones on loan and the ones that left): for each one, the watch, the status, the dates, the amount received, to whom, the purchase, the services, the result and the time in the collection; and the sums of the current ones by status. `relogio=` (one watch's history), `situacao=`, `abertas=1` (only the current ones) |
+| `sugestao` | the Suggestion for now (the card on the Today page): a watch to wear now, outside the schedule, by the selection method (`forma`) and the types (`tipos`) requested, with the reason; `pular` does not repeat the ones already suggested. Left out: the one on the wrist and any whose charge is at or below its limit (`fora[]` says why). It records nothing. |
 | `calcular` | the result of a formula (`expressao=`) on the watches (`relogio=` one id or several; without it, all), without saving, with the parts of the calculation; a badly written formula: 400 with the errors |
 | `foto` | a watch's photo (`relogio=<id>`): the image, not JSON |
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
@@ -690,7 +691,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | File | What it is |
 |---|---|
 | [`api.php`](api.php) | the API, the door for every read and write (the authentication, the format, the order of the resources, the filters, the response), with the complete documentation in the header |
-| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus its functions (`funcoes.php`, with the reports' `api_ler`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
+| [`api/`](api/) | the API's big resources, one file each (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `sugestao.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), plus its functions (`funcoes.php`, with the reports' `api_ler`) and the writes (`escrita.php`): they run inside `api.php`, and opened directly they do nothing (`.htaccess` and `nginx-relogios.conf` block the folder) |
 | [`lib.php`](lib.php) | the core: login, tree, formula engine, alerts, criteria, rotation, schedule, documents |
 | [`colecoes.php`](colecoes.php) | the collections in the core: the request's scope, `modelo.json`, the encrypted secrets, the `sistema` table, migration v25 and the impact of deletions |
 | [`alertas.php`](alertas.php) | the destinations (webhook, e-mail, Web Push) and the calendars (Google, CalDAV, Outlook, ICS) |
@@ -703,7 +704,7 @@ bigger cycles, which no `CHECK` reaches) and the ones for the optional links.
 | `sw.js`, `offline.html`, `icone-*.png` | the app on the phone: the *service worker* (served by `recurso=sw`, with the version in front: the screens' cache, the no-connection page and the Web Push), the **No connection** page and the icons (192, 512 and 180 px) |
 | `ajuda.php` | the help page: only the skeleton; `ajuda.js` asks the API for the text (`recurso=manual`: the README's sections for users, already in HTML, converted in `lib.php`) |
 | [`pagina.php`](pagina.php) | the top with the menu and the end of the pages ; `topo()` checks the login before sending anything (`pagina_login()`) |
-| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | the screens, built in the browser from the API |
+| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `sugestao.js`, `foto.js`, ... | the screens, built in the browser from the API |
 | [`estilo.css`](estilo.css) | the look |
 | [`textos/`](textos/) | the languages: `funcoes.php` (the `t()` function, the list of languages, the request's language, each language's dates and numbers) and one file per language (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: the Portuguese text => the translation, by part); opened directly they do nothing |
 | [`schema.sql`](schema.sql) | the database structure (only the structure: no data) |

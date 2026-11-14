@@ -1,4 +1,4 @@
-<!-- origem: 9f941f2830989db9d0a6b10e65d5ebd5b03b4988 -->
+<!-- origem: 9c9c797311fc65b4d3a38ab0cd483274c4ba68ba -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -160,6 +160,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `unidades` | las unidades del árbol (la pestaña **Unidades** de Definiciones), en el orden de las magnitudes, cada una con la conversión en texto y cuántos campos, tipos y fórmulas la usan |
 | `marcas` | las marcas del árbol (la pestaña **Marcas** de Definiciones), cada una con el país, el sitio, la observación y sus relojes |
 | `saidas` | las salidas de la colección (los prestados y los que salieron): de cada una, el reloj, la situación, las fechas, el valor recibido, a quién, la compra, los servicios, el resultado y el tiempo en la colección; y las sumas de las de ahora por situación. `relogio=` (el historial de uno), `situacao=`, `abertas=1` (solo las de ahora) |
+| `sugestao` | la Sugerencia para ahora (la tarjeta de la página Hoy): un reloj para usar ahora, fuera de la escala, por la forma de elección (`forma`) y los tipos (`tipos`) pedidos, con el motivo; `pular` no repite los ya sugeridos. Quedan fuera el que está en la muñeca y el que tiene la carga en el límite o por debajo de él (`fora[]` dice por qué). No graba nada. |
 | `calcular` | el resultado de una fórmula (`expressao=`) en los relojes (`relogio=` un id o varios; sin él, todos), sin guardar, con las partes de la cuenta; fórmula mal escrita: 400 con los errores |
 | `foto` | la foto de un reloj (`relogio=<id>`): la imagen, no JSON |
 | `documentos` | los documentos de un reloj (`relogio=<id>`; sin él, de todos), con las categorías, el resumen de la NF-e de cada XML, la carpeta y el límite |
@@ -707,7 +708,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | Archivo | Qué es |
 |---|---|
 | [`api.php`](api.php) | la API, la puerta de toda lectura y escritura (la autenticación, el formato, el orden de los recursos, los filtros, la respuesta), con la documentación completa en la cabecera |
-| [`api/`](api/) | los recursos grandes de la API, un archivo cada uno (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), más sus funciones (`funcoes.php`, con el `api_ler` de los informes) y las escrituras (`escrita.php`): se ejecutan dentro del `api.php`, y abiertos directamente no hacen nada (el `.htaccess` y el `nginx-relogios.conf` bloquean la carpeta) |
+| [`api/`](api/) | los recursos grandes de la API, un archivo cada uno (`hoje.php`, `ficha.php`, `configuracao.php`, `desejos.php`, `saidas.php`, `sugestao.php`, `estatisticas.php`, `hora_certa.php`, `passaporte.php`, `galeria.php`, `relatorios.php`, `unidades.php`, `ajuda.php`...), más sus funciones (`funcoes.php`, con el `api_ler` de los informes) y las escrituras (`escrita.php`): se ejecutan dentro del `api.php`, y abiertos directamente no hacen nada (el `.htaccess` y el `nginx-relogios.conf` bloquean la carpeta) |
 | [`lib.php`](lib.php) | el núcleo: login, árbol, motor de fórmulas, avisos, criterios, rotación, escala, documentos |
 | [`colecoes.php`](colecoes.php) | las colecciones en el núcleo: el alcance de la petición, el `modelo.json`, los secretos cifrados, la tabla `sistema`, la migración v25 y el impacto de las eliminaciones |
 | [`alertas.php`](alertas.php) | los destinos (webhook, correo, Web Push) y los calendarios (Google, CalDAV, Outlook, ICS) |
@@ -720,7 +721,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | `sw.js`, `offline.html`, `icone-*.png` | la aplicación en el celular: el *service worker* (entregado por `recurso=sw`, con la versión delante: el caché de las pantallas, la página sin conexión y el Web Push), la página **Sin conexión** y los íconos (192, 512 y 180 px) |
 | `ajuda.php` | la página de ayuda: solo el esqueleto; el `ajuda.js` pide el texto a la API (`recurso=manual`: las secciones del README para quien usa, ya en HTML, convertidas en el `lib.php`) |
 | [`pagina.php`](pagina.php) | la parte de arriba con el menú y el final de las páginas ; `topo()` comprueba el login antes de enviar nada (`pagina_login()`) |
-| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `foto.js`, ... | las pantallas, armadas en el navegador a partir de la API |
+| `api.js`, `hoje.js`, `painel.js`, `tabela.js`, `sugestao.js`, `foto.js`, ... | las pantallas, armadas en el navegador a partir de la API |
 | [`estilo.css`](estilo.css) | el aspecto |
 | [`textos/`](textos/) | los idiomas: `funcoes.php` (la función `t()`, la lista de los idiomas, el idioma de la petición, las fechas y los números de cada idioma) y un archivo por idioma (`en.php`, `zh-CN.php`, `hi.php`, `es.php`, `fr.php`: el texto en portugués => la traducción, por parte); abiertos directamente no hacen nada |
 | [`schema.sql`](schema.sql) | la estructura de la base de datos (solo la estructura: sin datos) |

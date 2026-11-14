@@ -5594,7 +5594,8 @@ function escolha_do_dia($modo, $dia, $m_ini, $cands, $roteiro, $fora = [], $bloc
             if (count(array_unique($arredondados)) === 1) {
                 $ids = array_keys($info);
                 $escolhido = $ids[sorteio(0, count($ids) - 1)];
-                $motivo = t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
+                // (o único candidato não é sorteado: o motivo não cita a fonte de um sorteio que não houve)
+                $motivo = count($ids) === 1 ? t("Sem sorteio: {1}.", [1 => $entre]) : t("Sorteio simples, {1}, todos com a mesma chance ({2}).", [1 => $entre, 2 => aleatorio_fonte()]);
             } else {
                 // Normaliza os pesos para não estourar inteiros ao multiplicar por 10^casas.
                 // Um sorteio usa um inteiro de 1 a 1 bilhão; peso 0 não participa.
@@ -9715,6 +9716,97 @@ function pulso_tirados_texto($feito)
     [$sairam, $ficaram] = $feito;
     return (count($sairam) > 0 ? t(" Tirado do pulso no mesmo instante: {1}.", [1 => implode(", ", $sairam)]) : "")
         . (count($ficaram) > 0 ? t(" Continua no pulso (foi posto depois desse instante): {1}.", [1 => implode(", ", $ficaram)]) : "");
+}
+
+// A Sugestão para agora (a opção sugestao_agora, opcoes.php: sistema, usuário, coleção; o cartão da página Hoje e o
+// recurso=sugestao): um relógio para usar agora, fora da escala (uma ocasião, uma vontade), sem mexer no plano. Os tipos são
+// os grupos da árvore onde há relógio na coleção (a coluna Tipo; id 0 e "sem grupo": os que estão na raiz):
+// [{id, nome, quantos, disponiveis}], pelo nome
+function sugestao_tipos()
+{
+    $nos = nos_todos();
+    $res = [];
+    foreach (linhas("SELECT id, no_id, disponivel, posse FROM relogio ORDER BY id") as $r) {
+        if (posse_de($r) !== "colecao") {
+            continue;
+        }
+        $n = (int)$r["no_id"];
+        $res[$n] = $res[$n] ?? ["id" => $n, "nome" => isset($nos[$n]) ? $nos[$n]["nome"] : t("sem grupo"), "quantos" => 0, "disponiveis" => 0];
+        $res[$n]["quantos"]++;
+        $res[$n]["disponiveis"] += (int)$r["disponivel"] === 1 ? 1 : 0;
+    }
+    usort($res, function ($a, $b) { return strcoll($a["nome"], $b["nome"]) ?: $a["id"] <=> $b["id"]; });
+    return $res;
+}
+
+// A sugestão: entre os relógios disponíveis que estão na coleção (dos tipos pedidos; vazio: todos), saem o que está no pulso
+// agora, o que está com a carga no limite ou abaixo dele (energia <= limite_carga, as duas do cadastro: sem uma delas, a
+// carga não tira ninguém) e os de $pular (os que a pessoa já viu e passou: a Outra sugestão); entre os que sobram, a forma
+// de escolha (formas_de_escolha) decide, com as regras de sempre (escolha_do_dia: a garantia de rodízio, a nota, o peso), no
+// instante de agora, sem o plano: o de ontem e o ciclo não tiram ninguém, e nada é gravado. Devolve a forma, os tipos, os
+// candidatos (quantos), os que ficaram de fora e por quê (fora[]: motivo pulso ou carga), a sugestão (null: nenhuma) com o
+// motivo da escolha, e o aviso (por que não há sugestão)
+function sugestao_agora($forma, $tipos = [], $pular = [], $agora = null)
+{
+    $agora = $agora ?? time();
+    $tipos = array_values(array_unique(array_map("intval", $tipos)));
+    $pular = array_values(array_unique(array_map("intval", $pular)));
+    $nos = nos_todos();
+    $tem_limite = isset(formulas_todas()["limite_carga"]);
+    // (as contas são as de agora de verdade: nenhuma sessão simulada de um plano montado neste pedido)
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    $GLOBALS["SIMULACAO"] = [];
+    $GLOBALS["SIMULACAO_VERSAO"] = ($GLOBALS["SIMULACAO_VERSAO"] ?? 0) + 1;
+    $cands = [];
+    $visoes = [];
+    $fora = [];
+    $pulados = 0;
+    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
+        $id = (int)$r["id"];
+        if (posse_de($r) !== "colecao" || (count($tipos) > 0 && !in_array((int)$r["no_id"], $tipos, true))) {
+            continue;
+        }
+        $v = visao_relogio($r, $agora);
+        if ($v["em_uso"]) {
+            $fora[] = ["relogio_id" => $id, "relogio" => $r["nome"], "motivo" => "pulso", "texto" => t("está no pulso agora")];
+            continue;
+        }
+        $ctx = ["r" => $r, "momento" => $agora, "rastro" => [], "pilha" => [], "valores" => valores_do_relogio($id)];
+        $limite = $tem_limite ? variavel_valor("limite_carga", $ctx) : null;
+        if ($v["energia"] !== null && is_numeric($limite) && (float)$v["energia"] <= (float)$limite) {
+            $fora[] = ["relogio_id" => $id, "relogio" => $r["nome"], "motivo" => "carga",
+                "texto" => t("carga em {1}%, no limite de {2}% ou abaixo dele", [1 => $v["energia"], 2 => numero_txt((float)$limite, 0)])];
+            continue;
+        }
+        if (in_array($id, $pular, true)) {
+            $pulados++;
+            continue;
+        }
+        $cands[$id] = $r;
+        $visoes[$id] = $v;
+    }
+    $res = ["forma" => $forma, "forma_nome" => formas_de_escolha()[$forma] ?? null, "tipos_escolhidos" => $tipos, "pulados" => $pulados,
+        "candidatos" => count($cands), "fora" => $fora, "sugestao" => null, "aviso" => null];
+    if (count($cands) === 0) {
+        $res["aviso"] = $pulados > 0 ? t("Não há outro relógio para sugerir: você já passou por todos os candidatos.")
+            : (count($fora) > 0 ? t("Nenhum relógio para sugerir agora: os candidatos ficaram de fora.")
+                : (count($tipos) > 0 ? t("Nenhum relógio disponível desses tipos na coleção.") : t("Nenhum relógio disponível na coleção.")));
+        return $res;
+    }
+    [$id, $motivo] = escolha_do_dia(null, hoje_da_colecao(), $agora, $cands, $forma, [], "", false);
+    if ($id === null) {
+        $res["aviso"] = t("Nenhum dos {1} relógios é candidato agora pelas regras dessa forma de escolha.", [1 => count($cands)]);
+        return $res;
+    }
+    $r = $cands[$id];
+    $v = $visoes[$id];
+    $foto = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
+    $res["sugestao"] = ["relogio_id" => (int)$id, "relogio" => $r["nome"], "marca" => marca_do_relogio((int)$id)["nome"] ?? null,
+        "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : t("sem grupo"), "foto" => $foto !== null ? strtotime($foto) : null,
+        "estado" => $v["estado"], "estado_texto" => $v["estado_texto"], "carga" => $v["energia"], "carga_de" => $v["de"],
+        "ultimo_txt" => $v["ultimo"] > 0 ? data_txt($v["ultimo"], true, date("Y", $v["ultimo"]) === date("Y", $agora)) : t("nunca"),
+        "motivo" => $motivo];
+    return $res;
 }
 
 // Um dia livre do plano (Deixar o período livre): sem relógio e sem sorteio, para escolher à mão

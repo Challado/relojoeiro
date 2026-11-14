@@ -232,6 +232,9 @@ function recarregarHoje() {
     }
     porHtml(document.getElementById("bloco-avisos"), res);
 
+    // a Sugestão para agora (sugestao.js): o cartão, só com a opção da Configuração ligada
+    sugestaoMostrar(d);
+
     // "Próximos dias": o plano, com o lembrete de cada dia e, embaixo do relógio, o motivo da escolha
     // cada dia com o "trocar por…" (o relógio escolhido à mão fica marcado), e o link para o plano inteiro
     // de "Mostrar até" em "Mostrar até" dias (a Configuração), com as páginas embaixo

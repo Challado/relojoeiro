@@ -202,7 +202,7 @@ for b in "${BANCOS[@]}"; do
   if [ "$SRV_ANTES" = "2" ] && case ", $PEND," in *", v48,"*) true ;; *) false ;; esac; then
     case ",$(echo "$MAN" | cut -d'|' -f3)," in *",Relojoaria de antes,"*) ;; *) erros+=("quem fez o serviço de antes não virou a oficina: $MAN") ;; esac
   fi
-  for q in "recurso=hoje" "foto=nao" "recurso=passaporte&relogio=$R" "recurso=documentos&relogio=$R" "recurso=listas" "recurso=oficinas" "recurso=saidas" "recurso=galeria&aba=todos" "recurso=relatorios&tipo=saidas"; do
+  for q in "recurso=hoje" "foto=nao" "recurso=passaporte&relogio=$R" "recurso=documentos&relogio=$R" "recurso=listas" "recurso=oficinas" "recurso=saidas" "recurso=galeria&aba=todos" "recurso=relatorios&tipo=saidas" "recurso=sugestao"; do
     c=$(curl -s -o /dev/null -w '%{http_code}' -H "$TOKEN" "$A?$q")
     [ "$c" != "200" ] && erros+=("$q respondeu $c")
   done

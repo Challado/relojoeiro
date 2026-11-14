@@ -161,7 +161,7 @@ $antes = pedir($ana, "GET", ["recurso" => "ficha", "relogio" => $rel_a])["corpo"
 
 // os recursos de leitura e as variações de parâmetro com as coisas da ana
 $recursos = ["", "importacao", "backup", "foto", "documento", "documentos", "criterios", "avisos", "autonomia", "hoje", "ficha", "config", "historico", "previsao",
-    "plano", "desejos", "saidas", "estatisticas", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "winders", "programas", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
+    "plano", "desejos", "saidas", "sugestao", "estatisticas", "precisao", "calibres", "unidades", "servicos", "reserva", "timegrapher", "relatorios", "hora_certa", "passaporte", "galeria", "acessorios", "winders", "programas", "proximos", "rodizio_manual", "eventos", "destinos", "agendas",
     "usuarios", "conta", "colecoes", "acessos", "pedidos", "convites", "aprovacoes", "cron", "arvore", "cadastros", "calcular", "migracoes", "instalacao",
     "cadastro", "entrar"];
 $variacoes = [[], ["colecao" => $col_a], ["relogio" => $rel_a], ["id" => $rel_a], ["relogio_id" => $rel_a], ["como" => "ana"], ["usuario" => "ana"],

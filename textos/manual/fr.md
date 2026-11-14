@@ -1,4 +1,4 @@
-<!-- origem: ec90bfda07fce0e386608108afc7f09b41778518 -->
+<!-- origem: 398d7f904025bf047d1db26208b259e804d9c105 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1298,6 +1298,34 @@ Colonnes : *Sorties de la collection*), pour une colonne ou un total à vous. Pa
 corriger) et `recurso=relogio`, `acao=salvar`, avec `posse` et les champs `saida_data`, `saida_valor`, `saida_destino`,
 `saida_observacao` et `volta_data` (ouvrir et clore la sortie).
 
+### Suggestion pour maintenant {#sugestão-para-agora}
+
+Parfois vous voulez une montre **hors du planning** : une occasion, un rendez-vous, une envie. Avec l'option **Suggestion
+pour maintenant** activée dans la Configuration (Écrans), la page **Aujourd'hui** gagne une carte, juste sous les alertes du
+jour et avant les Prochains jours :
+
+- **Choisir par** : la méthode de choix, les mêmes que la rotation (la meilleure note, le tirage selon la note, l'aléatoire,
+  la file de la plus longtemps sans usage, la moins utilisée).
+- **Type** : les types de montre que vous avez dans la collection (Automatique, Pile, Smartwatch...), chacun avec le nombre
+  de disponibles. Ils sont tous cochés ; décochez ceux que vous ne voulez pas maintenant. Le type sans aucune disponible est
+  désactivé.
+- **Suggérer** : affiche une montre, avec la photo, où elle est (rangée, sur le remontoir, sur le chargeur), la charge, la
+  dernière fois au poignet et **pourquoi elle**.
+
+Elle vous plaît ? **Mettre au poignet** marque la montre au poignet maintenant. Elle ne vous plaît pas ? **Autre
+suggestion** affiche la suivante, sans répéter celles déjà apparues ; quand il n'y en a plus, la carte le dit et propose
+**Recommencer**. Changer la méthode ou les types relance le tour, et le navigateur retient votre dernier choix.
+
+Ce que la suggestion respecte : seules les montres **disponibles** qui sont **dans la collection** participent. Sont
+écartées, et la carte dit lesquelles et pourquoi, celle qui est **déjà au poignet** et celles dont la **charge est à la
+limite ou en dessous** (la limite de chaque montre est celle des définitions : celle de la montre, sinon celle de la
+Configuration). Le **plan ne change pas** : la montre du jour reste la même, et la montre suggérée qui va au poignet compte
+comme usage hors du plan. Rien n'est enregistré tant que vous n'appuyez pas sur Mettre au poignet. Avec **En mettant une
+montre au poignet, retirer les autres** activée, celle qui était au poignet en sort au même moment.
+
+Sur le téléphone, un raccourci vers `index.php?sugerir=1` ouvre la page déjà avec une suggestion, selon votre dernier choix.
+Par l'API : `recurso=sugestao` (avec `forma`, `tipos` et `pular`).
+
 ### Smartwatch {#smartwatch}
 
 La « charge » de la smartwatch est la batterie, en %. Le système ne lit pas la batterie de la montre : il l'**estime** à
@@ -1561,6 +1589,7 @@ Les cartes remplissent les espaces disponibles selon la largeur de l’écran et
 | **Ouvrir la montre sur la page Aujourd'hui** (`painel_modo`) | **À côté de la liste** (`lado`) : la montre cliquée s'ouvre dans un panneau à droite, et la liste reste visible. **Dans une grande fenêtre flottante** (`flutuante`) : elle s'ouvre au milieu de l'écran, par-dessus la page, avec le fond assombri et les cadres côte à côte ; elle se ferme avec le ×, Échap ou un clic à l'extérieur. Sur le téléphone, les deux occupent tout l'écran. Par défaut : à côté de la liste. |
 | **Mise en avant en haut de la page Aujourd'hui** (`destaque_hoje`) | **La montre du jour** (`dia`) : le grand cadre en haut de la page Aujourd'hui montre la montre du jour (celle du plan), avec jusqu'à quand elle reste et pourquoi elle est sortie. **La montre au poignet maintenant** (`pulso`) : il montre la montre qui est au poignet, même si ce n'est pas celle du jour (avec *au poignet maintenant* et, en dessous, *Montre du jour : …*, qui ouvre celle du jour) ; avec plus d'une au poignet, la dernière mise ; sans aucune au poignet, celle du jour reste, avec l'avis *Aucune montre au poignet maintenant*. Les données en dessous (état, charge, le bouton Mise au poignet/Retirée du poignet, la photo) sont celles de la montre mise en avant. Sous la photo, un petit tableau de deux cases dit ce qu'il y a là : **Du jour** | **Au poignet**. La case qui compte s'allume avec un ✓ (bleu *Du jour*, vert *Au poignet*) et l'autre reste éteinte ; la montre du jour au poignet allume les deux. En posant la souris dessus, la phrase du pourquoi (*Au poignet maintenant ; la montre du jour est une autre.*...). Par défaut : la montre du jour. |
 | **Onglets des statuts sans montre** (`abas_vazias`) | les onglets au-dessus du tableau des montres (pages Aujourd'hui et Galerie) sont les statuts des définitions. **Toujours afficher** (`sempre`) : tous apparaissent, et celui du statut sans montre est désactivé (grisé, non cliquable), avec le motif au survol de la souris. **Masquer** (`com_relogio`) : seuls les statuts qui ont une montre apparaissent ; avec toutes les montres dans un seul statut, la bande d'onglets disparaît. |
+| **Suggestion pour maintenant (page Aujourd'hui)** (`sugestao_agora`) | activée, la page Aujourd'hui gagne la carte **Suggestion pour maintenant**, entre les alertes du jour et les Prochains jours : vous choisissez la méthode de choix et les types de montre, et le système en suggère une à porter maintenant, hors du planning (voir [Suggestion pour maintenant](#sugestão-para-agora)). Par défaut : désactivée. |
 | **Petite montre de la barre** (`relojinho_modo`) | la petite montre du coin de la barre et de l'onglet a 24 modèles, un pour chaque heure du jour. **Normal** (`hora`) : chaque heure a le sien (à 0 h la Classique, à 16 h la Numérique, à 23 h la Futuriste). **Aléatoire** (`aleatorio`) : chaque heure en tire un des 24, et il peut se répéter. **Aléatoire sans répétition** (`sem_repeticao`) : les 24 mélangés, chacun apparaît une fois dans la journée. Le tirage est celui du jour : le même sur chaque page et appareil, et un autre le lendemain. Par défaut : normal. |
 
 Sur la page, chaque option tient sur une ligne, avec le nom à gauche et le champ à droite, dans des cadres (Routine du jour,

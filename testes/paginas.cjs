@@ -22,6 +22,8 @@ module.exports = [
   { nome: 'hoje-aba-desejado', url: 'index.php?aba=desejado' },
   { nome: 'hoje-aba-vendido', url: 'index.php?aba=vendido' },
   { nome: 'hoje-aba-vendido-painel', url: 'index.php?aba=vendido&r=4' },
+  // a Sugestão para agora (o roteiro deixa a opção ligada): a página já com um relógio sugerido
+  { nome: 'hoje-sugestao', url: 'index.php?sugerir=1' },
   { nome: 'estatisticas', url: 'estatisticas.php?de=tudo' },
   { nome: 'hora', url: 'hora.php' },
   { nome: 'acessorios', url: 'acessorios.php' },

@@ -1286,6 +1286,22 @@ ler("hoje sem as abas vazias", ["recurso" => "hoje"]);
 ler("galeria de uma aba vazia, escondida", ["recurso" => "galeria", "aba" => "presenteado"]);
 escrever(["recurso" => "config", "acao" => "salvar", "abas_vazias" => "nunca"], false);
 escrever(["recurso" => "config", "acao" => "salvar", "abas_vazias" => "sempre"]);
+// a Sugestão para agora (a Configuração): desligada, o recurso=hoje não traz o cartão (e o recurso=sugestao responde do mesmo
+// jeito, com ativa falso); ligada (e fica ligada: o cartão entra no layout das telas da Hoje), cada forma de escolha, o
+// filtro por tipo (o primeiro tipo da resposta), a Outra sugestão (pulando o primeiro sugerido) e as recusas
+ler("sugestao com a opcao desligada", ["recurso" => "sugestao"]);
+escrever(["recurso" => "config", "acao" => "salvar", "sugestao_agora" => "talvez"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "sugestao_agora" => 1]);
+ler("hoje com a sugestao para agora", ["recurso" => "hoje"]);
+foreach (["inteligente", "fifo", "menos_usado"] as $forma_sg) {
+    ler("sugestao pela forma " . $forma_sg, ["recurso" => "sugestao", "forma" => $forma_sg]);
+}
+$sg = chamar("GET", ["recurso" => "sugestao"])["json"] ?? [];
+ler("sugestao de um tipo so", ["recurso" => "sugestao", "forma" => "fifo", "tipos" => (string)($sg["tipos"][0]["id"] ?? 0)]);
+ler("outra sugestao", ["recurso" => "sugestao", "pular" => (string)($sg["sugestao"]["relogio_id"] ?? 0)]);
+ler("sugestao de uma forma que nao existe", ["recurso" => "sugestao", "forma" => "adivinhar"]);
+ler("sugestao de um tipo que nao existe", ["recurso" => "sugestao", "tipos" => "999999"]);
+ler("sugestao com o pular mal escrito", ["recurso" => "sugestao", "pular" => "1;2"]);
 ler("proximos pagina 2", ["recurso" => "proximos", "pagina" => 2]);
 ler("plano pagina 2", ["recurso" => "plano", "dias" => 30, "pagina" => 2]);
 ler("plano de um relogio", ["recurso" => "plano", "dias" => "todos", "relogio" => $rel["manual"]]);

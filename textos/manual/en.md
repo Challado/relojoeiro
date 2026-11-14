@@ -1,4 +1,4 @@
-<!-- origem: ec90bfda07fce0e386608108afc7f09b41778518 -->
+<!-- origem: 398d7f904025bf047d1db26208b259e804d9c105 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -1260,6 +1260,32 @@ the collection*), for a column or a total of your own. Through the API: `recurso
 `recurso=relogio`, `acao=salvar`, with `posse` and the fields `saida_data`, `saida_valor`, `saida_destino`,
 `saida_observacao` and `volta_data` (open and close the exit).
 
+### Suggestion for now {#sugestão-para-agora}
+
+Sometimes you want a watch **outside the schedule**: an occasion, an appointment, a whim. With the option **Suggestion for
+now** turned on in Settings (Screens), the **Today** page gets a card, right below today's alerts and before the Next days:
+
+- **Choose by**: the selection method, the same ones the rotation uses (the highest score, the draw by score, the random
+  one, the queue of the longest without use, the least used).
+- **Type**: the types of watch you have in the collection (Automatic, Battery, Smartwatch...), each with how many are
+  available. They all come checked; uncheck the ones you don't want now. A type with none available is disabled.
+- **Suggest**: shows a watch, with the photo, where it is (stored, on the winder, on the charger), the charge, the last time
+  on the wrist and **why this one**.
+
+Like it? **Put on the wrist** marks the watch on the wrist now. Don't like it? **Another suggestion** shows the next one,
+without repeating the ones that already appeared; when they run out, the card says so and offers **Start over**. Changing
+the method or the types restarts the round, and the browser remembers your last choice.
+
+What the suggestion respects: only the **available** watches that are **in the collection** take part. Left out, and the
+card says which and why, are the one that is **already on the wrist** and any whose **charge is at or below its limit**
+(each watch's limit is the one in the definitions: the watch's own, otherwise the one in Settings). The **plan does not
+change**: the watch of the day stays the same, and the suggested watch that goes on the wrist counts as use outside the
+plan. Nothing is recorded until you press Put on the wrist. With **When putting a watch on the wrist, take the others off**
+turned on, the one that was on the wrist comes off at the same moment.
+
+On the phone, a shortcut to `index.php?sugerir=1` opens the page already with a suggestion, by your last choice. Through the
+API: `recurso=sugestao` (with `forma`, `tipos` and `pular`).
+
 ### Smartwatch {#smartwatch}
 
 The smartwatch's "charge" is the battery, in %. The system doesn't read the watch's battery: it is **estimated** from the last
@@ -1520,6 +1546,7 @@ Cards fill the available spaces according to screen width and content height. Th
 | **Open the watch on the Today page** (`painel_modo`) | **Next to the list** (`lado`): the clicked watch opens in a panel on the right, and the list stays in view. **In a large floating window** (`flutuante`): it opens in the middle of the screen, over the page, with the background darkened and the boxes side by side; it closes with the ×, Esc or a click outside. On the phone, both cover the whole screen. Default: next to the list. |
 | **Highlight at the top of the Today page** (`destaque_hoje`) | **The watch of the day** (`dia`): the big box at the top of the Today page shows the watch of the day (the plan's), with until when it stays and why it came up. **The watch on the wrist now** (`pulso`): it shows the watch that is on the wrist, even if it isn't the day's (with *on the wrist now* and, below, *Watch of the day: …*, which opens the day's); with more than one on the wrist, the last one put on; with none on the wrist, the day's stays, with the notice *No watch on the wrist now*. The data below (state, charge, the Put on/Took off the wrist button, the photo) are those of the highlighted watch. Under the photo, a little two-cell table says what is there: **Of the day** | **On the wrist**. The cell that applies lights up with a ✓ (blue *Of the day*, green *On the wrist*) and the other stays dim; the watch of the day on the wrist lights both. Resting the mouse on it, the sentence of why (*On the wrist now; the watch of the day is another.*...). Default: the watch of the day. |
 | **Tabs of statuses with no watches** (`abas_vazias`) | the tabs above the watch table (Today and Gallery pages) are the statuses of your definitions. **Always show** (`sempre`): all of them appear, and the one of a status with no watches is disabled (dimmed, not clickable), with the reason on mouse-over. **Hide** (`com_relogio`): only the statuses that have watches appear; with all the watches in a single status, the tab strip disappears. |
+| **Suggestion for now (Today page)** (`sugestao_agora`) | on: the Today page gets the **Suggestion for now** card, between today's alerts and the Next days: you choose the selection method and the watch types, and the system suggests one to wear now, outside the schedule (see [Suggestion for now](#sugestão-para-agora)). Default: off. |
 | **Little watch in the bar** (`relojinho_modo`) | the little watch in the corner of the bar and in the tab has 24 models, one for each hour of the day. **Normal** (`hora`): each hour has its own (at 0 the Classic, at 16 the Digital, at 23 the Futuristic). **Random** (`aleatorio`): each hour draws one of the 24, and it may repeat. **Random without repetition** (`sem_repeticao`): the 24 shuffled, each appears once in the day. The draw is the day's: the same on every page and device, and another the next day. Default: normal. |
 
 On the page, each option is on one line, with the name on the left and the field on the right, in boxes (Daily routine,

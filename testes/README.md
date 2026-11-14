@@ -33,6 +33,13 @@ resultado, o tempo na coleção, as somas por situação); a correção e a excl
 ali); as abas (uma por situação do cadastro; a vazia desabilitada, com o motivo, ou escondida, conforme a opção `abas_vazias`); o item da lista que o histórico cita não sai; e o passo
 da migração v64, rodado duas vezes (quem já estava fora ganha a saída aberta, sem data, uma vez só).
 
+`php testes/sugestao.php` confere a Sugestão para agora, numa base SQLite descartável: os tipos com relógio na coleção (e o da raiz,
+sem grupo); cada forma de escolha devolve um candidato com o motivo; ficam de fora o que está no pulso, o que está com a carga no
+limite ou abaixo dele (e volta a concorrer quando o limite da Configuração baixa), o indisponível e o que não está na coleção
+(emprestado, vendido, desejado); o filtro por um e por mais de um tipo; a Outra sugestão passa por todos sem repetir e avisa quando
+acabam; os avisos de quando não há sugestão; o único candidato não é sorteado; e nada é gravado (o plano, os lançamentos e os relógios
+ficam como estavam).
+
 `php testes/menos_usado.php` confere o menos usado: o critério (a fórmula e o parâmetro nas notas, com peso 0), a forma de escolha (menos
 dias de uso no total; empate, o mais tempo parado; quem nunca foi usado primeiro), a escala inteligente que escolhe a forma e os critérios
 que contam na nota (as validações, a escolha de cada critério, a escala gerada) e a migração v59 (a fórmula e o critério voltam, sem repetir).
