@@ -69,13 +69,16 @@ module.exports = [
   { nome: 'modos', url: 'modos.php' },
   { nome: 'modos-editar', url: 'modos.php?editar=2' },
   { nome: 'configuracao', url: 'configuracao.php' },
-  // a Configuração do master mostra um nível por vez (as abas do alto): este é o do sistema (os padrões, os parâmetros, as
-  // senhas, o cron, a cópia de segurança e o SQL)
+  // a Configuração mostra um nível por vez (as abas do alto): o do dono (Minhas coleções: o padrão dele para as coleções de
+  // que é dono) e o do sistema (os padrões, os parâmetros, as senhas, o cron, a cópia de segurança e o SQL)
+  { nome: 'configuracao-dono', url: 'configuracao.php?nivel=dono' },
   { nome: 'configuracao-sistema', url: 'configuracao.php?nivel=sistema' },
   { nome: 'avisos', url: 'avisos.php' },
   { nome: 'avisos-editar', url: 'avisos.php?editar=1&evento=1' },
   { nome: 'documentos', url: 'documentos.php?relogio=1' },
   { nome: 'execucoes', url: 'execucoes.php' },
   { nome: 'usuarios', url: 'usuarios.php' },
+  // a Minha conta (os dados da pessoa, as coleções dela, os pedidos, os tokens): não estava na lista
+  { nome: 'conta', url: 'conta.php' },
   { nome: 'ajuda', url: 'ajuda.php' },
 ];

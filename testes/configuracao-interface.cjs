@@ -214,6 +214,35 @@ async function recarga(page){
     assert.equal(await page.locator('[name^="padroes["]').count(),0);
     // (e não tem as abas dos níveis: vê tudo numa página só)
     assert.equal(await page.locator('.abas-nivel').count(),0);assert.equal(await page.getAttribute('#configuracao','data-nivel-visto'),null);total++;
+    // O dono da coleção tem a aba Minhas coleções (o padrão dele para as coleções de que é dono): o master que é dono vê as três
+    // abas; a do dono grava em dono[<chave>] pelo mesmo Salvar, e nenhum rótulo fica duas vezes à vista em nenhuma delas.
+    const comDono=inicial();comDono.dados.sistema.padroes=listaOpcoes({});comDono.dados.opcoes=listaOpcoes({});
+    comDono.dados.dono={pode_mudar:true,rodizio_ativo:null,recupera_ontem:true,rodizio_sistema:true,recupera_ontem_sistema:false,opcoes:listaOpcoes({uso_fim:'22:30'})};
+    await montar(page,comDono);
+    assert.deepEqual(await page.locator('.abas-nivel a').evaluateAll(a=>a.map(x=>x.getAttribute('data-nivel-ir'))),['colecao','dono','sistema']);
+    assert.equal(await page.isVisible('[name="dono[uso_fim]"]'),false);
+    await page.click('.abas-nivel a[data-nivel-ir=dono]');
+    assert.equal(await page.getAttribute('#configuracao','data-nivel-visto'),'dono');
+    assert.equal(await page.isVisible('[name="dono[uso_fim]"]'),true);assert.equal(await page.isVisible('[name=uso_fim]'),false);assert.equal(await page.isVisible('[name="padroes[uso_fim]"]'),false);
+    assert.equal(await page.inputValue('[name="dono[uso_fim]"]'),'22:30');assert.equal(await page.inputValue('[name="dono[rodizio_ativo]"]'),'');assert.equal(await page.inputValue('[name="dono[recupera_ontem]"]'),'1');
+    assert.match(await page.locator('[name="dono[rodizio_ativo]"] option').first().textContent(),/^Herdar do sistema \(ligado\)$/);
+    assert.deepEqual(await rotulosRepetidos(),[]);
+    await page.fill('[name="dono[carga_limiar]"]','40');await page.selectOption('[name="dono[rodizio_ativo]"]','0');
+    await salvar(page);await page.locator('#aviso-config').waitFor();
+    const gravadoDono=(await estado(page)).posts.at(-1);
+    assert.equal(gravadoDono['dono[carga_limiar]'],'40');assert.equal(gravadoDono['dono[rodizio_ativo]'],'0');assert.equal(gravadoDono['dono[uso_fim]'],'22:30');total++;
+    // O dono que não é master: duas abas (a coleção e Minhas coleções); as senhas e o cron, que ele só vê, ficam com a coleção.
+    const soDono=inicial();soDono.dados.sistema.pode_mudar=false;soDono.dados.sistema.padroes=null;
+    soDono.dados.dono={pode_mudar:true,rodizio_ativo:null,recupera_ontem:null,rodizio_sistema:true,recupera_ontem_sistema:false,opcoes:listaOpcoes({})};
+    await montar(page,soDono);
+    assert.deepEqual(await page.locator('.abas-nivel a').evaluateAll(a=>a.map(x=>x.getAttribute('data-nivel-ir'))),['colecao','dono']);
+    assert.equal(await page.locator('#configuracao [data-nivel=sistema]').count(),0);
+    assert.equal(await page.locator('#configuracao .cartao-config[data-nivel=colecao]').count()>=6,true);total++;
+    // Quem é master mas não é o dono desta coleção: só a coleção e o sistema.
+    const soMaster=inicial();soMaster.dados.dono={pode_mudar:false,rodizio_ativo:null,recupera_ontem:null,rodizio_sistema:true,recupera_ontem_sistema:false,opcoes:null};
+    await montar(page,soMaster);
+    assert.deepEqual(await page.locator('.abas-nivel a').evaluateAll(a=>a.map(x=>x.getAttribute('data-nivel-ir'))),['colecao','sistema']);
+    assert.equal(await page.locator('[name^="dono["]').count(),0);total++;
     // O empilhamento acompanha largura, texto e altura sem trocar a ordem dos campos nem sobrepor cartões.
     const layout=inicial();layout.dados.sistema.parametros=Array.from({length:6},(_,i)=>({chave:'teste'+i,nome:'Parâmetro '+i,descricao:'Descrição da opção. '.repeat(i+2),tipo:'sim_nao',valor:1,origem:'padrao',config_php:null,config_valor:null,padrao:1,minimo:0,maximo:1}));
     await page.setViewportSize({width:1440,height:900});await montar(page,layout);

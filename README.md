@@ -1531,25 +1531,28 @@ As autonomias saem em segundos para a API (`recurso=autonomia`) e por extenso na
 A página **Configuração** guarda as opções **da coleção** (cada coleção tem as suas). Entre parênteses, o nome de cada uma na API
 (`recurso=config`, na chave `config`), para quem automatiza; o padrão de uma coleção nova vem no fim de cada linha.
 
-**As opções em três níveis.** Cada opção da coleção que não é do sistema inteiro (os horários, os limites, o gasto da bateria, a
-semana e a escala, as telas: 33 ao todo) segue a hierarquia **sistema → usuário → coleção**, a mesma do rodízio: o **master**
-escolhe o padrão do sistema (no quadro **Padrões do sistema**), cada **dono** escolhe o padrão das coleções dele (em **Minha conta**,
-**Padrões das minhas coleções**) e cada **coleção** pode escolher a dela. O mais específico prevalece; o de cima é só um padrão, nunca
-um bloqueio. Um campo vazio **herda** (o rótulo diz de onde vem o valor de agora: do usuário, do sistema ou o padrão de fábrica); nas
-listas, a primeira escolha é **Herdar (…)**; nos campos de hora e de número, o botão **Herdar** esvazia o campo. Vale também para os
-membros e para o cron, que seguem o dono da coleção. Coleção nova já nasce herdando tudo; as que já existiam seguem com o valor que
-tinham, e a migração v58 passa para o vazio os que estavam iguais ao padrão de fábrica. Mudar um padrão refaz o que depende dele em
-cada coleção que herda (o "fecha às" do pulso e do sol, o fim da escala inteligente); um horário de uso que deixaria alguma coleção com
-o fim antes do início é recusado e nada muda. Pela API: `config/salvar` com a chave da opção (a coleção), `conta/alterar` com
-`opcoes[<chave>]` (o dono) e `config/salvar` com `padroes[<chave>]` (o sistema, só o master); a resposta de `recurso=config` traz
-`opcoes` com a escolha de cada nível, o que herda e de onde.
+**As opções em três níveis.** Cada opção da coleção que não é do sistema inteiro (os horários, os limites, o gasto da
+bateria, a semana e a escala, as telas: 33 ao todo) segue a hierarquia **sistema → usuário → coleção**, a mesma do rodízio:
+o **master** escolhe o padrão do sistema (no quadro **Padrões do sistema**), cada **dono** escolhe o padrão das coleções
+dele (na aba **Minhas coleções** da Configuração) e cada **coleção** pode escolher a dela. O mais específico prevalece; o de
+cima é só um padrão, nunca um bloqueio. Um campo vazio **herda** (o rótulo diz de onde vem o valor de agora: do usuário, do
+sistema ou o padrão de fábrica); nas listas, a primeira escolha é **Herdar (…)**; nos campos de hora e de número, o botão
+**Herdar** esvazia o campo. Vale também para os membros e para o cron, que seguem o dono da coleção. Coleção nova já nasce
+herdando tudo; as que já existiam seguem com o valor que tinham, e a migração v58 passa para o vazio os que estavam iguais
+ao padrão de fábrica. Mudar um padrão refaz o que depende dele em cada coleção que herda (o "fecha às" do pulso e do sol, o
+fim da escala inteligente); um horário de uso que deixaria alguma coleção com o fim antes do início é recusado e nada muda.
+Pela API: `config/salvar` com a chave da opção (a coleção), `conta/alterar` com `opcoes[<chave>]` (o dono) e `config/salvar`
+com `padroes[<chave>]` (o sistema, só o master); a resposta de `recurso=config` traz `opcoes` com a escolha de cada nível, o
+que herda e de onde.
 
-**Um nível por vez.** Para o master, a Configuração tem duas abas no alto: **Esta coleção** (o que vale nesta coleção: os
-quadros **Rotina do dia**, **Limites e contas**, **Telas**, **Sorteios** e **Avisos, lembretes e mensagens**) e **Sistema**
-(o que é do sistema inteiro: **Senhas**, **Cron**, **Sistema**, **Padrões do sistema**, **Cópia de segurança** e o **SQL**).
-Assim cada opção aparece uma vez só na tela, e não a da coleção e a do sistema uma embaixo da outra. Trocar de aba não perde
-o que você digitou, e o **Salvar configuração** grava os dois níveis de uma vez. Quem não é master não tem o nível do
-sistema para mudar e vê tudo numa página só.
+**Um nível por vez.** A Configuração mostra um nível das opções por vez, pelas abas do alto: **Esta coleção** (o que vale
+nesta coleção: os quadros **Rotina do dia**, **Limites e contas**, **Telas**, **Sorteios** e **Avisos, lembretes e
+mensagens**), **Minhas coleções** (só o dono da coleção aberta: o padrão dele para as coleções de que é dono, com o rodízio,
+o relógio de ontem e cada opção) e **Sistema** (só o master: o que é do sistema inteiro, **Senhas**, **Cron**, **Sistema**,
+**Padrões do sistema**, **Cópia de segurança** e o **SQL**). Assim cada opção aparece uma vez só na tela, e não a da
+coleção, a do dono e a do sistema uma embaixo da outra. Trocar de aba não perde o que você digitou, e o **Salvar
+configuração** grava todos os níveis de uma vez. Quem não é dono nem master vê tudo numa página só. Em **Minha conta** fica
+só o que é da pessoa (o e-mail, o idioma, o fuso, a senha), com o caminho para a aba **Minhas coleções**.
 
 Ficam de fora, de propósito: o que é do sistema inteiro por natureza (a força da senha, o endereço do sistema, as rodadas do cron e
 os parâmetros do quadro **Sistema**), o idioma e o fuso (seguem a pessoa que olha: a escolha dela, depois a da coleção, depois a do
@@ -1564,8 +1567,8 @@ de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
 
 | Opção | O que faz |
 |---|---|
-| **Rodízio da coleção** (`rodizio_ativo`) | **Herdar do usuário** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). A hierarquia é **sistema → usuário → coleção**: cada nível herda o anterior ou o substitui. Em **Minha conta**, **Rodízio: padrão das minhas coleções** (`conta/alterar`, `rodizio_ativo` vazio/1/0) vale nas coleções de que a pessoa é dona, inclusive para membros e cron; não depende de quem abriu a página. A escolha explícita da coleção prevalece sobre o usuário e o sistema. Em **Sistema**, só o master muda **Rodízio: padrão do sistema** (`parametros[rodizio_ativo]`, padrão `1`). A API mostra o estado efetivo e a origem em `rodizio` nos recursos `config`, `hoje`, `plano` e `ficha`. Desligado, pausa sorteios, entradas automáticas no pulso, preparação e projeções do plano; cadastro, leituras, avisos de manutenção e marcações manuais continuam funcionando. A programação e o histórico são preservados: **Plano** mostra a programação guardada, sem ações de alteração, e **Hoje** mostra a pausa ou quem está no pulso. As sessões já registradas continuam seguindo suas regras de encerramento. Ao ligar novamente, o plano volta a valer; uma nova sessão automática só começa a contar a partir da retomada, sem preencher o tempo pausado. As agendas deixam de incluir o relógio do dia e a véspera na próxima sincronização; os demais avisos e eventos continuam. A migração **v56** acrescenta a preferência à conta; quem já existe começa herdando, com o padrão geral ligado. |
-| **Relógio de ontem sem uso passa para hoje** (`recupera_ontem`) | **Herdar do usuário** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). Ligado, se o relógio do plano de **ontem** não foi ao pulso **nem um pouquinho** (você usou outro, ou nenhum), ele **passa para hoje** e todos os outros dias do plano, de hoje em diante (e os dias livres), **andam um dia**; foi usado, mesmo que pouco, e nada muda. Não passa: o mesmo relógio dois dias seguidos (o que passou ontem não passa de novo), um relógio indisponível, na manutenção ou fora da coleção, um hoje livre, nem quando o relógio de hoje já foi ao pulso. A conta é feita uma vez por dia, quando o plano de hoje é montado (a página Hoje ou o cron); o dia de hoje fica à mão no plano, com o motivo *Passou de ontem: não foi usado*. Três níveis como o rodízio: **sistema** (só o master, em **Sistema**, `parametros[recupera_ontem]`, padrão desligado) → **usuário** (em **Minha conta**, `conta/alterar`, `recupera_ontem` vazio/1/0) → **coleção** (aqui, `recupera_ontem`); a API mostra o estado efetivo e a origem em `recupera_ontem` do `recurso=config`. |
+| **Rodízio da coleção** (`rodizio_ativo`) | **Herdar do usuário** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). A hierarquia é **sistema → usuário → coleção**: cada nível herda o anterior ou o substitui. Na aba **Minhas coleções** da Configuração, **Rodízio: padrão das minhas coleções** (`conta/alterar`, `rodizio_ativo` vazio/1/0) vale nas coleções de que a pessoa é dona, inclusive para membros e cron; não depende de quem abriu a página. A escolha explícita da coleção prevalece sobre o usuário e o sistema. Em **Sistema**, só o master muda **Rodízio: padrão do sistema** (`parametros[rodizio_ativo]`, padrão `1`). A API mostra o estado efetivo e a origem em `rodizio` nos recursos `config`, `hoje`, `plano` e `ficha`. Desligado, pausa sorteios, entradas automáticas no pulso, preparação e projeções do plano; cadastro, leituras, avisos de manutenção e marcações manuais continuam funcionando. A programação e o histórico são preservados: **Plano** mostra a programação guardada, sem ações de alteração, e **Hoje** mostra a pausa ou quem está no pulso. As sessões já registradas continuam seguindo suas regras de encerramento. Ao ligar novamente, o plano volta a valer; uma nova sessão automática só começa a contar a partir da retomada, sem preencher o tempo pausado. As agendas deixam de incluir o relógio do dia e a véspera na próxima sincronização; os demais avisos e eventos continuam. A migração **v56** acrescenta a preferência à conta; quem já existe começa herdando, com o padrão geral ligado. |
+| **Relógio de ontem sem uso passa para hoje** (`recupera_ontem`) | **Herdar do usuário** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). Ligado, se o relógio do plano de **ontem** não foi ao pulso **nem um pouquinho** (você usou outro, ou nenhum), ele **passa para hoje** e todos os outros dias do plano, de hoje em diante (e os dias livres), **andam um dia**; foi usado, mesmo que pouco, e nada muda. Não passa: o mesmo relógio dois dias seguidos (o que passou ontem não passa de novo), um relógio indisponível, na manutenção ou fora da coleção, um hoje livre, nem quando o relógio de hoje já foi ao pulso. A conta é feita uma vez por dia, quando o plano de hoje é montado (a página Hoje ou o cron); o dia de hoje fica à mão no plano, com o motivo *Passou de ontem: não foi usado*. Três níveis como o rodízio: **sistema** (só o master, em **Sistema**, `parametros[recupera_ontem]`, padrão desligado) → **usuário** (na aba **Minhas coleções** da Configuração, `conta/alterar`, `recupera_ontem` vazio/1/0) → **coleção** (aqui, `recupera_ontem`); a API mostra o estado efetivo e a origem em `recupera_ontem` do `recurso=config`. |
 | **Horário de uso, início e fim** (`uso_inicio`, `uso_fim`) | o período do dia em que um relógio está no pulso. Vale para o plano, as previsões e o "dia de uso" do gasto medido (das 7h às 22h, 15 horas). Padrão: 07:00 e 22:00. |
 | **Pôr no pulso sozinho** (`pulso_auto_inicio`) | a escolha ao lado do início: ligado, o relógio do dia entra no pulso sozinho no início do horário de uso; desligado, só pelo **Pôs**. Se nessa hora ele está noutro lugar (no carregador, no sol, no winder), espera ele sair de lá, e o período no pulso começa quando ele saiu. Padrão: ligado. |
 | **Tirar do pulso sozinho** (`pulso_auto_fim`) | a escolha ao lado do fim: ligado, ele sai do pulso sozinho no fim do horário de uso (é o "fecha às" do tipo No pulso); desligado, só pelo **Tirou**. Padrão: ligado. |

@@ -44,6 +44,17 @@ $saida = ["config" => (object)$valores_c,
         "parametros" => usuario_master() ? parametros_sistema_lista() : null,
         // o padrão do sistema de cada opção da coleção (o que o master escolhe; os outros não veem)
         "padroes" => usuario_master() ? opcoes_lista("sistema") : null],
+    // o nível do dono (a aba Minhas coleções da Configuração): o padrão dele para as coleções de que é dono. Só o dono da coleção
+    // do pedido o vê e muda (pode_mudar); para os outros, as escolhas vêm null
+    "dono" => (function () {
+        $u = usuario_atual();
+        $uid = (int)($u["id"] ?? 0);
+        $pode = $uid > 0 && $uid === opcoes_dono_id();
+        $pub = $pode ? usuario_publico($u) : null;
+        return ["pode_mudar" => $pode, "rodizio_ativo" => $pode ? $pub["rodizio_ativo"] : null, "recupera_ontem" => $pode ? $pub["recupera_ontem"] : null,
+            "rodizio_sistema" => parametro_gravado("rodizio_ativo") !== 0, "recupera_ontem_sistema" => parametro_gravado("recupera_ontem") === 1,
+            "opcoes" => $pode ? opcoes_lista("usuario", $uid) : null];
+    })(),
     // a força da senha (do sistema: só o master muda): o mínimo de cada regra e o texto
     "senha_politica" => senha_politica_api(),
     // o DOCUMENTOS_COPIA_BANCO do config.php não vale mais (a cópia é escolhida aqui, por coleção): definido, a página avisa

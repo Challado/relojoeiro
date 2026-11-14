@@ -114,6 +114,24 @@ try {
     entrar_opcoes($dono);
     exigir_opcoes(op_config("salvar", ["padroes" => ["carga_limiar" => ""]])["ok"], "Não voltou ao padrão de fábrica.");
 
+    // ---- o padrão do dono pela Configuração (config/salvar com dono[<chave>], a aba Minhas coleções): só o dono da coleção do
+    // pedido muda; grava o mesmo que o conta/alterar, e a recusa de uma parte desfaz o pedido inteiro
+    $r_d = op_config("salvar", ["dono" => ["carga_limiar" => "33", "rodizio_ativo" => "0", "recupera_ontem" => "1"]]);
+    exigir_opcoes($r_d["ok"] && cfg("carga_limiar") === "33", "O dono não gravou o padrão dele pela Configuração: " . implode(" ", $r_d["erros"] ?? []));
+    exigir_opcoes((opcoes_do_usuario((int)$dono["usuario_id"])["carga_limiar"] ?? "") === "33", "O dono[carga_limiar] não foi para o nível do usuário.");
+    $u_d = sem_escopo(function () use ($dono) { return linha("SELECT rodizio_ativo, recupera_ontem FROM usuario WHERE id = ?", [$dono["usuario_id"]]); });
+    exigir_opcoes((int)$u_d["rodizio_ativo"] === 0 && (int)$u_d["recupera_ontem"] === 1, "O dono[rodizio_ativo] e o dono[recupera_ontem] não foram gravados.");
+    banco_escopo($segunda["id"]);
+    exigir_opcoes(cfg("carga_limiar") === "33", "O padrão do dono gravado pela Configuração não valeu na outra coleção dele.");
+    banco_escopo($primeira);
+    exigir_opcoes(!op_config("salvar", ["carga_limiar" => "40", "dono" => ["carga_limiar" => "0"]])["ok"] && cfg("carga_limiar") === "33" && cfg_cru("carga_limiar") === "", "A recusa do padrão do dono deixou a coleção gravada.");
+    exigir_opcoes(!op_config("salvar", ["dono" => ["nao_existe" => "1"]])["ok"] && !op_config("salvar", ["dono" => "texto"])["ok"] && !op_config("salvar", ["dono" => ["rodizio_ativo" => "2"]])["ok"], "Aceitou um dono inválido.");
+    // quem não é o dono desta coleção (outro usuário, olhando a coleção do primeiro) não muda o padrão do dono
+    usuario_definir(sem_escopo(function () use ($outra) { return linha("SELECT * FROM usuario WHERE id = ?", [$outra["usuario_id"]]); }));
+    $r_n = op_config("salvar", ["dono" => ["carga_limiar" => "50"]]);
+    exigir_opcoes(!$r_n["ok"] && cfg("carga_limiar") === "33", "Quem não é o dono mudou o padrão do dono pela Configuração.");
+    entrar_opcoes($dono);
+    exigir_opcoes(op_config("salvar", ["dono" => ["carga_limiar" => "", "rodizio_ativo" => "", "recupera_ontem" => ""]])["ok"] && cfg("carga_limiar") === "20", "O padrão do dono não voltou a herdar pela Configuração.");
     // ---- a cascata: o padrão do dono vale nas coleções dele (e só nas que não escolheram a sua)
     exigir_opcoes(op_conta("alterar", ["opcoes" => ["sol_limiar" => "60"]])["ok"], "Não gravou o padrão do dono.");
     exigir_opcoes(cfg("sol_limiar") === "60", "O padrão do dono não valeu na primeira coleção.");

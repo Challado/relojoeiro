@@ -109,20 +109,9 @@ function quadroDados(d) {
       + parCampo(t("Idioma"), el("select", {"name": "idioma"}, el("option", {"value": "", "selected": !u.idioma}, t("O da coleção")) + d.linguas.map(function (l) {
         return el("option", {"value": l.codigo, "selected": u.idioma === l.codigo}, h(l.nome));
       }).join("")))
-      + parCampo(t("Relógio de ontem sem uso passa para hoje: padrão das minhas coleções"), el("select", {"name": "recupera_ontem"},
-        el("option", {"value": "", "selected": u.recupera_ontem == null}, t("Herdar do sistema ({1})", {1: d.recupera_ontem_sistema ? t("ligado") : t("desligado")}))
-        + el("option", {"value": "1", "selected": u.recupera_ontem === true}, t("Ligado"))
-        + el("option", {"value": "0", "selected": u.recupera_ontem === false}, t("Desligado"))), "largo",
-        ajuda("recupera-ontem-usuario", t("Relógio de ontem sem uso passa para hoje: padrão das minhas coleções"), el("p", {}, t("Vale nas coleções de que você é dono, inclusive para os membros e o cron. Se o relógio do plano de ontem não foi ao pulso nem um pouquinho, ele passa para hoje e os outros dias do plano andam um dia. Cada coleção pode herdar este valor ou substituí-lo na Configuração."))))
-      + parCampo(t("Rodízio: padrão das minhas coleções"), el("select", {"name": "rodizio_ativo"},
-        el("option", {"value": "", "selected": u.rodizio_ativo == null}, t("Herdar do sistema ({1})", {1: d.rodizio_sistema ? t("ligado") : t("desligado")}))
-        + el("option", {"value": "1", "selected": u.rodizio_ativo === true}, t("Ligado"))
-        + el("option", {"value": "0", "selected": u.rodizio_ativo === false}, t("Desligado"))), "largo",
-        ajuda("rodizio-usuario", t("Rodízio: padrão das minhas coleções"), el("p", {}, t("Vale nas coleções de que você é dono, inclusive para os membros e o cron. Cada coleção pode herdar este valor ou substituí-lo na Configuração."))))
-      // o padrão de cada opção da coleção, para as coleções de que é dono: cada coleção herda e pode escolher a sua
-      + el("details", {"class": "largo"}, el("summary", {}, t("Padrões das minhas coleções"))
-        + el("p", {"class": "nota"}, t("Valem nas coleções de que você é dono que não escolheram a sua (na Configuração da coleção), inclusive para os membros e o cron. Vazio, vale o padrão do sistema."))
-        + camposOpcoes(d.opcoes, "opcoes"))
+      // o padrão das coleções de que a pessoa é dona (o rodízio, o relógio de ontem e cada opção das três hierarquias) mora na
+      // Configuração, na aba Minhas coleções, junto dos outros dois níveis: aqui, só o caminho
+      + el("p", {"class": "nota largo"}, t("O padrão das suas coleções (o rodízio, os horários, os limites e as telas) fica na {1}, na aba Minhas coleções.", {1: el("a", {"href": "configuracao.php?nivel=dono"}, t("Configuração"))}))
       // o fuso horário da pessoa: as datas e horas que ela vê e digita (no banco fica tudo no fuso do sistema)
       + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, d.fuso.colecao ? t("O da coleção ({1})", {1: d.fuso.colecao.replace(/_/g, " ")}) : t("O do sistema ({1})", {1: d.fuso.sistema.replace(/_/g, " ")}),
         t("O do navegador (neste aparelho: {1})", {1: (fusoNavegador() || "?").replace(/_/g, " ")}))), "largo")

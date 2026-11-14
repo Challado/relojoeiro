@@ -1490,6 +1490,26 @@ escrever(["recurso" => "config", "acao" => "salvar", "padroes" => ["colunas_hoje
 ler("hoje com as colunas do sistema", ["recurso" => "hoje", "incluir" => $cols_h]);
 escrever(["recurso" => "config", "acao" => "salvar", "padroes" => ["colunas_hoje" => ""]]);
 ler("hoje de volta a todas as colunas", ["recurso" => "hoje", "incluir" => $cols_h]);
+// o nível do dono pela Configuração (a aba Minhas coleções): o config diz que quem pede é o dono e traz o padrão dele; o
+// config/salvar grava dono[<chave>] (uma opção, o rodízio e o relógio de ontem), o que a coleção herda muda, e o valor que
+// não existe, a chave que não existe e o dono que não é uma lista são recusados sem gravar nada; no fim, tudo volta a herdar
+ler("config com o nível do dono", ["recurso" => "config", "incluir" => "dono"]);
+escrever(["recurso" => "config", "acao" => "salvar", "dono" => ["plano_por_pagina" => "45", "rodizio_ativo" => "1", "recupera_ontem" => "0"]]);
+ler("config com o padrão do dono gravado", ["recurso" => "config", "incluir" => "dono,mostrar_ate"]);
+ler("conta com o padrão do dono gravado", ["recurso" => "conta", "incluir" => "usuario,opcoes"]);
+// os nomes que o próprio sistema dá ao criar a conta (a árvore "Grupos de <login>") são dados de quem usa, que pode trocá-los:
+// entram na lista dos textos gravados, para a conferência dos textos fixos (que agora abre a Minha conta, onde eles aparecem)
+// não os tomar por texto do sistema
+foreach (ler("conta com as árvores", ["recurso" => "conta", "incluir" => "arvores"])["arvores"] ?? [] as $arvore_c) {
+    guardar_dados(["nome" => $arvore_c["nome"]]);
+}
+escrever(["recurso" => "config", "acao" => "salvar", "dono" => ["plano_por_pagina" => "0"]], false);
+escrever(["recurso" => "config", "acao" => "salvar", "dono" => ["nao_existe" => "1"]], false);
+escrever(["recurso" => "config", "acao" => "salvar", "dono" => ["rodizio_ativo" => "talvez"]], false);
+escrever(["recurso" => "config", "acao" => "salvar", "dono" => "texto"], false);
+escrever(["recurso" => "config", "acao" => "salvar", "plano_por_pagina" => "0", "dono" => ["plano_por_pagina" => "50"]], false);
+ler("config com o padrão do dono depois das recusas", ["recurso" => "config", "incluir" => "dono,mostrar_ate"]);
+escrever(["recurso" => "config", "acao" => "salvar", "dono" => ["plano_por_pagina" => "", "rodizio_ativo" => "", "recupera_ontem" => ""]]);
 // um total no rodapé embaixo do Tempo de uso, no formato Tempo (a soma dos tempos de uso)
 escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Tempo de uso somado", "coluna" => "uso", "expressao" => "SOMA(tempo_de_uso)", "formato" => "duracao", "rodape" => "1", "pagina" => "1"]);
 ler("totais com o tempo de uso", ["recurso" => "totais", "parte" => "rodape"]);

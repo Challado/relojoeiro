@@ -5149,6 +5149,40 @@ function op_config($acao, $d)
                 }
             }
         }
+        // o padrão do dono para as coleções dele (dono[<chave>]: as opções das três hierarquias, e dono[rodizio_ativo] e
+        // dono[recupera_ontem]; vazio herda o sistema): só o dono da coleção do pedido muda, pela aba Minhas coleções. Conferido
+        // aqui com os conferidores de sempre e gravado, depois, pela porta do conta/alterar
+        $dono_pedido = null;
+        if (array_key_exists("dono", $d)) {
+            $uid_d = (int)(usuario_atual()["id"] ?? 0);
+            if ($uid_d === 0 || $uid_d !== opcoes_dono_id()) {
+                $erros[] = t("O padrão das coleções do dono é de quem é dono desta coleção: só ele muda.");
+            } elseif (!is_array($d["dono"])) {
+                $erros[] = t("dono: os campos dono[<chave>], um para cada opção que muda (e dono[rodizio_ativo] e dono[recupera_ontem]).");
+            } else {
+                $dono_pedido = [];
+                $opcoes_d = $d["dono"];
+                foreach (["rodizio_ativo", "recupera_ontem"] as $k_d) {
+                    if (array_key_exists($k_d, $opcoes_d)) {
+                        if (is_array($opcoes_d[$k_d]) || !in_array((string)$opcoes_d[$k_d], ["", "0", "1"], true)) {
+                            $erros[] = t("dono[{1}]: 1 (ligado), 0 (desligado) ou vazio (herdar do sistema).", [1 => $k_d]);
+                        } else {
+                            $dono_pedido[$k_d] = (string)$opcoes_d[$k_d];
+                        }
+                        unset($opcoes_d[$k_d]);
+                    }
+                }
+                if (count($opcoes_d) > 0) {
+                    [$erros_d, $dono_ok] = opcoes_conferir($opcoes_d);
+                    $erros = array_merge($erros, $erros_d);
+                    $erro_hd = count($erros_d) === 0 ? opcoes_conferir_horario("usuario", $uid_d, $dono_ok) : null;
+                    if ($erro_hd !== null) {
+                        $erros[] = $erro_hd;
+                    }
+                    $dono_pedido["opcoes"] = $opcoes_d;
+                }
+            }
+        }
         if (array_key_exists("url_sistema", $d) && trim((string)$d["url_sistema"]) !== "" && preg_match("#^https?://#i", trim((string)$d["url_sistema"])) !== 1) {
             $erros[] = t("Endereço do sistema: começando por http:// ou https:// (vazio: sem link).");
         } elseif (array_key_exists("url_sistema", $d) && !usuario_master() && trim((string)$d["url_sistema"]) !== sis("url_sistema")) {
@@ -5208,6 +5242,13 @@ function op_config($acao, $d)
                 opcoes_sistema_gravar($padroes_ok);
             } catch (OpcoesErro $e) {
                 $erros[] = $e->getMessage();
+            }
+        }
+        // depois o padrão do dono, pela porta do conta/alterar (que refaz o que depende dele nas coleções dele)
+        if (count($erros) === 0 && $dono_pedido !== null && count($dono_pedido) > 0) {
+            $r_dono = op_conta("alterar", $dono_pedido);
+            if (!$r_dono["ok"]) {
+                $erros = array_merge($erros, $r_dono["erros"]);
             }
         }
         if (count($erros) === 0) {

@@ -736,8 +736,10 @@
  *                             documentos_limite, api_espera, lote_maximo, backup_ativo, backup_manter, backup_documentos e
  *                             sql_alteracoes; vazio volta ao config.php); as opções da coleção em três níveis (as de cima, os
  *                             horários, os limites, o gasto da bateria e as telas: sistema → usuário → coleção; vazio herda o
- *                             dono da coleção e depois o sistema; padroes[<chave>]: o padrão do sistema, só o master; o do dono se
- *                             grava em conta/alterar, opcoes[<chave>]); só o que vier), evento_salvar (evento_id
+ *                             dono da coleção e depois o sistema; padroes[<chave>]: o padrão do sistema, só o master; dono[<chave>]:
+ *                             o padrão do dono para as coleções dele, com dono[rodizio_ativo] e dono[recupera_ontem], só o dono da
+ *                             coleção do pedido: o mesmo que o conta/alterar grava com opcoes[<chave>]); só o que vier),
+ *                             evento_salvar (evento_id
  *                             ou id: 0 cria; nome, ativo, repeticao, hora, data_inicio, dias_semana, dia_mes, intervalo_dias,
  *                             relogio_id; o evento novo já vai para todos os destinos), evento_excluir (evento_id ou id, confirmar=1)
  *                            sorteio_casas: de 0 a 8 casas decimais nos pesos dos sorteios; padrão 2. Se todos os pesos positivos
@@ -4530,6 +4532,43 @@
  *                                    o que vale neste nível (a escolha, senão o herdado)
  *     sistema.padroes.opcoes[].origem
  *                                    de onde vem o que vale: colecao, usuario, sistema ou padrao
+ *     dono                           o nível do dono (a aba Minhas coleções da Configuração): o padrão de quem é dono para as coleções
+ *                                    dele. Só o dono da coleção do pedido o vê e muda; grava-se pelo config/salvar com dono[<chave>] (ou
+ *                                    pelo conta/alterar)
+ *     dono.pode_mudar                verdadeiro: quem pede é o dono da coleção do pedido (a tela mostra a aba Minhas coleções); falso: não
+ *                                    é, e as escolhas abaixo vêm null
+ *     dono.rodizio_ativo             o rodízio como padrão das coleções do dono: true, false ou null (herda o do sistema)
+ *     dono.recupera_ontem            passar o relógio de ontem para hoje como padrão das coleções do dono: true, false ou null (herda o do
+ *                                    sistema)
+ *     dono.rodizio_sistema           o que o rodízio herda do sistema quando o dono não escolhe: true (ligado) ou false
+ *     dono.recupera_ontem_sistema    o que o passar o relógio de ontem herda do sistema quando o dono não escolhe: true (ligado) ou false
+ *     dono.opcoes                    só para o dono da coleção (null para os outros): o padrão dele de cada opção da coleção, na mesma
+ *                                    forma de opcoes (escolha: o que o dono escolheu; herdado: o do sistema, senão o padrão de fábrica)
+ *     dono.opcoes.grupos             os grupos das opções, na ordem das telas
+ *     dono.opcoes.grupos[].chave     o identificador do grupo: rotina, limites ou telas
+ *     dono.opcoes.grupos[].texto     o nome do grupo, no idioma do pedido
+ *     dono.opcoes.opcoes             as opções, uma por linha
+ *     dono.opcoes.opcoes[].chave     o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
+ *     dono.opcoes.opcoes[].grupo     o grupo da opção
+ *     dono.opcoes.opcoes[].tipo      hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     dono.opcoes.opcoes[].titulo    o nome da opção, no idioma do pedido
+ *     dono.opcoes.opcoes[].minimo    o menor valor aceito (inteiro e decimal; null nos outros tipos)
+ *     dono.opcoes.opcoes[].maximo    o maior valor aceito (inteiro e decimal; null nos outros tipos)
+ *     dono.opcoes.opcoes[].valores   os valores possíveis de um enum (null nos outros tipos)
+ *     dono.opcoes.opcoes[].valores[].valor
+ *                                    o valor, como se manda
+ *     dono.opcoes.opcoes[].valores[].texto
+ *                                    o nome do valor, no idioma do pedido
+ *     dono.opcoes.opcoes[].padrao    o padrão de fábrica: o que vale quando nenhum nível escolheu
+ *     dono.opcoes.opcoes[].escolha   o que este nível escolheu (vazio: não escolheu, herda)
+ *     dono.opcoes.opcoes[].herdado   o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     dono.opcoes.opcoes[].fixos     o que não se desmarca nem se esconde numa opção do tipo lista (as chaves; null nos outros tipos): na
+ *                                    colunas_hoje, a Relógio
+ *     dono.opcoes.opcoes[].fixos[]   uma chave que não se esconde
+ *     dono.opcoes.opcoes[].origem_herdado
+ *                                    de onde vem o herdado: usuario, sistema ou padrao
+ *     dono.opcoes.opcoes[].efetivo   o que vale neste nível (a escolha, senão o herdado)
+ *     dono.opcoes.opcoes[].origem    de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
  *     senha_politica.regras          o mínimo de cada regra (0: não exige)
  *     senha_politica.regras.tamanho  quantos caracteres, no mínimo

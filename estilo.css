@@ -1379,8 +1379,8 @@ a.botao:hover { filter: brightness(1.08); }
    fonte, idioma ou largura; a ordem do documento e do foco continua a mesma. Sem a medição, vale a grade normal. */
 .config-grade.config-colunas, .parametros-sistema.config-colunas { grid-auto-rows: 4px; row-gap: 0; grid-auto-flow: dense; }
 .config-grade.config-colunas > .cartao-config { margin: 0; }
-/* a Configuração do master mostra um nível por vez (as abas do alto: Esta coleção ou Sistema): o quadro do outro nível some */
-#configuracao[data-nivel-visto="colecao"] [data-nivel="sistema"], #configuracao[data-nivel-visto="sistema"] [data-nivel="colecao"] { display: none; }
+/* a Configuração mostra um nível por vez (as abas do alto: Esta coleção, Minhas coleções ou Sistema): os quadros dos outros níveis somem */
+#configuracao[data-nivel-visto="colecao"] [data-nivel]:not([data-nivel="colecao"]), #configuracao[data-nivel-visto="dono"] [data-nivel]:not([data-nivel="dono"]), #configuracao[data-nivel-visto="sistema"] [data-nivel]:not([data-nivel="sistema"]) { display: none; }
 .abas-nivel { margin-bottom: .4rem; }
 .nota-nivel { margin: 0 0 1rem; }
 .campos.parametros-sistema { max-width: none; grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr)); column-gap: 1rem; align-items: start; }
@@ -1468,6 +1468,11 @@ td.acoes-linha { width: 1%; }
 .acoes-linha > details.acoes-usuario > summary::-webkit-details-marker { display: none; }
 .acoes-linha > details.acoes-usuario > summary:hover { background: #eef3fa; }
 .acoes-linha > details.acoes-usuario[open] { text-align: left; white-space: normal; }
+/* (o formulário que abre na linha, como o Renomear da coleção em Minha conta: cabe na largura da linha, e o campo encolhe;
+   (aberto, o <details> é um bloco: como caixa flexível, o conteúdo dele ficava do tamanho do que tem dentro, e não do da linha) */
+.acoes-linha > details.acoes-usuario[open] { display: block; max-width: 100%; min-width: 0; box-sizing: border-box; }
+.acoes-linha > details.acoes-usuario[open] form.form-linha { display: flex !important; flex-wrap: wrap; gap: .4rem; max-width: 100%; min-width: 0; margin: .4rem 0 0; }
+.acoes-linha > details.acoes-usuario[open] form.form-linha input:not([type=hidden]) { flex: 1 1 6rem; min-width: 0; width: auto; }
 .acoes-linha a, .acoes-linha button, .acoes-ev a, .acoes-ev button {
   display: inline-flex; align-items: center; justify-content: center; height: 1.9rem; min-height: 1.9rem; padding: 0 .6rem; margin: 0 0 0 .25rem;
   font-size: .82rem; font-weight: 500; border: 1px solid var(--aco-escuro); border-radius: 6px; background: #fff; color: var(--safira);

@@ -190,15 +190,17 @@ document.addEventListener("toggle", function (ev) {
 }, true);
 if (document.fonts) { document.fonts.ready.then(agendarQuadrosConfig); }
 
-// Os níveis da página, para o master: as opções das três hierarquias existem na coleção (os quadros Rotina do dia, Limites e
-// contas, Telas e Sorteios) e no sistema (Padrões do sistema e Sistema); lado a lado na mesma página, cada opção aparecia duas
-// vezes. A página mostra um nível por vez, pelas abas do alto: "colecao" (o que vale nesta coleção) ou "sistema" (o que é do
-// sistema inteiro: os padrões, os parâmetros, as senhas, o cron, a cópia de segurança e o SQL). Quem não é master não tem o
-// nível do sistema para mudar: vê tudo numa página só, como sempre. O nível vai no endereço (nivel=sistema ou nivel=colecao),
-// para a página voltar no mesmo depois de recarregar (ao trocar o idioma); sem ele, a âncora de um quadro do sistema (#copia,
-// #sql) abre no do sistema, e o resto, no da coleção
+// Os níveis da página: as opções das três hierarquias existem na coleção (os quadros Rotina do dia, Limites e contas, Telas
+// e Sorteios), no dono (o padrão dele para as coleções de que é dono) e no sistema (Padrões do sistema e Sistema); lado a
+// lado, cada opção apareceria três vezes. A página mostra um nível por vez, pelas abas do alto: "colecao" (o que vale nesta
+// coleção), "dono" (Minhas coleções: só o dono da coleção aberta tem) ou "sistema" (o que é do sistema inteiro: os padrões,
+// os parâmetros, as senhas, o cron, a cópia de segurança e o SQL: só o master tem). Quem não é dono nem master não tem outro
+// nível para mudar: vê tudo numa página só, como sempre. O nível vai no endereço (nivel=colecao, dono ou sistema), para a
+// página voltar no mesmo depois de recarregar (ao trocar o idioma); sem ele, a âncora de um quadro do sistema (#copia, #sql)
+// abre no do sistema, e o resto, no da coleção
+var NIVEIS_CONFIG = ["colecao", "dono", "sistema"];
 var nivelConfig = (function () {
-  var pedido = (/(?:^|[?&])nivel=(sistema|colecao)(?:&|$)/.exec(window.location.search) || [])[1];
+  var pedido = (/(?:^|[?&])nivel=(sistema|dono|colecao)(?:&|$)/.exec(window.location.search) || [])[1];
   return pedido || (/^#(copia|sql)$/.test(window.location.hash) ? "sistema" : "colecao");
 }());
 function noNivel(html, nivel) {
@@ -210,9 +212,10 @@ function noNivel(html, nivel) {
   return molde.innerHTML;
 }
 function verNivelConfig(nivel) {
-  nivelConfig = nivel === "sistema" ? "sistema" : "colecao";
   var raiz = document.getElementById("configuracao");
   if (!raiz || !raiz.querySelector(".abas-nivel")) { return; }
+  // só um nível que a página tem (a aba dele existe); senão, o da coleção
+  nivelConfig = NIVEIS_CONFIG.indexOf(nivel) >= 0 && raiz.querySelector('.abas-nivel a[data-nivel-ir="' + nivel + '"]') ? nivel : "colecao";
   raiz.setAttribute("data-nivel-visto", nivelConfig);
   raiz.querySelectorAll(".abas-nivel a").forEach(function (a) {
     var ativa = a.getAttribute("data-nivel-ir") === nivelConfig;
@@ -317,14 +320,22 @@ function recarregarConfig(aplicadas, manterPosicao) {
         ajudaGrupo("pagina", t("Configuração"));
         var ex = function (chave, titulo, html) { return ajuda(chave, titulo, el("p", {}, html)); };
         var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Configuração")) + ajudaBotao());
-        // os dois níveis da página (só o master tem o do sistema): as abas, e a nota do que cada um guarda
-        var comNiveis = d.sistema.pode_mudar === true;
+        // os níveis da página (o do dono, só o dono desta coleção tem; o do sistema, só o master): as abas, e a nota do que cada um guarda
+        var temDono = !!(d.dono && d.dono.pode_mudar === true);
+        var temSistema = d.sistema.pode_mudar === true;
+        var comNiveis = temDono || temSistema;
+        if ((nivelConfig === "dono" && !temDono) || (nivelConfig === "sistema" && !temSistema)) { nivelConfig = "colecao"; }
         if (comNiveis) {
+          var abaNivel = function (nivel, href, texto) {
+            return el("a", {"href": href, "data-nivel-ir": nivel, "class": nivelConfig === nivel ? "ativa" : null, "aria-current": nivelConfig === nivel ? "page" : null}, texto);
+          };
           res += el("nav", {"class": "abas abas-nivel", "aria-label": t("Nível das opções")},
-              el("a", {"href": "configuracao.php", "data-nivel-ir": "colecao", "class": nivelConfig === "colecao" ? "ativa" : null, "aria-current": nivelConfig === "colecao" ? "page" : null}, t("Esta coleção"))
-              + el("a", {"href": "configuracao.php?nivel=sistema", "data-nivel-ir": "sistema", "class": nivelConfig === "sistema" ? "ativa" : null, "aria-current": nivelConfig === "sistema" ? "page" : null}, t("Sistema")))
-            + el("p", {"class": "nota nota-nivel", "data-nivel": "colecao"}, t("O que vale nesta coleção. A opção vazia (Herdar) segue o padrão do dono (Minha conta) e, sem ele, o do sistema."))
-            + el("p", {"class": "nota nota-nivel", "data-nivel": "sistema"}, t("O que é do sistema inteiro (só o master muda): o padrão de cada opção para todas as coleções, os parâmetros, as senhas, o cron, a cópia de segurança e o SQL."));
+              abaNivel("colecao", "configuracao.php", t("Esta coleção"))
+              + (temDono ? abaNivel("dono", "configuracao.php?nivel=dono", t("Minhas coleções")) : "")
+              + (temSistema ? abaNivel("sistema", "configuracao.php?nivel=sistema", t("Sistema")) : ""))
+            + el("p", {"class": "nota nota-nivel", "data-nivel": "colecao"}, t("O que vale nesta coleção. A opção vazia (Herdar) segue o padrão do dono (a aba Minhas coleções) e, sem ele, o do sistema."))
+            + (temDono ? el("p", {"class": "nota nota-nivel", "data-nivel": "dono"}, t("Valem nas coleções de que você é dono que não escolheram a sua (na Configuração da coleção), inclusive para os membros e o cron. Vazio, vale o padrão do sistema.")) : "")
+            + (temSistema ? el("p", {"class": "nota nota-nivel", "data-nivel": "sistema"}, t("O que é do sistema inteiro (só o master muda): o padrão de cada opção para todas as coleções, os parâmetros, as senhas, o cron, a cópia de segurança e o SQL.")) : "");
         }
         // ---------- Geral ----------
         // a situação do cron vem da API (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando
@@ -478,17 +489,34 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var alertas = cartao(t("Avisos, lembretes e mensagens"), el("div", {"class": "campos"},
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
+        // o padrão do dono para as coleções dele (só o dono desta coleção): o rodízio, o relógio de ontem e cada opção das três
+        // hierarquias, gravados em dono[<chave>] pelo config/salvar
+        var simNaoDono = function (nome, valor, sistemaLigado) {
+          return el("select", {"name": "dono[" + nome + "]"},
+            el("option", {"value": "", "selected": valor == null}, t("Herdar do sistema ({1})", {1: sistemaLigado ? t("ligado") : t("desligado")}))
+            + el("option", {"value": "1", "selected": valor === true}, t("Ligado"))
+            + el("option", {"value": "0", "selected": valor === false}, t("Desligado")));
+        };
+        var meus = temDono ? cartao(t("Minhas coleções"), el("div", {"class": "campos parametros-sistema"},
+          parCampo(t("Rodízio: padrão das minhas coleções"), simNaoDono("rodizio_ativo", d.dono.rodizio_ativo, d.dono.rodizio_sistema), "largo",
+            ex("rodizio-usuario", t("Rodízio: padrão das minhas coleções"), t("Vale nas coleções de que você é dono, inclusive para os membros e o cron. Cada coleção pode herdar este valor ou substituí-lo na Configuração.")))
+          + parCampo(t("Relógio de ontem sem uso passa para hoje: padrão das minhas coleções"), simNaoDono("recupera_ontem", d.dono.recupera_ontem, d.dono.recupera_ontem_sistema), "largo",
+            ex("recupera-ontem-usuario", t("Relógio de ontem sem uso passa para hoje: padrão das minhas coleções"), t("Vale nas coleções de que você é dono, inclusive para os membros e o cron. Se o relógio do plano de ontem não foi ao pulso nem um pouquinho, ele passa para hoje e os outros dias do plano andam um dia. Cada coleção pode herdar este valor ou substituí-lo na Configuração.")))
+          + camposOpcoes(d.dono.opcoes, "dono"))) : "";
         if (comNiveis) {
           rotina = noNivel(rotina, "colecao"); limites = noNivel(limites, "colecao"); tela = noNivel(tela, "colecao"); sorteios = noNivel(sorteios, "colecao"); alertas = noNivel(alertas, "colecao");
-          senhas = noNivel(senhas, "sistema"); quadroCron = noNivel(quadroCron, "sistema"); parametros = noNivel(parametros, "sistema"); padroes = noNivel(padroes, "sistema");
+          meus = noNivel(meus, "dono");
+          // as senhas e o cron são do sistema: o master os tem na aba Sistema; quem não é master só os vê, junto com a coleção
+          senhas = noNivel(senhas, temSistema ? "sistema" : "colecao"); quadroCron = noNivel(quadroCron, temSistema ? "sistema" : "colecao");
+          parametros = noNivel(parametros, "sistema"); padroes = noNivel(padroes, "sistema");
         }
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
           + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + quadroCron + sorteios + alertas)
-          + parametros + padroes
+          + meus + parametros + padroes
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
         // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
-        res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia", "class": "cartao-config", "data-nivel": comNiveis ? "sistema" : null}, el("h2", {}, t("Cópia de segurança"))
+        res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia", "class": "cartao-config", "data-nivel": comNiveis ? (temSistema ? "sistema" : "colecao") : null}, el("h2", {}, t("Cópia de segurança"))
           + (bk.pasta_ok
             ? el("p", {"class": "nota"}, t("Uma cópia do banco inteiro por dia, na rodada da noite, guardando as {1} mais novas, {2} o conteúdo dos documentos (os arquivos já ficam na pasta deles). A cópia volta em qualquer um dos três bancos, na mesma versão do sistema. {3}", {1: bk.manter, 2: bk.documentos ? t("com") : t("sem"), 3: bk.ultima ? t("Última: {1} {2}.", {1: dataBr(bk.ultima), 2: horaBr(bk.ultima)}) : t("Nenhuma feita ainda.")}))
             : el("p", {"class": "alerta-cron"}, t("A cópia automática está desligada: {1}. Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada.", {1: h(bk.pasta_erro)})))
@@ -501,7 +529,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
             }).join("")), "largo")) : "")
           + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Fazer uma cópia agora")))) : ""));
         // ---------- o SQL pela API (só o master): montado depois, pelo recurso=sql ----------
-        res += d.sistema.pode_mudar ? el("section", {"id": "sql", "class": "cartao-config", "data-nivel": "sistema"}, el("p", {"class": "nota"}, t("Lendo…"))) : "";
+        res += d.sistema.pode_mudar ? el("section", {"id": "sql", "class": "cartao-config", "data-nivel": comNiveis ? "sistema" : null}, el("p", {"class": "nota"}, t("Lendo…"))) : "";
         document.getElementById("configuracao").innerHTML = res;
         if (comNiveis) {
           document.getElementById("configuracao").setAttribute("data-nivel-visto", nivelConfig);
