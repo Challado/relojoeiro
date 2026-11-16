@@ -34,6 +34,10 @@
 //      que vem. Nenhuma tela (um .js ou o script de uma página) escreve a chave de uma forma: uma lista escrita na tela fica
 //      para trás quando uma forma nova entra. E toda forma tem o roteiro dela (formas_roteiros). A conferência no navegador
 //      (testes/sorteio-interface.cjs) confere que cada lista da tela é a da API e que cada forma sorteia um dia.
+//      O mesmo vale para as listas fixas (listas_fixas, no lib.php: o "Para" de um campo, o sentido de um programa de winder, a
+//      segurança do e-mail...): saem com o dicionário (recurso=textos: listas) e as telas as leem com listaFixa, opcoesDaLista
+//      e nomeNaLista. Uma tela que escreve dois ou mais itens da mesma lista é recusada, e também um in_array, no núcleo ou
+//      na API, com as chaves de uma lista (a validação é lista_fixa_tem). No navegador: testes/listas-interface.cjs.
 //
 //   php testes/arquitetura.php        confere tudo (sai com 1 se alguma regra falhar)
 
@@ -549,6 +553,62 @@ foreach ($telas_12 as $f) {
         // a chave como nome de propriedade ({ponderado: ...}) também é uma lista
         if (preg_match('/[{,]\s*' . $k . '\s*:/', $codigo) === 1) {
             falha("12", $f . ": {" . $k . ": ...} é uma lista das formas de escolha escrita na tela (as formas vêm da API)");
+        }
+    }
+    // as listas fixas (listas_fixas, no lib.php): a tela pode perguntar por uma chave (papel === "master"), mas não pode
+    // escrever a lista. Duas ou mais chaves da mesma lista escritas onde se monta uma lista (o value de uma opção ou de um
+    // campo, um item de uma lista entre colchetes, o nome de uma propriedade que guarda um texto) são uma lista da tela
+    foreach (listas_fixas() as $nome_l => $itens_l) {
+        $achadas = [];
+        foreach (array_keys($itens_l) as $k) {
+            $q = preg_quote((string)$k, "/");
+            if (preg_match('/"value":\s*"' . $q . '"|[\[,]\s*"' . $q . '"\s*[,\]]|[{,]\s*' . $q . '\s*:\s*(?:t\(|")/', $codigo) === 1) {
+                $achadas[] = (string)$k;
+            }
+        }
+        if (count($achadas) >= 2) {
+            falha("12", $f . ": escreve " . implode(", ", $achadas) . ", da lista fixa " . $nome_l . " (as listas fixas vêm com o dicionário: listaFixa(\"" . $nome_l . "\"), opcoesDaLista, nomeNaLista, no api.js)");
+        }
+    }
+}
+// e as listas fixas em si: cada uma com itens, cada item com chave e nome, e a API manda todas (recurso=textos: listas)
+$api_12 = listas_fixas_api();
+foreach (listas_fixas() as $nome_l => $itens_l) {
+    if (!is_array($itens_l) || count($itens_l) === 0) {
+        falha("12", "a lista fixa " . $nome_l . " não tem itens");
+        continue;
+    }
+    foreach (lista_fixa($nome_l) as $k => $n) {
+        if (!is_string($n) || trim($n) === "") {
+            falha("12", "a lista fixa " . $nome_l . ": o item " . $k . " não tem nome");
+        }
+        if (!lista_fixa_tem($nome_l, $k) || lista_fixa_tem($nome_l, $k . "_que_nao_existe")) {
+            falha("12", "a lista fixa " . $nome_l . ": lista_fixa_tem não confere a chave " . $k);
+        }
+    }
+    if (array_column($api_12[$nome_l] ?? [], "chave") !== array_map("strval", array_keys($itens_l)) || array_column($api_12[$nome_l] ?? [], "nome") !== array_values(lista_fixa($nome_l))) {
+        falha("12", "a lista fixa " . $nome_l . " não sai inteira, na ordem, em listas_fixas_api()");
+    }
+}
+// nenhuma validação com a lista escrita de novo: um in_array com as chaves de uma lista fixa, no núcleo ou na API, é a mesma
+// lista em outro lugar (use lista_fixa_tem)
+foreach ($php as $f) {
+    if (strpos($f, "testes/") === 0 || strpos($f, "textos/") === 0) {
+        continue;
+    }
+    $codigo = (string)file_get_contents($f);
+    if (preg_match_all('/in_array\(\s*[^,()]+(?:\([^()]*\))?[^,()]*,\s*\[((?:\s*"[A-Za-z_0-9]+"\s*,?)+)\]/', $codigo, $m_in, PREG_OFFSET_CAPTURE) > 0) {
+        foreach ($m_in[1] as [$dentro, $pos]) {
+            preg_match_all('/"([A-Za-z_0-9]+)"/', $dentro, $m_k);
+            $chaves_in = $m_k[1];
+            sort($chaves_in);
+            foreach (listas_fixas() as $nome_l => $itens_l) {
+                $chaves_l = array_map("strval", array_keys($itens_l));
+                sort($chaves_l);
+                if ($chaves_in === $chaves_l) {
+                    falha("12", $f . ":" . (substr_count($codigo, "\n", 0, $pos) + 1) . ": in_array com as chaves da lista fixa " . $nome_l . " (use lista_fixa_tem(\"" . $nome_l . "\", ...))");
+                }
+            }
         }
     }
 }

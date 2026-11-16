@@ -247,6 +247,12 @@ if [ $LAYOUT -eq 1 ]; then
   else
     FALHOU=1; sed 's/^/    /' "$PASTA/sorteio.txt" | head -40
   fi
+  echo "Conferência das listas fixas nas telas no $REF:"
+  if BASE="http://127.0.0.1:$PORTA0/" node testes/listas-interface.cjs > "$PASTA/listas.txt" 2>&1; then
+    echo "    $(grep -c 'como na API' "$PASTA/listas.txt") seletores com a lista que a API manda; $(tail -1 "$PASTA/listas.txt")"
+  else
+    FALHOU=1; sed 's/^/    /' "$PASTA/listas.txt" | tail -30
+  fi
 fi
 
 if [ $ROLAGEM -eq 1 ]; then

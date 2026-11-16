@@ -57,8 +57,10 @@ function quadroColecoes(d) {
     + el("h3", {}, t("Nova coleção")) + el("form", {"data-recurso": "colecoes", "class": "campos"}, el("input", {"type": "hidden", "name": "acao", "value": "criar"})
       + parCampo(t("Nome"), el("input", {"name": "nome", "required": true, "maxlength": "120"}))
       + parCampo(t("Começa"), el("select", {"name": "opcao", "onchange": "this.form.querySelector('[data-sub]').hidden = this.value !== 'arvore'"},
-        el("option", {"value": "modelo"}, t("com o conjunto inicial (grupos, campos, fórmulas, avisos e critérios)")) + el("option", {"value": "vazia"}, t("vazia (só a raiz da árvore)"))
-        + (arvores !== "" ? el("option", {"value": "arvore"}, t("com uma árvore minha que já existe (o cadastro fica em comum)")) : "")))
+        // (a opção de usar uma árvore que já existe só aparece para quem tem uma)
+        listaFixa("colecao_comeca").filter(function (x) { return arvores !== "" || x.chave !== "arvore"; }).map(function (x) {
+          return el("option", {"value": x.chave}, h(x.nome));
+        }).join("")))
       + el("div", {"data-sub": true, "hidden": true}, parCampo(t("Árvore"), el("select", {"name": "arvore_id"}, arvores)))
       + el("div", {"class": "botoes"}, el("button", {}, t("Criar coleção")))));
 }
@@ -259,7 +261,7 @@ function quadroServidor(d) {
     return "";
   }
   var e = d.email;
-  var seg = function (s) { return {ssl: t("SSL (desde o começo)"), tls: t("TLS (STARTTLS)"), nada: t("sem criptografia")}[s] || s; };
+  var seg = function (s) { return nomeNaLista("email_seguranca", s); };
   var conta = function (c) {
     return h(c.host + ":" + c.porta) + " · " + seg(c.seguranca) + " · " + (c.usuario !== "" ? t("usuário {1}", {1: h(c.usuario)}) : t("sem usuário"))
       + " · " + (c.senha ? t("senha definida") : el("strong", {}, t("sem senha")));
@@ -307,7 +309,6 @@ function quadroServidor(d) {
 var TESTE_SMTP = null;
 function quadroEnvio(d) {
   var s = d.smtp;
-  var seg = {tls: t("TLS (STARTTLS)"), ssl: t("SSL (desde o começo)"), nada: t("sem criptografia")};
   var agora = s.proprio ? el("p", {}, t("Agora: pelo seu servidor, {1}, de {2}.", {1: el("strong", {}, h(s.host + ":" + s.porta)), 2: h(s.remetente)}))
     : (s.sistema_configurado ? el("p", {}, t("Agora: pelo servidor do sistema."))
       : el("p", {"class": "alerta-cron"}, t("Agora: o sistema não tem servidor de e-mail; sem um servidor seu, os seus e-mails não saem.")));
@@ -320,8 +321,8 @@ function quadroEnvio(d) {
       + el("div", {"class": "campos largo", "data-sub": "1", "hidden": !s.proprio},
         parCampo(t("Servidor (SMTP)"), el("input", {"name": "host", "value": s.host || "", "maxlength": "200", "placeholder": fixo("smtp.gmail.com"), "autocomplete": "off"}))
         + parCampo(t("Porta"), el("input", {"type": "number", "name": "porta", "min": "1", "max": "65535", "value": s.porta || "", "placeholder": fixo("587")}))
-        + parCampo(t("Segurança"), el("select", {"name": "seguranca"}, ["tls", "ssl", "nada"].map(function (k) {
-          return el("option", {"value": k, "selected": (s.seguranca || "tls") === k}, seg[k]);
+        + parCampo(t("Segurança"), el("select", {"name": "seguranca"}, listaFixa("email_seguranca").map(function (x) {
+          return el("option", {"value": x.chave, "selected": (s.seguranca || "tls") === x.chave}, h(x.nome));
         }).join("")))
         + parCampo(t("Usuário"), el("input", semPreencher({"name": "usuario", "value": s.usuario || "", "maxlength": "200", "placeholder": t("o e-mail da conta")})))
         + parCampo(t("Senha"), el("input", semPreencher({"type": "password", "name": "senha", "placeholder": s.senha_definida ? t("gravada (vazia: mantém)") : ""})))

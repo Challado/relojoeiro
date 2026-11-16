@@ -145,8 +145,7 @@ function carregarProgramas() {
       + el("form", {"data-recurso": "programas", "class": "form-grade", "data-vai-editar": true}, el("input", {"type": "hidden", "name": "acao", "value": "montar"})
         + el("label", {}, t("Voltas por dia {1}", {1: el("input", {"name": "tpd", "value": "650", "inputmode": "numeric", "class": "curto", "required": true})}))
         + el("label", {}, t("Velocidade do berço {1} voltas por minuto", {1: el("input", {"name": "velocidade", "value": "8", "inputmode": "decimal", "class": "curto", "required": true})}))
-        + el("label", {}, t("Sentido {1}", {1: el("select", {"name": "sentido"}, el("option", {"value": "os_dois"}, t("os dois (alternando)")) + el("option", {"value": "horario"}, t("só o horário"))
-          + el("option", {"value": "anti_horario"}, t("só o anti-horário")))}))
+        + el("label", {}, t("Sentido {1}", {1: el("select", {"name": "sentido"}, opcoesDaLista("winder_sentido", ""))}))
         + el("label", {}, t("Giros em {1}", {1: el("select", {"name": "medida"}, d.medidas.map(function (m) { return el("option", {"value": m.valor}, h(m.nome)); }).join(""))}))
         + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "maxlength": "80", "placeholder": t("vazio: \"650 voltas por dia, os dois sentidos\"")})}))
         + el("div", {"class": "botoes"}, el("button", {}, t("Montar")))));

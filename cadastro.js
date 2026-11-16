@@ -43,9 +43,9 @@ function formConta(d) {
       + el("label", {"class": "check"}, el("input", {"type": "checkbox", "onchange": "this.form.opcao.value = this.checked ? 'modelo' : 'nenhuma'"}) + " " + t("Criar também uma coleção minha, com o conjunto inicial"));
   } else {
     opcoes = el("fieldset", {"class": "opcoes-conta"}, el("legend", {}, t("Para começar"))
-      + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "modelo", "checked": true}) + " " + t("Uma coleção minha, com o conjunto inicial (grupos, campos, fórmulas, avisos e critérios prontos)"))
-      + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "vazia"}) + " " + t("Uma coleção minha, vazia (eu monto tudo)"))
-      + el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": "pedir"}) + " " + t("Pedir acesso à coleção de alguém")))
+      + listaFixa("cadastro_colecao").map(function (x, i) {
+        return el("label", {}, el("input", {"type": "radio", "name": "opcao", "value": x.chave, "checked": i === 0}) + " " + h(x.nome));
+      }).join(""))
       + el("div", {"data-pedir": true, "hidden": true}, camposCodigoAcesso(false, true) + parCampo(t("Recado para o dono (opcional)"), el("input", {"name": "mensagem", "maxlength": "500"}), "largo"));
   }
   return el("section", {"class": "cartao-config"}, el("form", {"data-recurso": "cadastro", "class": "campos", "id": "form-conta",

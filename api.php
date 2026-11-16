@@ -16,6 +16,10 @@
  *     curl -u lucas:senha "http://servidor/relojoeiro/api.php"
  *   Sem nenhum: 401. O token é comparado sem os espaços das pontas. A conta bloqueada, ou a de demonstração vencida, não entra.
  *   Só o cadastro aberto (recurso=cadastro), o link ICS (recurso=ics) e os textos das telas (recurso=textos) respondem sem login.
+ *   Com os textos (recurso=textos) vêm as listas fixas do sistema, em "listas": as opções de cada campo que escolhe numa lista
+ *   (o "Para" de um campo, o sentido de um programa de winder, a segurança do e-mail...), {"<lista>": [{"chave", "nome"}]}, com os
+ *   nomes no idioma do pedido. A definição é uma só (listas_fixas, no lib.php); as telas mostram estas, e a recusa de um
+ *   campo com um valor de fora cita a lista inteira.
  *
  * ---------------------------------------------------------------------------------------------
  * COLEÇÕES
@@ -7289,6 +7293,23 @@
  *     textos                         o dicionário das telas (a parte telas do textos/<idioma>.php): o texto em português => a tradução
  *                                    (vazio em português)
  *     textos.<texto em português>    a tradução
+ *     listas                         as listas fixas do sistema, com os nomes no idioma do pedido: as escolhas que não são cadastro (o
+ *                                    "Para" de um campo, o sentido de um programa de winder, a segurança do e-mail...). A definição é uma
+ *                                    só, no núcleo (listas_fixas, no lib.php): a validação de cada campo, a mensagem de recusa e as telas
+ *                                    saem dela, e nenhuma tela tem a lista escrita
+ *     listas.<lista>                 uma lista: os itens, na ordem em que as telas os mostram. Onde cada uma vale: campo_alvo (campos novo
+ *                                    e alterar: alvo), total_largura (totais salvar: largura), coluna_modo e coluna_tabela (colunas salvar:
+ *                                    modo e tabela; as outras fontes vêm em recurso=colunas), arquivo_familia (documento_categorias nova e
+ *                                    alterar: aceita[]), copia_por (documentos: copia_por), winder_sentido (programas montar: sentido),
+ *                                    aviso_escala e aviso_agenda (avisos novo e alterar: escala e agenda), destino_metodo e destino_formato
+ *                                    (destinos salvar: metodo e formato), email_seguranca (conta smtp_salvar: seguranca), usuario_papel e
+ *                                    usuario_colecao (usuarios alterar: papel; usuarios salvar: colecao_nova), colecao_comeca (colecoes
+ *                                    criar: opcao), cadastro_colecao (cadastro criar_conta: opcao) e cron_situacao (cron: situacao)
+ *     listas.<lista>[]               um item da lista
+ *     listas.<lista>[].chave         a chave do item: o que se manda no campo
+ *     listas.<lista>[].nome          o nome do item, no idioma do pedido
+ *     listas.<lista>[].aceita        só em arquivo_familia: o accept do campo de envio de arquivo desse tipo (image/*,
+ *                                    application/pdf,.pdf...)
  *   recurso=roteiro
  *     dia                            o dia testado (AAAA-MM-DD)
  *     dia_semana                     o dia da semana dele: 1 segunda ... 7 domingo
@@ -8433,7 +8454,9 @@ if ($recurso === "textos") {
         "formato" => ["data" => $l["data"], "data_curta" => $l["data_curta"], "decimal" => $l["decimal"], "milhar" => $l["milhar"]],
         "padrao" => lingua_valida($lingua_padrao), "estrito" => textos_estrito(),
         "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"], "locale" => LINGUAS[$k]["locale"]]; }, array_keys(LINGUAS)),
-        "textos" => (object)textos_parte(lingua_atual(), "telas")];
+        "textos" => (object)textos_parte(lingua_atual(), "telas"),
+        // as listas fixas do sistema (listas_fixas, no lib.php), com os nomes no idioma do pedido: as telas mostram estas
+        "listas" => listas_fixas_api()];
     if (strtolower((string)($_REQUEST["formato"] ?? "")) === "js") {
         header("Content-Type: application/javascript; charset=utf-8");
         header("Cache-Control: private, max-age=" . (isset($_REQUEST["v"]) ? 86400 : 0));

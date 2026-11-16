@@ -818,8 +818,9 @@ function op_cadastro($acao, $d)
         if ($email === "" || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $erros[] = t("Informe um e-mail válido (para recuperar a senha e receber os avisos da conta).");
         }
-        if (!in_array($opcao, ["modelo", "vazia", "pedir", "nenhuma"], true)) {
-            $erros[] = t("opcao: modelo (uma coleção com o conjunto inicial), vazia (uma coleção sem nada) ou pedir (pedir acesso a uma coleção ou a tudo de um dono).");
+        if (!lista_fixa_tem("cadastro_colecao", $opcao) && $opcao !== "nenhuma") {
+            // (nenhuma: a conta de quem entra por um convite, que já chega com o acesso; não está na lista da tela)
+            $erros[] = lista_fixa_recusa("opcao", "cadastro_colecao");
         } elseif ($opcao === "pedir" && $v === null) {
             $alvo = alvo_do_pedido($d, true);
             if ($alvo[2] !== "") {
@@ -1158,8 +1159,8 @@ function op_conta($acao, $d)
             $cifrada = $usuario === "" ? null : ($senha !== "" ? segredo_cifrar($senha) : ($atual !== null && $atual["senha"] !== "" ? segredo_cifrar($atual["senha"]) : null));
             if ($host === "" || mb_strlen($host, "UTF-8") > 200 || preg_match('/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$|^\[[0-9a-f:]+\]$/', $host) !== 1) {
                 $erros[] = t("Informe o servidor de SMTP (um nome como smtp.gmail.com).");
-            } elseif (!in_array($seg, ["tls", "ssl", "nada"], true)) {
-                $erros[] = t("Segurança desconhecida: use tls (STARTTLS), ssl ou nada.");
+            } elseif (!lista_fixa_tem("email_seguranca", $seg)) {
+                $erros[] = lista_fixa_recusa("seguranca", "email_seguranca");
             } elseif ($porta < 1 || $porta > 65535) {
                 $erros[] = t("Porta inválida: de 1 a 65535 (o comum: 587 com tls, 465 com ssl).");
             } elseif (filter_var($remetente, FILTER_VALIDATE_EMAIL) === false || mb_strlen($remetente, "UTF-8") > 200) {
@@ -1262,8 +1263,8 @@ function op_colecoes($acao, $d)
         $dono = usuario_master() && isset($d["dono_id"]) ? (int)$d["dono_id"] : $uid;
         if ($nome === "" || mb_strlen($nome, "UTF-8") > 120) {
             $erros[] = t("Dê um nome à coleção (até 120 caracteres).");
-        } elseif (!in_array($opcao, ["modelo", "vazia", "arvore"], true)) {
-            $erros[] = t("opcao: modelo (com o conjunto inicial), vazia (sem nada) ou arvore (com arvore_id: uma árvore sua que já existe).");
+        } elseif (!lista_fixa_tem("colecao_comeca", $opcao)) {
+            $erros[] = lista_fixa_recusa("opcao", "colecao_comeca");
         } elseif ($opcao === "arvore" && ($ar === null || (int)$ar["dono_id"] !== $dono)) {
             $erros[] = t("Árvore não encontrada entre as do dono da coleção.");
         } elseif (usuario_por_id($dono) === null) {
@@ -1529,7 +1530,7 @@ function op_usuarios($acao, $d, $atual)
             } else {
                 // a conta nova: o primeiro usuário é o master; os outros, contas oficiais (criadas pelo master), cada uma
                 // com a sua coleção, com o conjunto inicial (colecao_nova=nenhuma: sem coleção; vazia: só a árvore vazia)
-                $opcao = in_array($d["colecao_nova"] ?? "", ["modelo", "vazia", "nenhuma"], true) ? $d["colecao_nova"] : "modelo";
+                $opcao = lista_fixa_tem("usuario_colecao", $d["colecao_nova"] ?? "") ? $d["colecao_nova"] : "modelo";
                 $email = trim((string)($d["email"] ?? ""));
                 if (($e = login_erro($alvo)) !== "") {
                     $erros[] = $e;
@@ -1600,8 +1601,8 @@ function op_usuarios($acao, $d, $atual)
             }
         }
         if (isset($d["papel"]) && $d["papel"] !== $u["papel"]) {
-            if (!in_array($d["papel"], ["master", "comum"], true)) {
-                $erros[] = t("papel: master ou comum.");
+            if (!lista_fixa_tem("usuario_papel", $d["papel"])) {
+                $erros[] = lista_fixa_recusa("papel", "usuario_papel");
             } elseif ($d["papel"] === "comum" && $masters <= 1) {
                 $erros[] = t("Precisa sobrar pelo menos um master.");
             } else {

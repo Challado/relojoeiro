@@ -18,11 +18,9 @@ function camposWebhook(w, id) {
       + el("td", {}, el("input", {"type": "password", "name": "cabecalho_valor[]", "value": "", "autocomplete": "off", "aria-label": t("Valor do cabeçalho"),
         "placeholder": c && c.preenchido ? t("(guardado; vazio mantém)") : fixo("Bearer ...")})));
   };
-  return parCampo(t("Método"), el("select", {"name": "metodo"}, ["GET", "POST", "PUT"].map(function (m) { return el("option", {"value": m, "selected": w.metodo === m}, m); }).join("")))
+  return parCampo(t("Método"), el("select", {"name": "metodo"}, opcoesDaLista("destino_metodo", w.metodo)))
     + parCampo(t("Endereço"), el("input", {"type": "url", "name": "url", "value": w.url, "required": true, "placeholder": fixo("https://api.telegram.org/bot.../sendMessage")}), "largo")
-    + parCampo(t("A mensagem vai"), el("select", {"name": "formato"}, [["query", t("na URL (query)")], ["form", t("como formulário")], ["json", t("como JSON")]].map(function (f) {
-      return el("option", {"value": f[0], "selected": w.formato === f[0]}, f[1]);
-    }).join("")))
+    + parCampo(t("A mensagem vai"), el("select", {"name": "formato"}, opcoesDaLista("destino_formato", w.formato)))
     + el("div", {"class": "sub-bloco"}, el("h4", {}, t("Campos")) + el("p", {"class": "nota"}, t("Cada valor pode usar {titulo} e {mensagem} (a mensagem já montada pelo modelo).")) + el("table", {"class": "compacta"}, el("tbody", {},
       w.campos.map(function (c) { return linhaCampo(c.nome, c.valor); }).join("") + linhaCampo("", "") + linhaCampo("", ""))))
     + el("div", {"class": "sub-bloco"}, el("label", {"for": "cj-" + id}, el("h4", {}, t("Corpo JSON (opcional, só no formato JSON)")))

@@ -3,7 +3,6 @@
 // gravações pela API (recurso=campos, secoes, lancamento_tipos, formulas, totais, relatorios, calibres, marcas, unidades e documento_categorias), o testar das fórmulas (recurso=calcular), o dos totais (recurso=totais, expressao=) e o dos relatórios (recurso=relatorios, tipo=avulso). Os avisos ficam na página Avisos (avisos.js) e os modos de rodízio, na Modos de rodízio (modos.js).
 var ABAS = {campos: t("Campos"), secoes: t("Divisórias"), unidades: t("Unidades"), lancamentos: t("Tipos de lançamento"), formulas: t("Fórmulas"), totais: t("Totais"), colunas: t("Colunas"), relatorios: t("Relatórios"), calibres: t("Calibres"), marcas: t("Marcas"), documentos: t("Categorias de documentos"), listas: t("Listas")};
 var RECURSO = {campos: "campos", secoes: "secoes", unidades: "unidades", lancamentos: "lancamento_tipos", formulas: "formulas", totais: "totais", colunas: "colunas", relatorios: "relatorios", calibres: "calibres", marcas: "marcas", documentos: "documento_categorias", listas: "listas"};
-var FAMILIAS = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
 var q = new URLSearchParams(window.location.search);
 // os avisos dos relógios saíram daqui: moram na página Avisos, junto com os lembretes (o endereço antigo leva para lá)
 if (q.get("aba") === "avisos") {
@@ -174,8 +173,7 @@ function recarregarCadastros() {
           // de quem é o campo: dos relógios, dos acessórios, dos winders ou das posições dos winders (o menu mostra só o que vale
           // para cada um)
           + el("label", {}, t("Para {1}", {1: el("select", {"name": "alvo", "onchange": "var v = this.value; this.form.querySelectorAll('[data-alvo]').forEach(function (x) { x.hidden = x.getAttribute('data-alvo') !== v; });"},
-            el("option", {"value": "relogio", "selected": (f.alvo || "relogio") === "relogio"}, t("os relógios")) + el("option", {"value": "acessorio", "selected": f.alvo === "acessorio"}, t("os acessórios"))
-            + el("option", {"value": "winder", "selected": f.alvo === "winder"}, t("os winders")) + el("option", {"value": "posicao", "selected": f.alvo === "posicao"}, t("as posições dos winders")))}))
+            opcoesDaLista("campo_alvo", f.alvo || "relogio"))}))
           + el("label", {"data-alvo": "acessorio", "hidden": f.alvo !== "acessorio"}, t("Tipo de acessório {1}", {1: el("select", {"name": "acessorio_tipo"}, el("option", {"value": ""}, t("— todos")) + d.acessorio_tipos.map(function (x) {
             return el("option", {"value": x.valor, "selected": f.acessorio_tipo === x.valor}, h(x.nome));
           }).join(""))}))
@@ -294,7 +292,7 @@ function recarregarCadastros() {
             return el("th", {"class": i === 3 || i === 4 ? "num" : null}, item);
           }).join(""))) + el("tbody", {}, d.documento_categorias.map(function (c) {
             return el("tr", {}, el("td", {}, h(c.nome)) + el("td", {"class": "formula ident"}, h(c.identificador))
-              + el("td", {}, c.aceita.length === 0 ? t("qualquer arquivo") : h(c.aceita.map(function (x) { return FAMILIAS[x] || x; }).join(", ")))
+              + el("td", {}, c.aceita.length === 0 ? t("qualquer arquivo") : h(c.aceita.map(function (x) { return nomeNaLista("arquivo_familia", x); }).join(", ")))
               + el("td", {"class": "num"}, String(c.ordem)) + el("td", {"class": "num"}, String(c.documentos))
               + el("td", {"class": "acoes-linha"}, linkEditar(c.id) + (c.documentos === 0 ? " " + botaoLinha("excluir", c.id, t("Excluir"), t("Excluir a categoria {1}?", {1: c.nome})) : "")));
           }).join(""))))
@@ -304,8 +302,8 @@ function recarregarCadastros() {
           + (e ? "" : el("label", {}, t("Identificador {1}", {1: el("input", {"name": "identificador", "required": true, "pattern": "[a-z][a-z0-9_]{0,39}"})})))
           + el("label", {}, t("Ordem {1}", {1: el("input", {"type": "number", "name": "ordem", "value": e ? e.ordem : "", "placeholder": t("vazio: no fim")})}))
           + el("fieldset", {"style": "grid-column: 1 / -1"}, el("legend", {}, t("Aceita (nada marcado: qualquer arquivo)")) + el("input", {"type": "hidden", "name": "aceita", "value": ""})
-            + Object.keys(FAMILIAS).map(function (k) {
-              return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "aceita[]", "value": k, "checked": f.aceita.indexOf(k) >= 0}) + " " + h(FAMILIAS[k]));
+            + listaFixa("arquivo_familia").map(function (x) {
+              return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "aceita[]", "value": x.chave, "checked": f.aceita.indexOf(x.chave) >= 0}) + " " + h(x.nome));
             }).join(" "))
           + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + (e ? " " + el("a", {"href": "cadastros.php?aba=documentos"}, t("cancelar")) : ""))));
     }
@@ -361,8 +359,7 @@ function recarregarTotais() {
         + el("label", {"style": "grid-column: 1 / -1"}, t("Expressão {1}", {1: el("textarea", {"name": "expressao", "class": "formula", "rows": "3", "required": true}, h(vazio(f.expressao)))}))
         + el("label", {"class": "check"}, marca("rodape", f.rodape, f.coluna === null) + " " + t("Exibir no rodapé do totalizador (embaixo da coluna)"))
         + el("label", {"class": "check"}, marca("pagina", f.pagina, false) + " " + t("Exibir na página de totais"))
-        + el("label", {}, t("Largura na página {1}", {1: el("select", {"name": "largura"}, [["estreito", t("Estreito (três por linha no computador)")], ["largo", t("Largo (a linha inteira)")]].map(function (o) {
-          return el("option", {"value": o[0], "selected": f.largura === o[0]}, o[1]); }).join(""))}))
+        + el("label", {}, t("Largura na página {1}", {1: el("select", {"name": "largura"}, opcoesDaLista("total_largura", f.largura))}))
         + el("label", {}, t("Formato dos números {1}", {1: el("select", {"name": "formato"}, d.formatos.map(function (o) { return el("option", {"value": o.chave, "data-nome": o.nome, "selected": f.formato === o.chave}, h(o.nome)); }).join(""))}))
         + el("p", {"class": "nota", "style": "grid-column: 1 / -1"}, t("Só os totais de uma coluna vão para o rodapé; os outros, quantos você quiser, ficam só na página de totais."))
         + el("div", {"class": "botoes"}, el("button", {}, e ? t("Salvar") : t("Criar")) + " " + el("button", {"type": "button", "class": "leve", "id": "testar-total"}, t("Testar em todos os relógios"))
@@ -539,7 +536,7 @@ function recarregarColunas() {
       res += recado;
       recado = "";
     }
-    var tabelas = [["relogio", t("A tabela dos relógios (as colunas que ela já tem)")], ["campos", t("Os campos do cadastro dos relógios")]].concat(d.tabelas.map(function (tb) { return [tb.tabela, tb.descricao]; }));
+    var tabelas = listaFixa("coluna_tabela").map(function (x) { return [x.chave, x.nome]; }).concat(d.tabelas.map(function (tb) { return [tb.tabela, tb.descricao]; }));
     var sec = el("h2", {}, t("Colunas"))
       + ajudaNota("colunas", t("As colunas cadastradas"), t("Uma coluna cadastrada é uma conta feita em cada relógio e mostrada na tabela da página Hoje, ao lado das colunas de sempre. No modo guiado você escolhe de onde vem o valor: uma coluna da tabela dos relógios, um campo do cadastro ou um campo de uma tabela do banco ligada ao relógio (os serviços, as manutenções, as medições do timegrapher, os lançamentos...) e a função que junta os registros do relógio: a soma, a média, o menor, o maior ou a contagem, como num SELECT com GROUP BY. No modo expert você escreve a expressão (a mesma dos relatórios). O formato diz como o valor sai: as casas decimais, o símbolo da moeda, o tempo (1d 4h 30m), a data. Para mostrar a coluna, use o botão Colunas da tabela, ou marque aqui Aparece na tabela sem ninguém escolher."))
       + (d.colunas.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma coluna cadastrada ainda. Monte a primeira abaixo."))
@@ -557,8 +554,7 @@ function recarregarColunas() {
       + el("h3", {"id": "form"}, e && !e.sistema ? t("Alterar a coluna {1}", {1: h(e.nome)}) : t("Nova coluna"))
       + el("form", {"data-recurso": "colunas", "class": "form-grade", "id": "form-coluna"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"}) + el("input", {"type": "hidden", "name": "id", "value": e && !e.sistema ? e.id : 0})
         + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": vazio(e && !e.sistema ? e.nome : ""), "required": true, "maxlength": "80"})}))
-        + el("label", {}, t("Como montar {1}", {1: el("select", {"name": "modo"}, [["guiado", t("Guiado: escolher o campo, a função e o formato")], ["expert", t("Expert: escrever a expressão")]].map(function (o) {
-          return el("option", {"value": o[0], "selected": f.modo === o[0]}, o[1]); }).join(""))}))
+        + el("label", {}, t("Como montar {1}", {1: el("select", {"name": "modo"}, opcoesDaLista("coluna_modo", f.modo))}))
         + el("label", {"data-modo": "guiado"}, t("Fonte {1}", {1: el("select", {"name": "tabela"}, el("option", {"value": ""}, t("Escolha a fonte"))
           + tabelas.map(function (o) { return el("option", {"value": o[0], "selected": f.tabela === o[0]}, h(o[1])); }).join(""))}))
         + el("label", {"data-modo": "guiado"}, t("Campo {1}", {1: el("select", {"name": "campo"}, colunaOpcoesCampo(d, f.tabela || "", f.campo || ""))}))

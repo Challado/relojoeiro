@@ -15,7 +15,7 @@ foreach (["de" => "00:00:00", "ate" => "23:59:59"] as $k => $hora) {
     $per_c[$k] = preg_match("/^[0-9]{4}-[0-9]{2}-[0-9]{2}( [0-9]{2}:[0-9]{2}(:[0-9]{2})?)?\$/", $v) === 1
         ? $v . (strlen($v) === 10 ? " " . $hora : (strlen($v) === 16 ? ($k === "de" ? ":00" : ":59") : "")) : ($k === "de" ? "0001-01-01 00:00:00" : "9999-12-31 23:59:59");
 }
-$situacao = in_array($_REQUEST["cron_situacao"] ?? ($_REQUEST["situacao"] ?? ""), ["atividade", "erro", "nada", "todas"], true) ? ($_REQUEST["cron_situacao"] ?? $_REQUEST["situacao"]) : "atividade";
+$situacao = lista_fixa_tem("cron_situacao", $_REQUEST["cron_situacao"] ?? ($_REQUEST["situacao"] ?? "")) ? ($_REQUEST["cron_situacao"] ?? $_REQUEST["situacao"]) : "atividade";
 $busca = trim((string)($_REQUEST["cron_busca"] ?? ($_REQUEST["busca"] ?? "")));
 // o master vê as rodadas inteiras (o sistema e todas as coleções); os outros, só o que a rodada fez na coleção do pedido
 $fonte = usuario_master() ? "cron_execucao" : "(SELECT e.id, e.inicio, e.fim, e.duracao_ms, c.teve_atividade, c.teve_erro, c.registro FROM cron_execucao e

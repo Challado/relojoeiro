@@ -259,8 +259,8 @@ function op_campos($acao, $d)
         $alvo = array_key_exists("alvo", $d) ? (string)$d["alvo"] : (string)($atual["alvo"] ?? "relogio");
         $ac_tipo = array_key_exists("acessorio_tipo", $d) ? trim((string)$d["acessorio_tipo"]) : (string)($atual["acessorio_tipo"] ?? "");
         $serve = array_key_exists("serve_campo_id", $d) ? (int)$d["serve_campo_id"] : (int)($atual["serve_campo_id"] ?? 0);
-        if (!in_array($alvo, ["relogio", "acessorio", "winder", "posicao"], true)) {
-            $erros[] = t("Para: relogio, acessorio, winder ou posicao.");
+        if (!lista_fixa_tem("campo_alvo", $alvo)) {
+            $erros[] = lista_fixa_recusa("alvo", "campo_alvo");
         } elseif ($atual && $alvo !== (string)($atual["alvo"] ?? "relogio") && count(valores_do_campo($atual)) > 0) {
             $erros[] = t("O campo {1} já tem valores: não dá para mudar de quem ele é (do relógio, do acessório, do winder ou da posição).", [1 => $atual["nome"]]);
         }
@@ -749,8 +749,8 @@ function op_totais($acao, $d)
         if ($rodape === 0 && $pagina === 0) {
             $erros[] = t("Marque onde o total aparece: no rodapé da tabela, na página de totais ou nos dois.");
         }
-        if (!in_array($largura, ["estreito", "largo"], true)) {
-            $erros[] = t("Largura: estreito ou largo.");
+        if (!lista_fixa_tem("total_largura", $largura)) {
+            $erros[] = lista_fixa_recusa("largura", "total_largura");
         }
         if (!isset(TOTAL_FORMATOS[$formato])) {
             $erros[] = t("Formato: {1}.", [1 => implode(", ", array_keys(TOTAL_FORMATOS))]);
@@ -877,7 +877,7 @@ function op_colunas($acao, $d)
                 $erros = array_merge($erros, $e_g);
                 $expr = $expr_g ?? $expr;
             }
-            if (!in_array($tabela, ["relogio", "campos"], true)) {
+            if (!lista_fixa_tem("coluna_tabela", $tabela)) {
                 // a função só vale nas tabelas do dicionário
             } else {
                 $funcao = "";
@@ -892,7 +892,7 @@ function op_colunas($acao, $d)
                 }
             }
         } else {
-            $erros[] = t("Modo: guiado ou expert.");
+            $erros[] = lista_fixa_recusa("modo", "coluna_modo");
         }
         if ($formato === "") {
             $formato = $modo === "guiado" && count($erros) === 0 ? coluna_formato_sugerido($tabela, $campo, $funcao === "" ? null : $funcao) : "numero";
@@ -1763,8 +1763,8 @@ function op_documento_categorias($acao, $d)
             $erros[] = t("Dê um nome à categoria (até 120 caracteres).");
         }
         foreach ($aceita as $f) {
-            if (!in_array($f, ["imagem", "video", "audio", "pdf", "xml"], true)) {
-                $erros[] = t("Tipo aceito desconhecido: {1} (use imagem, video, audio, pdf ou xml; nenhum: qualquer arquivo).", [1 => $f]);
+            if (!lista_fixa_tem("arquivo_familia", $f)) {
+                $erros[] = lista_fixa_recusa("aceita[]", "arquivo_familia");
             }
         }
         if (count($erros) === 0) {
@@ -2101,8 +2101,8 @@ function op_programas($acao, $d)
         if (!is_float($vel) || $vel <= 0) {
             $erros[] = t("Diga a velocidade do berço (voltas por minuto): sem ela não dá para montar os giros.");
         }
-        if (!in_array($sentido, ["os_dois", "horario", "anti_horario"], true)) {
-            $erros[] = t("Sentido: os_dois, horario ou anti_horario.");
+        if (!lista_fixa_tem("winder_sentido", $sentido)) {
+            $erros[] = lista_fixa_recusa("sentido", "winder_sentido");
         }
         if (!isset(WINDER_PROGRAMA_MEDIDAS[$medida])) {
             $erros[] = t("Tipo de cadastro (medida): voltas ou tempo.");
@@ -3856,11 +3856,11 @@ function op_avisos($acao, $d)
                 $erros[] = $k === "simula_valor" ? t("Valor simulado na escala: um número (vazio: nenhum).") : t("Horas simuladas na escala: de 0 a 48 (vazio: nenhuma).");
             }
         }
-        if (!in_array($escala, ["nao", "uso", "sempre"], true)) {
-            $erros[] = t("Na escala: nao, uso ou sempre.");
+        if (!lista_fixa_tem("aviso_escala", $escala)) {
+            $erros[] = lista_fixa_recusa("escala", "aviso_escala");
         }
-        if (!in_array($agenda, ["janela", "sempre"], true)) {
-            $erros[] = t("Na agenda: janela (só dentro da antecedência da agenda) ou sempre (qualquer data).");
+        if (!lista_fixa_tem("aviso_agenda", $agenda)) {
+            $erros[] = lista_fixa_recusa("agenda", "aviso_agenda");
         }
         if (!identificador_valido($ident)) {
             $erros[] = t("Identificador: minúsculas, números e _, começando por letra, até 40.");
@@ -5506,14 +5506,14 @@ function op_destinos($acao, $d)
             $metodo = strtoupper((string)($d["metodo"] ?? $w["metodo"]));
             $url = trim((string)($d["url"] ?? $w["url"]));
             $formato = (string)($d["formato"] ?? $w["formato"]);
-            if (!in_array($metodo, ["GET", "POST", "PUT"], true)) {
-                $erros[] = t("Método: GET, POST ou PUT.");
+            if (!lista_fixa_tem("destino_metodo", $metodo)) {
+                $erros[] = lista_fixa_recusa("metodo", "destino_metodo");
             }
             if (preg_match("#^https?://\\S+\$#i", $url) !== 1 || strlen($url) > 1000) {
                 $erros[] = t("O endereço do webhook começa por http:// ou https:// (até 1000 caracteres).");
             }
-            if (!in_array($formato, ["query", "form", "json"], true)) {
-                $erros[] = t("Formato: query (os campos na URL), form ou json.");
+            if (!lista_fixa_tem("destino_formato", $formato)) {
+                $erros[] = lista_fixa_recusa("formato", "destino_formato");
             } elseif ($metodo === "GET" && $formato !== "query") {
                 $erros[] = t("No GET, os campos vão na URL (formato query).");
             }

@@ -1173,6 +1173,30 @@ foreach (["ESCOLHA(1; SOMA(valor_compra); CONTA())" => "primeiro", "ESCOLHA(CONT
 }
 $total_novo = escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Carga somada", "expressao" => "SOMA(carga)", "coluna" => "", "rodape" => "0", "pagina" => "1", "largura" => "largo", "formato" => "porcentagem"]);
 escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Sem coluna", "expressao" => "CONTA()", "coluna" => "", "rodape" => "1"], false);
+// as listas fixas do sistema (listas_fixas, no lib.php) saem com o dicionário (recurso=textos: listas), e o campo que escolhe
+// numa lista recusa o que não é dela dizendo o campo e a lista inteira (cada chave), em qualquer banco: a validação e a
+// mensagem saem da mesma definição que as telas mostram
+$listas_c = ler("as listas fixas do sistema", ["recurso" => "textos"])["listas"] ?? [];
+$recusa_da_lista = function ($params, $campo, $lista) use (&$falhas, &$passo, $listas_c) {
+    $erros = implode(" ", (array)escrever($params, false, "erros"));
+    $chaves = array_column($listas_c[$lista] ?? [], "chave");
+    $faltam = array_values(array_filter($chaves, function ($k) use ($erros) { return strpos($erros, (string)$k) === false; }));
+    if (count($chaves) === 0 || strpos($erros, $campo) === false || count($faltam) > 0) {
+        $falhas[] = "passo " . $passo . ": a recusa de " . $campo . " devia citar a lista fixa " . $lista . " inteira (" . implode(", ", $chaves) . "): " . $erros;
+    }
+};
+$recusa_da_lista(["recurso" => "campos", "acao" => "novo", "nome" => "Campo recusado", "tipo" => "texto", "alvo" => "planeta"], "alvo", "campo_alvo");
+$recusa_da_lista(["recurso" => "totais", "acao" => "salvar", "nome" => "Recusado", "expressao" => "CONTA()", "coluna" => "", "rodape" => "0", "pagina" => "1", "largura" => "enorme"], "largura", "total_largura");
+$recusa_da_lista(["recurso" => "colunas", "acao" => "salvar", "id" => 0, "nome" => "Recusada", "modo" => "magico"], "modo", "coluna_modo");
+$recusa_da_lista(["recurso" => "documento_categorias", "acao" => "nova", "nome" => "Recusada", "aceita" => ["planilha"]], "aceita[]", "arquivo_familia");
+$recusa_da_lista(["recurso" => "programas", "acao" => "montar", "tpd" => 650, "velocidade" => 8, "sentido" => "diagonal"], "sentido", "winder_sentido");
+$recusa_da_lista(["recurso" => "avisos", "acao" => "novo", "identificador" => "aviso_recusado", "nome" => "Aviso recusado", "expressao" => "data_compra + 365", "antecedencia_dias" => 10, "texto" => "{relogio}", "no_id" => 0, "escala" => "talvez"], "escala", "aviso_escala");
+$recusa_da_lista(["recurso" => "avisos", "acao" => "novo", "identificador" => "aviso_recusado", "nome" => "Aviso recusado", "expressao" => "data_compra + 365", "antecedencia_dias" => 10, "texto" => "{relogio}", "no_id" => 0, "agenda" => "nunca"], "agenda", "aviso_agenda");
+$recusa_da_lista(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Recusado", "url" => "https://exemplo.invalid/x", "metodo" => "PATCH"], "metodo", "destino_metodo");
+$recusa_da_lista(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo" => "webhook", "nome" => "Recusado", "url" => "https://exemplo.invalid/x", "metodo" => "POST", "formato" => "planilha"], "formato", "destino_formato");
+$recusa_da_lista(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => "smtp.exemplo.invalid", "seguranca" => "starttls"], "seguranca", "email_seguranca");
+$recusa_da_lista(["recurso" => "colecoes", "acao" => "criar", "nome" => "Recusada", "opcao" => "castelo"], "opcao", "colecao_comeca");
+$recusa_da_lista(["recurso" => "usuarios", "acao" => "alterar", "login" => "teste", "papel" => "rei"], "papel", "usuario_papel");
 escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Errado", "expressao" => "MEDIA(", "coluna" => "zzz", "largura" => "enorme", "formato" => "x"], false);
 escrever(["recurso" => "totais", "acao" => "salvar", "id" => $total_novo, "expressao" => "MAIOR(carga)"]);
 escrever(["recurso" => "totais", "acao" => "subir", "id" => $total_novo]);

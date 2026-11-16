@@ -708,7 +708,7 @@ function email_config_resumo()
         if ($r["smtp"]["host"] === "") {
             $p[] = t("Falta o SMTP_HOST (o servidor de envio, como smtp.gmail.com).");
         }
-        if (!in_array($smtp_seg, ["ssl", "tls", "nada"], true)) {
+        if (!lista_fixa_tem("email_seguranca", $smtp_seg)) {
             $p[] = t("SMTP_SEGURANCA = \"{1}\" não vale: use \"ssl\" (porta 465), \"tls\" (porta 587) ou \"\" (sem criptografia).", [1 => $smtp_seg]);
         } elseif ($smtp_seg === "ssl" && $r["smtp"]["porta"] === 587) {
             $p[] = t("A porta 587 costuma ser a do \"tls\" (STARTTLS); com \"ssl\", a porta costuma ser a 465.");

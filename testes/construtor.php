@@ -73,7 +73,7 @@ try {
     $recusa(["id" => 0, "nome" => "X5", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "soma", "casas" => "7"], "Casas decimais", "casas demais");
     $recusa(["id" => 0, "nome" => "X6", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "soma", "formato" => "inteiro", "simbolo" => "R$"], "símbolo só vale", "símbolo fora da moeda");
     $recusa(["id" => 0, "nome" => "X7", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "soma", "formato" => "bonito"], "Formato", "formato desconhecido");
-    $recusa(["id" => 0, "nome" => "X8", "modo" => "estranho"], "Modo", "modo desconhecido");
+    $recusa(["id" => 0, "nome" => "X8", "modo" => "estranho"], "modo: guiado", "modo desconhecido");
     $recusa(["id" => 0, "nome" => "X9", "modo" => "expert", "expressao" => "variavel_que_nao_existe + 1"], "variável desconhecida", "variável desconhecida");
     $recusa(["id" => 0, "nome" => "X10", "modo" => "expert", "expressao" => "1 +"], "erro de escrita", "erro de escrita");
     $recusa(["id" => 0, "nome" => "X11", "modo" => "expert", "expressao" => "SOMA(carga)"], "função desconhecida", "função de total numa conta de um relógio");

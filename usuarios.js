@@ -35,7 +35,7 @@ function acoesDoUsuario(u, d) {
       + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "value": u.email || "", "maxlength": "200", "autocomplete": "off"}))
       + parCampo(t("Idioma"), el("select", {"name": "idioma"}, idiomas))
       + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, t("O da coleção"), t("O do navegador dele"))))
-      + parCampo(t("Papel"), el("select", {"name": "papel"}, el("option", {"value": "comum", "selected": u.papel === "comum"}, t("comum")) + el("option", {"value": "master", "selected": u.papel === "master"}, t("master"))))
+      + parCampo(t("Papel"), el("select", {"name": "papel"}, opcoesDaLista("usuario_papel", u.papel)))
       + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Salvar"))));
   res += el("form", {"data-recurso": "usuarios", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "senha"}) + el("input", {"type": "hidden", "name": "usuario_id", "value": u.id})
     + el("input", {"type": "password", "name": "senha", "required": true, "autocomplete": "new-password", "placeholder": t("senha nova"), "aria-label": t("Senha nova"), "data-senha-nova": true})
@@ -80,7 +80,7 @@ function recarregarUsuarios() {
       + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados"}, el("thead", {}, el("tr", {}, el("th", {}, t("Login")) + el("th", {}, t("E-mail")) + el("th", {}, t("Criada em"))
         + el("th", {}, t("Último acesso")) + el("th", {}, t("Vence")) + el("th", {}, t("Coleções")) + el("th", {}, t("Vê também")) + el("th", {}, "")))
         + el("tbody", {}, d.usuarios.map(function (u) {
-          var selos = (u.papel === "master" ? el("span", {"class": "selo master"}, t("master")) : "") + (u.demo ? el("span", {"class": "selo demo"}, t("demo")) : "")
+          var selos = (u.papel === "master" ? el("span", {"class": "selo master"}, h(nomeNaLista("usuario_papel", u.papel))) : "") + (u.demo ? el("span", {"class": "selo demo"}, t("demo")) : "")
             + (u.bloqueado ? el("span", {"class": "selo bloqueado"}, t("bloqueada")) : "") + (u.login === d.voce ? " " + el("span", {"class": "estado estado-atividade"}, t("você")) : "");
           var ve = u.membro_de.map(function (c) { return h(t("{1} (de {2})", {1: c.nome, 2: c.dono})); }).concat(u.tudo_de.map(function (l) { return h(t("tudo de {1}", {1: l})); }));
           return el("tr", {}, el("td", {}, h(u.login) + selos) + el("td", {}, h(u.email || "—")) + el("td", {}, dataBr(u.criado))
@@ -96,8 +96,7 @@ function recarregarUsuarios() {
       + parCampo(t("Login"), el("input", semPreencher({"name": "login", "required": true, "maxlength": "60"})))
       + camposSenha(t("Senha"), d.senha_politica, true)
       + parCampo(t("E-mail"), el("input", {"type": "email", "name": "email", "maxlength": "200", "autocomplete": "off"}))
-      + parCampo(t("Coleção"), el("select", {"name": "colecao_nova"}, el("option", {"value": "modelo"}, t("uma coleção com o conjunto inicial")) + el("option", {"value": "vazia"}, t("uma coleção vazia"))
-        + el("option", {"value": "nenhuma"}, t("nenhuma (vai receber acesso a outra)"))))
+      + parCampo(t("Coleção"), el("select", {"name": "colecao_nova"}, opcoesDaLista("usuario_colecao", "")))
       + el("p", {"class": "nota"}, t("A conta criada aqui é oficial (não vence). Se o login já existir, só a senha dele é trocada."))
       + el("div", {"class": "botoes"}, el("button", {}, t("Criar conta")))));
     document.getElementById("usuarios").innerHTML = res;

@@ -5592,6 +5592,96 @@ function modo_escolha($modo)
     return ["escolhe_forma" => false, "forma" => $forma, "texto" => t("todos com a mesma chance"), "explicacao" => $formas[$forma]["explicacao"], "garantia" => forma_com_garantia($forma)];
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// As listas fixas do sistema: as escolhas que não são cadastro (o "Para" de um campo, o sentido de um programa de winder, a
+// segurança do e-mail...). UMA definição de cada, aqui: chave => nome (ou chave => [nome, e o que mais a tela precisa]). A
+// validação (lista_fixa_tem), a mensagem de recusa (lista_fixa_recusa), a API (recurso=textos: listas) e as telas saem dela:
+// nenhuma tela escreve as opções de uma lista (a regra 12 do testes/arquitetura.php). Um item novo entra aqui e aparece em
+// todo lugar. As formas de escolha e os tipos de modo, que têm explicação e regras, ficam em formas_de_escolha_definicao() e
+// modo_tipos_lista().
+// ---------------------------------------------------------------------------------------------------------------------
+function listas_fixas()
+{
+    return [
+        // de quem é um campo do cadastro (campos novo e alterar: alvo)
+        "campo_alvo" => ["relogio" => t("os relógios"), "acessorio" => t("os acessórios"), "winder" => t("os winders"), "posicao" => t("as posições dos winders")],
+        // a largura de um total na página de totais (totais salvar: largura)
+        "total_largura" => ["estreito" => t("Estreito (três por linha no computador)"), "largo" => t("Largo (a linha inteira)")],
+        // como uma coluna cadastrada é montada (colunas salvar: modo) e as duas fontes que não são do dicionário de campos do
+        // banco (colunas salvar: tabela; as outras fontes vêm em recurso=colunas: tabelas)
+        "coluna_modo" => ["guiado" => t("Guiado: escolher o campo, a função e o formato"), "expert" => t("Expert: escrever a expressão")],
+        "coluna_tabela" => ["relogio" => t("A tabela dos relógios (as colunas que ela já tem)"), "campos" => t("Os campos do cadastro dos relógios")],
+        // os tipos de arquivo que uma categoria de documentos aceita (documento_categorias nova e alterar: aceita[]), com o accept
+        // do campo de envio de cada um
+        "arquivo_familia" => ["imagem" => ["nome" => t("imagens"), "aceita" => "image/*"], "video" => ["nome" => t("vídeos"), "aceita" => "video/*"],
+            "audio" => ["nome" => t("áudios"), "aceita" => "audio/*"], "pdf" => ["nome" => t("PDF"), "aceita" => "application/pdf,.pdf"],
+            "xml" => ["nome" => t("XML"), "aceita" => ".xml,application/xml,text/xml"]],
+        // quem pede a cópia de um documento no banco (documentos: copia_por)
+        "copia_por" => ["sistema" => t("o config.php guarda todos"), "relogio" => t("o relógio guarda todos os dele"), "arquivo" => t("pedida neste arquivo")],
+        // o sentido de um programa de winder montado pelo ajudante (programas montar: sentido)
+        "winder_sentido" => ["os_dois" => t("os dois (alternando)"), "horario" => t("só o horário"), "anti_horario" => t("só o anti-horário")],
+        // um aviso na escala inteligente e a data dele na agenda (avisos novo e alterar: escala e agenda)
+        "aviso_escala" => ["nao" => t("não"), "uso" => t("no relógio do dia"), "sempre" => t("sempre")],
+        "aviso_agenda" => ["janela" => t("só dentro da antecedência da agenda"), "sempre" => t("qualquer data")],
+        // o webhook de um destino de alertas (destinos salvar: metodo e formato)
+        "destino_metodo" => ["GET" => "GET", "POST" => "POST", "PUT" => "PUT"],
+        "destino_formato" => ["query" => t("na URL (query)"), "form" => t("como formulário"), "json" => t("como JSON")],
+        // a segurança da conexão do e-mail (conta smtp_salvar: seguranca)
+        "email_seguranca" => ["tls" => t("TLS (STARTTLS)"), "ssl" => t("SSL (desde o começo)"), "nada" => t("sem criptografia")],
+        // o papel de um usuário e a coleção de uma conta que o master cria (usuarios alterar: papel; usuarios salvar: colecao_nova)
+        "usuario_papel" => ["comum" => t("comum"), "master" => t("master")],
+        "usuario_colecao" => ["modelo" => t("uma coleção com o conjunto inicial"), "vazia" => t("uma coleção vazia"), "nenhuma" => t("nenhuma (vai receber acesso a outra)")],
+        // como começa uma coleção nova (colecoes criar: opcao) e a de quem cria a própria conta (cadastro criar_conta: opcao)
+        "colecao_comeca" => ["modelo" => t("com o conjunto inicial (grupos, campos, fórmulas, avisos e critérios)"), "vazia" => t("vazia (só a raiz da árvore)"),
+            "arvore" => t("com uma árvore minha que já existe (o cadastro fica em comum)")],
+        "cadastro_colecao" => ["modelo" => t("Uma coleção minha, com o conjunto inicial (grupos, campos, fórmulas, avisos e critérios prontos)"),
+            "vazia" => t("Uma coleção minha, vazia (eu monto tudo)"), "pedir" => t("Pedir acesso à coleção de alguém")],
+        // o filtro das execuções do cron (cron: situacao)
+        "cron_situacao" => ["atividade" => t("Com atividade"), "erro" => t("Com erro"), "nada" => t("Sem atividade"), "todas" => t("Todas")],
+    ];
+}
+
+// Uma lista fixa: chave => nome
+function lista_fixa($nome)
+{
+    return array_map(function ($x) { return is_array($x) ? $x["nome"] : $x; }, listas_fixas()[$nome] ?? []);
+}
+
+// As chaves de uma lista fixa, na ordem
+function lista_fixa_chaves($nome)
+{
+    return array_keys(listas_fixas()[$nome] ?? []);
+}
+
+// A chave é da lista? (a validação de todo campo que escolhe numa lista fixa)
+function lista_fixa_tem($nome, $chave)
+{
+    return (is_string($chave) || is_int($chave)) && isset(listas_fixas()[$nome][(string)$chave]);
+}
+
+// A recusa de um campo com um valor fora da lista: o campo e cada chave com o nome dela
+function lista_fixa_recusa($campo, $nome)
+{
+    $itens = [];
+    foreach (lista_fixa($nome) as $k => $n) {
+        $itens[] = (string)$k === $n ? (string)$k : $k . " (" . $n . ")";
+    }
+    return t("{1}: {2}.", [1 => $campo, 2 => implode(", ", $itens)]);
+}
+
+// As listas fixas como a API as manda (recurso=textos: listas): nome da lista => [{chave, nome, e o que mais ela tem}]
+function listas_fixas_api()
+{
+    $res = [];
+    foreach (listas_fixas() as $nome => $itens) {
+        $res[$nome] = [];
+        foreach ($itens as $k => $x) {
+            $res[$nome][] = ["chave" => (string)$k] + (is_array($x) ? $x : ["nome" => $x]);
+        }
+    }
+    return $res;
+}
+
 // O roteiro calculado para um relógio num dia: as cinco saídas e as linhas do roteiro, como números (null: vazio)
 function roteiro_calcular($arvores, $r, $dia, $m_ini, $criterios = null)
 {

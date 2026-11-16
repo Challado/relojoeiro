@@ -6,8 +6,8 @@ function diaAntes(n) {
 }
 var de = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(q.get("de") || "") ? q.get("de") : diaAntes(6);
 var ate = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(q.get("ate") || "") ? q.get("ate") : diaAntes(0);
-var SITUACOES = {atividade: t("Com atividade"), erro: t("Com erro"), nada: t("Sem atividade"), todas: t("Todas")};
-var situacao = SITUACOES[q.get("situacao")] ? q.get("situacao") : "atividade";
+// a situação pedida no endereço, se for uma da lista (cron_situacao); senão, a primeira dela
+var situacao = listaFixa("cron_situacao").some(function (x) { return x.chave === q.get("situacao"); }) ? q.get("situacao") : ((listaFixa("cron_situacao")[0] || {}).chave || "");
 var busca = (q.get("busca") || "").trim();
 var por = [25, 50, 100, 200].indexOf(parseInt(q.get("por") || "50", 10)) >= 0 ? parseInt(q.get("por"), 10) : 50;
 var pagina = Math.max(1, parseInt(q.get("pagina") || "1", 10));
@@ -31,7 +31,7 @@ api({recurso: "cron", de: de, ate: ate, situacao: situacao, busca: busca, limite
   res += el("form", {"method": "get", "action": "execucoes.php", "class": "filtros-execucoes cartao-config"},
     el("label", {}, t("De {1}", {1: el("input", {"type": "date", "name": "de", "value": de})}))
     + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "name": "ate", "value": ate})}))
-    + el("label", {}, t("Situação {1}", {1: el("select", {"name": "situacao"}, Object.keys(SITUACOES).map(function (k) { return el("option", {"value": k, "selected": situacao === k}, SITUACOES[k]); }).join(""))}))
+    + el("label", {}, t("Situação {1}", {1: el("select", {"name": "situacao"}, opcoesDaLista("cron_situacao", situacao))}))
     + el("label", {}, t("Texto no registro {1}", {1: el("input", {"name": "busca", "value": busca, "placeholder": t("agenda, FALHA, evento...")})}))
     + el("label", {}, t("Por página {1}", {1: el("select", {"name": "por"}, [25, 50, 100, 200].map(function (n) { return el("option", {"selected": por === n}, String(n)); }).join(""))}))
     + el("div", {"class": "botoes"}, el("button", {}, t("Filtrar")))

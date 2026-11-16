@@ -10,10 +10,13 @@ var LINGUA = document.documentElement.lang || "pt-BR";
 var LOCALE = "pt-BR";
 var FORMATO = {data: "d/m/Y", data_curta: "d/m"};
 var TEXTOS = {};
+// as listas fixas do sistema (recurso=textos: listas), que chegam com o dicionário: nome da lista => [{chave, nome, ...}]
+var LISTAS = {};
 var ESTRITO = false;
 function usarTextos(d) {
   if (d && d.lingua) {
     TEXTOS = d.textos || {};
+    LISTAS = d.listas || {};
     LOCALE = d.locale || "pt-BR";
     FORMATO = d.formato || FORMATO;
     ESTRITO = d.estrito === true;
@@ -362,6 +365,22 @@ function instante(t) {
 // Trocar o relógio de um dia do plano (Hoje e Plano): a lista dos relógios disponíveis e o botão; no dia escolhido à mão
 // ou livre (de amanhã em diante), também "voltar a sortear". p: o dia do plano (data, relogio_id, origem); hoje: AAAA-MM-DD;
 // trocaHoje: o trocar_hoje da API (falso: o dia de hoje não se troca, e a célula diz que a troca vale de amanhã)
+
+// As listas fixas do sistema (o "Para" de um campo, o sentido de um programa de winder, a segurança do e-mail...): a definição
+// é uma só, no núcleo (listas_fixas, no lib.php), e chega com o dicionário. Nenhuma tela escreve as opções de uma lista:
+// listaFixa(nome) dá os itens ({chave, nome}), nomeNaLista o nome de uma chave e opcoesDaLista as <option> de um seletor
+function listaFixa(nome) {
+  return LISTAS[nome] || [];
+}
+function nomeNaLista(nome, chave) {
+  var item = listaFixa(nome).filter(function (x) { return x.chave === String(chave); })[0];
+  return item ? item.nome : (chave === null || chave === undefined ? "" : String(chave));
+}
+function opcoesDaLista(nome, atual) {
+  return listaFixa(nome).map(function (x) {
+    return el("option", {"value": x.chave, "selected": atual === x.chave}, h(x.nome));
+  }).join("");
+}
 
 // Um texto comprido (a observação do relógio, um campo de texto): até TEXTO_CURTO caracteres, inteiro; mais que isso, o
 // começo (cortado numa palavra) com "…" e o botão redondo "+" que mostra o resto; aberto, o "−" recolhe (o sinal vem do CSS,

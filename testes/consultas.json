@@ -22,7 +22,7 @@
     },
     "por_pedido": {
         "GET ": {
-            "consultas": 673,
+            "consultas": 676,
             "identicas": 342
         },
         "GET acessorios": {
@@ -30,7 +30,7 @@
             "identicas": 0
         },
         "GET agendas": {
-            "consultas": 248,
+            "consultas": 250,
             "identicas": 158
         },
         "GET ajuda": {
@@ -489,6 +489,10 @@
             "consultas": 84,
             "identicas": 0
         },
+        "POST colecoes.criar": {
+            "consultas": 18,
+            "identicas": 0
+        },
         "POST colunas.descer": {
             "consultas": 46,
             "identicas": 0
@@ -584,6 +588,10 @@
         "POST destinos.salvar": {
             "consultas": 114,
             "identicas": 15
+        },
+        "POST documento_categorias.nova": {
+            "consultas": 19,
+            "identicas": 0
         },
         "POST documentos.alterar": {
             "consultas": 27,
@@ -926,7 +934,7 @@
             "identicas": 0
         },
         "cli cron.php": {
-            "consultas": 1852,
+            "consultas": 1853,
             "identicas": 527
         },
         "cli instalar.php": {

@@ -20,8 +20,6 @@ var ordemVideos = [];
 var marcados = {};
 var fila = [];
 var tocando = 0;
-var NOME_FAMILIA = {imagem: t("imagens"), video: t("vídeos"), audio: t("áudios"), pdf: t("PDF"), xml: t("XML")};
-var ACEITA = {imagem: "image/*", video: "video/*", audio: "audio/*", pdf: "application/pdf,.pdf", xml: ".xml,application/xml,text/xml"};
 
 // "850 KB", "3,2 MB"
 function tamanho(b) {
@@ -151,13 +149,12 @@ document.addEventListener("keydown", function (ev) {
   }
 }, true);
 // quem pede a cópia no banco: o sistema (config.php), o relógio ou o próprio arquivo
-var COPIA_POR = {sistema: t("o config.php guarda todos"), relogio: t("o relógio guarda todos os dele"), arquivo: t("pedida neste arquivo")};
 // o nome do arquivo, o tamanho e onde ele está guardado: na pasta, no banco, e quem pediu a cópia no banco
 function guardado(x) {
   var onde = !x.no_disco ? el("strong", {}, x.no_banco && x.copia_inteira ? t("fora da pasta (volta do banco ao abrir)")
       : x.no_banco ? t("cortado na pasta e também no banco (a cópia foi feita do arquivo já cortado): envie o arquivo de novo") : t("o arquivo sumiu da pasta e não tem cópia no banco"))
-    : x.no_banco ? (x.copia_por ? t("na pasta e no banco ({1})", {1: COPIA_POR[x.copia_por]}) : t("na pasta e no banco (ninguém mais pede a cópia: o cron a tira)"))
-      : x.copia_por ? t("na pasta; a cópia no banco ainda vai ({1}; o cron faz)", {1: COPIA_POR[x.copia_por]}) : t("só na pasta");
+    : x.no_banco ? (x.copia_por ? t("na pasta e no banco ({1})", {1: nomeNaLista("copia_por", x.copia_por)}) : t("na pasta e no banco (ninguém mais pede a cópia: o cron a tira)"))
+      : x.copia_por ? t("na pasta; a cópia no banco ainda vai ({1}; o cron faz)", {1: nomeNaLista("copia_por", x.copia_por)}) : t("só na pasta");
   return el("p", {"class": "nota"}, h(x.nome) + " · " + tamanho(x.tamanho) + " · " + onde);
 }
 function linkBaixar(x, rotulo) {
@@ -219,7 +216,7 @@ function montar() {
     res += el("details", {"class": "envio-docs", "open": d.documentos.length === 0}, el("summary", {}, t("Enviar arquivos"))
       + el("form", {"id": "form-envio", "class": "form-grade"},
         el("label", {}, t("Categoria {1}", {1: el("select", {"name": "categoria_id", "id": "envio-categoria"}, d.categorias.map(function (c) {
-          return el("option", {"value": c.id, "selected": c.id === catPadrao}, h(c.nome) + (c.aceita.length > 0 ? " (" + c.aceita.map(function (f) { return NOME_FAMILIA[f] || f; }).join(", ") + ")" : ""));
+          return el("option", {"value": c.id, "selected": c.id === catPadrao}, h(c.nome) + (c.aceita.length > 0 ? " (" + c.aceita.map(function (f) { return nomeNaLista("arquivo_familia", f); }).join(", ") + ")" : ""));
         }).join(""))}))
         + el("label", {}, t("Título {1}", {1: el("input", {"name": "titulo", "maxlength": "200", "placeholder": t("vazio: o nome do arquivo")})}))
         + el("label", {}, t("Data {1}", {1: el("input", {"type": "date", "name": "data"})}))
@@ -282,7 +279,7 @@ function montar() {
   if (cat) {
     var acerta = function () {
       var c = categoria(parseInt(cat.value, 10));
-      var aceita = c ? c.aceita.map(function (f) { return ACEITA[f]; }).filter(Boolean).join(",") : "";
+      var aceita = c ? c.aceita.map(function (f) { return (listaFixa("arquivo_familia").filter(function (x) { return x.chave === f; })[0] || {}).aceita; }).filter(Boolean).join(",") : "";
       var arq = document.getElementById("envio-arquivos");
       if (aceita !== "") {
         arq.setAttribute("accept", aceita);

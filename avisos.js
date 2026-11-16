@@ -66,8 +66,6 @@ function recarregarAvisos() {
       recado = "";
     }
     // ---------- 1. os avisos dos relógios ----------
-    var ESCALA_A = {nao: t("não"), uso: t("no relógio do dia"), sempre: t("sempre")};
-    var AGENDA_A = {janela: t("só dentro da antecedência da agenda"), sempre: t("qualquer data")};
     var e = null;
     dc.avisos.forEach(function (x) { if (x.id === editar) { e = x; } });
     var f = e || {};
@@ -78,9 +76,9 @@ function recarregarAvisos() {
         }).join(""))) + el("tbody", {}, dc.avisos.map(function (a) {
           return el("tr", {}, el("td", {}, h(a.nome) + " " + el("span", {"class": "nota formula"}, h(a.identificador))) + el("td", {"class": "nota"}, h(caminho(dc, a.no_id))) + el("td", {"class": "formula"}, h(a.expressao))
             + el("td", {"class": "formula"}, h(vazio(a.condicao))) + el("td", {"class": "num"}, num(a.antecedencia_dias, 2) + t(" d")) + el("td", {}, h(vazio(a.resolve)))
-            + el("td", {}, h(ESCALA_A[a.escala]) + (a.simula_valor !== null ? " " + el("span", {"class": "nota"}, "(" + num(a.simula_valor, 2) + ")") : "")
+            + el("td", {}, h(nomeNaLista("aviso_escala", a.escala)) + (a.simula_valor !== null ? " " + el("span", {"class": "nota"}, "(" + num(a.simula_valor, 2) + ")") : "")
               + (a.simula_horas !== null ? " " + el("span", {"class": "nota"}, "(" + num(a.simula_horas, 2) + t(" h)")) : ""))
-            + el("td", {}, h(AGENDA_A[a.agenda])) + el("td", {}, a.na_hora === 1 ? t("sim") : t("não")) + el("td", {}, a.ativo === 1 ? t("sim") : t("não"))
+            + el("td", {}, h(nomeNaLista("aviso_agenda", a.agenda))) + el("td", {}, a.na_hora === 1 ? t("sim") : t("não")) + el("td", {}, a.ativo === 1 ? t("sim") : t("não"))
             + el("td", {"class": "acoes-linha"}, linkEditar(a.id) + " " + botaoLinha("excluir", a.id, t("Excluir"), t("Excluir esta versão do aviso?"))));
         }).join(""))))
       + el("h3", {"id": "form"}, e ? t("Alterar {1}", {1: h(e.nome)}) : t("Novo aviso (ou nova versão)"))
@@ -94,10 +92,10 @@ function recarregarAvisos() {
         + el("label", {}, t("Vale para {1}", {1: el("select", {"name": "no_id"}, opcoesNo(dc, f.no_id))}))
         + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "ativo", "value": "0"}) + el("input", {"type": "checkbox", "name": "ativo", "value": "1", "checked": e ? e.ativo === 1 : true}) + t(" ativo"))
         + el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "na_hora", "value": "0"}) + el("input", {"type": "checkbox", "name": "na_hora", "value": "1", "checked": e ? e.na_hora === 1 : false}) + t(" na hora (Telegram no minuto em que vence)"))
-        + el("label", {}, t("Na escala inteligente {1}", {1: el("select", {"name": "escala"}, Object.keys(ESCALA_A).map(function (k) { return el("option", {"value": k, "selected": (f.escala || "nao") === k}, h(ESCALA_A[k])); }).join(""))}))
+        + el("label", {}, t("Na escala inteligente {1}", {1: el("select", {"name": "escala"}, opcoesDaLista("aviso_escala", f.escala || "nao"))}))
         + el("label", {}, t("Escala: valor do lançamento simulado (leitura) {1}", {1: el("input", {"name": "simula_valor", "inputmode": "decimal", "value": f.simula_valor ? num(f.simula_valor, 2) : "", "placeholder": t("ex.: 100")})}))
         + el("label", {}, t("Escala: horas da sessão simulada {1}", {1: el("input", {"name": "simula_horas", "inputmode": "decimal", "value": f.simula_horas ? num(f.simula_horas, 2) : "", "placeholder": t("ex.: 6")})}))
-        + el("label", {}, t("Data na agenda {1}", {1: el("select", {"name": "agenda"}, Object.keys(AGENDA_A).map(function (k) { return el("option", {"value": k, "selected": (f.agenda || "janela") === k}, h(AGENDA_A[k])); }).join(""))}))
+        + el("label", {}, t("Data na agenda {1}", {1: el("select", {"name": "agenda"}, opcoesDaLista("aviso_agenda", f.agenda || "janela"))}))
         + el("label", {"style": "grid-column: 1 / -1"}, t("Data prevista (fórmula) {1}", {1: el("textarea", {"name": "expressao", "class": "formula", "rows": "2", "required": true}, h(vazio(f.expressao)))}))
         + el("label", {"style": "grid-column: 1 / -1"}, t("Vale quando (fórmula: 1 vale, 0 não; vazio: vale sempre) {1}", {1: el("input", {"name": "condicao", "class": "formula", "value": vazio(f.condicao),
           "placeholder": t("ex.: corda_manual = 0")})}))
