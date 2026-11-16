@@ -119,27 +119,26 @@ function mostrarSelecao() {
   var sel = document.querySelector("select[name=selecao]");
   var grade = document.querySelector(".modo-grade");
   if (modo && sel && grade) {
-    // o tipo do modo escolhido: o critério se escolhe nos tipos por semana, semana e fim de semana e por dia da semana; na
-    // escala, no aleatório e no personalizado ele é fixo (a maior nota, a mesma chance, o roteiro)
-    var tipo = (JSON.parse(grade.getAttribute("data-tipos") || "{}"))[modo.value] || "";
-    var fixo = tipo === "escala" || tipo === "aleatorio" || tipo === "personalizado";
-    var forma = (JSON.parse(grade.getAttribute("data-selecoes") || "{}"))[modo.value];
-    var textos = {escala: forma === "ponderado" ? t("pelo sorteio pela nota") : (forma === "menos_usado" ? t("pelo menos usado") : (forma === "fifo" ? t("pela fila") : t("pela maior nota"))),
-      aleatorio: t("todos com a mesma chance"), personalizado: t("pelo roteiro do modo")};
-    document.querySelectorAll("[data-com-selecao]").forEach(function (e) { e.hidden = fixo; });
-    document.querySelectorAll("[data-sem-selecao]").forEach(function (e) {
-      e.hidden = !fixo || (e.hasAttribute("data-explica-tipo") && e.getAttribute("data-explica-tipo") !== tipo);
-    });
+    // como o modo escolhido escolhe o relógio (a escolha que a API manda, guardada no quadro): a forma se escolhe aqui, ou
+    // o modo tem a dele (a linha fixa, com o texto e a explicação); o "Rodízio manual" não tem escolha
+    var e = (JSON.parse(grade.getAttribute("data-escolhas") || "{}"))[modo.value] || null;
+    var fixo = e === null || !e.escolhe_forma;
+    document.querySelectorAll("[data-com-selecao]").forEach(function (x) { x.hidden = fixo; });
+    document.querySelectorAll("[data-sem-selecao]").forEach(function (x) { x.hidden = !fixo; });
     var texto = document.querySelector("[data-sem-selecao-texto]");
-    if (texto && fixo) {
-      texto.textContent = textos[tipo];
+    var explica = document.querySelector("[data-sem-selecao-explica]");
+    if (texto && explica && fixo) {
+      texto.textContent = e !== null ? e.texto : "";
+      explica.textContent = e !== null ? e.explicacao : "";
     }
-    document.querySelectorAll("[data-explica-selecao]").forEach(function (e) {
-      e.hidden = fixo || e.getAttribute("data-explica-selecao") !== sel.value;
+    document.querySelectorAll("[data-explica-selecao]").forEach(function (x) {
+      x.hidden = fixo || x.getAttribute("data-explica-selecao") !== sel.value;
     });
+    // a garantia de rodízio só aparece onde vale: na forma escolhida, ou na do modo que tem a dele
     var garantia = document.querySelector("[data-garantia]");
     if (garantia) {
-      garantia.hidden = tipo === "aleatorio" || (!fixo && sel.value === "aleatorio");
+      var escolhida = sel.options[sel.selectedIndex];
+      garantia.hidden = fixo ? (e !== null && !e.garantia) : (!!escolhida && escolhida.hasAttribute("data-sem-garantia"));
     }
   }
 }
@@ -165,10 +164,10 @@ function mostrarModo() {
     });
     // lidas do próprio quadro, que é trocado depois de cada envio (o script, não)
     var grade = document.querySelector(".modo-grade");
-    var salvas = grade ? JSON.parse(grade.getAttribute("data-selecoes")) : {};
+    var salvas = grade ? JSON.parse(grade.getAttribute("data-escolhas") || "{}") : {};
     var sel = document.querySelector("select[name=selecao]");
-    if (sel && salvas[modo.value]) {
-      sel.value = salvas[modo.value];
+    if (sel && salvas[modo.value] && salvas[modo.value].escolhe_forma) {
+      sel.value = salvas[modo.value].forma;
     }
     mostrarSelecao();
   }

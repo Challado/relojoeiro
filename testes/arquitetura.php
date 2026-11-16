@@ -29,6 +29,11 @@
 //      (=== "sem grupo"): o texto muda com o idioma; compara-se o código que a API manda. O que não se traduz de propósito
 //      (a marca, "24H") vai no fixo("..."). A conferência nas telas (testes/texto-fixo.cjs) pega o resto, com o sistema
 //      inteiro em outro idioma.
+//  12. As listas do sistema têm uma definição só: as formas de escolha do sorteio (formas_de_escolha_definicao, no lib.php)
+//      e os tipos de modo (modo_tipos_lista) saem do núcleo pela API (formas, tipos_de_modo, escolha), e as telas mostram o
+//      que vem. Nenhuma tela (um .js ou o script de uma página) escreve a chave de uma forma: uma lista escrita na tela fica
+//      para trás quando uma forma nova entra. E toda forma tem o roteiro dela (formas_roteiros). A conferência no navegador
+//      (testes/sorteio-interface.cjs) confere que cada lista da tela é a da API e que cada forma sorteia um dia.
 //
 //   php testes/arquitetura.php        confere tudo (sai com 1 se alguma regra falhar)
 
@@ -498,10 +503,60 @@ foreach ($js as $f) {
     }
 }
 
+// ---------- 12. as listas do sistema têm uma definição só ----------
+// As formas de escolha do sorteio vivem em formas_de_escolha_definicao() (lib.php): a API as manda (formas, tipos_de_modo,
+// escolha) e as telas mostram o que vem. Uma tela (um .js ou o script de uma página) que escreve a chave de uma forma tem
+// uma lista dela, que fica para trás quando uma forma nova entra (foi assim que o "Sortear este dia por" ficou sem o menos
+// usado). E toda forma da definição tem o roteiro dela (formas_roteiros).
+$lib_12 = (string)file_get_contents("lib.php");
+$corpo_12 = function ($nome) use ($lib_12) {
+    $i = strpos($lib_12, "function " . $nome . "(");
+    $f = $i === false ? false : strpos($lib_12, "\n}\n", $i);
+    return $i === false || $f === false ? "" : substr($lib_12, $i, $f - $i);
+};
+preg_match_all('/^\s*"([a-z_]+)" => \["nome" =>/m', $corpo_12("formas_de_escolha_definicao"), $m_12);
+$formas_12 = $m_12[1];
+preg_match_all('/"([a-z_]+)" => "/', $corpo_12("formas_roteiros"), $m_12);
+$roteiros_12 = $m_12[1];
+if (count($formas_12) < 5) {
+    falha("12", "não achei as formas de escolha em formas_de_escolha_definicao() (lib.php)");
+}
+foreach (array_diff($formas_12, $roteiros_12) as $k) {
+    falha("12", "a forma de escolha " . $k . " não tem roteiro em formas_roteiros() (lib.php): sortearia como outra, em silêncio");
+}
+foreach (array_diff($roteiros_12, $formas_12) as $k) {
+    falha("12", "formas_roteiros() tem o roteiro de " . $k . ", que não é uma forma de formas_de_escolha_definicao()");
+}
+// "aleatorio" também é um tipo de modo (as telas dos tipos o citam): as outras chaves só existem como forma
+$so_formas_12 = array_values(array_diff($formas_12, ["aleatorio"]));
+$telas_12 = $js;
+foreach ($paginas as $pg) {
+    $telas_12[] = $pg;
+}
+foreach ($telas_12 as $f) {
+    $codigo = (string)file_get_contents($f);
+    if (substr($f, -4) === ".php") {
+        // de uma página, só os scripts dela
+        preg_match_all('/<script>(.*?)<\/script>/s', $codigo, $m_s);
+        $codigo = implode("\n", $m_s[1]);
+    }
+    foreach (literais_js($codigo) as [$ini, $fim, $txt]) {
+        if (in_array($txt, $so_formas_12, true)) {
+            falha("12", $f . ":" . (substr_count($codigo, "\n", 0, $ini) + 1) . ": \"" . $txt . "\" é a chave de uma forma de escolha escrita na tela (as formas vêm da API: formas, tipos_de_modo[].formas, escolha)");
+        }
+    }
+    foreach (array_merge($so_formas_12, ["aleatorio"]) as $k) {
+        // a chave como nome de propriedade ({ponderado: ...}) também é uma lista
+        if (preg_match('/[{,]\s*' . $k . '\s*:/', $codigo) === 1) {
+            falha("12", $f . ": {" . $k . ": ...} é uma lista das formas de escolha escrita na tela (as formas vêm da API)");
+        }
+    }
+}
+
 if ($problemas !== []) {
     echo implode("\n", $problemas), "\n";
     echo "A arquitetura não bate (" . count($problemas) . " problemas).\n";
     exit(1);
 }
-echo "A arquitetura confere (" . count($php) . " .php, " . count($js) . " .js, " . count($paginas) . " páginas, 11 regras).\n";
+echo "A arquitetura confere (" . count($php) . " .php, " . count($js) . " .js, " . count($paginas) . " páginas, 12 regras).\n";
 exit(0);

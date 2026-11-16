@@ -1,12 +1,5 @@
 // Critérios de escolha: os dados da API (recurso=criterios), no HTML da página Critérios do sistema antigo. O lugar em
 // edição fica no endereço (criterios.php?escopo=g:3), como antes; ?relogio=3 abre a conta da nota daquele relógio.
-var SELECOES = {
-  inteligente: [t("Inteligente"), t("vai o relógio com a maior nota nos critérios")],
-  ponderado: [t("Inteligente com sorteio"), t("sorteio em que a nota de cada relógio é a chance dele: variedade sem perder o critério")],
-  aleatorio: [t("Totalmente aleatório"), t("todos com a mesma chance, sem olhar os critérios (os números do RANDOM.ORG; fora do ar, do ANU QRNG; sem os dois, do gerador seguro do PHP)")],
-  fifo: [t("Fila (FIFO)"), t("vai o que está há mais tempo sem uso: todos passam pelo pulso em rodízio")],
-  menos_usado: [t("Menos usado"), t("vai o que tem menos dias de uso no total (empate: o mais tempo parado)")]
-};
 var q = new URLSearchParams(window.location.search);
 var escopo = q.get("escopo") || "";
 var recado = q.get("ok") || "";
@@ -86,11 +79,11 @@ function recarregarCriterios() {
       + el("p", {}, t("Num conjunto, cada {1} tem um peso, e a soma fecha 100%. Cada parâmetro tem {2}, com peso dentro dele, que também fecha 100%. Cada subparâmetro mede uma coisa do relógio e usa {3} para transformar o valor medido numa nota de 0 a 100. {4} = peso do subparâmetro × peso do parâmetro; {5} = soma de nota × peso efetivo. Subparâmetro sem medida para o relógio (autonomia num relógio que não é smartwatch, por exemplo) sai da conta, e os pesos dos que ficam são reescalados.", {1: el("strong", {}, t("parâmetro")), 2: el("strong", {}, t("subparâmetros")), 3: el("strong", {}, t("faixas")), 4: el("strong", {}, t("Peso efetivo")), 5: el("strong", {}, t("nota final"))})));
     res += el("section", {"class": "cartao-config", "id": "selecao"}, el("h2", {}, t("Como a nota vira escolha"))
       + el("p", {}, t("Cada modo de rodízio tem a sua forma de escolher o relógio, escolhida no quadro {1}, na página Hoje:", {1: el("a", {"href": "index.php#bloco-modo"}, t("Modo de rodízio"))}))
-      + Object.keys(SELECOES).map(function (k) { return el("p", {"class": "opcao-selecao"}, el("strong", {}, h(SELECOES[k][0])) + " " + el("span", {"class": "nota"}, h(SELECOES[k][1]))); }).join("")
+      + d.formas.map(function (f) { return el("p", {"class": "opcao-selecao"}, el("strong", {}, h(f.titulo)) + " " + el("span", {"class": "nota"}, h(f.explicacao))); }).join("")
       + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-criterios"}, el("thead", {}, el("tr", {}, el("th", {}, t("Modo de rodízio")) + el("th", {}, t("Forma de escolha"))))
         + el("tbody", {}, d.modos.map(function (m) {
           return el("tr", {}, el("td", {}, h(m.nome) + (m.ativo ? " " + el("span", {"class": "nota"}, t("(o modo atual)")) : ""))
-            + el("td", {}, m.escala ? h(SELECOES[m.selecao][0]) + t(", com as medidas de cada dia simulado") : h(SELECOES[m.selecao][0])));
+            + el("td", {}, h(m.escolha.texto) + (m.escala ? t(", com as medidas de cada dia simulado") : "")));
         }).join(""))))
       + el("p", {"class": "nota"}, t("Garantia de rodízio: {1} (no mesmo quadro). Fora da nota também valem o grupo de cada bloco de dias, os relógios fixos e não repetir o de ontem.", {1: d.max_sem_uso > 0 ? t("nenhum relógio fica mais de {1} dias sem uso", {1: d.max_sem_uso}) : t("desligada")})));
     // onde há critérios

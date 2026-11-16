@@ -401,8 +401,10 @@ function montar_criterios()
         $notas[$i]["grupo"] = no_caminho(valor("SELECT no_id FROM relogio WHERE id = ?", [$x["relogio_id"]]));
     }
     return ["conjuntos" => $lista, "variaveis" => variaveis_disponiveis(), "notas" => $notas, "max_sem_uso" => (int)cfg("max_sem_uso"), "lugares" => $lugares,
-        "modos" => array_map(function ($m) { return ["nome" => $m["nome"], "selecao" => $m["selecao"], "escala" => $m["escala_dias"] !== null, "ativo" => (int)$m["id"] === modo_ativo()]; },
-            linhas("SELECT * FROM modo ORDER BY ordem, id"))];
+        // cada modo com a forma de escolha dele (escolha: modo_escolha) e as formas que existem, com o título e a explicação
+        "modos" => array_map(function ($m) { return ["nome" => $m["nome"], "selecao" => $m["selecao"], "escala" => $m["escala_dias"] !== null, "ativo" => (int)$m["id"] === modo_ativo(), "escolha" => modo_escolha($m)]; },
+            linhas("SELECT * FROM modo ORDER BY ordem, id")),
+        "formas" => formas_de_escolha_lista(true)];
 }
 
 

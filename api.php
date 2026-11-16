@@ -162,7 +162,8 @@
  *                            [pagina=N, por_pagina=N, relogio=<id>: a página do "dia_a_dia"; sem por_pagina, o "Mostrar até" da
  *                            Configuração (plano_por_pagina, padrão 31); relogio: só os dias dele]
  *                            o plano gravado (sem nada: inteiro), com "escala_fim", o último dia gravado e o modo ativo, e o resumo do
- *                            período como a página Plano mostra: {"modo", "escala_fim", "plano_fim", "hoje", "plano": [como em "plano"
+ *                            período como a página Plano mostra: {"modo", "escala_fim", "plano_fim", "hoje", "formas": [as formas de
+ *                            escolha do "Sortear este dia por": {"chave", "nome"}], "plano": [como em "plano"
  *                            acima], "livres": [os dias livres do período: sem relógio e sem sorteio], "dia_a_dia": {"por_pagina",
  *                            "pagina", "paginas", "total", "relogio", "dias": [{"data", "dia_semana", "dia_semana_curto", "hoje",
  *                            "relogio_id", "relogio", "origem" (sorteio, manual ou livre), "acao", "motivo"}]} (o que a página Plano
@@ -280,7 +281,11 @@
  *                            Ex.: os que acabam nas próximas 24 horas:
  *                                 curl -u lucas:senha -g "http://servidor/relojoeiro/api.php?recurso=autonomia&f[relogios][acaba_em_segundos][ate]=86400&mostrar[relogios]=nome,acaba_em_datacomtz"
  *   recurso=hoje             tudo o que a página Hoje mostra: {"data", "agora", "uso_inicio", "comecou" (o dia já começou no pulso), "pulso_poe_sozinho", "pulso_tira_sozinho",
- *                            "modo": {"id", "nome", "selecao", "escala_dias"}, "escala_fim", "max_sem_uso", "dia": {"data", "relogio_id",
+ *                            "modo": {"id", "nome", "selecao", "escolha", "escala_dias"}, "formas": [as formas de escolha do sorteio, com
+ *                            {"chave", "nome", "titulo", "explicacao", "garantia", "na_escala"}: a definição é uma só, no núcleo
+ *                            (formas_de_escolha_definicao), e as telas mostram esta lista, nenhuma tem a dela]; em cada modo, "escolha"
+ *                            diz como ele escolhe, pronto para a tela: {"escolhe_forma", "forma", "texto", "explicacao", "garantia"},
+ *                            "escala_fim", "max_sem_uso", "dia": {"data", "relogio_id",
  *                            "relogio", "ate" ("só hoje", "até sexta, 02/10"), "acao" (o lembrete do dia), "motivo" (por que ele saiu)}, "destaque":
  *                            {"mostra" (a Configuração: dia ou pulso), "relogio_id" (o relógio do destaque no alto da página: o do
  *                            dia, ou o que está no pulso agora), "e" (dia ou pulso), "do_dia", "no_pulso", "texto"}, "avisos": [os de hoje, atrasados
@@ -1343,11 +1348,36 @@
  *     criterios.max_sem_uso          a garantia de rodízio em dias (0: desligada)
  *     criterios.modos[]              os modos de rodízio e a forma de escolher de cada um
  *     criterios.modos[].ativo        verdadeiro ou falso: é o modo em uso
- *     criterios.modos[].escala       verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)
+ *     criterios.modos[].escala       verdadeiro ou falso: o modo é escala inteligente (escolhe pela forma dela: escolha.forma)
  *     criterios.modos[].nome         o nome do modo
  *     criterios.modos[].tipo         o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
  *     criterios.modos[].selecao      a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio, fifo (o mais
  *                                    tempo sem uso) ou menos_usado (o de menos dias de uso no total)
+ *     criterios.modos[].escolha      como o modo escolhe o relógio, pronto para a tela mostrar (ela não precisa saber dos tipos nem das
+ *                                    formas)
+ *     criterios.modos[].escolha.escolhe_forma
+ *                                    verdadeiro: a forma se escolhe no quadro Modo de rodízio da página Hoje (rodizio modo com selecao: os
+ *                                    tipos semana, semana_fds e dia_semana); falso: o modo tem a dele (escala, aleatorio e personalizado)
+ *     criterios.modos[].escolha.forma
+ *                                    a chave da forma que vale no modo; null no personalizado (o roteiro decide)
+ *     criterios.modos[].escolha.texto
+ *                                    o que a tela diz, no idioma do pedido: o título da forma; na escala, o nome dela; "todos com a mesma
+ *                                    chance" no aleatório; "pelo roteiro do modo" no personalizado
+ *     criterios.modos[].escolha.explicacao
+ *                                    a explicação da escolha, no idioma do pedido
+ *     criterios.modos[].escolha.garantia
+ *                                    verdadeiro: a garantia de rodízio vale neste modo; falso: não vale
+ *     criterios.formas               as formas de escolha do sorteio, na ordem das listas das telas, que mostram esta lista (nenhuma tela
+ *                                    tem a dela): as do "Sortear este dia por" (rodizio trocar_dia com relogio_id=sortear:<chave>; rodizio
+ *                                    manual com dias[AAAA-MM-DD]=sortear:<chave>) e as de selecao (modos salvar; rodizio modo)
+ *     criterios.formas[]             uma forma de escolha
+ *     criterios.formas[].chave       a chave da forma (hoje: inteligente, ponderado, aleatorio, fifo e menos_usado; uma forma nova entra
+ *                                    aqui sozinha)
+ *     criterios.formas[].nome        o nome da forma, no idioma do pedido, como os motivos do plano a dizem ("a maior nota")
+ *     criterios.formas[].titulo      o nome da forma nas listas "Como escolher o relógio" ("Inteligente"), no idioma do pedido
+ *     criterios.formas[].explicacao  a explicação da forma, no idioma do pedido
+ *     criterios.formas[].garantia    verdadeiro: a garantia de rodízio vale nesta forma; falso: não vale (o aleatório)
+ *     criterios.formas[].na_escala   verdadeiro: a escala inteligente aceita esta forma em selecao
  *     criterios.notas[]              a nota de cada relógio agora, com a conta
  *     criterios.notas[].conjunto     o lugar dos critérios usados: "" (todos), g:<grupo> ou r:<relógio>; null: nenhum (nota neutra, 50)
  *     criterios.notas[].conjunto_texto
@@ -2522,6 +2552,37 @@
  *     modo.id                        o número do modo
  *     modo.nome                      o nome
  *     modo.selecao                   a forma de escolha (inteligente, ponderado, aleatorio, fifo, menos_usado)
+ *     modo.escolha                   como o modo escolhe o relógio, pronto para a tela mostrar (ela não precisa saber dos tipos nem das
+ *                                    formas)
+ *     modo.escolha.escolhe_forma     verdadeiro: a forma se escolhe no quadro Modo de rodízio da página Hoje (rodizio modo com selecao: os
+ *                                    tipos semana, semana_fds e dia_semana); falso: o modo tem a dele (escala, aleatorio e personalizado)
+ *     modo.escolha.forma             a chave da forma que vale no modo; null no personalizado (o roteiro decide)
+ *     modo.escolha.texto             o que a tela diz, no idioma do pedido: o título da forma; na escala, o nome dela; "todos com a mesma
+ *                                    chance" no aleatório; "pelo roteiro do modo" no personalizado
+ *     modo.escolha.explicacao        a explicação da escolha, no idioma do pedido
+ *     modo.escolha.garantia          verdadeiro: a garantia de rodízio vale neste modo; falso: não vale
+ *     modos[].escolha                como o modo escolhe o relógio, pronto para a tela mostrar (ela não precisa saber dos tipos nem das
+ *                                    formas)
+ *     modos[].escolha.escolhe_forma  verdadeiro: a forma se escolhe no quadro Modo de rodízio da página Hoje (rodizio modo com selecao: os
+ *                                    tipos semana, semana_fds e dia_semana); falso: o modo tem a dele (escala, aleatorio e personalizado)
+ *     modos[].escolha.forma          a chave da forma que vale no modo; null no personalizado (o roteiro decide)
+ *     modos[].escolha.texto          o que a tela diz, no idioma do pedido: o título da forma; na escala, o nome dela; "todos com a mesma
+ *                                    chance" no aleatório; "pelo roteiro do modo" no personalizado
+ *     modos[].escolha.explicacao     a explicação da escolha, no idioma do pedido
+ *     modos[].escolha.garantia       verdadeiro: a garantia de rodízio vale neste modo; falso: não vale
+ *     formas                         as formas de escolha do sorteio, na ordem das listas das telas, que mostram esta lista (nenhuma tela
+ *                                    tem a dela): as do "Sortear este dia por" (rodizio trocar_dia com relogio_id=sortear:<chave>; rodizio
+ *                                    manual com dias[AAAA-MM-DD]=sortear:<chave>) e as de selecao (modos salvar; rodizio modo)
+ *     formas[]                       uma forma de escolha
+ *     formas[].chave                 a chave da forma (hoje: inteligente, ponderado, aleatorio, fifo e menos_usado; uma forma nova entra
+ *                                    aqui sozinha)
+ *     formas[].nome                  o nome da forma, no idioma do pedido, como os motivos do plano a dizem ("a maior nota")
+ *     formas[].titulo                o nome da forma nas listas "Como escolher o relógio" ("Inteligente"), no idioma do pedido
+ *     formas[].explicacao            a explicação da forma, no idioma do pedido
+ *     formas[].garantia              verdadeiro: a garantia de rodízio vale nesta forma; falso: não vale (o aleatório)
+ *     formas[].na_escala             verdadeiro: a escala inteligente aceita esta forma em selecao
+ *     modos[].tipo_explicacao        a explicação do tipo do modo, no idioma do pedido (a mesma de cadastros/modos:
+ *                                    tipos_de_modo[].explicacao)
  *     modo.semanas                   quantas semanas à frente o plano vem montado (1 a 8; a escala usa o período dela)
  *     modo.tipo                      o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado
  *     modo.tipo_texto                o tipo por extenso, no idioma do pedido
@@ -4763,13 +4824,35 @@
  *     tipos_de_modo[]                os tipos de modo, na ordem da lista da tela
  *     tipos_de_modo[].chave          a chave do tipo (o que se grava em modos salvar)
  *     tipos_de_modo[].nome           o nome do tipo, no idioma do pedido
+ *     tipos_de_modo[].explicacao     a explicação do tipo, no idioma do pedido
+ *     tipos_de_modo[].formas         as chaves das formas de escolha que o tipo aceita em selecao, na ordem da lista da tela (vazio: a
+ *                                    forma não se escolhe: o aleatorio é sempre aleatório, e o personalizado segue o roteiro)
+ *     tipos_de_modo[].formas[]       a chave de uma forma que o tipo aceita
+ *     tipos_de_modo[].forma_padrao   a forma de um modo novo desse tipo; null: a forma não se escolhe
  *     modos[].criterios              os critérios que a nota do modo usa: os nomes dos parâmetros dos critérios (vazio: valem todos os de
  *                                    cada relógio)
  *     modos[].forma                  a forma de escolha que vale no modo: a selecao, e na escala inteligente a escolhida entre inteligente,
  *                                    ponderado, menos_usado e fifo (a maior nota quando não escolheu)
- *     formas                         as formas de escolha, na ordem da lista da tela
- *     formas[].chave                 a chave da forma (inteligente, ponderado, aleatorio, fifo ou menos_usado: o que se grava em selecao)
- *     formas[].nome                  o nome da forma, no idioma do pedido
+ *     formas                         as formas de escolha do sorteio, na ordem das listas das telas, que mostram esta lista (nenhuma tela
+ *                                    tem a dela): as do "Sortear este dia por" (rodizio trocar_dia com relogio_id=sortear:<chave>; rodizio
+ *                                    manual com dias[AAAA-MM-DD]=sortear:<chave>) e as de selecao (modos salvar; rodizio modo)
+ *     formas[]                       uma forma de escolha
+ *     formas[].chave                 a chave da forma (hoje: inteligente, ponderado, aleatorio, fifo e menos_usado; uma forma nova entra
+ *                                    aqui sozinha)
+ *     formas[].nome                  o nome da forma, no idioma do pedido, como os motivos do plano a dizem ("a maior nota")
+ *     formas[].titulo                o nome da forma nas listas "Como escolher o relógio" ("Inteligente"), no idioma do pedido
+ *     formas[].explicacao            a explicação da forma, no idioma do pedido
+ *     formas[].garantia              verdadeiro: a garantia de rodízio vale nesta forma; falso: não vale (o aleatório)
+ *     formas[].na_escala             verdadeiro: a escala inteligente aceita esta forma em selecao
+ *     modos[].escolha                como o modo escolhe o relógio, pronto para a tela mostrar (ela não precisa saber dos tipos nem das
+ *                                    formas)
+ *     modos[].escolha.escolhe_forma  verdadeiro: a forma se escolhe no quadro Modo de rodízio da página Hoje (rodizio modo com selecao: os
+ *                                    tipos semana, semana_fds e dia_semana); falso: o modo tem a dele (escala, aleatorio e personalizado)
+ *     modos[].escolha.forma          a chave da forma que vale no modo; null no personalizado (o roteiro decide)
+ *     modos[].escolha.texto          o que a tela diz, no idioma do pedido: o título da forma; na escala, o nome dela; "todos com a mesma
+ *                                    chance" no aleatório; "pelo roteiro do modo" no personalizado
+ *     modos[].escolha.explicacao     a explicação da escolha, no idioma do pedido
+ *     modos[].escolha.garantia       verdadeiro: a garantia de rodízio vale neste modo; falso: não vale
  *     formas_da_escala               as formas que a escala inteligente aceita em selecao
  *     formas_da_escala[]             uma forma que a escala inteligente aceita
  *     modos[].criterios[]            o nome de um critério usado pela nota do modo
@@ -4920,10 +5003,30 @@
  *     max_sem_uso                    a garantia de rodízio em dias
  *     modos[]                        os modos de rodízio e a forma de escolher de cada um
  *     modos[].ativo                  verdadeiro ou falso: é o modo em uso
- *     modos[].escala                 verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)
+ *     modos[].escala                 verdadeiro ou falso: o modo é escala inteligente (escolhe pela forma dela: escolha.forma)
  *     modos[].nome                   o nome do modo
  *     modos[].selecao                a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio, fifo (o mais
  *                                    tempo sem uso) ou menos_usado (o de menos dias de uso no total)
+ *     modos[].escolha                como o modo escolhe o relógio, pronto para a tela mostrar (ela não precisa saber dos tipos nem das
+ *                                    formas)
+ *     modos[].escolha.escolhe_forma  verdadeiro: a forma se escolhe no quadro Modo de rodízio da página Hoje (rodizio modo com selecao: os
+ *                                    tipos semana, semana_fds e dia_semana); falso: o modo tem a dele (escala, aleatorio e personalizado)
+ *     modos[].escolha.forma          a chave da forma que vale no modo; null no personalizado (o roteiro decide)
+ *     modos[].escolha.texto          o que a tela diz, no idioma do pedido: o título da forma; na escala, o nome dela; "todos com a mesma
+ *                                    chance" no aleatório; "pelo roteiro do modo" no personalizado
+ *     modos[].escolha.explicacao     a explicação da escolha, no idioma do pedido
+ *     modos[].escolha.garantia       verdadeiro: a garantia de rodízio vale neste modo; falso: não vale
+ *     formas                         as formas de escolha do sorteio, na ordem das listas das telas, que mostram esta lista (nenhuma tela
+ *                                    tem a dela): as do "Sortear este dia por" (rodizio trocar_dia com relogio_id=sortear:<chave>; rodizio
+ *                                    manual com dias[AAAA-MM-DD]=sortear:<chave>) e as de selecao (modos salvar; rodizio modo)
+ *     formas[]                       uma forma de escolha
+ *     formas[].chave                 a chave da forma (hoje: inteligente, ponderado, aleatorio, fifo e menos_usado; uma forma nova entra
+ *                                    aqui sozinha)
+ *     formas[].nome                  o nome da forma, no idioma do pedido, como os motivos do plano a dizem ("a maior nota")
+ *     formas[].titulo                o nome da forma nas listas "Como escolher o relógio" ("Inteligente"), no idioma do pedido
+ *     formas[].explicacao            a explicação da forma, no idioma do pedido
+ *     formas[].garantia              verdadeiro: a garantia de rodízio vale nesta forma; falso: não vale (o aleatório)
+ *     formas[].na_escala             verdadeiro: a escala inteligente aceita esta forma em selecao
  *     notas[]                        a nota de cada relógio agora, com a conta
  *     notas[].conjunto               o lugar dos critérios usados: "" (todos), g:<grupo> ou r:<relógio>; null: nenhum (nota neutra, 50)
  *     notas[].conjunto_texto         esse lugar por extenso
@@ -5180,6 +5283,13 @@
  *     dia_sem_relogio                verdadeiro (o padrão): dá para deixar um dia sem relógio (a Configuração, dia_sem_relogio); falso: as
  *                                    telas não mostram o Sem relógio (dia livre) do trocar por… e do Rodízio manual nem o Sem relógio hoje,
  *                                    e o recurso=rodizio recusa
+ *     formas                         as formas de escolha do sorteio, na ordem das listas das telas, que mostram esta lista (nenhuma tela
+ *                                    tem a dela): as do "Sortear este dia por" (rodizio trocar_dia com relogio_id=sortear:<chave>; rodizio
+ *                                    manual com dias[AAAA-MM-DD]=sortear:<chave>) e as de selecao (modos salvar; rodizio modo)
+ *     formas[]                       uma forma de escolha
+ *     formas[].chave                 a chave da forma (hoje: inteligente, ponderado, aleatorio, fifo e menos_usado; uma forma nova entra
+ *                                    aqui sozinha)
+ *     formas[].nome                  o nome da forma, no idioma do pedido, como os motivos do plano a dizem ("a maior nota")
  *     resumo                         o resumo do período (os dias da resposta de hoje em diante), como a página Plano mostra
  *     resumo.ate                     o último dia contado (null: nenhum)
  *     resumo.de                      o primeiro dia contado (null: nenhum)
@@ -7238,12 +7348,13 @@
  *     dia_sem_relogio                verdadeiro (o padrão): dá para deixar um dia sem relógio (a Configuração, dia_sem_relogio); falso: as
  *                                    telas não mostram o Sem relógio (dia livre) do trocar por… e do Rodízio manual nem o Sem relógio hoje,
  *                                    e o recurso=rodizio recusa
- *     formas[]                       as formas de escolha do "Sortear este dia por" do seletor de cada dia
- *                                    (dias[AAAA-MM-DD]=sortear:<chave> no acao=manual; o mesmo relogio_id=sortear:<chave> no
- *                                    acao=trocar_dia)
- *     formas[].chave                 a chave: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio (todos com a mesma
- *                                    chance) ou fifo (o mais tempo sem uso)
- *     formas[].nome                  o nome, no idioma do pedido
+ *     formas                         as formas de escolha do sorteio, na ordem das listas das telas, que mostram esta lista (nenhuma tela
+ *                                    tem a dela): as do "Sortear este dia por" (rodizio trocar_dia com relogio_id=sortear:<chave>; rodizio
+ *                                    manual com dias[AAAA-MM-DD]=sortear:<chave>) e as de selecao (modos salvar; rodizio modo)
+ *     formas[]                       uma forma de escolha
+ *     formas[].chave                 a chave da forma (hoje: inteligente, ponderado, aleatorio, fifo e menos_usado; uma forma nova entra
+ *                                    aqui sozinha)
+ *     formas[].nome                  o nome da forma, no idioma do pedido, como os motivos do plano a dizem ("a maior nota")
  *   recurso=eventos
  *     eventos[]                      os eventos personalizados (avisos seus, com horário e repetição próprios)
  *     eventos[].ativo                verdadeiro ou falso: o evento dispara

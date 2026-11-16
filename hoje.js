@@ -1,18 +1,6 @@
 // Página Hoje: o relógio do dia, os avisos de hoje, os próximos dias, o modo de rodízio e a tabela dos relógios, com os
 // dados da API (recurso=hoje), no HTML do sistema antigo. Remontada depois de cada gravação, sem recarregar a página.
 var DIAS_SEMANA = ["", t("Segunda"), t("Terça"), t("Quarta"), t("Quinta"), t("Sexta"), t("Sábado"), t("Domingo")];
-var SELECOES = {
-  inteligente: [t("Inteligente"), t("Vai o relógio com a maior nota nos critérios. Previsível: com os mesmos dados, a mesma escolha.")],
-  ponderado: [t("Inteligente com sorteio"), t("Sorteio em que a nota de cada relógio é a chance dele: quem tem nota maior sai mais vezes, mas todos têm chance. Variedade sem perder o critério.")],
-  aleatorio: [t("Totalmente aleatório"), t("Todos os relógios do tipo têm a mesma chance, sem olhar os critérios. Os números vêm do RANDOM.ORG (ruído atmosférico); fora do ar, do ANU QRNG (quântico); sem os dois, do gerador seguro do PHP.")],
-  fifo: [t("Fila (FIFO)"), t("Vai o que está há mais tempo sem uso: todos passam pelo pulso, em fila. Não olha os critérios, e já garante o rodízio por natureza.")],
-  menos_usado: [t("Menos usado"), t("Vai o que tem menos dias de uso no total (empate: o mais tempo parado): todos passam pelo pulso, dos menos aos mais usados. Não olha os critérios.")]
-};
-
-// como a escala escolhe o relógio de cada dia (a forma do modo; vazia ou a maior nota: a maior nota)
-function formaDaEscala(forma) {
-  return forma === "ponderado" ? t("pelo sorteio pela nota") : (forma === "menos_usado" ? t("pelo menos usado") : (forma === "fifo" ? t("pela fila") : t("pela maior nota")));
-}
 
 // o dia da semana (1 a 7) de uma data AAAA-MM-DD
 function diaDaSemana(data) {
@@ -36,7 +24,7 @@ function proximosHtml(px) {
     + el("tbody", {}, px.dias.map(function (p) {
       return el("tr", {"class": p.dia_semana >= 6 ? "fds" : ""}, el("td", {}, dataBr(p.data, true) + " " + el("small", {}, p.dia_semana_curto))
         + el("td", {}, celulaDoDia(p)) + el("td", {}, h(p.acao || ""))
-        + el("td", {"class": "trocar"}, formTrocarDia(p, dadosHoje.relogios, dadosHoje.data, dadosHoje.trocar_hoje, dadosHoje.dia_sem_relogio)));
+        + el("td", {"class": "trocar"}, formTrocarDia(p, dadosHoje.relogios, dadosHoje.data, dadosHoje.trocar_hoje, dadosHoje.dia_sem_relogio, dadosHoje.formas)));
     }).join("") + (px.total === 0 ? el("tr", {}, el("td", {"colspan": "4"}, t("Neste modo o sorteio é feito dia a dia."))) : "")))
     + navPaginas(px.pagina, px.paginas, "proximos-pagina")
     + (px.paginas > 1 ? el("p", {"class": "nota"}, t("Página {1} de {2} · {3} dias no plano, {4} por página (o \"Mostrar até\" da {5}).", {1: px.pagina, 2: px.paginas, 3: px.total, 4: px.por_pagina, 5: el("a", {"href": "configuracao.php"}, t("Configuração"))})) : "");
@@ -156,7 +144,7 @@ function recarregarHoje() {
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, t("dia livre")))
         + el("p", {}, d.trocar_hoje ? t("Nenhum relógio vai ao pulso pelo rodízio hoje. Quer usar um? Escolha abaixo, ou sorteie de novo (inclusive hoje) no quadro do modo de rodízio.")
           : t("Nenhum relógio vai ao pulso pelo rodízio hoje. O relógio de hoje não se troca no próprio dia (Configuração): escolha o de amanhã nos Próximos dias."))
-        + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data, d.trocar_hoje, d.dia_sem_relogio);
+        + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data, d.trocar_hoje, d.dia_sem_relogio, d.formas);
     } else {
       texto += el("h1", {}, t("Nenhum relógio para hoje"))
         + el("p", {}, t("Nenhum relógio disponível no grupo deste dia. Mude o grupo no modo de rodízio ou marque um relógio como disponível."));
@@ -249,23 +237,15 @@ function recarregarHoje() {
     var escala = modo !== null && modo.escala_dias !== null;
     // o relógio de hoje, para os textos do Sortear de novo; sem plano para hoje, o texto diz só que hoje fica como está
     var nomeHoje = d.dia ? d.dia.relogio : "";
-    var selModos = {};
-    var tiposModo = {};
+    // como cada modo escolhe o relógio (a escolha que a API manda: se a forma se escolhe aqui, a que vale, o texto, a
+    // explicação e se a garantia de rodízio vale); a tela não sabe dos tipos nem das formas
+    var escolhas = {};
     d.modos.forEach(function (m) {
-      selModos[m.id] = m.selecao;
-      tiposModo[m.id] = m.tipo;
+      escolhas[m.id] = m.escolha;
     });
     // a semana do rodízio começa no dia da Configuração (semana_inicio): a segunda ou o domingo
     var semIni = d.semana_inicio === "domingo" ? t("domingo") : t("segunda");
     var semFim = d.semana_inicio === "domingo" ? t("sábado") : t("domingo");
-    var EXPLICA_TIPO = {
-      semana: t("Um relógio para a semana inteira, de {1} a {2}, escolhido pelo critério.", {1: semIni, 2: semFim}),
-      semana_fds: t("Dois trechos na semana: segunda a sexta e o fim de semana, cada um com o seu grupo, um relógio para o trecho ou um por dia."),
-      dia_semana: t("Um relógio por dia, e cada dia da semana diz de onde ele sai."),
-      aleatorio: t("Um relógio por dia, todos com a mesma chance, sem critério nem garantia de rodízio."),
-      escala: t("Monta o plano do período inteiro de uma vez, simulando a carga de cada relógio dia a dia, com os lembretes de carregar, dar corda e pôr no sol. É refeita toda manhã a partir do estado real."),
-      personalizado: t("O roteiro escrito à mão decide quem é candidato em cada dia, a nota, o peso, os dias seguidos e a garantia.")
-    };
     // o "Rodízio manual" no fim da lista: não é um modo; escolhe o relógio de cada dia de um período (o modo de sempre continua)
     var ladoModo = el("label", {"class": "campo-principal"}, t("Modo de rodízio {1}", {1: el("select", {"name": "modo"}, d.modos.map(function (m) {
       return el("option", {"value": m.id, "selected": modo !== null && m.id === modo.id}, h(m.nome));
@@ -273,23 +253,24 @@ function recarregarHoje() {
     ladoModo += el("p", {"class": "nota explicacao", "data-explica-modo": "manual"}, t("Você escolhe o relógio de cada dia de um período. Ponha o começo e o fim e clique em OK: os dias aparecem de 7 em 7, cada um com a lista dos relógios, \"Decida por mim\" (o sistema escolhe), \"Sortear este dia por\" (uma forma de escolha) e \"Sem relógio (dia livre)\". Fora do período, continua valendo o modo de rodízio de sempre ({1}).", {1: h(modo ? modo.nome : t("nenhum"))}));
     d.modos.forEach(function (m) {
       var horizonte = m.escala_dias !== null ? t("período de {1} dias", {1: m.escala_dias}) : (m.semanas === 1 ? t("esta semana") : t("{1} semanas à frente", {1: m.semanas}));
-      ladoModo += el("p", {"class": "nota explicacao", "data-explica-modo": m.id}, el("strong", {}, h(m.tipo_texto)) + " · " + h(horizonte) + (m.ciclo ? t(" · com ciclo") : "") + ". " + h(EXPLICA_TIPO[m.tipo] || "")
+      ladoModo += el("p", {"class": "nota explicacao", "data-explica-modo": m.id}, el("strong", {}, h(m.tipo_texto)) + " · " + h(horizonte) + (m.ciclo ? t(" · com ciclo") : "") + ". " + h(m.tipo_explicacao || "")
         + " " + el("a", {"href": "modos.php?editar=" + m.id + "#form"}, t("editar o modo")));
     });
-    var ladoSelecao = el("label", {"class": "campo-principal", "data-com-selecao": true}, t("Como escolher o relógio {1}", {1: el("select", {"name": "selecao"}, Object.keys(SELECOES).map(function (k) {
-      return el("option", {"value": k, "selected": modo !== null && modo.selecao === k}, h(SELECOES[k][0]));
+    // a lista "Como escolher o relógio": as formas que a API manda (o título e a explicação de cada uma); no modo em que a
+    // forma não se escolhe aqui, a linha fixa com o texto e a explicação da escolha dele
+    var escolhaAtual = modo !== null ? modo.escolha : null;
+    var ladoSelecao = el("label", {"class": "campo-principal", "data-com-selecao": true}, t("Como escolher o relógio {1}", {1: el("select", {"name": "selecao"}, d.formas.map(function (f) {
+      return el("option", {"value": f.chave, "selected": escolhaAtual !== null && escolhaAtual.forma === f.chave, "data-sem-garantia": !f.garantia}, h(f.titulo));
     }).join(""))}))
-      + el("p", {"class": "campo-principal", "data-sem-selecao": true}, t("Como escolher o relógio: {1}", {1: el("strong", {"data-sem-selecao-texto": true}, formaDaEscala(modo !== null ? modo.selecao : ""))}))
-      + Object.keys(SELECOES).map(function (k) { return el("p", {"class": "nota explicacao", "data-explica-selecao": k}, h(SELECOES[k][1])); }).join("")
-      + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "escala"}, t("A escala escolhe pela forma do modo (a maior nota, o sorteio pela nota, o menos usado ou a fila), com as medidas de cada dia simulado; a forma e os critérios que contam na nota se escolhem nos Modos de rodízio."))
-      + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "aleatorio"}, h(SELECOES.aleatorio[1]))
-      + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-explica-tipo": "personalizado"}, t("O roteiro do modo diz a nota e o peso de cada relógio; mude-o nos Modos de rodízio."))
+      + el("p", {"class": "campo-principal", "data-sem-selecao": true}, t("Como escolher o relógio: {1}", {1: el("strong", {"data-sem-selecao-texto": true}, h(escolhaAtual !== null ? escolhaAtual.texto : ""))}))
+      + d.formas.map(function (f) { return el("p", {"class": "nota explicacao", "data-explica-selecao": f.chave}, h(f.explicacao)); }).join("")
+      + el("p", {"class": "nota explicacao", "data-sem-selecao": true, "data-sem-selecao-explica": true}, h(escolhaAtual !== null ? escolhaAtual.explicacao : ""))
       + el("div", {"data-garantia": true}, el("label", {"class": "campo-principal"}, t("Garantia de rodízio: dias sem uso, no máximo {1}", {1: el("input", {"type": "number", "name": "max_sem_uso", "min": "0", "max": "365", "value": d.max_sem_uso, "class": "curto"})}))
         + ajudaNota("garantia", t("A garantia de rodízio"), t("Quem passa do limite tem prioridade, o mais tempo parado primeiro. 0 desliga. O mesmo valor vale para todos os modos que usam a nota."))
         + el("p", {"class": "nota"}, t("A nota vem dos {1}, que você cadastra.", {1: el("a", {"href": "criterios.php"}, t("critérios"))})));
     var formModo = el("form", {"data-recurso": "rodizio"},
       el("input", {"type": "hidden", "name": "acao", "value": "modo"})
-      + el("div", {"class": "modo-grade", "data-selecoes": JSON.stringify(selModos), "data-tipos": JSON.stringify(tiposModo)}, el("div", {"class": "modo-lado"}, ladoModo) + el("div", {"class": "modo-lado", "data-nao-manual": true}, ladoSelecao))
+      + el("div", {"class": "modo-grade", "data-escolhas": JSON.stringify(escolhas)}, el("div", {"class": "modo-lado"}, ladoModo) + el("div", {"class": "modo-lado", "data-nao-manual": true}, ladoSelecao))
       + el("button", {"data-nao-manual": true}, t("Aplicar modo"))
       + el("p", {"class": "nota", "data-nao-manual": true}, t("Aplicar só marca o modo (e grava o critério e a garantia): o plano gravado continua como está, e o modo vale para os próximos sorteios. Para refazer o plano com ele, use \"Sortear de novo\", embaixo. Os modos, as semanas e o roteiro se cadastram em {1}.", {1: el("a", {"href": "modos.php"}, t("Modos de rodízio"))})));
     // sortear de novo: as ações possíveis agora, com a explicação e a confirmação de cada uma
@@ -337,7 +318,7 @@ function recarregarHoje() {
       + el("p", {"class": "acao", "id": "manual-recado", "hidden": true}, "")
       + el("div", {"id": "manual-dias"}, ""));
     porHtml(document.getElementById("bloco-modo"), el("details", {}, el("summary", {}, el("span", {"class": "rotulo"}, t("Modo de rodízio")) + " " + el("strong", {}, h(modo ? modo.nome : t("nenhum"))) + " "
-      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + (escala ? formaDaEscala(modo.selecao) : (modo && modo.tipo === "personalizado" ? t("pelo roteiro") : h(modo ? SELECOES[modo.selecao][0] : "")))) + " " + el("span", {"class": "editar"}, t("editar"))) + formModo + formManual + formSorteio + formApagarPeriodo(d.data, d.dia_sem_relogio) + formApagarTudo(d.trocar_hoje)));
+      + el("span", {"class": "nota"}, "· " + (modo ? h(modo.tipo_texto) + " · " : "") + h(modo ? modo.escolha.texto : "")) + " " + el("span", {"class": "editar"}, t("editar"))) + formModo + formManual + formSorteio + formApagarPeriodo(d.data, d.dia_sem_relogio) + formApagarTudo(d.trocar_hoje)));
     mostrarModo();
     document.getElementById("bloco-modo").hidden = !rodizioAtivo;
     document.getElementById("bloco-proximos").hidden = !rodizioAtivo;
@@ -575,7 +556,7 @@ function manualHtml(r) {
       + el("optgroup", {"label": t("Relógios")}, r.relogios.map(function (x) {
         return el("option", {"value": String(x.id), "selected": atual === String(x.id)}, h(x.nome));
       }).join(""))
-      + opcoesSortearDia(atual)
+      + opcoesSortearDia(atual, r.formas)
       // (com os dias sem relógio desligados na Configuração, só o dia que já está livre mostra a opção, para ficar como está)
       + (dia.hoje || (!r.dia_sem_relogio && atual !== "livre") ? "" : el("option", {"value": "livre", "selected": atual === "livre"}, t("Sem relógio (dia livre)")));
     // hoje, sem trocar o relógio no próprio dia (a Configuração): o seletor fica parado no que hoje já tem

@@ -133,6 +133,46 @@ try {
     // o E (nunca usado) abre a escala, e fica os dias que a bateria dá (dias_seguidos); depois vem o de menos uso entre os outros (B)
     exigir_uso($primeiros[0] === "E" && count(array_unique($primeiros)) >= 2 && end($primeiros) === "B", "A escala do menos usado devia começar pelo E e seguir pelo B: " . implode(",", $primeiros));
 
+    // ---- uma definição só das formas e dos tipos de modo (formas_de_escolha_definicao, modo_tipos_lista): cada forma tem o
+    // roteiro dela, sai nas listas que a API manda às telas e sorteia um dia de verdade, pelo trocar_dia e pelo Rodízio manual
+    // (a chave com "_", como menos_usado, já foi lida errado e o dia "voltava a ser sorteado"); a desconhecida é recusada
+    $chaves = array_keys(formas_de_escolha());
+    exigir_uso(array_keys(formas_roteiros()) == $chaves || !array_diff($chaves, array_keys(formas_roteiros())), "Uma forma sem roteiro: " . implode(", ", array_diff($chaves, array_keys(formas_roteiros()))));
+    exigir_uso(array_column(formas_de_escolha_lista(), "chave") === $chaves && array_column(formas_de_escolha_lista(true), "chave") === $chaves, "A lista das formas da API não tem as mesmas chaves, na mesma ordem.");
+    foreach (formas_de_escolha_lista(true) as $f_l) {
+        exigir_uso($f_l["nome"] !== "" && $f_l["titulo"] !== "" && $f_l["explicacao"] !== "" && is_bool($f_l["garantia"]) && $f_l["na_escala"] === in_array($f_l["chave"], MODO_ESCALA_FORMAS, true), "A forma incompleta na lista: " . json_encode($f_l));
+    }
+    exigir_uso(forma_com_garantia("menos_usado") && !forma_com_garantia("aleatorio"), "A garantia de rodízio vale no menos usado e não no aleatório.");
+    exigir_uso(array_column(modo_tipos_lista(), "chave") === array_keys(MODO_TIPOS), "A lista dos tipos de modo não tem as chaves do MODO_TIPOS.");
+    foreach (modo_tipos_lista() as $t_l) {
+        exigir_uso($t_l["nome"] !== "" && $t_l["explicacao"] !== "" && !array_diff($t_l["formas"], $chaves) && ($t_l["forma_padrao"] === null) === ($t_l["formas"] === []) && ($t_l["forma_padrao"] === null || in_array($t_l["forma_padrao"], $t_l["formas"], true)),
+            "O tipo de modo incompleto na lista: " . json_encode($t_l));
+        // um modo de cada tipo diz como escolhe, e só os tipos com a lista inteira deixam escolher no quadro da Hoje
+        $e_l = modo_escolha(["tipo" => $t_l["chave"], "selecao" => "fifo", "escala_dias" => $t_l["chave"] === "escala" ? 30 : null]);
+        exigir_uso($e_l["texto"] !== "" && $e_l["explicacao"] !== "" && $e_l["escolhe_forma"] === ($t_l["formas"] === $chaves) && ($e_l["forma"] === null || isset(formas_de_escolha()[$e_l["forma"]])),
+            "A escolha do tipo " . $t_l["chave"] . ": " . json_encode($e_l));
+    }
+    exigir_uso(array_values(array_filter(modo_tipos_lista(), function ($x) { return $x["chave"] === "escala"; }))[0]["formas"] === MODO_ESCALA_FORMAS, "A escala aceita as MODO_ESCALA_FORMAS.");
+    $dia_t = $hoje->modify("+3 days")->format("Y-m-d");
+    $dia_m = $hoje->modify("+5 days")->format("Y-m-d");
+    foreach (formas_de_escolha() as $k_f => $nome_f) {
+        $r_t = op_rodizio("trocar_dia", ["data" => $dia_t, "relogio_id" => "sortear:" . $k_f]);
+        $p_t = plano_do_dia($dia_t);
+        exigir_uso($r_t["ok"] && $p_t && $p_t["origem"] === "manual" && strpos((string)$p_t["motivo"], "Sorteado à mão (" . $nome_f . ")") === 0,
+            "trocar_dia com sortear:" . $k_f . " devia deixar o dia sorteado à mão por essa forma: " . json_encode([$r_t["mensagem"], $r_t["erros"], $p_t ? [$p_t["origem"], $p_t["motivo"]] : null]));
+        $r_m = op_rodizio("manual", ["de" => $dia_m, "ate" => $dia_m, "dias" => [$dia_m => "sortear:" . $k_f]]);
+        $p_m = plano_do_dia($dia_m);
+        exigir_uso($r_m["ok"] && $p_m && $p_m["origem"] === "manual" && strpos((string)$p_m["motivo"], "Sorteado à mão (" . $nome_f . ")") === 0,
+            "O Rodízio manual com sortear:" . $k_f . " devia deixar o dia sorteado à mão por essa forma: " . json_encode([$r_m["erros"], $p_m ? [$p_m["origem"], $p_m["motivo"]] : null]));
+    }
+    $antes_t = plano_do_dia($dia_t);
+    foreach (["sortear:nao_existe", "sortear:", "sortear:Menos_Usado", "sortear:menos usado"] as $ruim) {
+        $r_t = op_rodizio("trocar_dia", ["data" => $dia_t, "relogio_id" => $ruim]);
+        exigir_uso(!$r_t["ok"] && strpos(implode(" ", $r_t["erros"]), "Forma de escolha") !== false && plano_do_dia($dia_t) == $antes_t, "trocar_dia com \"" . $ruim . "\" devia ser recusado, sem mexer no dia: " . json_encode($r_t));
+        exigir_uso(!op_rodizio("manual", ["de" => $dia_m, "ate" => $dia_m, "dias" => [$dia_m => $ruim]])["ok"], "O Rodízio manual com \"" . $ruim . "\" devia ser recusado.");
+    }
+    exigir_uso(op_rodizio("trocar_dia", ["data" => $dia_t, "relogio_id" => 0])["ok"] && op_rodizio("trocar_dia", ["data" => $dia_m, "relogio_id" => 0])["ok"], "Os dois dias não voltaram a ser sorteados.");
+
     // ---- a migração em quem já tinha as árvores: a fórmula e o critério voltam, sem repetir e com peso 0
     sql("DELETE FROM formula WHERE identificador = 'menos_usado'");
     sql("DELETE FROM criterio_parametro WHERE nome = 'Menos usado'");
@@ -142,7 +182,7 @@ try {
     exigir_uso((int)valor("SELECT COUNT(*) FROM criterio_parametro WHERE nome = 'Menos usado' AND peso = 0") === count(criterios_config(true)), "A migração não pôs o critério em cada conjunto, com peso 0, uma vez só.");
     exigir_uso((int)valor("SELECT COUNT(*) FROM criterio_faixa f JOIN criterio_sub s ON s.id = f.sub_id WHERE s.variavel = 'menos_usado'") === 6 * count(criterios_config(true)), "As faixas do critério não voltaram.");
 
-    echo "Menos usado: o critério, a forma, a escala que escolhe a forma e os critérios, os motivos e a migração conferem.\n";
+    echo "Menos usado: o critério, a forma, a escala que escolhe a forma e os critérios, os motivos, a definição única das formas e dos tipos (cada forma sorteia um dia) e a migração conferem.\n";
     $codigo = 0;
 } catch (Throwable $e) {
     fwrite(STDERR, "FALHOU: " . $e->getMessage() . " (" . basename($e->getFile()) . ":" . $e->getLine() . ")\n");

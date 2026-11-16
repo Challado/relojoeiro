@@ -4405,7 +4405,7 @@ function op_criterios($acao, $d)
 // periodo_sortear (de, ate: tudo o que o período tem, de amanhã em diante, sai e ele é sorteado de novo), periodo_livre (de,
 // ate: tudo sai e os dias ficam livres: sem relógio e sem sorteio, para escolher à mão), manual (o rodízio manual: de, ate,
 // dias[AAAA-MM-DD] = o id do relógio, auto (Decida por mim: o sistema decide ao gravar, rodizio_manual_decidir),
-// sortear:<forma> (o dia sorteado ao gravar por essa forma de escolha: inteligente, ponderado, aleatorio ou fifo) ou livre;
+// sortear:<forma> (o dia sorteado ao gravar por essa forma de escolha: uma das formas_de_escolha) ou livre;
 // o dia que não vem fica com a escolha de partida; tudo grava como escolhido à mão), apagar_tudo (toda a programação de
 // amanhã em diante, à mão, sorteada e livre, sai; hoje=1: de hoje em diante; o modo ativo monta o plano de novo; hoje, se
 // mudar, o novo vai para o pulso a partir de agora). Os dias escolhidos à mão e os
@@ -4472,7 +4472,7 @@ function op_rodizio($acao, $d)
             // o quadro grava só o critério de escolha (a forma do sorteio; não na escala nem no aleatório) e a garantia, e
             // marca o modo; os blocos, as semanas e o roteiro se editam nos Modos de rodízio
             $res = ["ok" => true, "erros" => [], "mensagem" => ""];
-            if (isset($d["selecao"]) && $m["escala_dias"] === null && !in_array($m["tipo"] ?? "", ["aleatorio", "personalizado"], true)) {
+            if (isset($d["selecao"]) && modo_escolhe_forma($m)) {
                 $res = op_modos("salvar", ["id" => $id_modo, "selecao" => $d["selecao"]]);
             }
             if ($res["ok"] && isset($d["max_sem_uso"])) {
@@ -4575,8 +4575,10 @@ function op_rodizio($acao, $d)
         $data = (string)($d["data"] ?? "");
         $dt = DateTimeImmutable::createFromFormat("!Y-m-d", $data);
         // relogio_id: o id; 0 (volta a sortear); sortear:<forma> (o dia é sorteado agora por essa forma de escolha); ou livre (o
-        // dia fica sem relógio e sem sorteio: um dia de folga)
-        $forma = preg_match("/^sortear:([a-z]+)$/", trim((string)($d["relogio_id"] ?? "")), $m_f) === 1 ? $m_f[1] : null;
+        // dia fica sem relógio e sem sorteio: um dia de folga). Tudo o que vem depois de "sortear:" é a forma, conferida em
+        // formas_de_escolha (uma forma desconhecida é recusada; nunca vira o "voltar a sortear")
+        $forma_v = trim((string)($d["relogio_id"] ?? ""));
+        $forma = strpos($forma_v, "sortear:") === 0 ? substr($forma_v, 8) : null;
         $livre_d = strtolower(trim((string)($d["relogio_id"] ?? ""))) === "livre";
         $novo = $forma === null ? (int)($d["relogio_id"] ?? 0) : 0;
         $r = $novo > 0 ? linha("SELECT * FROM relogio WHERE id = ?", [$novo]) : null;
@@ -4904,7 +4906,7 @@ function op_rodizio($acao, $d)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Modos de rodízio. Ações: salvar (id: 0 cria; nome; tipo: semana, semana_fds, dia_semana, aleatorio, escala ou
-// personalizado (sem o tipo, inferido dos blocos: modo_tipo_inferir); selecao: inteligente, ponderado, aleatorio ou fifo;
+// personalizado (sem o tipo, inferido dos blocos: modo_tipo_inferir); selecao: uma das formas_de_escolha;
 // escala_dias: de 7 a 730, só na escala; semanas: 1 a 8, quantas semanas à frente o plano vem montado (não na escala);
 // blocos: lista de {nome, dias: [1..7], no_id (0: todos), um_por: bloco ou dia, relogio_id (fixo; 0: sorteia)}: substitui
 // os blocos (a forma deles é conferida pelo tipo: um por semana, um bloco com os sete dias; semana e fim de semana, segunda

@@ -41,6 +41,6 @@ if (!isset(formas_de_escolha()[$forma_sg])) {
     $saida = ["erro" => t("pular: os ids dos relógios já sugeridos, separados por vírgula.")];
 } else {
     $saida = ["ativa" => cfg("sugestao_agora") === "1",
-        "formas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(formas_de_escolha()), formas_de_escolha()),
+        "formas" => formas_de_escolha_lista(),
         "tipos" => $tipos_todos_sg] + sugestao_agora($forma_sg, $tipos_sg, $pular_sg);
 }

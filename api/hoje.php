@@ -74,6 +74,7 @@ foreach ($rels as $i => $r) {
 $modos_h = [];
 foreach (linhas("SELECT * FROM modo ORDER BY ordem, id") as $m) {
     $modos_h[] = ["id" => (int)$m["id"], "nome" => $m["nome"], "tipo" => $m["tipo"], "tipo_texto" => t(MODO_TIPOS[$m["tipo"]] ?? "Personalizado"), "semanas" => (int)$m["semanas"],
+        "tipo_explicacao" => modo_tipo_explicacao($m["tipo"]), "escolha" => modo_escolha($m),
         "selecao" => $m["selecao"], "escala_dias" => $m["escala_dias"] === null ? null : (int)$m["escala_dias"], "ciclo" => (int)$m["ciclo"] === 1,
         "blocos" => array_map(function ($b) {
             return ["id" => (int)$b["id"], "nome" => $b["nome"], "dias" => $b["dias"], "no_id" => $b["no_id"] === null ? 0 : (int)$b["no_id"], "um_por" => $b["um_por"],
@@ -93,7 +94,7 @@ foreach (avisos_todos() as $ident => $versoes) {
 $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => cfg("uso_inicio"), "comecou" => $dia !== null && dia_comecou($agora),
     "rodizio" => rodizio_configuracao(),
     "pulso_poe_sozinho" => pulso_poe_sozinho(), "pulso_tira_sozinho" => pulso_tira_sozinho(),
-    "modo" => $modo ? ["id" => (int)$modo["id"], "nome" => $modo["nome"], "tipo" => $modo["tipo"], "tipo_texto" => t(MODO_TIPOS[$modo["tipo"]] ?? "Personalizado"), "semanas" => (int)$modo["semanas"], "selecao" => $modo["selecao"], "escala_dias" => $modo["escala_dias"] === null ? null : (int)$modo["escala_dias"]] : null,
+    "modo" => $modo ? ["id" => (int)$modo["id"], "nome" => $modo["nome"], "tipo" => $modo["tipo"], "tipo_texto" => t(MODO_TIPOS[$modo["tipo"]] ?? "Personalizado"), "semanas" => (int)$modo["semanas"], "selecao" => $modo["selecao"], "escolha" => modo_escolha($modo), "escala_dias" => $modo["escala_dias"] === null ? null : (int)$modo["escala_dias"]] : null,
     "escala_fim" => cfg("escala_fim") !== "" ? cfg("escala_fim") : null, "max_sem_uso" => (int)cfg("max_sem_uso"),
     "dia" => $dia ? ["data" => $dia["data"], "relogio_id" => (int)$dia["relogio_id"], "relogio" => $dia["nome"], "ate" => texto_ate($dia["data"], "hoje"), "acao" => $dia["acao"], "motivo" => $dia["motivo"]] : null,
     "destaque" => $destaque_h,
@@ -117,6 +118,9 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     // relógio hoje não aparecem, e a troca vale a partir de amanhã)
     "trocar_hoje" => trocar_hoje_permitido(),
     "dia_sem_relogio" => dia_sem_relogio_permitido(),
+    // as formas de escolha: as do "Sortear este dia por" do trocar por… (relogio_id=sortear:<chave>) e as da lista "Como
+    // escolher o relógio" do quadro Modo de rodízio (com o título e a explicação de cada uma)
+    "formas" => formas_de_escolha_lista(true),
     "proxima_semana" => ["inicio" => $ini_s->format("Y-m-d"), "fim" => $ini_s->modify("+6 days")->format("Y-m-d"),
         "ja_montada" => (int)valor("SELECT COUNT(*) FROM plano WHERE data BETWEEN ? AND ?", [$ini_s->format("Y-m-d"), $ini_s->modify("+6 days")->format("Y-m-d")]) > 1],
     // as colunas da tabela dos relógios (o motor de colunas, colunas.php): todas as que existem, as que valem primeiro, na ordem em que
@@ -134,7 +138,7 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     // a dos desejados e as dos que saíram vêm do recurso=desejos e do recurso=saidas)
     "abas" => abas_situacao($todos_h),
     // a Sugestão para agora (a opção sugestao_agora): o que o cartão oferece para escolher (a sugestão vem do recurso=sugestao); null: desligada
-    "sugestao_agora" => cfg("sugestao_agora") === "1" ? ["formas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(formas_de_escolha()), formas_de_escolha()),
+    "sugestao_agora" => cfg("sugestao_agora") === "1" ? ["formas" => formas_de_escolha_lista(),
         "tipos" => sugestao_tipos()] : null,
     // os totais da coleção inteira (a tabela da página soma só o que os filtros dela deixam à mostra)
     "totais" => ["relogios" => count($rels), "disponiveis" => count(array_filter($rels, function ($r) { return $r["disponivel"]; })),

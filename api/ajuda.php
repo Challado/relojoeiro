@@ -44,6 +44,26 @@ $doc_abas = function ($p) {
         $p . "[].disponivel" => t('se a aba abre: false na situação sem relógio (a tela a mostra desabilitada, sem link)'),
         $p . "[].motivo" => t('por que a aba não abre, no idioma do pedido: o que falta e como pôr um relógio nela; null na aba que abre')];
 };
+// as formas de escolha do sorteio (formas_de_escolha_lista, no lib.php: a definição é uma só, e nenhuma tela tem a lista dela) e
+// como um modo escolhe (modo_escolha): a mesma explicação em todo recurso que as manda
+$doc_formas = function ($completa, $p = "") {
+    return [$p . "formas" => t('as formas de escolha do sorteio, na ordem das listas das telas, que mostram esta lista (nenhuma tela tem a dela): as do "Sortear este dia por" (rodizio trocar_dia com relogio_id=sortear:<chave>; rodizio manual com dias[AAAA-MM-DD]=sortear:<chave>) e as de selecao (modos salvar; rodizio modo)'),
+        $p . "formas[]" => t('uma forma de escolha'),
+        $p . "formas[].chave" => t('a chave da forma (hoje: inteligente, ponderado, aleatorio, fifo e menos_usado; uma forma nova entra aqui sozinha)'),
+        $p . "formas[].nome" => t('o nome da forma, no idioma do pedido, como os motivos do plano a dizem ("a maior nota")')]
+        + ($completa ? [$p . "formas[].titulo" => t('o nome da forma nas listas "Como escolher o relógio" ("Inteligente"), no idioma do pedido'),
+            $p . "formas[].explicacao" => t('a explicação da forma, no idioma do pedido'),
+            $p . "formas[].garantia" => t('verdadeiro: a garantia de rodízio vale nesta forma; falso: não vale (o aleatório)'),
+            $p . "formas[].na_escala" => t('verdadeiro: a escala inteligente aceita esta forma em selecao')] : []);
+};
+$doc_escolha = function ($p) {
+    return [$p . "escolha" => t('como o modo escolhe o relógio, pronto para a tela mostrar (ela não precisa saber dos tipos nem das formas)'),
+        $p . "escolha.escolhe_forma" => t('verdadeiro: a forma se escolhe no quadro Modo de rodízio da página Hoje (rodizio modo com selecao: os tipos semana, semana_fds e dia_semana); falso: o modo tem a dele (escala, aleatorio e personalizado)'),
+        $p . "escolha.forma" => t('a chave da forma que vale no modo; null no personalizado (o roteiro decide)'),
+        $p . "escolha.texto" => t('o que a tela diz, no idioma do pedido: o título da forma; na escala, o nome dela; "todos com a mesma chance" no aleatório; "pelo roteiro do modo" no personalizado'),
+        $p . "escolha.explicacao" => t('a explicação da escolha, no idioma do pedido'),
+        $p . "escolha.garantia" => t('verdadeiro: a garantia de rodízio vale neste modo; falso: não vale')];
+};
 // o que o cartão da Sugestão para agora oferece para escolher (as formas e os tipos): no recurso=sugestao e no recurso=hoje
 $doc_sugestao_opcoes = function ($p) {
     return [$p . "formas" => t('as formas de escolha, na ordem em que o cartão as mostra'), $p . "formas[]" => t('uma forma de escolha'),
@@ -908,10 +928,12 @@ $saida = [
             "criterios.max_sem_uso" => t('a garantia de rodízio em dias (0: desligada)'),
             "criterios.modos[]" => t('os modos de rodízio e a forma de escolher de cada um'),
             "criterios.modos[].ativo" => t('verdadeiro ou falso: é o modo em uso'),
-            "criterios.modos[].escala" => t('verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)'),
+            "criterios.modos[].escala" => t('verdadeiro ou falso: o modo é escala inteligente (escolhe pela forma dela: escolha.forma)'),
             "criterios.modos[].nome" => t('o nome do modo'),
             "criterios.modos[].tipo" => t('o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado'),
             "criterios.modos[].selecao" => t('a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio, fifo (o mais tempo sem uso) ou menos_usado (o de menos dias de uso no total)'),
+            ...$doc_escolha("criterios.modos[]."),
+            ...$doc_formas(true, "criterios."),
             "criterios.notas[]" => t('a nota de cada relógio agora, com a conta'),
             "criterios.notas[].conjunto" => t('o lugar dos critérios usados: "" (todos), g:<grupo> ou r:<relógio>; null: nenhum (nota neutra, 50)'),
             "criterios.notas[].conjunto_texto" => t('esse lugar por extenso'),
@@ -1662,6 +1684,10 @@ $saida = [
             "modo.id" => t('o número do modo'),
             "modo.nome" => t('o nome'),
             "modo.selecao" => t('a forma de escolha (inteligente, ponderado, aleatorio, fifo, menos_usado)'),
+            ...$doc_escolha("modo."),
+            ...$doc_escolha("modos[]."),
+            ...$doc_formas(true),
+            "modos[].tipo_explicacao" => t('a explicação do tipo do modo, no idioma do pedido (a mesma de cadastros/modos: tipos_de_modo[].explicacao)'),
             "modo.semanas" => t('quantas semanas à frente o plano vem montado (1 a 8; a escala usa o período dela)'),
             "modo.tipo" => t('o tipo do modo: semana, semana_fds, dia_semana, aleatorio, escala ou personalizado'),
             "modo.tipo_texto" => t('o tipo por extenso, no idioma do pedido'),
@@ -2957,11 +2983,14 @@ $saida = [
             "tipos_de_modo[]" => t('os tipos de modo, na ordem da lista da tela'),
             "tipos_de_modo[].chave" => t('a chave do tipo (o que se grava em modos salvar)'),
             "tipos_de_modo[].nome" => t('o nome do tipo, no idioma do pedido'),
+            "tipos_de_modo[].explicacao" => t('a explicação do tipo, no idioma do pedido'),
+            "tipos_de_modo[].formas" => t('as chaves das formas de escolha que o tipo aceita em selecao, na ordem da lista da tela (vazio: a forma não se escolhe: o aleatorio é sempre aleatório, e o personalizado segue o roteiro)'),
+            "tipos_de_modo[].formas[]" => t('a chave de uma forma que o tipo aceita'),
+            "tipos_de_modo[].forma_padrao" => t('a forma de um modo novo desse tipo; null: a forma não se escolhe'),
             "modos[].criterios" => t('os critérios que a nota do modo usa: os nomes dos parâmetros dos critérios (vazio: valem todos os de cada relógio)'),
             "modos[].forma" => t('a forma de escolha que vale no modo: a selecao, e na escala inteligente a escolhida entre inteligente, ponderado, menos_usado e fifo (a maior nota quando não escolheu)'),
-            "formas" => t('as formas de escolha, na ordem da lista da tela'),
-            "formas[].chave" => t('a chave da forma (inteligente, ponderado, aleatorio, fifo ou menos_usado: o que se grava em selecao)'),
-            "formas[].nome" => t('o nome da forma, no idioma do pedido'),
+            ...$doc_formas(true),
+            ...$doc_escolha("modos[]."),
             "formas_da_escala" => t('as formas que a escala inteligente aceita em selecao'),
             "formas_da_escala[]" => t('uma forma que a escala inteligente aceita'),
             "modos[].criterios[]" => t('o nome de um critério usado pela nota do modo'),
@@ -3074,9 +3103,11 @@ $saida = [
             "max_sem_uso" => t('a garantia de rodízio em dias'),
             "modos[]" => t('os modos de rodízio e a forma de escolher de cada um'),
             "modos[].ativo" => t('verdadeiro ou falso: é o modo em uso'),
-            "modos[].escala" => t('verdadeiro ou falso: o modo é escala inteligente (escolhe sempre pela maior nota)'),
+            "modos[].escala" => t('verdadeiro ou falso: o modo é escala inteligente (escolhe pela forma dela: escolha.forma)'),
             "modos[].nome" => t('o nome do modo'),
             "modos[].selecao" => t('a forma de escolha: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio, fifo (o mais tempo sem uso) ou menos_usado (o de menos dias de uso no total)'),
+            ...$doc_escolha("modos[]."),
+            ...$doc_formas(true),
             "notas[]" => t('a nota de cada relógio agora, com a conta'),
             "notas[].conjunto" => t('o lugar dos critérios usados: "" (todos), g:<grupo> ou r:<relógio>; null: nenhum (nota neutra, 50)'),
             "notas[].conjunto_texto" => t('esse lugar por extenso'),
@@ -3259,6 +3290,7 @@ $saida = [
             "plano_fim" => t('o último dia gravado no plano (AAAA-MM-DD; null: plano vazio), qualquer que seja o período pedido'),
             "trocar_hoje" => t('verdadeiro: o relógio de hoje se troca no próprio dia (a Configuração, trocar_hoje); falso, o padrão: só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual, hoje fica parado)'),
             "dia_sem_relogio" => t('verdadeiro (o padrão): dá para deixar um dia sem relógio (a Configuração, dia_sem_relogio); falso: as telas não mostram o Sem relógio (dia livre) do trocar por… e do Rodízio manual nem o Sem relógio hoje, e o recurso=rodizio recusa'),
+            ...$doc_formas(false),
             "resumo" => t('o resumo do período (os dias da resposta de hoje em diante), como a página Plano mostra'),
             "resumo.ate" => t('o último dia contado (null: nenhum)'),
             "resumo.de" => t('o primeiro dia contado (null: nenhum)'),
@@ -4635,9 +4667,7 @@ $saida = [
             "decida_por_mim" => t('o critério do Decida por mim, em texto: a nota dos critérios recalculada dia a dia com os dias anteriores do período contados como uso, a garantia de rodízio na frente, sem o relógio de ontem nem o de amanhã (se houver outro), empate pelo cadastrado primeiro; decidido ao gravar; e o Sortear este dia por'),
             "trocar_hoje" => t('verdadeiro: o relógio de hoje se troca no próprio dia (a Configuração, trocar_hoje); falso, o padrão: só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual, hoje fica parado)'),
             "dia_sem_relogio" => t('verdadeiro (o padrão): dá para deixar um dia sem relógio (a Configuração, dia_sem_relogio); falso: as telas não mostram o Sem relógio (dia livre) do trocar por… e do Rodízio manual nem o Sem relógio hoje, e o recurso=rodizio recusa'),
-            "formas[]" => t('as formas de escolha do "Sortear este dia por" do seletor de cada dia (dias[AAAA-MM-DD]=sortear:<chave> no acao=manual; o mesmo relogio_id=sortear:<chave> no acao=trocar_dia)'),
-            "formas[].chave" => t('a chave: inteligente (a maior nota), ponderado (sorteio pela nota), aleatorio (todos com a mesma chance) ou fifo (o mais tempo sem uso)'),
-            "formas[].nome" => t('o nome, no idioma do pedido'),
+            ...$doc_formas(false),
         ],
         "eventos" => [
             "eventos[]" => t('os eventos personalizados (avisos seus, com horário e repetição próprios)'),

@@ -98,8 +98,8 @@
             "identicas": 3
         },
         "GET config": {
-            "consultas": 195,
-            "identicas": 34
+            "consultas": 191,
+            "identicas": 31
         },
         "GET conta": {
             "consultas": 45,
@@ -122,8 +122,8 @@
             "identicas": 0
         },
         "GET destinos": {
-            "consultas": 281,
-            "identicas": 176
+            "consultas": 288,
+            "identicas": 174
         },
         "GET documento": {
             "consultas": 22,
@@ -146,7 +146,7 @@
             "identicas": 0
         },
         "GET ficha": {
-            "consultas": 129,
+            "consultas": 133,
             "identicas": 28
         },
         "GET foto": {
@@ -162,8 +162,8 @@
             "identicas": 8
         },
         "GET hoje": {
-            "consultas": 459,
-            "identicas": 127
+            "consultas": 458,
+            "identicas": 126
         },
         "GET hora_certa": {
             "consultas": 21,
@@ -218,7 +218,7 @@
             "identicas": 0
         },
         "GET previsao": {
-            "consultas": 65,
+            "consultas": 73,
             "identicas": 5
         },
         "GET programas": {
@@ -750,8 +750,8 @@
             "identicas": 0
         },
         "POST relogio.salvar": {
-            "consultas": 97,
-            "identicas": 10
+            "consultas": 115,
+            "identicas": 13
         },
         "POST reserva.excluir": {
             "consultas": 524,
@@ -778,8 +778,8 @@
             "identicas": 0
         },
         "POST rodizio.apagar_tudo": {
-            "consultas": 175,
-            "identicas": 39
+            "consultas": 171,
+            "identicas": 36
         },
         "POST rodizio.manual": {
             "consultas": 335,
@@ -802,7 +802,7 @@
             "identicas": 86
         },
         "POST rodizio.proxima_semana": {
-            "consultas": 131,
+            "consultas": 141,
             "identicas": 27
         },
         "POST rodizio.resortear": {
@@ -810,8 +810,8 @@
             "identicas": 170
         },
         "POST rodizio.resortear_hoje": {
-            "consultas": 140,
-            "identicas": 22
+            "consultas": 179,
+            "identicas": 27
         },
         "POST rodizio.sem_relogio": {
             "consultas": 34,
@@ -822,7 +822,7 @@
             "identicas": 142
         },
         "POST rodizio.usando": {
-            "consultas": 292,
+            "consultas": 291,
             "identicas": 79
         },
         "POST saidas.excluir": {
@@ -926,8 +926,8 @@
             "identicas": 0
         },
         "cli cron.php": {
-            "consultas": 1812,
-            "identicas": 499
+            "consultas": 1852,
+            "identicas": 527
         },
         "cli instalar.php": {
             "consultas": 30,

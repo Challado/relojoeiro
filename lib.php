@@ -5360,11 +5360,17 @@ const MENOS_USADO_ESCALA = 10000;
 // candidatos; a nota e o peso conforme a forma; a garantia de rodízio, menos no aleatório
 function roteiro_da_forma($forma)
 {
-    $linhas = ["inteligente" => "nota = nota_criterios\npeso = 0", "ponderado" => "nota = nota_criterios\npeso = MAX(1; nota_criterios)",
+    $linhas = formas_roteiros();
+    return $linhas[$forma] ?? $linhas["ponderado"];
+}
+
+// O roteiro de cada forma de escolha (as mesmas chaves de formas_de_escolha; testes/rodizio.php confere que nenhuma falta)
+function formas_roteiros()
+{
+    return ["inteligente" => "nota = nota_criterios\npeso = 0", "ponderado" => "nota = nota_criterios\npeso = MAX(1; nota_criterios)",
         "aleatorio" => "peso = 1\ngarantia = 0", "fifo" => "nota = dias_sem_uso\npeso = 0",
         // o menos usado: menos dias de uso no total (a nota é o oposto, em milhares: o empate sai para o mais tempo sem uso)
         "menos_usado" => "nota = 0 - PADRAO(dias_de_uso; 0) * " . MENOS_USADO_ESCALA . " + MIN(PADRAO(dias_sem_uso; 0); " . (MENOS_USADO_ESCALA - 1) . ")\npeso = 0"];
-    return $linhas[$forma] ?? $linhas["ponderado"];
 }
 
 // Num bloco de um relógio para o bloco inteiro, quantos dias ele fica a partir de um dia da semana ($dia, 1 segunda ... 7
@@ -5468,11 +5474,122 @@ function modo_roteiro($modo)
     return $cache[$k];
 }
 
-// As formas de escolha do sorteio (a selecao do modo), com o nome que as telas e os motivos usam
+// ---------------------------------------------------------------------------------------------------------------------
+// As formas de escolha e os tipos de modo: UMA definição de cada, aqui. A validação, as mensagens, a API e as telas saem
+// dela: nenhuma tela tem a lista escrita. Uma forma nova entra aqui (e em formas_roteiros) e aparece em todo lugar.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// As formas de escolha do sorteio (a selecao do modo): chave => [nome (o que os motivos e o "Sortear este dia por" dizem),
+// título (o nome na lista "Como escolher o relógio") e explicação]
+function formas_de_escolha_definicao()
+{
+    return [
+        "inteligente" => ["nome" => t("a maior nota"), "titulo" => t("Inteligente"),
+            "explicacao" => t("Vai o relógio com a maior nota nos critérios. Previsível: com os mesmos dados, a mesma escolha.")],
+        "ponderado" => ["nome" => t("sorteio pela nota"), "titulo" => t("Inteligente com sorteio"),
+            "explicacao" => t("Sorteio em que a nota de cada relógio é a chance dele: quem tem nota maior sai mais vezes, mas todos têm chance. Variedade sem perder o critério.")],
+        "aleatorio" => ["nome" => t("aleatório, todos com a mesma chance"), "titulo" => t("Totalmente aleatório"),
+            "explicacao" => t("Todos os relógios do tipo têm a mesma chance, sem olhar os critérios. Os números vêm do RANDOM.ORG (ruído atmosférico); fora do ar, do ANU QRNG (quântico); sem os dois, do gerador seguro do PHP.")],
+        "fifo" => ["nome" => t("fila: o mais tempo sem uso"), "titulo" => t("Fila (FIFO)"),
+            "explicacao" => t("Vai o que está há mais tempo sem uso: todos passam pelo pulso, em fila. Não olha os critérios, e já garante o rodízio por natureza.")],
+        "menos_usado" => ["nome" => t("o menos usado: menos dias de uso no total"), "titulo" => t("Menos usado"),
+            "explicacao" => t("Vai o que tem menos dias de uso no total (empate: o mais tempo parado): todos passam pelo pulso, dos menos aos mais usados. Não olha os critérios.")],
+    ];
+}
+
+// chave => nome (o que a validação e os motivos usam)
 function formas_de_escolha()
 {
-    return ["inteligente" => t("a maior nota"), "ponderado" => t("sorteio pela nota"), "aleatorio" => t("aleatório, todos com a mesma chance"), "fifo" => t("fila: o mais tempo sem uso"),
-        "menos_usado" => t("o menos usado: menos dias de uso no total")];
+    return array_map(function ($f) { return $f["nome"]; }, formas_de_escolha_definicao());
+}
+
+// A garantia de rodízio vale nesta forma? (não, na que a desliga no próprio roteiro: o aleatório)
+function forma_com_garantia($forma)
+{
+    return strpos(roteiro_da_forma($forma), "garantia = 0") === false;
+}
+
+// As formas como a API as manda para as telas, na ordem da definição: [{chave, nome}] e, com $completa, também o título, a
+// explicação, se a garantia de rodízio vale nela e se a escala inteligente a aceita
+function formas_de_escolha_lista($completa = false)
+{
+    $lista = [];
+    foreach (formas_de_escolha_definicao() as $k => $f) {
+        $lista[] = ["chave" => $k, "nome" => $f["nome"]] + ($completa ? ["titulo" => $f["titulo"], "explicacao" => $f["explicacao"],
+            "garantia" => forma_com_garantia($k), "na_escala" => in_array($k, MODO_ESCALA_FORMAS, true)] : []);
+    }
+    return $lista;
+}
+
+// As formas ditas num texto que as cita, com o nome inteiro de cada uma, separadas por ponto e vírgula: as de $chaves, ou todas
+function formas_de_escolha_frase($chaves = null)
+{
+    return implode("; ", array_intersect_key(formas_de_escolha(), array_flip($chaves ?? array_keys(formas_de_escolha()))));
+}
+
+// Os tipos de modo em que a forma de escolha se escolhe à vontade (no quadro Modo de rodízio da Hoje e nos Modos): os
+// outros têm a deles (a escala: uma das MODO_ESCALA_FORMAS, nos Modos; o aleatório: sempre aleatório; o personalizado: o roteiro)
+const MODO_TIPOS_COM_FORMA = ["semana", "semana_fds", "dia_semana"];
+
+function modo_escolhe_forma($modo)
+{
+    return ($modo["escala_dias"] ?? null) === null && in_array((string)($modo["tipo"] ?? ""), MODO_TIPOS_COM_FORMA, true);
+}
+
+// Os tipos de modo como a API os manda, na ordem da lista da tela: a chave, o nome, a explicação, as formas de escolha que o
+// tipo aceita (vazio: não se escolhe) e a forma de um modo novo desse tipo
+function modo_tipos_lista()
+{
+    $explica = [
+        "semana" => t("Um relógio para a semana inteira, do primeiro ao último dia dela (a semana começa no dia da Configuração). Escolha de onde ele sai e o critério; o Sortear de novo sorteia um para cada semana."),
+        "semana_fds" => t("Dois trechos na semana: de segunda a sexta e no fim de semana, cada um com o seu grupo e com um relógio para o trecho inteiro ou um por dia."),
+        "dia_semana" => t("Um relógio por dia, e cada dia da semana diz de onde ele sai: um grupo, um relógio fixo ou nenhum (dia livre)."),
+        "aleatorio" => t("Um relógio por dia, todos com a mesma chance, sem olhar os critérios nem a garantia de rodízio. O de ontem fica de fora, se houver outro."),
+        "escala" => t("Planeja o período inteiro de uma vez, simulando dia a dia a carga de cada relógio: a maior nota do dia simulado, o smartwatch pelos dias que a bateria dá (a fórmula dias_seguidos), os lembretes de carregar e dar corda anotados no dia. É refeita toda manhã a partir do estado real."),
+        "personalizado" => t("Você escreve o roteiro: uma linha por nome, e o motor lê candidato, nota, peso, dias e garantia (o que faltar usa o padrão). Vale tudo o que vale numa fórmula do cadastro."),
+    ];
+    $lista = [];
+    foreach (MODO_TIPOS as $k => $nome) {
+        $formas = in_array($k, MODO_TIPOS_COM_FORMA, true) ? array_keys(formas_de_escolha()) : ($k === "escala" ? MODO_ESCALA_FORMAS : []);
+        $lista[] = ["chave" => $k, "nome" => t($nome), "explicacao" => $explica[$k] ?? "", "formas" => $formas,
+            "forma_padrao" => count($formas) === 0 ? null : ($k === "escala" ? "inteligente" : "ponderado")];
+    }
+    return $lista;
+}
+
+// A explicação do tipo de um modo (a mesma de modo_tipos_lista)
+function modo_tipo_explicacao($tipo)
+{
+    foreach (modo_tipos_lista() as $x) {
+        if ($x["chave"] === $tipo) {
+            return $x["explicacao"];
+        }
+    }
+    return "";
+}
+
+// Como um modo escolhe o relógio, para as telas mostrarem sem saber dos tipos nem das formas: escolhe_forma (a forma se
+// escolhe no quadro da Hoje?), forma (a que vale; null no personalizado), texto (o que a tela diz: o título da forma; na
+// escala, o nome dela; "todos com a mesma chance"; "pelo roteiro do modo"), explicacao e garantia (a garantia de rodízio vale?)
+function modo_escolha($modo)
+{
+    $formas = formas_de_escolha_definicao();
+    $tipo = (string)($modo["tipo"] ?? "");
+    if ($tipo === "personalizado") {
+        return ["escolhe_forma" => false, "forma" => null, "texto" => t("pelo roteiro do modo"),
+            "explicacao" => t("O roteiro do modo diz a nota e o peso de cada relógio; mude-o nos Modos de rodízio."), "garantia" => true];
+    }
+    $forma = modo_forma($modo);
+    $forma = isset($formas[$forma]) ? $forma : "ponderado";
+    if (modo_escolhe_forma($modo)) {
+        return ["escolhe_forma" => true, "forma" => $forma, "texto" => $formas[$forma]["titulo"], "explicacao" => $formas[$forma]["explicacao"], "garantia" => forma_com_garantia($forma)];
+    }
+    if (($modo["escala_dias"] ?? null) !== null) {
+        return ["escolhe_forma" => false, "forma" => $forma, "texto" => $formas[$forma]["nome"],
+            "explicacao" => t("A escala escolhe pela forma do modo ({1}), com as medidas de cada dia simulado; a forma e os critérios que contam na nota se escolhem nos Modos de rodízio.", [1 => formas_de_escolha_frase(MODO_ESCALA_FORMAS)]),
+            "garantia" => forma_com_garantia($forma)];
+    }
+    return ["escolhe_forma" => false, "forma" => $forma, "texto" => t("todos com a mesma chance"), "explicacao" => $formas[$forma]["explicacao"], "garantia" => forma_com_garantia($forma)];
 }
 
 // O roteiro calculado para um relógio num dia: as cinco saídas e as linhas do roteiro, como números (null: vazio)
@@ -5496,7 +5613,7 @@ function roteiro_calcular($arvores, $r, $dia, $m_ini, $criterios = null)
 // passou na semana (se sobrar algum); quem tem
 // garantia = 1 passa na frente (o mais tempo parado primeiro; empate: o cadastrado primeiro); senão o peso: todos 0, a
 // maior nota (empate: o cadastrado primeiro); todos iguais, sorteio simples; senão, sorteio com o peso de cada um como
-// chance. $roteiro: as árvores completas, ou a chave de uma forma de escolha (inteligente, ponderado, aleatorio, fifo), que
+// chance. $roteiro: as árvores completas, ou a chave de uma forma de escolha (as de formas_de_escolha), que
 // vira o roteiro dela. $estilo: a forma, para a frase do motivo (null: pelo modo; "roteiro": as frases gerais). A nota e
 // os dias sem uso são os do começo do dia ($m_ini), com os dias anteriores do plano já simulados por quem chama. $modo
 // pode ser null (sem ciclo). Devolve [o id ou null, o motivo, quantos dias seguidos o escolhido fica]
@@ -6256,7 +6373,7 @@ const RODIZIO_MANUAL_POR_PAGINA = 7;
 // o critério do "Decida por mim" do rodízio manual, como a API o explica
 function rodizio_manual_criterio()
 {
-    return t("Decida por mim: o sistema escolhe pela nota dos critérios (os que você cadastra em Critérios: dias sem uso, equilíbrio, preferência, carga...), recalculada no começo de cada dia, com os dias anteriores do período (os que você escolheu e os que ele decidiu) já contados como uso; a garantia de rodízio vem na frente (quem passou do limite de dias sem uso, o mais tempo parado primeiro); e o relógio de ontem e o de amanhã ficam de fora, se houver outro. Empate: o cadastrado primeiro. A decisão é feita ao gravar e fica gravada no plano, com o motivo; hoje, com \"Decida por mim\", continua o relógio que já está no plano. Sortear este dia por: o dia é sorteado ao gravar pela forma escolhida (a maior nota, sorteio pela nota, aleatório ou fila), com a garantia de rodízio na frente (menos no aleatório) e sem o de ontem e o de amanhã.");
+    return t("Decida por mim: o sistema escolhe pela nota dos critérios (os que você cadastra em Critérios: dias sem uso, equilíbrio, preferência, carga...), recalculada no começo de cada dia, com os dias anteriores do período (os que você escolheu e os que ele decidiu) já contados como uso; a garantia de rodízio vem na frente (quem passou do limite de dias sem uso, o mais tempo parado primeiro); e o relógio de ontem e o de amanhã ficam de fora, se houver outro. Empate: o cadastrado primeiro. A decisão é feita ao gravar e fica gravada no plano, com o motivo; hoje, com \"Decida por mim\", continua o relógio que já está no plano. Sortear este dia por: o dia é sorteado ao gravar pela forma escolhida ({1}), com a garantia de rodízio na frente (menos no aleatório) e sem o de ontem e o de amanhã.", [1 => formas_de_escolha_frase()]);
 }
 
 // O período do rodízio manual: de e ate (AAAA-MM-DD), de hoje em diante, até 2 anos. Devolve [de, ate, erro]
@@ -6311,7 +6428,7 @@ function rodizio_manual_pagina($de, $ate, $pagina)
         "pagina" => $pagina, "paginas" => $paginas, "dias" => $dias, "trocar_hoje" => trocar_hoje_permitido(), "dia_sem_relogio" => dia_sem_relogio_permitido(),
         "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio WHERE disponivel = 1 ORDER BY nome")),
         "decida_por_mim" => rodizio_manual_criterio(),
-        "formas" => array_map(function ($k, $n) { return ["chave" => $k, "nome" => $n]; }, array_keys(formas_de_escolha()), formas_de_escolha())];
+        "formas" => formas_de_escolha_lista()];
 }
 
 // O "Decida por mim": o relógio de cada dia "auto" do período, em ordem, pelo critério de rodizio_manual_criterio(). De hoje

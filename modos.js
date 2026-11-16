@@ -3,18 +3,22 @@
 // escolha e, no personalizado, o roteiro escrito à mão com o "Testar em todos os relógios". Lê a API (recurso=cadastros: os
 // modos com o roteiro efetivo, os tipos, os grupos e os relógios) e grava nela (recurso=modos: salvar, ativar e excluir; o
 // teste do roteiro lê recurso=roteiro). modos.php?editar=<id>#form abre um modo para alterar; ?tipo=<tipo> começa um novo
-var SEL = {inteligente: t("Inteligente: a maior nota"), ponderado: t("Inteligente com sorteio: a nota é a chance"), aleatorio: t("Totalmente aleatório"), fifo: t("Fila: o que está há mais tempo sem uso"), menos_usado: t("Menos usado: o que tem menos dias de uso no total")};
 var DIAS = ["", t("seg"), t("ter"), t("qua"), t("qui"), t("sex"), t("sáb"), t("dom")];
 var DIAS_LONGOS = ["", t("Segunda"), t("Terça"), t("Quarta"), t("Quinta"), t("Sexta"), t("Sábado"), t("Domingo")];
 var ESCALAS = [[7, t("Uma semana")], [30, t("Um mês")], [60, t("Dois meses")], [180, t("Meio ano")], [365, t("Um ano")], [730, t("Dois anos")]];
-var EXPLICA_TIPO = {
-  semana: t("Um relógio para a semana inteira, do primeiro ao último dia dela (a semana começa no dia da Configuração). Escolha de onde ele sai e o critério; o Sortear de novo sorteia um para cada semana."),
-  semana_fds: t("Dois trechos na semana: de segunda a sexta e no fim de semana, cada um com o seu grupo e com um relógio para o trecho inteiro ou um por dia."),
-  dia_semana: t("Um relógio por dia, e cada dia da semana diz de onde ele sai: um grupo, um relógio fixo ou nenhum (dia livre)."),
-  aleatorio: t("Um relógio por dia, todos com a mesma chance, sem olhar os critérios nem a garantia de rodízio. O de ontem fica de fora, se houver outro."),
-  escala: t("Planeja o período inteiro de uma vez, simulando dia a dia a carga de cada relógio: a maior nota do dia simulado, o smartwatch pelos dias que a bateria dá (a fórmula dias_seguidos), os lembretes de carregar e dar corda anotados no dia. É refeita toda manhã a partir do estado real."),
-  personalizado: t("Você escreve o roteiro: uma linha por nome, e o motor lê candidato, nota, peso, dias e garantia (o que faltar usa o padrão). Vale tudo o que vale numa fórmula do cadastro.")
-};
+// um tipo de modo e uma forma de escolha, das listas que a API manda (cadastros/modos: tipos_de_modo e formas): a tela
+// não tem a lista dela
+function tipoDeModo(chave) {
+  return dados.tipos_de_modo.filter(function (x) { return x.chave === chave; })[0] || null;
+}
+function opcoesFormas(tp, atual) {
+  var escolhida = atual || tp.forma_padrao;
+  // as formas que o tipo aceita, na ordem em que a API as manda no tipo
+  return tp.formas.map(function (k) {
+    var f = dados.formas.filter(function (x) { return x.chave === k; })[0];
+    return el("option", {"value": k, "selected": escolhida === k, "title": f.explicacao}, h(f.titulo));
+  }).join("");
+}
 var recado = "";
 var dados = null;
 
@@ -95,7 +99,8 @@ function formModo(e, f) {
     + el("label", {}, t("Tipo {1}", {1: el("select", {"name": "tipo", "data-troca-tipo": true}, dados.tipos_de_modo.map(function (x) {
       return el("option", {"value": x.chave, "selected": x.chave === tipo}, h(x.nome));
     }).join(""))}));
-  var corpo = el("p", {"class": "nota"}, h(EXPLICA_TIPO[tipo]));
+  var tp = tipoDeModo(tipo);
+  var corpo = el("p", {"class": "nota"}, h(tp.explicacao));
   var b1 = f.blocos[0] || null;
   if (tipo === "semana" || tipo === "aleatorio" || tipo === "escala") {
     corpo += el("div", {"class": "form-grade"}, el("label", {}, t("Escolher de {1}", {1: el("select", {"name": "de[0]"}, opcoesDe(valorDe(b1), false))}) + " " + ajudaEscolherDe())
@@ -138,12 +143,11 @@ function formModo(e, f) {
       + ajudaNota("semanas", t("As semanas do plano"), t("O plano vem montado até o último dia da última semana ({1}); a seguinte entra quando a sua vez chega, ou antes, em \"Sortear de novo: a próxima semana\" (só com mais de uma semana). A semana começa no dia escolhido em {2}; lá também se escolhe se, no último dia da semana, o plano traz só o dia seguinte ou a semana seguinte inteira.", {1: dados.semana_inicio === "domingo" ? t("o sábado") : t("o domingo"), 2: el("a", {"href": "configuracao.php"}, t("Configuração"))})));
   }
   if (tipo === "semana" || tipo === "semana_fds" || tipo === "dia_semana") {
-    corpo += el("label", {}, t("Critério de escolha (o sorteio) {1}", {1: el("select", {"name": "selecao"}, Object.keys(SEL).map(function (k) { return el("option", {"value": k, "selected": (f.selecao || "ponderado") === k}, h(SEL[k])); }).join(""))}))
+    corpo += el("label", {}, t("Critério de escolha (o sorteio) {1}", {1: el("select", {"name": "selecao"}, opcoesFormas(tp, f.selecao))}))
       + ajudaNota("garantia", t("A garantia de rodízio"), t("A garantia de rodízio ({1} dias sem uso, no máximo) vale antes do critério, menos no aleatório; ela se muda no quadro Modo de rodízio da página Hoje e vale para todos os modos. A nota vem dos {2}.", {1: dados.max_sem_uso, 2: el("a", {"href": "criterios.php"}, t("critérios"))}));
   } else if (tipo === "escala") {
     // a escala escolhe a forma (a maior nota, o sorteio pela nota, o menos usado ou a fila) e os critérios que contam na nota
-    var formas = dados.formas_da_escala || ["inteligente"];
-    corpo += el("label", {}, t("Como a escala escolhe {1}", {1: el("select", {"name": "selecao"}, formas.map(function (k) { return el("option", {"value": k, "selected": (f.selecao || "inteligente") === k}, h(SEL[k])); }).join(""))}))
+    corpo += el("label", {}, t("Como a escala escolhe {1}", {1: el("select", {"name": "selecao"}, opcoesFormas(tp, tp.formas.indexOf(f.selecao) >= 0 ? f.selecao : ""))}))
       + ajudaNota("criterio", t("O critério de escolha"), t("Como a escala escolhe o relógio de cada dia simulado (a garantia de rodízio na frente): a maior nota, o sorteio pela nota, o menos usado (o de menos dias de uso no total; empate, o mais tempo parado) ou a fila. A nota vem dos {1}: marque abaixo os que contam no cálculo.", {1: el("a", {"href": "criterios.php"}, t("critérios"))}));
   }
   if (tipo !== "aleatorio" && tipo !== "personalizado") {
@@ -223,8 +227,8 @@ function recarregarModos() {
     }
     var e = null;
     d.modos.forEach(function (x) { if (x.id === editar) { e = x; } });
-    var tipoNovo = params.get("tipo") && EXPLICA_TIPO[params.get("tipo")] ? params.get("tipo") : "semana";
-    var f = e || {tipo: tipoNovo, selecao: "ponderado", escala_dias: null, semanas: 1, ciclo: 0, blocos: [], roteiro: ""};
+    var tipoNovo = params.get("tipo") && tipoDeModo(params.get("tipo")) ? params.get("tipo") : d.tipos_de_modo[0].chave;
+    var f = e || {tipo: tipoNovo, selecao: "", escala_dias: null, semanas: 1, ciclo: 0, blocos: [], roteiro: ""};
     if (!e && params.get("copiar")) {
       d.modos.forEach(function (x) { if (x.id === parseInt(params.get("copiar"), 10)) { f.roteiro = x.roteiro_efetivo; f.nome = x.nome; f.semanas = x.semanas; } });
     }
@@ -234,7 +238,7 @@ function recarregarModos() {
         + el("tbody", {}, d.modos.map(function (m) {
           var esc = "";
           ESCALAS.forEach(function (x) { if (x[0] === m.escala_dias) { esc = x[1]; } });
-          var criterio = m.tipo === "escala" ? h(SEL[m.forma] || SEL.inteligente) : (m.tipo === "aleatorio" ? t("todos com a mesma chance") : (m.tipo === "personalizado" ? t("pelo roteiro") : h(SEL[m.selecao])));
+          var criterio = h(m.escolha.texto);
           return el("tr", {}, el("td", {}, h(m.nome) + (d.modo_ativo === m.id ? " " + el("strong", {}, t("(ativo)")) : ""))
             + el("td", {}, h(m.tipo_texto))
             + el("td", {}, criterio + (m.ciclo === 1 ? t(" · com ciclo") : ""))
@@ -256,7 +260,7 @@ document.addEventListener("change", function (ev) {
     var nome = form.querySelector("input[name=nome]").value;
     var e = null;
     dados.modos.forEach(function (x) { if (id && x.id === parseInt(id.value, 10)) { e = x; } });
-    var f = Object.assign({}, e || {selecao: "ponderado", escala_dias: null, semanas: 1, ciclo: 0, blocos: [], roteiro: ""}, {tipo: ev.target.value, nome: nome});
+    var f = Object.assign({}, e || {selecao: "", escala_dias: null, semanas: 1, ciclo: 0, blocos: [], roteiro: ""}, {tipo: ev.target.value, nome: nome});
     form.outerHTML = formModo(e, f);
   }
   if (ev.target.matches("[data-semanas]")) {

@@ -1262,6 +1262,13 @@ escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(12), "re
 // um dia (livre) sorteado à mão por uma forma de escolha; a forma inválida é recusada
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(13), "relogio_id" => "sortear:aleatorio"]);
 escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(13), "relogio_id" => "sortear:x"], false);
+// cada forma de escolha sorteia o dia (a chave com "_", o menos usado, também: ela já foi lida como "voltar a sortear"); a
+// lista das formas é a que a API manda (hoje e plano: formas), e a forma vazia é recusada
+foreach (array_column(ler("as formas de escolha da Hoje", ["recurso" => "hoje", "incluir" => "formas,modo,modos"])["formas"] ?? [], "chave") as $forma_c) {
+    escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(13), "relogio_id" => "sortear:" . $forma_c]);
+}
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(13), "relogio_id" => "sortear:"], false);
+ler("as formas de escolha do Plano", ["recurso" => "plano", "incluir" => "formas"]);
 escrever(["recurso" => "rodizio", "acao" => "resortear"]);
 ler("plano com livres", ["recurso" => "plano", "dias" => 30]);
 // um dia de folga pelo "trocar por…" (relogio_id=livre): só aquele dia fica sem relógio e sem sorteio, e os outros ficam como
