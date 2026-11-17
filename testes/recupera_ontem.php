@@ -92,7 +92,10 @@ try {
 
     // ---- o relógio de ontem foi usado, nem que seja um pouquinho: nada passa
     montar_plano($ids, $hoje);
-    $uso = op_lancamento("periodo", ["relogio_id" => $ids[0], "tipo" => "pulso", "inicio" => $ontem . " 23:50", "fim" => $h . " 00:05"]);
+    // passa da meia-noite (até hoje 00:05); nos primeiros minutos do dia, quando 00:05 ainda é futuro (e a API recusa o fim
+    // depois de agora), fica em ontem até 23:59
+    $fim_uso = (new DateTime("now", $hoje->getTimezone()))->format("H:i") >= "00:06" ? $h . " 00:05" : $ontem . " 23:59";
+    $uso = op_lancamento("periodo", ["relogio_id" => $ids[0], "tipo" => "pulso", "inicio" => $ontem . " 23:50", "fim" => $fim_uso]);
     exigir_recupera($uso["ok"], "Não registrou o uso de ontem: " . json_encode($uso["erros"] ?? []));
     $antes = plano_de_hoje($ontem);
     exigir_recupera(plano_recuperar_ontem($hoje) === false && plano_de_hoje($ontem) === $antes, "Passou o relógio que foi ao pulso ontem (cinco minutos antes da meia-noite).");
