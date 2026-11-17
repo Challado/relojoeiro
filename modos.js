@@ -30,8 +30,8 @@ function opcoesDe(sel, comLivre) {
       // o relógio que o rodízio não sorteia (indisponível ou fora do sorteio) não serve de fixo: fica na lista, desabilitado,
       // com o motivo (menos o que o bloco já tem, para ele continuar aparecendo como está)
       var fora = !r.no_sorteio && sel !== "r:" + r.id;
-      return el("option", {"value": "r:" + r.id, "selected": sel === "r:" + r.id, "disabled": fora, "title": fora ? t("o rodízio não sorteia este relógio (o cadastro dele: Disponível para o rodízio e Entra no sorteio do rodízio)") : null},
-        h(fora ? t("{1} — indisponível: {2}", {1: r.nome, 2: t("o rodízio não sorteia este relógio (o cadastro dele: Disponível para o rodízio e Entra no sorteio do rodízio)")}) : r.nome));
+      return el("option", {"value": "r:" + r.id, "selected": sel === "r:" + r.id, "disabled": fora, "title": fora ? t("o rodízio não sorteia este relógio (o cadastro dele: Relógio ativo e Entra no sorteio do rodízio)") : null},
+        h(fora ? t("{1} — indisponível: {2}", {1: r.nome, 2: t("o rodízio não sorteia este relógio (o cadastro dele: Relógio ativo e Entra no sorteio do rodízio)")}) : r.nome));
     }).join(""))
     + (comLivre ? el("option", {"value": "livre", "selected": sel === "livre"}, t("Sem relógio (dia livre)")) : "");
 }
@@ -79,7 +79,7 @@ function listaSemanas(n) {
 
 // o ⓘ do "Escolher de": de onde sai o relógio de cada dia (por dia da semana, também o dia livre)
 function ajudaEscolherDe(porDia) {
-  return ajuda("escolher-de", t("Escolher de"), el("p", {}, t("De onde sai o relógio: a coleção toda, um grupo da árvore (com os subgrupos dele) ou um relógio fixo. O relógio fixo sai sempre que estiver disponível; indisponível (na oficina, fora do rodízio), o dia é sorteado entre os outros candidatos.")
+  return ajuda("escolher-de", t("Escolher de"), el("p", {}, t("De onde sai o relógio: a coleção toda, um grupo da árvore (com os subgrupos dele) ou um relógio fixo. O relógio fixo sai sempre que estiver ativo e no sorteio; inativo, na oficina ou fora do sorteio, o dia é sorteado entre os outros candidatos.")
     + (porDia ? " " + t("Na tabela por dia da semana, \"Sem relógio\" deixa o dia livre: sem sorteio e sem ninguém no pulso.") : "")));
 }
 
@@ -226,7 +226,7 @@ function recarregarModos() {
     var res = el("h1", {}, t("Modos de rodízio")) + ondeMuda("modos", [[t("Os modos, os blocos e quem entra em cada um"), t("aqui")],
       [t("O plano dos próximos dias que o modo monta"), lugar("plano.php", t("Rodízio › Plano"))],
       [t("Como o relógio de cada dia é escolhido (a nota, o peso)"), lugar("criterios.php", t("Rodízio › Critérios de escolha"))],
-      [t("Se um relógio entra no rodízio"), t("{1} ou {2}: o relógio › Editar cadastro › Disponível para o rodízio e Entra no sorteio do rodízio", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})]]);
+      [t("Se um relógio entra no rodízio"), t("{1} ou {2}: o relógio › Editar cadastro › Relógio ativo e Entra no sorteio do rodízio", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})]]);
     if (recado !== "") {
       res += recado;
       recado = "";

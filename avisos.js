@@ -126,7 +126,7 @@ function recarregarAvisos() {
       + el("label", {}, t("Nome {1}", {1: el("input", {"name": "nome", "value": fe.nome, "required": true, "placeholder": t("Conferir a carga dos smartwatches")})}))
       + el("label", {}, t("Relógio (opcional: com relógio, as âncoras dele funcionam) {1}", {1: el("select", {"name": "relogio_id"}, el("option", {"value": "0"}, t("Nenhum, é um evento geral"))
         + dg.relogios.filter(function (r) { return r.disponivel || fe.relogio_id === r.id; }).map(function (r) {
-          return el("option", {"value": r.id, "selected": fe.relogio_id === r.id}, h(r.nome) + (r.disponivel ? "" : t(" (indisponível)")));
+          return el("option", {"value": r.id, "selected": fe.relogio_id === r.id}, h(r.nome) + (r.disponivel ? "" : t(" (inativo)")));
         }).join(""))}))
       + el("label", {}, t("Quando dispara {1}", {1: el("select", {"name": "repeticao", "id": "ev-repeticao"}, Object.keys(dg.repeticoes).map(function (k) {
         return el("option", {"value": k, "selected": fe.repeticao === k}, h(dg.repeticoes[k]));

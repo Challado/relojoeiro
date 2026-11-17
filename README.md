@@ -889,11 +889,11 @@ pelo quadro **Manutenção** do painel). Escolha o relógio, a **oficina**, a **
 problema, a ordem de serviço, o envio, a previsão de volta, o orçamento, o que foi junto (a caixa, a pulseira) e os documentos
 do envio.
 
-Ao gravar, o relógio fica **em manutenção**: indisponível para o rodízio até voltar (com a etiqueta *em manutenção* no painel
+Ao gravar, o relógio fica **em manutenção**: inativo até voltar (com a etiqueta *em manutenção* no painel
 e o estado *Em manutenção* na página Hoje), as sessões abertas dele fecham (no pulso, no sol, no carregador; no winder, a
 posição fica livre), os dias dele no plano de amanhã em diante saem e são sorteados de novo, e os avisos de carga, corda e
 pilha param. Se ele era o **relógio de hoje**, hoje fica livre: com a Configuração deixando trocar o relógio de hoje no
-próprio dia, você escolhe outro; sem ela, hoje fica sem relógio. Mudar o disponível do relógio enquanto ele está na oficina
+próprio dia, você escolhe outro; sem ela, hoje fica sem relógio. Mudar o **Relógio ativo** enquanto ele está na oficina
 muda o da volta.
 
 A **situação** anda pela linha da tabela (o menu e **Mudar**), e cada mudança fica na **história**. As situações são uma
@@ -1080,7 +1080,7 @@ disco na hora. Pela API, toda exclusão pede `confirmar=1`.
 
 ## O cadastro de cada relógio, campo por campo
 
-Todo relógio tem **nome**, **marca**, **grupo**, **situação na coleção**, **disponível** e **foto**. O resto são **campos**, e quais campos um relógio tem depende
+Todo relógio tem **nome**, **marca**, **grupo**, **situação na coleção**, **ativo** e **foto**. O resto são **campos**, e quais campos um relógio tem depende
 do **grupo** dele: tudo o que é cadastrado num grupo vale para ele e para todos os grupos abaixo. É por isso que "ser
 automático" não é uma marcação à parte: é estar no grupo **Automático** (ou num subgrupo dele), e com isso herdar os campos de
 pulso e de winder.
@@ -1109,8 +1109,8 @@ grupos e os padrões são cadastro, não código: dá para mudar tudo na página
 | **Nome** | como ele aparece em todo lugar: na tela, no Telegram e na agenda. |
 | **Grupo** | o lugar dele na árvore. Decide os campos, as fórmulas (a "carga" de um smartwatch é a bateria; a de um mecânico, a reserva de marcha) e os avisos que ele recebe. |
 | **Situação na coleção** | Um item da lista **Situações do relógio na coleção** (Cadastros › Listas): **Na coleção** (o de sempre), **Desejado** (a lista de desejos: ainda não é seu), **Emprestado** (é seu, mas está com outra pessoa) ou um que sai da coleção (**Vendido**, **Arquivado**, **Presenteado**, **Perdido ou roubado** e os que você criar). Só o que está na coleção entra no rodízio: nas outras situações o relógio fica indisponível, sai do sorteio, da escala e dos avisos, e, ao sair da coleção, as sessões abertas dele (no pulso, no sol, no carregador) fecham na hora e os dias dele no plano de amanhã em diante saem e são sorteados de novo (hoje fica, mas ele não vai mais ao pulso sozinho: troque no **trocar por…**). A ficha, os documentos e o histórico ficam. O emprestado continua seu (no valor da coleção e nos avisos, com o estado **Emprestado**). Cada situação tem a aba dela em cima da tabela da página Hoje, e a saída fica anotada (quando, para quem, por quanto). Voltando para **Na coleção**, ele volta disponível. Veja [As abas e as saídas da coleção](#as-abas-e-as-saídas-da-coleção) e [A lista de desejos](#a-lista-de-desejos). |
-| **Disponível** | desmarcado, ele sai de tudo: do rodízio, da carga, dos avisos e do **Usando hoje** (no conserto, numa pausa), mas o histórico fica. Fora da coleção, fica sempre desmarcado (e o campo some do cadastro). |
-| **Entra no sorteio do rodízio** | marcada (o normal), o rodízio pode escolhê-lo sozinho. Desmarcada, ele sai só do sorteio: o plano semanal, a escala, o **Sortear este dia por**, o **Decida por mim** do Rodízio manual, a **Sugestão para agora** e o relógio fixo de um bloco dos Modos não o escolhem mais; mas ele continua na coleção, disponível, com a carga, os avisos, o **Pôs no pulso** e o **Usando hoje**, e você ainda pode escolhê-lo à mão para um dia (o **trocar por…**, o Rodízio manual). Ao desmarcar, os dias sorteados dele de amanhã em diante são sorteados de novo entre os outros; hoje e os dias escolhidos à mão ficam. O ⓘ **Disponível e sorteio** explica a diferença, e a ficha diz na **Próxima vez** que ele está fora do sorteio. Pela API: `recurso=relogio`, `acao=salvar`, `sorteio=0` (ou `1`). |
+| **Relógio ativo** | desmarcado, o relógio fica **inativo** e sai de tudo: do rodízio, da carga, dos avisos e do **Usando hoje** (no conserto, numa pausa), mas o histórico fica. Fora da coleção, fica sempre desmarcado (e o campo some do cadastro). |
+| **Entra no sorteio do rodízio** | marcada (o normal), o rodízio pode escolhê-lo sozinho. Desmarcada, ele sai só do sorteio: o plano semanal, a escala, o **Sortear este dia por**, o **Decida por mim** do Rodízio manual, a **Sugestão para agora** e o relógio fixo de um bloco dos Modos não o escolhem mais; mas ele continua na coleção, ativo, com a carga, os avisos, o **Pôs no pulso** e o **Usando hoje**, e você ainda pode escolhê-lo à mão para um dia (o **trocar por…**, o Rodízio manual). Ao desmarcar, os dias sorteados dele de amanhã em diante são sorteados de novo entre os outros; hoje e os dias escolhidos à mão ficam. O ⓘ **Ativo e sorteio** explica a diferença, e a ficha diz na **Próxima vez** que ele está fora do sorteio. Pela API: `recurso=relogio`, `acao=salvar`, `sorteio=0` (ou `1`). |
 | **Guardar no banco a cópia de todos os documentos dele** | marcada, todo arquivo do relógio (o manual, a nota, as fotos, os vídeos) vai também para o banco, como cópia de segurança. Só aparece quando a Configuração da coleção não decide por todos (**Cópia dos documentos no banco (válido para todos os relógios)** vazia). Veja [Os documentos do relógio](#os-documentos-do-relógio): é o segundo dos três níveis da cópia. |
 | **Foto** | só para a tela. No detalhe do relógio (o painel, ou a ficha), parando o mouse em cima da foto aparece um resumo dele (o nome, o grupo e o código; o estado e a carga; a nota e o próximo dia no rodízio; a compra) e a lembrança do duplo clique. **Duplo clique** nela, ou o botão **Abrir foto** embaixo, abre a foto numa janela flutuante, no tamanho dela (só no detalhe: nas outras fotos, como a do *Hoje é dia de* e as miniaturas da lista, o clique abre o relógio); a que é maior que a tela aparece em escala, sem deformar, no maior tamanho que cabe no monitor (e na janela do navegador), com o tamanho real e a escala embaixo. Fecha com o ×, com um clique fora ou com Esc. |
 | **Acessórios** | as pulseiras, a caixa, o estojo, as ferramentas, o carregador, as peças: o quadro **Acessórios** do painel mostra os dele (o tipo, o nome e a observação), e a página **Acessórios** cadastra e muda (um acessório pode ser de um relógio ou solto, servindo a vários). Cada acessório tem os campos do tipo dele (a largura, o material, a cor e o fecho da pulseira), e o quadro mostra também os de outros relógios, ou soltos, que **servem** nele. Veja [A construção e os acessórios](#a-construção-e-os-acessórios). |
@@ -1249,7 +1249,7 @@ foto e os documentos como qualquer outro (o anúncio, a foto da vitrine), e dois
 
 No painel de um desejado, no lugar dos quadros do dia a dia (agora, carga, nota, plano, compra, Marcar), aparece o quadro
 **Desejo**: a marca, a referência, o preço-alvo, a prioridade e o link. **Comprou?** Na página Desejos, o botão **Comprei**
-põe o relógio na coleção (disponível para o rodízio) e abre a ficha dele, para preencher a compra (a data, o valor, a loja):
+põe o relógio na coleção (ativo e no rodízio) e abre a ficha dele, para preencher a compra (a data, o valor, a loja):
 o histórico começa dali. Os campos só dos desejados continuam guardados, mas somem do cadastro. Pela API:
 `recurso=desejos` (a lista) e `recurso=relogio`, `acao=salvar`, `posse=colecao` (o Comprei).
 
@@ -1310,8 +1310,7 @@ Gostou? **Pôr no pulso** marca o relógio no pulso agora. Não gostou? **Outra 
 já apareceram; quando acabam, o cartão avisa e oferece **Começar de novo**. Mudar a forma ou os tipos recomeça a rodada, e o
 navegador lembra a sua última escolha.
 
-O que a sugestão respeita: só entram os relógios **disponíveis** que estão **na coleção**. Ficam de fora, e o cartão diz
-quais e por quê, o que **já está no pulso** e o que está com a **carga no limite ou abaixo dele** (o limite de cada relógio
+O que a sugestão respeita: só entram os relógios **ativos** que estão **na coleção**. Ficam de fora, e o cartão diz quais e por quê, o que está **fora do sorteio** (o cadastro do relógio), o que **já está no pulso** e o que está com a **carga no limite ou abaixo dele** (o limite de cada relógio
 é o do cadastro: o do próprio relógio, senão o da Configuração). O **plano não muda**: o relógio do dia continua o mesmo, e
 o sugerido que vai ao pulso conta como uso fora do plano. Nada é gravado até você apertar Pôr no pulso. Com **Ao pôr um
 relógio no pulso, tirar os outros** ligada, o que estava no pulso sai na mesma hora.
@@ -1463,7 +1462,7 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 | Acertar a hora | `acertar_hora` | Tradicional | o Acerto da hora. Vence quando o desvio estimado passa de *Acertar a hora a partir de* (padrão 60 s), pela marcha medida; avisa 2 dias antes. |
 | Marcha fora do esperado | `marcha_fora` | Tradicional | uma nova leitura do desvio. Vence na leitura cuja marcha saiu da *Marcha esperada* ou, com 4 medições ou mais, ficou longe do histórico do próprio relógio (mais que 3 vezes a variação, e no mínimo 5 s/dia). |
 | Garantia vencendo | `garantia` | todos | (nada: só avisa) |
-| Encostado | `encostado` | todos (os da coleção, disponíveis) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (a Configuração, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). Não entra na próxima manutenção nem no **O que fazer**: a tabela tem a coluna **Encostado**, com quanto falta ou quanto passou. |
+| Encostado | `encostado` | todos (os da coleção, ativos) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (a Configuração, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). Não entra na próxima manutenção nem no **O que fazer**: a tabela tem a coluna **Encostado**, com quanto falta ou quanto passou. |
 
 Os avisos vão no alerta da manhã. Um aviso marcado **na hora** (na página **Avisos**, a caixa *na hora*) vai também pelo
 Telegram **no minuto em que vence**, uma vez só, até ser resolvido: é assim que o **Tirar do carregador** chega quando a bateria
@@ -1852,7 +1851,7 @@ vendo o sistema como outra pessoa vê uma faixa no alto, **Vendo como...**, com 
 
 **O estado de cada relógio** diz onde ele está agora: **Em uso** (verde, no pulso), o nome da sessão aberta quando ele está
 noutro lugar, como **No sol**, **No winder** ou **No carregador** (laranja), **Em repouso** (vermelho, guardado) e
-**Indisponível** (cinza, fora do rodízio e guardado) ou **Emprestado** (cinza: com outra pessoa). O filtro **Estado** traz cada um deles. No painel, o estado vem com o
+**Inativo** (cinza, fora do rodízio e guardado) ou **Emprestado** (cinza: com outra pessoa). O filtro **Estado** traz cada um deles. No painel, o estado vem com o
 desde quando (*"No sol desde 09:12"*). Qualquer tipo de lançamento do formato sessão que você cadastrar entra aqui pelo nome.
 
 **As explicações.** O que explica uma página não fica no meio dela, empurrando os campos: fica numa **gaveta** que desliza
@@ -2656,11 +2655,10 @@ estavam livres continuam livres, até você escolher um relógio para eles ou vo
 três níveis (o sistema, a sua conta e a coleção).
 
 **E se eu quiser um relógio na coleção que o rodízio nunca escolha?**
-No cadastro dele (**Editar cadastro**), desmarque **Entra no sorteio do rodízio** e grave. Ele fica disponível, com a carga e
+No cadastro dele (**Editar cadastro**), desmarque **Entra no sorteio do rodízio** e grave. Ele continua ativo, com a carga e
 os avisos, e você o usa quando quiser (o **Pôs no pulso**, o **Usando hoje**, o **trocar por…** de um dia), mas o sorteio
 (o plano, a escala, o **Sortear este dia por**, o **Decida por mim**, a **Sugestão para agora**) não o escolhe mais. Os dias
-já sorteados dele, de amanhã em diante, são sorteados de novo. Para tirá-lo de tudo, até dos avisos, desmarque
-**Disponível para o rodízio**.
+já sorteados dele, de amanhã em diante, são sorteados de novo. Para tirá-lo de tudo, até dos avisos, desmarque **Relógio ativo**.
 
 **E se eu quiser escolher eu mesmo os relógios de um período?**
 No quadro **Modo de rodízio** da página Hoje, escolha **Rodízio manual**, ponha o começo e o fim e clique em **OK**: os dias
@@ -2697,7 +2695,7 @@ em **Salvar**, ou **Excluir**. Corrigir o pulso também corrige as medições do
 contou como no pulso por um Tirou esquecido deixa de puxar o gasto em uso para cima.
 
 **Um relógio está no conserto.**
-Desmarque **Disponível** no cadastro. Ele sai do sorteio e das médias da coleção, mas o histórico continua.
+Desmarque **Relógio ativo** no cadastro. Ele sai do sorteio e das médias da coleção, mas o histórico continua.
 
 **Tenho um tipo de relógio que o sistema não conhece (um kinetic, um relógio de bolso...).**
 Crie um grupo para ele, os campos, os tipos de lançamento e uma versão da fórmula `energia` nesse grupo. Os avisos e os

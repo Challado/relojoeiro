@@ -301,7 +301,7 @@
  *                            [{"id", "nome", "selecao", "escala_dias", "blocos": [{"id", "nome", "dias", "no_id", "um_por", "relogio_id"}]}],
  *                            "grupos": [{"id", "nome", "profundidade", "caminho"}], "avisos_nomes" (o filtro O que fazer, sem o Encostado), "estados" (o filtro Estado),
  *                            "relogios": [{"id", "nome", "disponivel", "tipo" (o grupo), "em_uso", "estado" (uso, sessao, repouso ou
- *                            indisponivel), "estado_texto" ("Em uso", "No sol", "No carregador", "Em repouso", "Indisponível"),
+ *                            indisponivel), "estado_texto" ("Em uso", "No sol", "No carregador", "Em repouso", "Inativo"),
  *                            "estado_ordem", "agora" ("No sol desde 09:12"), "carga" (%), "carga_de" (de onde
  *                            vem), "ultimo" (a última vez no pulso, em segundos), "ultimo_txt", "uso" (o tempo de uso total, em segundos), "uso_texto" ("1d 4h 30m"), "situacao": [linhas], "manutencao":
  *                            {"nome", "data", "momento", "falta"} (o aviso de manutenção mais perto, sem o Encostado), "encostado":
@@ -1403,7 +1403,7 @@
  *                                    o valor medido (número, ou o texto de uma lista)
  *     criterios.notas[].conta[].variavel
  *                                    o que o subparâmetro mede (o identificador do campo ou da fórmula)
- *     criterios.notas[].disponivel   verdadeiro ou falso: o relógio está disponível para o rodízio
+ *     criterios.notas[].disponivel   verdadeiro ou falso: o relógio está ativo (a caixa Relógio ativo do cadastro)
  *     criterios.notas[].grupo        o grupo do relógio (o caminho na árvore)
  *     criterios.notas[].nota         a nota final, de 0 a 100 (número): a soma dos pontos
  *     criterios.notas[].relogio      o nome do relógio
@@ -2433,8 +2433,8 @@
  *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
  *     relogios[].posse_comportamento o que a situação faz (o comportamento do item): colecao (entra no rodízio), emprestado (da coleção,
  *                                    fora do rodízio), desejado (a lista de desejos) ou fora (fora da coleção)
- *     relogios[].em_manutencao       a oficina em que ele está (o relógio em manutenção: indisponível, com o estado Em manutenção); null:
- *                                    não está
+ *     relogios[].em_manutencao       a oficina em que ele está (o relógio em manutenção: inativo, com o estado Em manutenção); null: não
+ *                                    está
  *     agora                          o instante da resposta (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     avisos[]                       os avisos de hoje (atrasados ou em breve), um por relógio e aviso
  *     avisos[].estado                atrasado ou em_breve
@@ -2520,7 +2520,7 @@
  *     relogios[].saida.destino       para quem foi (quem comprou, ganhou ou está com ele); null: não anotado
  *     relogios[].saida.observacao    a observação da saída; null: sem
  *     estados[]                      os estados da tabela, na ordem (o filtro Estado): "Em uso", o nome de cada sessão que não é o pulso
- *                                    ("No sol", "No winder", "No carregador"...), "Em repouso", "Indisponível" e "Emprestado"
+ *                                    ("No sol", "No winder", "No carregador"...), "Em repouso", "Inativo" e "Emprestado"
  *     comecou                        verdadeiro ou falso: o dia já começou no pulso (há relógio do dia e: pondo no pulso sozinho, passou do
  *                                    uso_inicio; senão, ele já foi posto no pulso hoje)
  *     pulso_poe_sozinho              verdadeiro: o relógio do dia entra no pulso sozinho no início do horário de uso; falso: só pelo Pôs
@@ -2665,19 +2665,19 @@
  *     relogios[].de_hoje             verdadeiro ou falso: é o relógio de hoje
  *     relogios[].destaque            verdadeiro ou falso: é o relógio do destaque no alto da página (o mesmo de destaque.relogio_id)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
- *     relogios[].no_sorteio          verdadeiro: o rodízio pode escolhê-lo (disponível e com a marca Entra no sorteio do rodízio); falso:
- *                                    indisponível, ou fora do sorteio (continua na coleção e pode ser escolhido à mão)
+ *     relogios[].no_sorteio          verdadeiro: o rodízio pode escolhê-lo (ativo e com a marca Entra no sorteio do rodízio); falso:
+ *                                    inativo, ou fora do sorteio (continua na coleção e pode ser escolhido à mão)
  *     relogios[].posse               a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
  *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
  *                                    posse_comportamento
  *     relogios[].posse_texto         a mesma por extenso: "Na coleção" ou "Emprestado"
  *     relogios[].em_uso              verdadeiro ou falso: no pulso agora
  *     relogios[].estado              o estado na tabela: uso (no pulso), sessao (numa sessão que não é o pulso: no sol, no winder, no
- *                                    carregador...), repouso ou indisponivel (o indisponível parado; no pulso ou numa sessão, vale o que
- *                                    ele está fazendo)
+ *                                    carregador...), repouso ou indisponivel (o inativo parado; no pulso ou numa sessão, vale o que ele
+ *                                    está fazendo)
  *     relogios[].estado_texto        o estado como a tabela mostra: "Em uso", o nome da sessão aberta ("No sol", "No carregador"; duas
- *                                    juntas: "No sol · No winder"), "Em repouso", "Indisponível" ou "Emprestado" (o emprestado parado)
- *     relogios[].estado_ordem        a ordem do estado na tabela: 0 em uso, 1 numa sessão, 2 em repouso, 3 indisponível
+ *                                    juntas: "No sol · No winder"), "Em repouso", "Inativo" ou "Emprestado" (o emprestado parado)
+ *     relogios[].estado_ordem        a ordem do estado na tabela: 0 em uso, 1 numa sessão, 2 em repouso, 3 inativo
  *     relogios[].foto                a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC), para o endereço
  *                                    dela); null: sem foto
  *     relogios[].id                  o número (código)
@@ -2739,7 +2739,7 @@
  *                                    viram um dia); "—" sem uso
  *     totais                         os totais da coleção inteira (a tabela da página Hoje soma só os relógios que os filtros dela deixam à
  *                                    mostra)
- *     totais.disponiveis             quantos estão disponíveis para o rodízio
+ *     totais.disponiveis             quantos estão ativos (a caixa Relógio ativo do cadastro)
  *     totais.desejados               quantos relógios estão na lista de desejos
  *     totais.em_uso                  quantos estão em uso agora
  *     totais.fora                    quantos estão fora da coleção (desejados, vendidos e arquivados: os de fora_da_colecao)
@@ -3380,8 +3380,8 @@
  *     relogio.disponivel             verdadeiro ou falso: entra no rodízio
  *     relogio.sorteio                verdadeiro ou falso: a marca Entra no sorteio do rodízio do cadastro (o que se grava em relogio
  *                                    salvar: sorteio)
- *     relogio.no_sorteio             verdadeiro: o rodízio pode escolhê-lo agora (disponível e com a marca sorteio); falso: a ficha diz por
- *                                    que não
+ *     relogio.no_sorteio             verdadeiro: o rodízio pode escolhê-lo agora (ativo e com a marca sorteio); falso: a ficha diz por que
+ *                                    não
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
  *     relogio.marca                  a marca do relógio (Cadastros › Marcas); null: sem marca
@@ -3948,8 +3948,8 @@
  *     relogio.escala_fim             até que dia vai a escala (null fora da escala)
  *     relogio.foto                   a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     relogio.dica_foto              a dica da foto no painel (aparece com o mouse parado em cima dela), em linhas: o nome, o grupo e o
- *                                    código; o estado e a carga; a nota e o próximo dia no rodízio (ou indisponível); a compra (data e
- *                                    valor); e a frase: Duplo clique (ou "Abrir foto", embaixo): a foto em tamanho grande.
+ *                                    código; o estado e a carga; a nota e o próximo dia no rodízio (ou inativo); a compra (data e valor); e
+ *                                    a frase: Duplo clique (ou "Abrir foto", embaixo): a foto em tamanho grande.
  *     relogio.id                     o número (código)
  *     relogio.leituras[]             as 40 últimas leituras com valor (o gráfico)
  *     relogio.leituras[].em_uso      verdadeiro ou falso: a leitura é de uso (a marcação dela, ou, sem marcação, o pulso registrado naquele
@@ -4899,8 +4899,8 @@
  *     relogios[]                     os relógios
  *     relogios[].id                  o número
  *     relogios[].nome                o nome
- *     relogios[].no_sorteio          verdadeiro: o rodízio pode escolhê-lo (disponível e com a marca Entra no sorteio do rodízio); falso:
- *                                    ele não serve de relógio fixo de um bloco (a tela o mostra desabilitado, com o motivo)
+ *     relogios[].no_sorteio          verdadeiro: o rodízio pode escolhê-lo (ativo e com a marca Entra no sorteio do rodízio); falso: ele
+ *                                    não serve de relógio fixo de um bloco (a tela o mostra desabilitado, com o motivo)
  *     tipos_de_campo.<tipo_de_campo> cada tipo de campo e o nome
  *     marchas_de_lancamento          o que um tipo de lançamento pode medir da marcha (a lista Mede a marcha do cadastro)
  *     marchas_de_lancamento.desvio   a leitura do desvio da hora (só com valor, em segundos)
@@ -5055,7 +5055,7 @@
  *     notas[].conta[].subparametro   o nome do subparâmetro
  *     notas[].conta[].valor          o valor medido (número, ou o texto de uma lista)
  *     notas[].conta[].variavel       o que o subparâmetro mede (o identificador do campo ou da fórmula)
- *     notas[].disponivel             verdadeiro ou falso: o relógio está disponível para o rodízio
+ *     notas[].disponivel             verdadeiro ou falso: o relógio está ativo (a caixa Relógio ativo do cadastro)
  *     notas[].grupo                  o grupo do relógio (o caminho na árvore)
  *     notas[].nota                   a nota final, de 0 a 100 (número): a soma dos pontos
  *     notas[].relogio                o nome do relógio
@@ -6276,7 +6276,7 @@
  *     relogios[].nome                o nome do relógio
  *     relogios[].posse               a situação na coleção (o identificador)
  *     relogios[].posse_texto         a situação por extenso
- *     relogios[].disponivel          true se está disponível para o rodízio agora
+ *     relogios[].disponivel          true se está ativo agora (a caixa Relógio ativo do cadastro)
  *     relogios[].manutencao_id       a manutenção aberta dele; null: não está em manutenção
  *     relogios[].em_manutencao       a oficina e desde quando, por extenso; null: não está
  *     acessorios                     os acessórios da coleção (o que pode ir junto)
@@ -6945,8 +6945,8 @@
  *                                    posse_comportamento
  *     relogio.posse_texto            a mesma por extenso
  *     relogio.disponivel             verdadeiro: está no rodízio
- *     relogio.no_sorteio             verdadeiro: o rodízio pode escolhê-lo (disponível e com a marca Entra no sorteio do rodízio); falso:
- *                                    fora do sorteio ou indisponível
+ *     relogio.no_sorteio             verdadeiro: o rodízio pode escolhê-lo (ativo e com a marca Entra no sorteio do rodízio); falso: fora
+ *                                    do sorteio ou inativo
  *     relogio.criado                 quando entrou no sistema (texto AAAA-MM-DD HH:MM:SS)
  *     relogio.foto                   a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     relogio.marca                  a marca (null)
@@ -7335,8 +7335,8 @@
  *     relogios[].id                  o número do relógio
  *     relogios[].nome                o nome
  *     relogios[].candidato           verdadeiro: entra na escolha do dia
- *     relogios[].no_sorteio          verdadeiro: o relógio entra no sorteio; falso: fora do sorteio (o cadastro) ou indisponível: o roteiro
- *                                    o calcula, mas a escolha do teste não o considera
+ *     relogios[].no_sorteio          verdadeiro: o relógio entra no sorteio; falso: fora do sorteio (o cadastro) ou inativo: o roteiro o
+ *                                    calcula, mas a escolha do teste não o considera
  *     relogios[].nota                a nota nesse dia (null: vazia)
  *     relogios[].peso                o peso (a chance) nesse dia (null: vazio)
  *     relogios[].dias                quantos dias seguidos ficaria (1 a 366)

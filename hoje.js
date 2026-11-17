@@ -147,7 +147,7 @@ function recarregarHoje() {
         + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data, d.trocar_hoje, d.dia_sem_relogio, d.formas);
     } else {
       texto += el("h1", {}, t("Nenhum relógio para hoje"))
-        + el("p", {}, t("Nenhum relógio disponível no grupo deste dia. Mude o grupo no modo de rodízio ou marque um relógio como disponível."));
+        + el("p", {}, t("Nenhum relógio disponível no grupo deste dia. Mude o grupo no modo de rodízio ou, no cadastro de um relógio dele, marque Relógio ativo e Entra no sorteio do rodízio."));
     }
     var res = el("div", {"class": "hoje-texto"}, texto);
     if (item) {

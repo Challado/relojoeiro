@@ -1,4 +1,4 @@
-<!-- origem: ed7f791f89ececedc57ca73da8a98758d573c560 -->
+<!-- origem: 3ffd02df6ad789e6cbd2f6e9ee48a5eefe41266f -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -864,12 +864,11 @@ mantenimiento** lo que lo manda (también desde el cuadro **Mantenimiento** del 
 **situación**, el **tipo de servicio** y, si quieres, el problema, la orden de servicio, el envío, la previsión de vuelta, el
 presupuesto, lo que fue junto (la caja, la correa) y los documentos del envío.
 
-Al guardar, el reloj queda **en mantenimiento**: no disponible para la rotación hasta volver (con la etiqueta *en
+Al guardar, el reloj queda **en mantenimiento**: inactivo hasta volver (con la etiqueta *en
 mantenimiento* en el panel y el estado *En mantenimiento* en la página Hoy), sus sesiones abiertas se cierran (en la muñeca, al
 sol, en el cargador; en el winder, la posición queda libre), sus días en el plan de mañana en adelante salen y se sortean de
 nuevo, y los avisos de carga, cuerda y pila se detienen. Si era el **reloj de hoy**, hoy queda libre: con la Configuración
-dejando cambiar el reloj de hoy el mismo día, eliges otro; sin ella, hoy queda sin reloj. Cambiar el disponible del reloj
-mientras está en el taller cambia el de la vuelta.
+dejando cambiar el reloj de hoy el mismo día, eliges otro; sin ella, hoy queda sin reloj. Cambiar **Reloj activo** mientras está en el taller cambia el de la vuelta.
 
 La **situación** avanza desde la fila de la tabla (el menú y **Cambiar**), y cada cambio queda en la **historia**. Las
 situaciones son una lista tuya (Mantenimiento › Listas), y cada una hace una de tres cosas: **en curso** (Enviado, esperando
@@ -1065,7 +1064,7 @@ los documentos salen del disco en el momento. Por la API, toda eliminación pide
 
 ## La ficha de cada reloj, campo por campo {#o-cadastro-de-cada-relógio-campo-por-campo}
 
-Todo reloj tiene **nombre**, **marca**, **grupo**, **situación en la colección**, **disponible** y **foto**. El resto son **campos**, y qué campos tiene
+Todo reloj tiene **nombre**, **marca**, **grupo**, **situación en la colección**, **activo** y **foto**. El resto son **campos**, y qué campos tiene
 un reloj depende de su **grupo**: todo lo registrado en un grupo vale para él y para todos los grupos de debajo. Por eso "ser
 automático" no es una marca aparte: es estar en el grupo **Automático** (o en un subgrupo suyo), y con eso heredar los campos
 de muñeca y de winder.
@@ -1095,8 +1094,8 @@ los predeterminados son datos, no código: puede cambiarlo todo en la página **
 | **Nombre** | cómo aparece en todas partes: en pantalla, en Telegram y en el calendario. |
 | **Grupo** | su lugar en el árbol. Decide los campos, las fórmulas (la "carga" de un smartwatch es la batería; la de un mecánico, la reserva de marcha) y los avisos que recibe. |
 | **Situación en la colección** | Un ítem de la lista **Situaciones del reloj en la colección** (Definiciones › Listas): **En la colección** (lo de siempre), **Deseado** (la lista de deseos: todavía no es suyo), **Prestado** (es suyo, pero lo tiene otra persona) o uno que sale de la colección (**Vendido**, **Archivado**, **Regalado**, **Perdido o robado** y los que crees). Solo lo que está en la colección entra en la rotación: en las otras situaciones el reloj queda no disponible, sale del sorteo, de la escala y de los avisos, y, al salir de la colección, sus sesiones abiertas (en la muñeca, al sol, en el cargador) se cierran en el acto y sus días en el plan de mañana en adelante se quitan y se sortean de nuevo (hoy se queda, pero ya no va a la muñeca solo: cámbielo en **cambiar por…**). La ficha, los documentos y el historial se quedan. El prestado sigue siendo suyo (en el valor de la colección y en los avisos, con el estado **Prestado**). Cada situación tiene su pestaña encima de la tabla de la página Hoy, y la salida queda anotada (cuándo, a quién, por cuánto). Al volver a **En la colección**, vuelve a estar disponible. Vea [Las pestañas y las salidas de la colección](#as-abas-e-as-saídas-da-coleção) y [La lista de deseos](#a-lista-de-desejos). |
-| **Disponible** | desmarcado, sale de todo: de la rotación, de la carga, de los avisos y de **Usando hoy** (en el relojero, en una pausa), pero el historial se queda. Fuera de la colección, está siempre desmarcado (y el campo desaparece de la ficha). |
-| **Entra en el sorteo de la rotación** | marcado (lo normal), la rotación puede elegirlo sola. Desmarcado, sale solo del sorteo: el plan semanal, la escala, **Sortear este día por**, el **Decide por mí** de la Rotación manual, la **Sugerencia para ahora** y el reloj fijo de un bloque de los Modos ya no lo eligen; pero sigue en la colección, disponible, con la carga, los avisos, **Me lo puse** y **Usando hoy**, y usted todavía puede elegirlo a mano para un día (el **cambiar por…**, la Rotación manual). Al desmarcarlo, sus días sorteados de mañana en adelante se sortean de nuevo entre los otros; hoy y los días elegidos a mano se quedan. El ⓘ **Disponible y sorteo** explica la diferencia, y la ficha dice en **Próxima vez** que está fuera del sorteo. Por la API: `recurso=relogio`, `acao=salvar`, `sorteio=0` (o `1`). |
+| **Reloj activo** | desmarcado, el reloj queda **inactivo** y sale de todo: de la rotación, de la carga, de los avisos y de **Usando hoy** (en el relojero, en una pausa), pero el historial se queda. Fuera de la colección, está siempre desmarcado (y el campo desaparece de la ficha). |
+| **Entra en el sorteo de la rotación** | marcado (lo normal), la rotación puede elegirlo sola. Desmarcado, sale solo del sorteo: el plan semanal, la escala, **Sortear este día por**, el **Decide por mí** de la Rotación manual, la **Sugerencia para ahora** y el reloj fijo de un bloque de los Modos ya no lo eligen; pero sigue en la colección, activo, con la carga, los avisos, **Me lo puse** y **Usando hoy**, y usted todavía puede elegirlo a mano para un día (el **cambiar por…**, la Rotación manual). Al desmarcarlo, sus días sorteados de mañana en adelante se sortean de nuevo entre los otros; hoy y los días elegidos a mano se quedan. El ⓘ **Activo y sorteo** explica la diferencia, y la ficha dice en **Próxima vez** que está fuera del sorteo. Por la API: `recurso=relogio`, `acao=salvar`, `sorteio=0` (o `1`). |
 | **Guardar una copia de todos sus documentos en la base** | marcado, todo archivo del reloj (el manual, la factura, las fotos, los videos) va también a la base de datos, como copia de seguridad. Solo aparece cuando la Configuración de la colección no decide por todos (**Copia de los documentos en la base (válido para todos los relojes)** vacía). Vea [Los documentos del reloj](#os-documentos-do-relógio): es el segundo de los tres niveles de la copia. |
 | **Foto** | solo para la pantalla. En el detalle del reloj (el panel, o la ficha), al detener el ratón sobre la foto aparece un resumen suyo (el nombre, el grupo y el código; el estado y la carga; la nota y el próximo día en la rotación; la compra) y el recordatorio del doble clic. Con **doble clic** en ella, o con el botón **Abrir foto** de debajo, la foto se abre en una ventana flotante, a su tamaño (solo en el detalle: en las otras fotos, como la de *Hoy toca* y las miniaturas de la lista, el clic abre el reloj); una mayor que la pantalla aparece a escala, sin deformar, en el mayor tamaño que cabe en el monitor (y en la ventana del navegador), con el tamaño real y la escala debajo. Se cierra con la ×, con un clic fuera o con Esc. |
 | **Accesorios** | las correas, la caja, el estuche, las herramientas, el cargador, las piezas: el cuadro **Accesorios** del panel muestra los suyos (el tipo, el nombre y la observación), y la página **Accesorios** los añade y los cambia (un accesorio puede ser de un reloj o suelto, sirviendo a varios). Cada accesorio tiene los campos de su tipo (el ancho, el material, el color y el cierre de la correa), y el cuadro muestra también los de otros relojes, o sueltos, que **sirven** en él. Vea [La construcción y los accesorios](#a-construção-e-os-acessórios). |
@@ -1234,7 +1233,7 @@ en él (la marca **solo en los deseados** del campo, en la página Definiciones)
 
 En el panel de un reloj deseado, en lugar de los cuadros del día a día (ahora, carga, nota, plan, compra, Marcar), aparece el
 cuadro **Deseo**: la marca, la referencia, el precio objetivo, la prioridad y el enlace. **¿Lo compró?** En la página Deseos,
-el botón **Lo compré** pone el reloj en la colección (disponible para la rotación) y abre su ficha, para completar la compra
+el botón **Lo compré** pone el reloj en la colección (activo y en la rotación) y abre su ficha, para completar la compra
 (la fecha, el valor, la tienda): el historial empieza ahí. Los campos solo de deseados quedan guardados, pero desaparecen de la
 ficha. Por la API: `recurso=desejos` (la lista) y `recurso=relogio`, `acao=salvar`, `posse=colecao` (el Lo compré).
 
@@ -1299,8 +1298,7 @@ antes de los Próximos días:
 repetir los que ya aparecieron; cuando se acaban, la tarjeta avisa y ofrece **Empezar de nuevo**. Cambiar la forma o los
 tipos reinicia la ronda, y el navegador recuerda su última elección.
 
-Lo que la sugerencia respeta: solo entran los relojes **disponibles** que están **en la colección**. Quedan fuera, y la
-tarjeta dice cuáles y por qué, el que **ya está en la muñeca** y el que tiene la **carga en el límite o por debajo de él**
+Lo que la sugerencia respeta: solo entran los relojes **activos** que están **en la colección**. Quedan fuera, y la tarjeta dice cuáles y por qué, el que está **fuera del sorteo** (la ficha del reloj), el que **ya está en la muñeca** y el que tiene la **carga en el límite o por debajo de él**
 (el límite de cada reloj es el de las definiciones: el del propio reloj, si no el de la Configuración). El **plan no
 cambia**: el reloj del día sigue siendo el mismo, y el sugerido que va a la muñeca cuenta como uso fuera del plan. Nada se
 graba hasta que pulse Ponérmelo. Con **Al poner un reloj en la muñeca, quitar los demás** activada, el que estaba en la
@@ -1453,7 +1451,7 @@ Los avisos del conjunto inicial, con el identificador (su nombre en las fórmula
 | Ajustar la hora | `acertar_hora` | Tradicional | el Ajuste de la hora. Vence cuando el desvío estimado pasa de *Ajustar la hora a partir de* (por defecto 60 s), por la marcha medida; avisa 2 días antes. |
 | Marcha fuera de lo esperado | `marcha_fora` | Tradicional | una nueva lectura del desvío. Vence en la lectura cuya marcha salió de la *Marcha esperada* o, con 4 mediciones o más, quedó lejos del historial del propio reloj (más de 3 veces la variación, y como mínimo 5 s/día). |
 | Garantía venciendo | `garantia` | todos | (nada: solo avisa) |
-| Arrinconado | `encostado` | todos (los de la colección, disponibles) | En la muñeca. Vence cuando el reloj pasa el límite de días sin ir a la muñeca (Configuración, **Aviso Arrinconado: días sin ir a la muñeca**, predeterminado 30), contados desde la última vez en la muñeca (nunca usado, desde la fecha de compra; sin ambas, sin aviso). No entra en el próximo mantenimiento ni en **Qué hacer**: la tabla tiene la columna **Arrinconado**, con cuánto falta o cuánto pasó. |
+| Arrinconado | `encostado` | todos (los de la colección, activos) | En la muñeca. Vence cuando el reloj pasa el límite de días sin ir a la muñeca (Configuración, **Aviso Arrinconado: días sin ir a la muñeca**, predeterminado 30), contados desde la última vez en la muñeca (nunca usado, desde la fecha de compra; sin ambas, sin aviso). No entra en el próximo mantenimiento ni en **Qué hacer**: la tabla tiene la columna **Arrinconado**, con cuánto falta o cuánto pasó. |
 
 Los avisos van en el aviso de la mañana. Un aviso marcado **en el acto** (en la página **Avisos**, la casilla *en el
 acto*) también sale por Telegram **en el minuto en que vence**, una sola vez, hasta que se resuelve: así llega el **Quitar del
@@ -1746,8 +1744,7 @@ demostración y el idioma. El master viendo el sistema como otra persona ve una 
 para volver.
 
 **El estado de cada reloj** dice dónde está ahora: **En uso** (verde, en la muñeca), el nombre de la sesión abierta cuando
-está en otro lugar, como **Al sol**, **En el winder** o **En el cargador** (naranja), **En reposo** (rojo, guardado) y **No
-disponible** (gris, fuera de la rotación y guardado) o **Prestado** (gris: con otra persona). El filtro **Estado** tiene cada
+está en otro lugar, como **Al sol**, **En el winder** o **En el cargador** (naranja), **En reposo** (rojo, guardado) y **Inactivo** (gris, fuera de la rotación y guardado) o **Prestado** (gris: con otra persona). El filtro **Estado** tiene cada
 uno de ellos. En el panel, el estado viene con desde cuándo (*"Al sol desde 09:12"*). Todo tipo de registro de formato sesión
 que usted registre entra aquí con su nombre.
 
@@ -2064,11 +2061,10 @@ descanso. Los días que ya estaban libres siguen libres, hasta que usted elija u
 opción viene activada, y vale en los tres niveles (el sistema, su cuenta y la colección).
 
 **¿Y si quiero un reloj en la colección que la rotación nunca elija?**
-En su ficha (**Editar ficha**), desmarque **Entra en el sorteo de la rotación** y guarde. Sigue disponible, con la carga y
+En su ficha (**Editar ficha**), desmarque **Entra en el sorteo de la rotación** y guarde. Sigue activo, con la carga y
 los avisos, y usted lo usa cuando quiera (**Me lo puse**, **Usando hoy**, el **cambiar por…** de un día), pero el sorteo (el
 plan, la escala, **Sortear este día por**, **Decide por mí**, la **Sugerencia para ahora**) ya no lo elige. Sus días ya
-sorteados, de mañana en adelante, se sortean de nuevo. Para sacarlo de todo, incluso de los avisos, desmarque **Disponible
-para la rotación**.
+sorteados, de mañana en adelante, se sortean de nuevo. Para sacarlo de todo, incluso de los avisos, desmarque **Reloj activo**.
 
 **¿Y si quiero elegir yo los relojes de un período?**
 En el cuadro **Modo de rotación** de la página Hoy, elija **Rotación manual**, ponga el inicio y el fin y haga clic en **OK**:
@@ -2106,7 +2102,7 @@ de esa marca (el inicio y el fin de una sesión; la hora y el valor de una lectu
 que contó como muñeca por un Me lo quité olvidado deja de empujar el consumo en uso hacia arriba.
 
 **Un reloj está en el relojero.**
-Desmarque **Disponible** en la ficha. Sale del sorteo y de los promedios de la colección, pero el historial se queda.
+Desmarque **Reloj activo** en la ficha. Sale del sorteo y de los promedios de la colección, pero el historial se queda.
 
 **Tengo un tipo de reloj que el sistema no conoce (un kinetic, uno de bolsillo...).**
 Cree un grupo para él, los campos, los tipos de registro y una versión de la fórmula `energia` en ese grupo. Los avisos y

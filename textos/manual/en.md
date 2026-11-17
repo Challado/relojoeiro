@@ -1,4 +1,4 @@
-<!-- origem: ed7f791f89ececedc57ca73da8a98758d573c560 -->
+<!-- origem: 3ffd02df6ad789e6cbd2f6e9ee48a5eefe41266f -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -869,12 +869,11 @@ it (also from the panel's **Maintenance** box). Choose the watch, the **workshop
 you like, the problem, the work order, the sending, the expected return, the quote, what went along (the box, the strap) and the
 shipping documents.
 
-On saving, the watch is **in maintenance**: unavailable for the rotation until it comes back (with the *in maintenance* tag on
+On saving, the watch is **in maintenance**: inactive until it comes back (with the *in maintenance* tag on
 the panel and the *In maintenance* state on the Today page), its open sessions close (on the wrist, in the sun, on the charger;
 in the winder, the position becomes free), its days in the plan from tomorrow on are removed and drawn again, and the charge,
 winding and battery alerts stop. If it was **today's watch**, today becomes free: with the Settings allowing today's watch to be
-changed on the day itself, you choose another; without it, today stays without a watch. Changing the watch's availability
-while it is at the workshop changes the one it comes back with.
+changed on the day itself, you choose another; without it, today stays without a watch. Changing **Active watch** while it is at the workshop changes the one it comes back with.
 
 The **status** moves along from the table row (the menu and **Change**), and each change goes into the **history**. The
 statuses are a list of yours (Maintenance › Lists), and each one does one of three things: **in progress** (Sent, awaiting the
@@ -1070,7 +1069,7 @@ Through the API, every deletion asks for `confirmar=1`.
 
 ## Each watch's record, field by field {#o-cadastro-de-cada-relógio-campo-por-campo}
 
-Every watch has a **name**, a **brand**, a **group**, a **status in the collection**, **available** and a **photo**. The rest are **fields**, and which fields a watch has
+Every watch has a **name**, a **brand**, a **group**, a **status in the collection**, **active** and a **photo**. The rest are **fields**, and which fields a watch has
 depends on its **group**: everything registered in a group applies to it and to all the groups below. That's why "being
 automatic" is not a separate flag: it is being in the **Automatic** group (or in a subgroup of it), and thereby inheriting the
 wrist and winder fields.
@@ -1099,8 +1098,8 @@ defaults are data, not code: you can change everything on the **Definitions** pa
 | **Name** | how it appears everywhere: on screen, on Telegram and in the calendar. |
 | **Group** | its place in the tree. It decides the fields, the formulas (a smartwatch's "charge" is the battery; a mechanical's, the power reserve) and the alerts it gets. |
 | **Status in the collection** | An item of the **Watch statuses in the collection** list (Definitions › Lists): **In the collection** (the usual), **Wished** (the wishlist: not yours yet), **Lent** (it's yours, but someone else has it) or one that leaves the collection (**Sold**, **Archived**, **Given away**, **Lost or stolen** and the ones you create). Only what is in the collection goes into the rotation: in the other statuses the watch is unavailable, it leaves the draw, the schedule and the alerts, and, when it leaves the collection, its open sessions (on the wrist, in the sun, on the charger) close at once and its days in the plan from tomorrow on are removed and drawn again (today stays, but it no longer goes on the wrist by itself: change it in **change to…**). Its page, documents and history remain. The lent one is still yours (in the collection's value and in the alerts, with the **Lent** state). Each status has its own tab above the table on the Today page, and the exit is recorded (when, to whom, for how much). Going back to **In the collection**, it becomes available again. See [Tabs and exits from the collection](#as-abas-e-as-saídas-da-coleção) and [The wishlist](#a-lista-de-desejos). |
-| **Available** | unticked, it leaves everything: the rotation, the charge, the alerts and **Wearing today** (at the repairer, on a break), but the history stays. Out of the collection, it is always unticked (and the field disappears from the record). |
-| **Enters the rotation draw** | ticked (the usual), the rotation can choose it on its own. Unticked, it only leaves the draw: the weekly plan, the scale, **Draw this day by**, the Manual rotation's **Decide for me**, **Suggestion for now** and a block's fixed watch in the Modes no longer choose it; but it stays in the collection, available, with the charge, the alerts, **Put on the wrist** and **Wearing today**, and you can still choose it by hand for a day (**change to…**, the Manual rotation). When you untick it, its drawn days from tomorrow on are drawn again among the others; today and the days chosen by hand stay. The ⓘ **Available and draw** explains the difference, and the record says under **Next time** that it is out of the draw. Through the API: `recurso=relogio`, `acao=salvar`, `sorteio=0` (or `1`). |
+| **Active watch** | unticked, the watch becomes **inactive** and leaves everything: the rotation, the charge, the alerts and **Wearing today** (at the repairer, on a break), but the history stays. Out of the collection, it is always unticked (and the field disappears from the record). |
+| **Enters the rotation draw** | ticked (the usual), the rotation can choose it on its own. Unticked, it only leaves the draw: the weekly plan, the scale, **Draw this day by**, the Manual rotation's **Decide for me**, **Suggestion for now** and a block's fixed watch in the Modes no longer choose it; but it stays in the collection, active, with the charge, the alerts, **Put on the wrist** and **Wearing today**, and you can still choose it by hand for a day (**change to…**, the Manual rotation). When you untick it, its drawn days from tomorrow on are drawn again among the others; today and the days chosen by hand stay. The ⓘ **Active and draw** explains the difference, and the record says under **Next time** that it is out of the draw. Through the API: `recurso=relogio`, `acao=salvar`, `sorteio=0` (or `1`). |
 | **Keep a copy of all its documents in the database** | ticked, every file of the watch (the manual, the invoice, the photos, the videos) also goes to the database, as a backup. It only appears when the collection's Settings don't decide for all (**Copy of the documents in the database (applies to every watch)** empty). See [The watch's documents](#os-documentos-do-relógio): it is the second of the three levels of the copy. |
 | **Photo** | just for the screen. In the watch's detail (the panel, or the watch page), resting the mouse on the photo shows a summary of it (the name, the group and the code; the state and the charge; the score and the next day in the rotation; the purchase) and the reminder about the double-click. **Double-clicking** it, or the **Open photo** button below, opens the photo in a floating window, at its size (only in the detail: on the other photos, like the one in *Today is the day for* and the list thumbnails, the click opens the watch); one bigger than the screen appears scaled, without distortion, at the largest size that fits the monitor (and the browser window), with the real size and the scale below. It closes with the ×, with a click outside or with Esc. |
 | **Accessories** | the straps, the box, the case, the tools, the charger, the parts: the **Accessories** box in the panel shows its own (the type, the name and the note), and the **Accessories** page adds and changes them (an accessory can belong to a watch or be loose, serving several). Each accessory has the fields of its type (the strap's width, material, colour and clasp), and the box also shows those of other watches, or loose ones, that **fit** it. See [The construction and the accessories](#a-construção-e-os-acessórios). |
@@ -1239,7 +1238,7 @@ and the documents like any other (the ad, the shop-window photo), and two more f
 
 In a wished watch's panel, instead of the day-to-day boxes (now, charge, score, plan, purchase, Mark), the **Wish** box appears:
 the brand, the reference, the target price, the priority and the link. **Bought it?** On the Wishlist page, the **I bought it**
-button puts the watch in the collection (available for the rotation) and opens its page, to fill in the purchase (the date,
+button puts the watch in the collection (active and in the rotation) and opens its page, to fill in the purchase (the date,
 the price, the store): the history starts there. The fields only for wished ones stay stored, but disappear from the record.
 Through the API: `recurso=desejos` (the list) and `recurso=relogio`, `acao=salvar`, `posse=colecao` (the I bought it).
 
@@ -1303,8 +1302,7 @@ Like it? **Put on the wrist** marks the watch on the wrist now. Don't like it? *
 without repeating the ones that already appeared; when they run out, the card says so and offers **Start over**. Changing
 the method or the types restarts the round, and the browser remembers your last choice.
 
-What the suggestion respects: only the **available** watches that are **in the collection** take part. Left out, and the
-card says which and why, are the one that is **already on the wrist** and any whose **charge is at or below its limit**
+What the suggestion respects: only the **active** watches that are **in the collection** take part. Left out, and the card says which and why, are the one **out of the draw** (the watch's record), the one that is **already on the wrist** and any whose **charge is at or below its limit**
 (each watch's limit is the one in the definitions: the watch's own, otherwise the one in Settings). The **plan does not
 change**: the watch of the day stays the same, and the suggested watch that goes on the wrist counts as use outside the
 plan. Nothing is recorded until you press Put on the wrist. With **When putting a watch on the wrist, take the others off**
@@ -1459,7 +1457,7 @@ The alerts of the initial set, with the identifier (their name in the formulas, 
 | Set the time | `acertar_hora` | Traditional | the Time setting. Falls due when the estimated deviation passes *Set the time from* (default 60 s), by the measured rate; warns 2 days before. |
 | Rate outside the expected | `marcha_fora` | Traditional | a new deviation reading. Falls due at the reading whose rate left the *Expected rate* or, with 4 measurements or more, was far from the watch's own history (more than 3 times the variation, and at least 5 s/day). |
 | Warranty expiring | `garantia` | all | (nothing: it only alerts) |
-| Idle | `encostado` | all (those in the collection, available) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). It does not take the next service or **What to do**: the table has its own **Idle** column, with how long is left or how long it is overdue. |
+| Idle | `encostado` | all (those in the collection, active) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). It does not take the next service or **What to do**: the table has its own **Idle** column, with how long is left or how long it is overdue. |
 
 The alerts go in the morning alert. An alert marked **right away** (on the **Alerts** page, the *right away* box) also goes
 via Telegram **in the minute it comes due**, only once, until it is resolved: that's how **Take off the charger** arrives when
@@ -1751,7 +1749,7 @@ button to go back.
 
 **Each watch's state** says where it is now: **In use** (green, on the wrist), the name of the open session when it is
 somewhere else, like **In the sun**, **On the winder** or **On the charger** (orange), **At rest** (red, stored) and
-**Unavailable** (grey, out of rotation and stored) or **Lent** (grey: with someone else). The **State** filter has each one of
+**Inactive** (grey, out of rotation and stored) or **Lent** (grey: with someone else). The **State** filter has each one of
 them. In the panel, the state comes with since when (*"In the sun since 09:12"*). Any session-format entry type you register
 comes in here by its name.
 
@@ -2069,11 +2067,10 @@ day off. The days that were already free stay free, until you choose a watch for
 on, and works at the three levels (the system, your account and the collection).
 
 **What if I want a watch in the collection that the rotation never chooses?**
-In its record (**Edit record**), untick **Enters the rotation draw** and save. It stays available, with the charge and the
+In its record (**Edit record**), untick **Enters the rotation draw** and save. It stays active, with the charge and the
 alerts, and you wear it whenever you want (**Put on the wrist**, **Wearing today**, a day's **change to…**), but the draw
 (the plan, the scale, **Draw this day by**, **Decide for me**, **Suggestion for now**) no longer chooses it. Its days already
-drawn, from tomorrow on, are drawn again. To take it out of everything, even the alerts, untick **Available for the
-rotation**.
+drawn, from tomorrow on, are drawn again. To take it out of everything, even the alerts, untick **Active watch**.
 
 **What if I want to choose the watches for a period myself?**
 In the **Rotation mode** box on the Today page, choose **Manual rotation**, set the start and the end and click **OK**: the
@@ -2111,7 +2108,7 @@ that mark's fields (the start and the end of a session; the time and the value o
 counted as on the wrist because of a forgotten Took off no longer pushes the in-use consumption up.
 
 **A watch is at the repairer.**
-Untick **Available** in the record. It leaves the draw and the collection's averages, but the history stays.
+Untick **Active watch** in the record. It leaves the draw and the collection's averages, but the history stays.
 
 **I have a type of watch the system doesn't know (a kinetic, a pocket watch...).**
 Create a group for it, the fields, the entry types and a version of the `energia` formula in that group. The alerts and

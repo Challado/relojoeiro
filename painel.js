@@ -244,7 +244,7 @@ function abrirNoPainel(id) {
       // no rodízio: quando entra (e até quando fica), ou por que não entra
       var proxima = t("Ainda não sorteado. Neste modo o sorteio é feito na virada de cada período.");
       if (!r.disponivel) {
-        proxima = t("Indisponível para o rodízio. Marque como disponível no cadastro.");
+        proxima = t("Inativo: fora do rodízio, da carga e dos avisos. Para voltar: Relógio ativo, no cadastro.");
       } else if (r.proxima === null && !r.no_sorteio) {
         proxima = t("Fora do sorteio do rodízio: o rodízio não o escolhe sozinho. Para usar: Usando hoje, Pôs no pulso ou o trocar por… de um dia.");
       } else if (r.proxima !== null) {
@@ -742,7 +742,7 @@ function abrirNoPainel(id) {
           + el("p", {"class": "marcas"}, (r.posse_comportamento === "desejado" ? "" : el("span", {"class": "estado estado-" + (r.estado)}, h(minusculo(r.estado_texto))))
             + (r.manutencao_aberta ? " " + el("span", {"class": "estado estado-manutencao"}, t("em manutenção")) : "")
             + (r.posse_comportamento !== "colecao" ? " " + el("span", {"class": "estado estado-posse"}, h(minusculo(r.posse_texto)))
-              : (r.disponivel || r.manutencao_aberta ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, t("indisponível"))))
+              : (r.disponivel || r.manutencao_aberta ? "" : " " + el("span", {"class": "estado estado-indisponivel"}, t("inativo"))))
             + (r.proxima === hoje ? " " + el("span", {"class": "estado estado-atividade"}, t("relógio de hoje")) : ""))
           // a saída de agora (emprestado ou fora da coleção): o motivo, para quem, quando e por quanto
           + (r.saida ? el("p", {"class": "nota saida-resumo"}, h(saidaResumo(r.saida)) + (r.saida.observacao !== null ? el("small", {"class": "bloco"}, h(r.saida.observacao)) : "")) : "")
@@ -805,11 +805,11 @@ function abrirNoPainel(id) {
         + el("input", {"type": "hidden", "name": "foto_base64", "id": "foto_base64_" + fid}) + el("img", {"id": "previa_" + fid, "class": "previa", "hidden": true, "alt": ""});
     }
     cad += el("label", {"class": "check", "data-so-colecao": true}, el("input", {"type": "hidden", "name": "disponivel", "value": "0"}) + el("input", {"type": "checkbox", "name": "disponivel", "value": "1",
-      "checked": novo || r.disponivel}) + t(" Disponível para o rodízio"))
+      "checked": novo || r.disponivel}) + t(" Relógio ativo"))
       // a marca do sorteio: desmarcada, o rodízio nunca o escolhe sozinho, mas ele continua na coleção e pode ser escolhido à mão
       + el("label", {"class": "check", "data-so-colecao": true}, el("input", {"type": "hidden", "name": "sorteio", "value": "0"}) + el("input", {"type": "checkbox", "name": "sorteio", "value": "1",
         "checked": novo || r.sorteio}) + t(" Entra no sorteio do rodízio"))
-      + el("div", {"data-so-colecao": true}, ajudaNota("sorteio", t("Disponível e sorteio"), t("Disponível para o rodízio desmarcado tira o relógio de tudo: do sorteio, da carga, dos avisos de Hoje é dia de e do Usando hoje. Entra no sorteio do rodízio desmarcado tira só do sorteio: o rodízio (o plano, a escala, o Decida por mim, o Sortear este dia por e a Sugestão para agora) nunca o escolhe sozinho, mas ele continua na coleção, com a carga e os avisos, e você ainda o usa quando quiser: Usando hoje, Pôs no pulso ou o trocar por… de um dia. Os dias já sorteados dele, de amanhã em diante, são sorteados de novo entre os outros.")))
+      + el("div", {"data-so-colecao": true}, ajudaNota("sorteio", t("Ativo e sorteio"), t("Relógio ativo desmarcado deixa o relógio inativo, fora de tudo (no conserto, numa pausa): do sorteio, da carga, dos avisos de Hoje é dia de e do Usando hoje; o histórico fica. Entra no sorteio do rodízio desmarcado tira só do sorteio: o rodízio (o plano, a escala, o Decida por mim, o Sortear este dia por e a Sugestão para agora) nunca o escolhe sozinho, mas ele continua ativo, com a carga e os avisos, e você ainda o usa quando quiser: Usando hoje, Pôs no pulso ou o trocar por… de um dia. Os dias já sorteados dele, de amanhã em diante, são sorteados de novo entre os outros.")))
       // a escolha do relógio só aparece quando a Configuração da coleção não decide por todos (Cópia dos documentos vazia)
       + (d.copia_sistema === null ? el("label", {"class": "check"}, el("input", {"type": "hidden", "name": "copia_banco", "value": "0"})
         + el("input", {"type": "checkbox", "name": "copia_banco", "value": "1", "checked": !novo && r.copia_banco}) + t(" Guardar no banco a cópia de todos os documentos dele")) : "")

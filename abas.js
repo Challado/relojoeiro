@@ -88,7 +88,7 @@ function botaoColecao(x, posseColecao, texto, pergunta) {
 // a lista de desejos (d: a resposta do recurso=desejos): a nota com a soma e a tabela, a prioridade mais alta primeiro
 function desejosListaHtml(d) {
   var res = el("p", {"class": "nota"}, d.desejados.length === 0 ? t("Nenhum relógio na lista de desejos. Em \"Novo desejo\" (ou no cadastro de qualquer relógio, na \"Situação na coleção\"), um relógio desejado entra aqui: com a marca, a referência, o preço-alvo, a prioridade e o link. Ele não entra no rodízio nem nos avisos.")
-    : t("{1}{2}, a prioridade mais alta primeiro. Somando os preços-alvo: R$ {3}{4}. Comprou? \"Comprei\" põe o relógio na coleção (disponível para o rodízio) e abre a ficha dele, para preencher a compra.", {1: d.desejados.length, 2: d.desejados.length === 1 ? t(" relógio desejado") : t(" relógios desejados"), 3: reais(d.total_preco_alvo), 4: d.sem_preco_alvo > 0 ? t(" ({1} sem preço-alvo)", {1: d.sem_preco_alvo}) : ""}));
+    : t("{1}{2}, a prioridade mais alta primeiro. Somando os preços-alvo: R$ {3}{4}. Comprou? \"Comprei\" põe o relógio na coleção (ativo e no rodízio) e abre a ficha dele, para preencher a compra.", {1: d.desejados.length, 2: d.desejados.length === 1 ? t(" relógio desejado") : t(" relógios desejados"), 3: reais(d.total_preco_alvo), 4: d.sem_preco_alvo > 0 ? t(" ({1} sem preço-alvo)", {1: d.sem_preco_alvo}) : ""}));
   if (d.desejados.length > 0) {
     res += el("div", {"class": "rolagem"}, el("table", {"class": "relogios compacta lista-desejos"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + el("th", {}, t("Prioridade"))
         + el("th", {}, t("Preço-alvo")) + el("th", {}, t("Grupo")) + el("th", {}, t("Link")) + el("th", {}, "")))
@@ -99,7 +99,7 @@ function desejosListaHtml(d) {
           + el("td", {"class": "valor", "data-rotulo": t("Preço-alvo")}, x.preco_alvo !== null ? t("R$ ") + reais(x.preco_alvo) : "—")
           + el("td", {"data-rotulo": t("Grupo")}, x.no_id === null ? "—" : h(x.caminho))
           + el("td", {"data-rotulo": t("Link")}, x.link !== null && /^https?:\/\//i.test(x.link) ? el("a", {"href": x.link, "target": "_blank", "rel": "noopener noreferrer", "class": "quebra"}, t("abrir a página")) : (x.link !== null ? h(x.link) : "—"))
-          + el("td", {"class": "acoes-desejo"}, botaoColecao(x, d.posse_colecao, t("Comprei"), t("Comprou o {1}? Ele entra na coleção, disponível para o rodízio, e a ficha dele abre para você preencher a compra.", {1: x.nome}))));
+          + el("td", {"class": "acoes-desejo"}, botaoColecao(x, d.posse_colecao, t("Comprei"), t("Comprou o {1}? Ele entra na coleção, ativo e no rodízio, e a ficha dele abre para você preencher a compra.", {1: x.nome}))));
       }).join(""))));
   }
   return res;
@@ -130,7 +130,7 @@ function saidasListaHtml(d, aba) {
         + el("td", {"class": "valor", "data-rotulo": t("Serviços")}, x.custo_servicos > 0 ? dinheiro(x.custo_servicos) : "—")
         + el("td", {"class": "valor" + (x.resultado !== null && x.resultado < 0 ? " negativo" : ""), "data-rotulo": t("Resultado")}, dinheiro(x.resultado))
         + el("td", {"data-rotulo": t("Tempo na coleção")}, x.tempo_na_colecao_texto !== null ? h(x.tempo_na_colecao_texto).replace(/ /g, "&nbsp;") : "—")
-        + el("td", {"class": "acoes-desejo"}, botaoColecao(rel, d.posse_colecao, t("Voltar para a coleção"), t("Voltar o {1} para a coleção? Ele fica disponível para o rodízio de novo, e esta saída vai para o histórico dele.", {1: x.relogio}))));
+        + el("td", {"class": "acoes-desejo"}, botaoColecao(rel, d.posse_colecao, t("Voltar para a coleção"), t("Voltar o {1} para a coleção? Ele fica ativo e no rodízio de novo, e esta saída vai para o histórico dele.", {1: x.relogio}))));
     }).join(""))
     ));
   // as somas da aba (da API): o que foi recebido, o que os relógios custaram e o resultado (só dos que têm valor recebido)

@@ -1367,14 +1367,14 @@ function op_relogio($acao, $d)
             $erros[] = t("Situação na coleção: {1}.", [1 => implode(", ", array_keys(lista_itens("relogio_situacao")))]);
         } elseif ($comp !== "colecao") {
             if ($disp === 1 && array_key_exists("disponivel", $d) && $posse_antes !== null) {
-                $nota_posse = t(" Fora da coleção, ele fica indisponível para o rodízio.");
+                $nota_posse = t(" Fora da coleção, ele fica inativo.");
             }
             $disp = 0;
         } elseif ($posse_antes !== null && $posse_antes !== "colecao") {
             if (!array_key_exists("disponivel", $d)) {
                 $disp = 1;
             }
-            $nota_posse = t(" Entrou na coleção{1}", [1 => $disp === 1 ? t(": disponível para o rodízio.") : t(" (indisponível para o rodízio, como pedido).")]);
+            $nota_posse = t(" Entrou na coleção{1}", [1 => $disp === 1 ? t(": ativo, no rodízio.") : t(" (inativo, como pedido).")]);
         }
         if ($nome === "" || strlen($nome) > 120) {
             $erros[] = t("Dê um nome ao relógio (até 120 caracteres).");
@@ -1422,7 +1422,7 @@ function op_relogio($acao, $d)
                 sql("UPDATE manutencao SET disponivel_antes = ? WHERE id = ?", [$disp, (int)$em_manut["id"]]);
             }
             if ($disp === 1 || (int)$em_manut["disponivel_antes"] !== $disp) {
-                $nota_posse .= $disp === 1 ? t(" Em manutenção: ele volta disponível para o rodízio quando ela encerrar.") : t(" Em manutenção: ele volta indisponível para o rodízio quando ela encerrar.");
+                $nota_posse .= $disp === 1 ? t(" Em manutenção: ele volta ativo quando ela encerrar.") : t(" Em manutenção: ele volta inativo quando ela encerrar.");
             }
             $disp = 0;
         }
@@ -4647,7 +4647,7 @@ function op_rodizio($acao, $d)
         } elseif ($novo > 0 && !$r) {
             $erros[] = t("Relógio não encontrado.");
         } elseif ($r && (int)$r["disponivel"] !== 1) {
-            $erros[] = t("{1} está indisponível: marque como disponível no cadastro dele antes.", [1 => $r["nome"]]);
+            $erros[] = t("{1} está inativo: marque Relógio ativo no cadastro dele antes.", [1 => $r["nome"]]);
         } elseif ($novo === 0 && $dt == $hoje) {
             $erros[] = t("Para sortear hoje de novo, use \"Sortear de novo\" no quadro do modo de rodízio.");
         } elseif ($dt == $hoje) {
@@ -4766,7 +4766,7 @@ function op_rodizio($acao, $d)
         } else {
             $fora = array_values(array_filter($rels_p, function ($r) { return (int)$r["disponivel"] !== 1; }));
             if (count($fora) > 0) {
-                $erros[] = t("{1}{2}: marque como disponível no cadastro antes.", [1 => implode(", ", array_column($fora, "nome")), 2 => count($fora) === 1 ? t(" está indisponível") : t(" estão indisponíveis")]);
+                $erros[] = t("{1}{2}: marque Relógio ativo no cadastro antes.", [1 => implode(", ", array_column($fora, "nome")), 2 => count($fora) === 1 ? t(" está inativo") : t(" estão inativos")]);
             } else {
                 $motivo_p = t("Escolhido à mão para o período de {1} a {2}.", [1 => $de_p->format("d/m"), 2 => $ate_p->format("d/m")]);
                 sql("DELETE FROM plano_livre WHERE data BETWEEN ? AND ?", [$de_p->format("Y-m-d"), $ate_p->format("Y-m-d")]);

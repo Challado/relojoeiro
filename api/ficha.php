@@ -163,7 +163,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
             } elseif (posse_de($r) !== "colecao") {
                 $l[] = t("{1}: fora do rodízio", [1 => posse_texto($r)]);
             } elseif ((int)$r["disponivel"] !== 1) {
-                $l[] = t("Indisponível: fora do rodízio");
+                $l[] = t("Inativo: fora do rodízio, da carga e dos avisos");
             }
             if (!empty($valores["data_compra"]) || isset($valores["valor_compra"])) {
                 $l[] = t("Comprado{1}{2}", [1 => !empty($valores["data_compra"]) ? t(" em {1}", [1 => data_txt(strtotime(substr((string)$valores["data_compra"], 0, 10)))]) : "",

@@ -103,7 +103,7 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "encostado_ativo" => encostado_ativo(),
     // os estados da tabela, na ordem (o filtro Estado): em uso, cada sessão que não é o pulso, em repouso e indisponível
     "estados" => array_merge([t("Em uso")], array_column(linhas("SELECT nome FROM lancamento_tipo WHERE formato = 'sessao' AND identificador <> 'pulso' ORDER BY ordem, id"), "nome"),
-        [t("Em repouso"), t("Indisponível"), t("Emprestado")]),
+        [t("Em repouso"), t("Inativo"), t("Emprestado")]),
     "plano" => array_map(function ($p) { return ["data" => $p["data"], "relogio_id" => (int)$p["relogio_id"], "relogio" => $p["nome"], "acao" => $p["acao"], "motivo" => $p["motivo"], "origem" => $p["origem"]]; },
         linhas("SELECT p.*, r.nome FROM plano p JOIN relogio r ON r.id = p.relogio_id WHERE p.data >= ? ORDER BY p.data LIMIT 62", [$hoje->format("Y-m-d")])),
     // os dias livres dos próximos 62 dias (sem relógio e sem sorteio: para escolher à mão)

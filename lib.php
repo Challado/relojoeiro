@@ -1311,7 +1311,7 @@ $MIGRACOES = [
     "v62" => ["migracao_v62.sql", tk("as colunas de sempre da tabela dos relógios (código, relógio, marca, tipo, estado, carga, última vez usado, tempo de uso, próxima manutenção, em, o que fazer, encostado, comprado em e valor) passam a morar no cadastro de colunas (Cadastros › Colunas), como colunas do sistema: só mudam de lugar e de aparecer de início; toda coluna nova nasce ali, e uma árvore nova já nasce com as de sempre"), "sistema.chave=migracao_v62", "migracao_v62_dados"],
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
     "v64" => ["migracao_v64.sql", tk("as saídas da coleção: cada vez que um relógio é emprestado ou sai (vendido, presenteado, arquivado e os motivos do seu cadastro), ficam a data, o valor recebido, para quem foi e a observação, e a volta fecha a saída sem apagar o histórico; e as abas por situação em cima da tabela dos relógios e da galeria (na coleção, emprestado, desejado, vendido...), cada uma com o que é dela"), "sistema.chave=migracao_v64", "migracao_v64_dados"],
-    "v65" => ["migracao_v65.sql", tk("o relógio fora do sorteio do rodízio: a marca Entra no sorteio do rodízio, no cadastro do relógio. Desmarcada, o rodízio nunca escolhe o relógio sozinho (o plano, a escala, o Decida por mim, o Sortear este dia por e a Sugestão para agora), mas ele continua na coleção: a carga, os avisos, o Pôs no pulso, o Usando hoje e a escolha à mão de um dia. O Disponível continua tirando o relógio de tudo"), "relogio.sorteio"],
+    "v65" => ["migracao_v65.sql", tk("o relógio fora do sorteio do rodízio: a marca Entra no sorteio do rodízio, no cadastro do relógio. Desmarcada, o rodízio nunca escolhe o relógio sozinho (o plano, a escala, o Decida por mim, o Sortear este dia por e a Sugestão para agora), mas ele continua na coleção: a carga, os avisos, o Pôs no pulso, o Usando hoje e a escolha à mão de um dia. O Relógio ativo desmarcado continua tirando o relógio de tudo"), "relogio.sorteio"],
 ];
 
 // O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
@@ -2407,7 +2407,7 @@ $FUNCOES = [
     "CONTAR" => [2, 2, tk("CONTAR(\"tipo\"; dias): quantos lançamentos (ou dias com sessão) nos últimos N dias"), true],
     "EM_SESSAO" => [1, 1, tk("EM_SESSAO(\"sessão\"): 1 se a sessão está aberta agora"), true],
     "ACUMULA" => [3, null, tk("ACUMULA(início; máximo; perda por hora; \"tipo\"; efeito; ...): um saldo que percorre o histórico: numa sessão da lista, ganha o efeito por hora (negativo: perde); num lançamento instantâneo da lista, passa a valer o efeito; num lançamento com valor (uma leitura), passa a valer a leitura vezes o efeito (1: a própria leitura); no resto, perde a perda por hora; sempre entre 0 e o máximo"), true],
-    "MEDIA_COLECAO" => [1, 1, tk("MEDIA_COLECAO(\"variável\"): a média daquela variável nos relógios disponíveis"), false],
+    "MEDIA_COLECAO" => [1, 1, tk("MEDIA_COLECAO(\"variável\"): a média daquela variável nos relógios ativos"), false],
     // as peças do gasto medido, pela marcação das leituras (em uso ou em repouso), para montar a própria conta (o motor
     // "pelas fórmulas"): cada medição com as duas leituras marcadas igual; N dias (0: a janela da Configuração)
     "LEITURAS" => [1, 2, tk("LEITURAS(\"uso\" ou \"repouso\"; dias): quantas medições com as duas leituras marcadas assim há nos últimos N dias (sem dias, ou 0: a janela da Configuração)"), false],
@@ -3753,7 +3753,7 @@ function tabela_linha($r, $agora, $extra = [])
     $res_l = ["id" => (int)$r["id"], "nome" => $r["nome"], "marca" => marca_do_relogio((int)$r["id"])["nome"] ?? null, "disponivel" => (int)$r["disponivel"] === 1, "no_sorteio" => relogio_no_sorteio($r), "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
         "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
         "em_manutencao" => ($mn_h = manutencao_aberta((int)$r["id"])) !== null ? $mn_h["oficina"] : null,
-        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? ($mn_h !== null ? t("Em manutenção") : (posse_de($r) === "emprestado" ? posse_texto($r) : t("Indisponível"))) : $v["estado_texto"],
+        "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? ($mn_h !== null ? t("Em manutenção") : (posse_de($r) === "emprestado" ? posse_texto($r) : t("Inativo"))) : $v["estado_texto"],
         "estado_ordem" => ["uso" => 0, "sessao" => 1, "repouso" => 2, "indisponivel" => 3][$estado_h],
         "agora" => $v["texto"], "carga" => (int)$r["disponivel"] === 1 ? $v["energia"] : null, "carga_de" => $v["de"], "ultimo" => $v["ultimo"],
         "ultimo_txt" => $v["em_uso"] ? t("agora · {1}", [1 => date("H:i", $agora)]) : ($v["ultimo"] > 0 ? data_txt($v["ultimo"], true, date("Y", $v["ultimo"]) === date("Y", $agora)) : t("nunca")),
@@ -3808,9 +3808,9 @@ $VARIAVEIS_TABELA = [
     "nome" => [tk("o nome do relógio"), ""],
     "marca" => [tk("a marca do relógio (o cadastro das marcas: a coluna Marca; vazio: sem marca)"), ""],
     "tipo" => [tk("o tipo (o grupo da árvore onde ele está: a coluna Tipo)"), ""],
-    "estado" => [tk("o estado agora, por extenso (Em uso, Em repouso, No winder, Indisponível...)"), ""],
-    "disponivel" => [tk("1 se o relógio está disponível para o rodízio, 0 se não"), ""],
-    "no_sorteio" => [tk("1 se o relógio entra no sorteio do rodízio (disponível e com a marca Entra no sorteio do rodízio), 0 se não"), ""],
+    "estado" => [tk("o estado agora, por extenso (Em uso, Em repouso, No winder, Inativo...)"), ""],
+    "disponivel" => [tk("1 se o relógio está ativo (a marca Relógio ativo do cadastro), 0 se está inativo"), ""],
+    "no_sorteio" => [tk("1 se o relógio entra no sorteio do rodízio (ativo e com a marca Entra no sorteio do rodízio), 0 se não"), ""],
     "em_uso" => [tk("1 se está no pulso agora"), ""],
     "carga" => [tk("a carga agora, em % (vazio: sem leitura ou indisponível)"), "%"],
     "ultimo_uso" => [tk("a data da última vez no pulso (agora, se está no pulso; vazio: nunca)"), ""],
@@ -8465,7 +8465,7 @@ function manutencao_volta($m)
     sql("UPDATE relogio SET disponivel = ? WHERE id = ?", [$disp, (int)$r["id"]]);
     $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
     return $disp === 1 ? t(" O {1} voltou para o rodízio (o plano já montado fica: o \"Sortear de novo\" o inclui).", [1 => $r["nome"]])
-        : t(" O {1} voltou, indisponível para o rodízio, como estava.", [1 => $r["nome"]]);
+        : t(" O {1} voltou, inativo, como estava.", [1 => $r["nome"]]);
 }
 
 // Uma manutenção já encerrada (a de um serviço registrado sem ela): na oficina, do tipo de serviço, enviada e encerrada no
@@ -10177,7 +10177,7 @@ function visao_relogio($r, $agora)
     // (sem as explicações entre parênteses no fim, como o "(0 a 100)")
     $de = $f_en === null ? t("sem medida de carga") : (is_numeric($energia) ? trim((string)preg_replace(["/^[^:]*:/u", "/(\\s*\\([^()]*\\))+\$/u"], "", $f_en["nome"])) : t("sem dados para calcular"));
     if ((int)$r["disponivel"] !== 1) {
-        $de = t("indisponível");
+        $de = t("inativo");
     }
     // as sessões abertas agora; a esquecida aberta conta só até o "fecha às" do tipo, no dia em que começou
     $abertas = [];

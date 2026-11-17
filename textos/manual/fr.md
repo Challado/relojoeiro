@@ -1,4 +1,4 @@
-<!-- origem: ed7f791f89ececedc57ca73da8a98758d573c560 -->
+<!-- origem: 3ffd02df6ad789e6cbd2f6e9ee48a5eefe41266f -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -891,13 +891,12 @@ l'envoie (aussi depuis le cadre **Entretien** du panneau). Choisissez la montre,
 service** et, si vous voulez, le problème, le bon de réparation, l'envoi, le retour prévu, le devis, ce qui est parti avec (la
 boîte, le bracelet) et les documents de l'envoi.
 
-À l'enregistrement, la montre est **en entretien** : indisponible pour la rotation jusqu'au retour (avec l'étiquette *en
+À l'enregistrement, la montre est **en entretien** : inactive jusqu'au retour (avec l'étiquette *en
 entretien* sur le panneau et l'état *En entretien* sur la page Aujourd'hui), ses sessions ouvertes se ferment (au poignet, au
 soleil, sur le chargeur ; dans le remontoir, la position devient libre), ses jours dans le plan à partir de demain sortent et
 sont tirés à nouveau, et les alertes de charge, de remontage et de pile s'arrêtent. Si c'était la **montre du jour**,
 aujourd'hui devient libre : avec les Réglages qui permettent de changer la montre du jour le jour même, vous en choisissez une
-autre ; sinon, aujourd'hui reste sans montre. Changer la disponibilité de la montre pendant qu'elle est à l'atelier change
-celle du retour.
+autre ; sinon, aujourd'hui reste sans montre. Changer **Montre active** pendant qu'elle est à l'atelier change celle du retour.
 
 Le **statut** avance depuis la ligne du tableau (le menu et **Changer**), et chaque changement va dans l'**historique**. Les
 statuts sont une liste à vous (Entretien › Listes), et chacun fait l'une de trois choses : **en cours** (Envoyé, en attente du
@@ -1102,7 +1101,7 @@ des documents quittent le disque aussitôt. Par l'API, toute suppression demande
 
 ## La fiche de chaque montre, champ par champ {#o-cadastro-de-cada-relógio-campo-por-campo}
 
-Chaque montre a un **nom**, une **marque**, un **groupe**, une **situation dans la collection**, **disponible** et une **photo**. Le reste, ce sont des **champs**, et les champs
+Chaque montre a un **nom**, une **marque**, un **groupe**, une **situation dans la collection**, **active** et une **photo**. Le reste, ce sont des **champs**, et les champs
 qu'une montre possède dépendent de son **groupe** : tout ce qui est enregistré dans un groupe vaut pour lui et pour tous les
 groupes en dessous. C'est pourquoi « être automatique » n'est pas une case à part : c'est être dans le groupe
 **Automatique** (ou dans un de ses sous-groupes), et hériter ainsi des champs du poignet et du remontoir.
@@ -1133,8 +1132,8 @@ vôtres.
 | **Nom** | comment elle apparaît partout : à l'écran, sur Telegram et dans l'agenda. |
 | **Groupe** | sa place dans l'arbre. Il décide des champs, des formules (la « charge » d'une smartwatch est la batterie ; celle d'une mécanique, la réserve de marche) et des alertes qu'elle reçoit. |
 | **Situation dans la collection** | Un élément de la liste **Statuts de la montre dans la collection** (Définitions › Listes) : **Dans la collection** (le cas habituel), **Désirée** (la liste d'envies : pas encore à vous), **Prêtée** (elle est à vous, mais quelqu'un d'autre l'a) ou un qui sort de la collection (**Vendue**, **Archivée**, **Offerte**, **Perdue ou volée** et ceux que vous créez). Seul ce qui est dans la collection entre dans la rotation : dans les autres situations la montre est indisponible, elle sort du tirage, du planning et des alertes, et, quand elle quitte la collection, ses sessions ouvertes (au poignet, au soleil, sur le chargeur) se ferment aussitôt et ses jours dans le plan à partir de demain sont retirés et tirés de nouveau (aujourd'hui reste, mais elle ne va plus au poignet toute seule : changez-la dans **remplacer par…**). Sa fiche, ses documents et son historique restent. La prêtée reste à vous (dans la valeur de la collection et dans les alertes, avec l'état **Prêtée**). Chaque statut a son onglet au-dessus du tableau de la page Aujourd'hui, et la sortie est notée (quand, à qui, pour combien). En revenant à **Dans la collection**, elle redevient disponible. Voir [Les onglets et les sorties de la collection](#as-abas-e-as-saídas-da-coleção) et [La liste d'envies](#a-lista-de-desejos). |
-| **Disponible** | décochée, elle sort de tout : de la rotation, de la charge, des alertes et de **Portée aujourd'hui** (chez l'horloger, en pause), mais l'historique reste. Hors de la collection, elle est toujours décochée (et le champ disparaît de la fiche). |
-| **Participe au tirage de la rotation** | cochée (l'habitude), la rotation peut la choisir toute seule. Décochée, elle sort seulement du tirage : le plan hebdomadaire, l'échelle, **Tirer ce jour au sort par**, le **Décider pour moi** de la Rotation manuelle, la **Suggestion pour maintenant** et la montre fixe d'un bloc des Modes ne la choisissent plus ; mais elle reste dans la collection, disponible, avec la charge, les alertes, **Mise au poignet** et **Portée aujourd'hui**, et vous pouvez encore la choisir à la main pour un jour (le **remplacer par…**, la Rotation manuelle). Quand vous la décochez, ses jours tirés au sort à partir de demain sont tirés à nouveau parmi les autres ; aujourd'hui et les jours choisis à la main restent. Le ⓘ **Disponible et tirage** explique la différence, et la fiche indique dans **Prochaine fois** qu'elle est hors du tirage. Par l'API : `recurso=relogio`, `acao=salvar`, `sorteio=0` (ou `1`). |
+| **Montre active** | décochée, la montre devient **inactive** et sort de tout : de la rotation, de la charge, des alertes et de **Portée aujourd'hui** (chez l'horloger, en pause), mais l'historique reste. Hors de la collection, elle est toujours décochée (et le champ disparaît de la fiche). |
+| **Participe au tirage de la rotation** | cochée (l'habitude), la rotation peut la choisir toute seule. Décochée, elle sort seulement du tirage : le plan hebdomadaire, l'échelle, **Tirer ce jour au sort par**, le **Décider pour moi** de la Rotation manuelle, la **Suggestion pour maintenant** et la montre fixe d'un bloc des Modes ne la choisissent plus ; mais elle reste dans la collection, active, avec la charge, les alertes, **Mise au poignet** et **Portée aujourd'hui**, et vous pouvez encore la choisir à la main pour un jour (le **remplacer par…**, la Rotation manuelle). Quand vous la décochez, ses jours tirés au sort à partir de demain sont tirés à nouveau parmi les autres ; aujourd'hui et les jours choisis à la main restent. Le ⓘ **Active et tirage** explique la différence, et la fiche indique dans **Prochaine fois** qu'elle est hors du tirage. Par l'API : `recurso=relogio`, `acao=salvar`, `sorteio=0` (ou `1`). |
 | **Garder une copie de tous ses documents dans la base** | cochée, chaque fichier de la montre (le manuel, la facture, les photos, les vidéos) va aussi dans la base de données, comme sauvegarde. N'apparaît que quand la Configuration de la collection ne décide pas pour toutes (**Copie des documents dans la base (valable pour toutes les montres)** vide). Voir [Les documents de la montre](#os-documentos-do-relógio) : c'est le deuxième des trois niveaux de la copie. |
 | **Photo** | seulement pour l'écran. Dans le détail de la montre (le panneau, ou la fiche), en posant la souris sur la photo, un résumé apparaît (le nom, le groupe et le code ; l'état et la charge ; la note et le prochain jour dans la rotation ; l'achat) ainsi que le rappel du double-clic. Un **double-clic** dessus, ou le bouton **Ouvrir la photo** en dessous, ouvre la photo dans une fenêtre flottante, à sa taille (seulement dans le détail : sur les autres photos, comme celle de *Aujourd'hui, c'est le jour de* et les vignettes de la liste, le clic ouvre la montre) ; une photo plus grande que l'écran apparaît à l'échelle, sans déformation, à la plus grande taille qui tient dans le moniteur (et dans la fenêtre du navigateur), avec la taille réelle et l'échelle en dessous. Elle se ferme avec le ×, d'un clic à l'extérieur ou avec Échap. |
 | **Accessoires** | les bracelets, la boîte, l'étui, les outils, le chargeur, les pièces : le cadre **Accessoires** du panneau montre les siens (le type, le nom et l'observation), et la page **Accessoires** les ajoute et les modifie (un accessoire peut appartenir à une montre ou être indépendant, servant à plusieurs). Chaque accessoire a les champs de son type (la largeur, la matière, la couleur et le fermoir du bracelet), et le cadre montre aussi ceux d'autres montres, ou libres, qui **vont** sur elle. Voir [La construction et les accessoires](#a-construção-e-os-acessórios). |
@@ -1277,7 +1276,7 @@ champ, sur la page Définitions) :
 
 Dans le panneau d'une montre désirée, à la place des cadres du quotidien (maintenant, charge, note, plan, achat, Marquer),
 apparaît le cadre **Envie** : la marque, la référence, le prix cible, la priorité et le lien. **Vous l'avez achetée ?** Sur la
-page Envies, le bouton **Achetée** met la montre dans la collection (disponible pour la rotation) et ouvre sa fiche, pour
+page Envies, le bouton **Achetée** met la montre dans la collection (active et dans la rotation) et ouvre sa fiche, pour
 remplir l'achat (la date, le prix, la boutique) : l'historique commence là. Les champs réservés aux désirées restent
 enregistrés, mais disparaissent de la fiche. Par l'API : `recurso=desejos` (la liste) et `recurso=relogio`, `acao=salvar`,
 `posse=colecao` (le Achetée).
@@ -1345,8 +1344,7 @@ Elle vous plaît ? **Mettre au poignet** marque la montre au poignet maintenant.
 suggestion** affiche la suivante, sans répéter celles déjà apparues ; quand il n'y en a plus, la carte le dit et propose
 **Recommencer**. Changer la méthode ou les types relance le tour, et le navigateur retient votre dernier choix.
 
-Ce que la suggestion respecte : seules les montres **disponibles** qui sont **dans la collection** participent. Sont
-écartées, et la carte dit lesquelles et pourquoi, celle qui est **déjà au poignet** et celles dont la **charge est à la
+Ce que la suggestion respecte : seules les montres **actives** qui sont **dans la collection** participent. Sont écartées, et la carte dit lesquelles et pourquoi, celle qui est **hors du tirage** (la fiche de la montre), celle qui est **déjà au poignet** et celles dont la **charge est à la
 limite ou en dessous** (la limite de chaque montre est celle des définitions : celle de la montre, sinon celle de la
 Configuration). Le **plan ne change pas** : la montre du jour reste la même, et la montre suggérée qui va au poignet compte
 comme usage hors du plan. Rien n'est enregistré tant que vous n'appuyez pas sur Mettre au poignet. Avec **En mettant une
@@ -1502,7 +1500,7 @@ Les alertes de l'ensemble initial, avec l'identifiant (leur nom dans les formule
 | Remettre à l'heure | `acertar_hora` | Traditionnelle | la Remise à l'heure. Échoit quand l'écart estimé dépasse *Remettre à l'heure à partir de* (par défaut 60 s), selon la marche mesurée ; avertit 2 jours avant. |
 | Marche hors de l'attendu | `marcha_fora` | Traditionnelle | une nouvelle lecture de l'écart. Échoit à la lecture dont la marche est sortie de la *Marche attendue* ou, avec 4 mesures ou plus, s'est éloignée de l'historique de la montre elle-même (plus de 3 fois la variation, et au moins 5 s/jour). |
 | Garantie qui expire | `garantia` | toutes | (rien : elle alerte seulement) |
-| Délaissée | `encostado` | toutes (celles de la collection, disponibles) | Au poignet. Elle arrive à échéance quand la montre dépasse la limite de jours sans aller au poignet (Configuration, **Alerte Délaissée : jours sans aller au poignet**, 30 par défaut), comptés depuis la dernière fois au poignet (jamais portée, depuis la date d'achat ; sans les deux, pas d'alerte). Elle n'entre pas dans le prochain entretien ni dans **Quoi faire** : le tableau a la colonne **Délaissée**, avec combien il reste ou depuis combien c'est dépassé. |
+| Délaissée | `encostado` | toutes (celles de la collection, actives) | Au poignet. Elle arrive à échéance quand la montre dépasse la limite de jours sans aller au poignet (Configuration, **Alerte Délaissée : jours sans aller au poignet**, 30 par défaut), comptés depuis la dernière fois au poignet (jamais portée, depuis la date d'achat ; sans les deux, pas d'alerte). Elle n'entre pas dans le prochain entretien ni dans **Quoi faire** : le tableau a la colonne **Délaissée**, avec combien il reste ou depuis combien c'est dépassé. |
 
 Les alertes partent dans l'alerte du matin. Une alerte marquée **immédiate** (dans la page **Alertes**, la case
 *immédiate*) part aussi par Telegram **dans la minute où elle arrive à échéance**, une seule fois, jusqu'à ce qu'elle soit
@@ -1802,7 +1800,7 @@ haut, **Vue en tant que...**, avec le bouton pour revenir.
 
 **L'état de chaque montre** dit où elle est maintenant : **En usage** (vert, au poignet), le nom de la session ouverte quand
 elle est ailleurs, comme **Au soleil**, **Sur le remontoir** ou **Sur le chargeur** (orange), **Au repos** (rouge, rangée)
-et **Indisponible** (gris, hors rotation et rangée) ou **Prêtée** (gris : chez quelqu'un d'autre). Le filtre **État** les a
+et **Inactive** (gris, hors rotation et rangée) ou **Prêtée** (gris : chez quelqu'un d'autre). Le filtre **État** les a
 tous. Dans le panneau, l'état vient avec depuis quand (*« Au soleil depuis 09:12 »*). Tout type de saisie au format session
 que vous enregistrez apparaît ici sous son nom.
 
@@ -2133,11 +2131,10 @@ refuse le repos. Les jours qui étaient déjà libres restent libres, jusqu'à c
 relanciez le tirage. L'option est activée d'origine, et vaut aux trois niveaux (le système, votre compte et la collection).
 
 **Et si je veux une montre dans la collection que la rotation ne choisit jamais ?**
-Dans sa fiche (**Modifier la fiche**), décochez **Participe au tirage de la rotation** et enregistrez. Elle reste disponible,
-avec la charge et les alertes, et vous la portez quand vous voulez (**Mise au poignet**, **Portée aujourd'hui**, le
+Dans sa fiche (**Modifier la fiche**), décochez **Participe au tirage de la rotation** et enregistrez. Elle reste active, avec la charge et les alertes, et vous la portez quand vous voulez (**Mise au poignet**, **Portée aujourd'hui**, le
 **remplacer par…** d'un jour), mais le tirage (le plan, l'échelle, **Tirer ce jour au sort par**, **Décider pour moi**, la
 **Suggestion pour maintenant**) ne la choisit plus. Ses jours déjà tirés au sort, à partir de demain, sont tirés à nouveau.
-Pour la sortir de tout, même des alertes, décochez **Disponible pour la rotation**.
+Pour la sortir de tout, même des alertes, décochez **Montre active**.
 
 **Et si je veux choisir moi-même les montres d'une période ?**
 Dans le cadre **Mode de rotation** de la page Aujourd'hui, choisissez **Rotation manuelle**, indiquez le début et la fin et
@@ -2179,7 +2176,7 @@ début et la fin d'une session ; l'heure et la valeur d'un relevé). Changez ce 
 au poignet à cause d'un Retirée oublié ne pousse plus la consommation en usage vers le haut.
 
 **Une montre est chez l'horloger.**
-Décochez **Disponible** sur la fiche. Elle sort du tirage et des moyennes de la collection, mais l'historique reste.
+Décochez **Montre active** sur la fiche. Elle sort du tirage et des moyennes de la collection, mais l'historique reste.
 
 **J'ai un type de montre que le système ne connaît pas (une kinetic, une montre de poche...).**
 Créez un groupe pour elle, les champs, les types de saisie et une version de la formule `energia` dans ce groupe. Les alertes

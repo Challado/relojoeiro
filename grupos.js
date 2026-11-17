@@ -51,7 +51,7 @@ function recarregarGrupos() {
     res += el("section", {"class": "cartao-config", "id": "relogios"}, el("h2", {}, t("O grupo de cada relógio")) + el("form", {"data-recurso": "arvore"}, el("input", {"type": "hidden", "name": "acao", "value": "relogios"})
       + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-criterios"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + el("th", {}, t("Grupo"))))
         + el("tbody", {}, d.relogios.map(function (r) {
-          return el("tr", {}, el("td", {}, h(r.nome) + (r.disponivel ? "" : " " + el("span", {"class": "nota"}, t("(indisponível)"))))
+          return el("tr", {}, el("td", {}, h(r.nome) + (r.disponivel ? "" : " " + el("span", {"class": "nota"}, t("(inativo)"))))
             + el("td", {}, el("select", {"name": "grupo[" + r.id + "]"}, opcoes.map(function (op) { return el("option", {"value": op[0], "selected": r.no_id === op[0]}, h(op[1])); }).join(""))));
         }).join(""))))
       + el("div", {"class": "botoes"}, el("button", {}, t("Salvar grupos")))));
