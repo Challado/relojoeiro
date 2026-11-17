@@ -1919,6 +1919,8 @@
  *                                    o valor que as contas usam: o gravado, ou o padrão do campo
  *     relogios[].criado              quando foi cadastrado (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
+ *     relogios[].sorteio             verdadeiro ou falso: a marca Entra no sorteio do rodízio do cadastro (falso: o rodízio nunca o escolhe
+ *                                    sozinho, mas ele pode ser escolhido à mão)
  *     relogios[].copia_banco         verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
  *     relogios[].calibre_id          o id do calibre dele (o movimento); null: sem calibre
@@ -2663,6 +2665,8 @@
  *     relogios[].de_hoje             verdadeiro ou falso: é o relógio de hoje
  *     relogios[].destaque            verdadeiro ou falso: é o relógio do destaque no alto da página (o mesmo de destaque.relogio_id)
  *     relogios[].disponivel          verdadeiro ou falso: entra no rodízio
+ *     relogios[].no_sorteio          verdadeiro: o rodízio pode escolhê-lo (disponível e com a marca Entra no sorteio do rodízio); falso:
+ *                                    indisponível, ou fora do sorteio (continua na coleção e pode ser escolhido à mão)
  *     relogios[].posse               a situação na coleção: o identificador de um item da lista Situações do relógio na coleção (Cadastros
  *                                    › Listas: colecao, emprestado, desejado, vendido, arquivado...); o que ela faz está em
  *                                    posse_comportamento
@@ -2849,7 +2853,8 @@
  *     fora[]                         um relógio que ficou de fora
  *     fora[].relogio_id              o id do relógio
  *     fora[].relogio                 o nome do relógio
- *     fora[].motivo                  por que ficou de fora: pulso (está no pulso agora) ou carga (a carga no limite ou abaixo dele)
+ *     fora[].motivo                  por que ficou de fora: sorteio (fora do sorteio do rodízio, o cadastro do relógio), pulso (está no
+ *                                    pulso agora) ou carga (a carga no limite ou abaixo dele)
  *     fora[].texto                   o motivo por extenso, no idioma do pedido ("carga em 12%, no limite de 20% ou abaixo dele")
  *     sugestao                       o relógio sugerido; null: nenhum (aviso diz por quê)
  *     sugestao.relogio_id            o id do relógio
@@ -3373,6 +3378,10 @@
  *     relogio.dados[].valor_usado    o valor que as contas usam: o informado, senão o padrão do campo (null: nenhum)
  *     relogio.desde                  desde quando (texto AAAA-MM-DD HH:MM:SS, no fuso do sistema)
  *     relogio.disponivel             verdadeiro ou falso: entra no rodízio
+ *     relogio.sorteio                verdadeiro ou falso: a marca Entra no sorteio do rodízio do cadastro (o que se grava em relogio
+ *                                    salvar: sorteio)
+ *     relogio.no_sorteio             verdadeiro: o rodízio pode escolhê-lo agora (disponível e com a marca sorteio); falso: a ficha diz por
+ *                                    que não
  *     relogio.copia_banco            verdadeiro: o relógio pede a cópia no banco de todos os documentos dele (o segundo dos três níveis da
  *                                    cópia; a Configuração da coleção, documentos_copia, se escolhe, vale por cima)
  *     relogio.marca                  a marca do relógio (Cadastros › Marcas); null: sem marca
@@ -4890,6 +4899,8 @@
  *     relogios[]                     os relógios
  *     relogios[].id                  o número
  *     relogios[].nome                o nome
+ *     relogios[].no_sorteio          verdadeiro: o rodízio pode escolhê-lo (disponível e com a marca Entra no sorteio do rodízio); falso:
+ *                                    ele não serve de relógio fixo de um bloco (a tela o mostra desabilitado, com o motivo)
  *     tipos_de_campo.<tipo_de_campo> cada tipo de campo e o nome
  *     marchas_de_lancamento          o que um tipo de lançamento pode medir da marcha (a lista Mede a marcha do cadastro)
  *     marchas_de_lancamento.desvio   a leitura do desvio da hora (só com valor, em segundos)
@@ -6934,6 +6945,8 @@
  *                                    posse_comportamento
  *     relogio.posse_texto            a mesma por extenso
  *     relogio.disponivel             verdadeiro: está no rodízio
+ *     relogio.no_sorteio             verdadeiro: o rodízio pode escolhê-lo (disponível e com a marca Entra no sorteio do rodízio); falso:
+ *                                    fora do sorteio ou indisponível
  *     relogio.criado                 quando entrou no sistema (texto AAAA-MM-DD HH:MM:SS)
  *     relogio.foto                   a versão da foto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC)); null: sem foto
  *     relogio.marca                  a marca (null)
@@ -7322,6 +7335,8 @@
  *     relogios[].id                  o número do relógio
  *     relogios[].nome                o nome
  *     relogios[].candidato           verdadeiro: entra na escolha do dia
+ *     relogios[].no_sorteio          verdadeiro: o relógio entra no sorteio; falso: fora do sorteio (o cadastro) ou indisponível: o roteiro
+ *                                    o calcula, mas a escolha do teste não o considera
  *     relogios[].nota                a nota nesse dia (null: vazia)
  *     relogios[].peso                o peso (a chance) nesse dia (null: vazio)
  *     relogios[].dias                quantos dias seguidos ficaria (1 a 366)

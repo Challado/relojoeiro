@@ -153,7 +153,7 @@ $RELATORIOS["passaporte"] = [$g_colecao, t("Passaporte do relógio"), t("A ficha
         $u = $d["uso"];
         $sec = [];
         $sec[] = $pares(t("Quem ele é"), [[t("Código"), (string)$x["id"]], [t("Nome"), $x["nome"]], [t("Marca"), $x["marca"]], [t("Referência"), $x["referencia"]],
-            [t("Grupo"), $x["caminho"]], [t("Situação"), $x["posse_texto"] . ($x["posse"] === "colecao" ? ($x["disponivel"] ? t(" · no rodízio") : t(" · fora do rodízio")) : "")],
+            [t("Grupo"), $x["caminho"]], [t("Situação"), $x["posse_texto"] . ($x["posse"] === "colecao" ? ($x["no_sorteio"] ? t(" · no rodízio") : ($x["disponivel"] ? t(" · fora do sorteio do rodízio") : t(" · fora do rodízio"))) : "")],
             [t("No sistema desde"), $data($x["criado"])], [t("Observação"), $x["observacao"]]]);
         $sec[] = $pares(t("Compra"), [[t("Data"), $data($c["data"])], [t("Valor pago"), $reais($c["valor"])], [t("Loja"), $c["loja"]], [t("Garantia até"), $data($c["garantia_ate"])]],
             t("Sem dados da compra."));

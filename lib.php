@@ -1311,6 +1311,7 @@ $MIGRACOES = [
     "v62" => ["migracao_v62.sql", tk("as colunas de sempre da tabela dos relógios (código, relógio, marca, tipo, estado, carga, última vez usado, tempo de uso, próxima manutenção, em, o que fazer, encostado, comprado em e valor) passam a morar no cadastro de colunas (Cadastros › Colunas), como colunas do sistema: só mudam de lugar e de aparecer de início; toda coluna nova nasce ali, e uma árvore nova já nasce com as de sempre"), "sistema.chave=migracao_v62", "migracao_v62_dados"],
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
     "v64" => ["migracao_v64.sql", tk("as saídas da coleção: cada vez que um relógio é emprestado ou sai (vendido, presenteado, arquivado e os motivos do seu cadastro), ficam a data, o valor recebido, para quem foi e a observação, e a volta fecha a saída sem apagar o histórico; e as abas por situação em cima da tabela dos relógios e da galeria (na coleção, emprestado, desejado, vendido...), cada uma com o que é dela"), "sistema.chave=migracao_v64", "migracao_v64_dados"],
+    "v65" => ["migracao_v65.sql", tk("o relógio fora do sorteio do rodízio: a marca Entra no sorteio do rodízio, no cadastro do relógio. Desmarcada, o rodízio nunca escolhe o relógio sozinho (o plano, a escala, o Decida por mim, o Sortear este dia por e a Sugestão para agora), mas ele continua na coleção: a carga, os avisos, o Pôs no pulso, o Usando hoje e a escolha à mão de um dia. O Disponível continua tirando o relógio de tudo"), "relogio.sorteio"],
 ];
 
 // O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
@@ -3749,7 +3750,7 @@ function tabela_linha($r, $agora, $extra = [])
     $val = valores_do_relogio((int)$r["id"]);
     $leitura = linha("SELECT l.inicio, l.valor, t.unidade FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE l.relogio_id = ? AND t.formato = 'valor'
             AND t.marcha IS NULL ORDER BY l.inicio DESC, l.id DESC LIMIT 1", [(int)$r["id"]]);
-    $res_l = ["id" => (int)$r["id"], "nome" => $r["nome"], "marca" => marca_do_relogio((int)$r["id"])["nome"] ?? null, "disponivel" => (int)$r["disponivel"] === 1, "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
+    $res_l = ["id" => (int)$r["id"], "nome" => $r["nome"], "marca" => marca_do_relogio((int)$r["id"])["nome"] ?? null, "disponivel" => (int)$r["disponivel"] === 1, "no_sorteio" => relogio_no_sorteio($r), "tipo" => isset($nos[(int)$r["no_id"]]) ? $nos[(int)$r["no_id"]]["nome"] : "—",
         "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r),
         "em_manutencao" => ($mn_h = manutencao_aberta((int)$r["id"])) !== null ? $mn_h["oficina"] : null,
         "em_uso" => $v["em_uso"], "estado" => $estado_h, "estado_texto" => $estado_h === "indisponivel" ? ($mn_h !== null ? t("Em manutenção") : (posse_de($r) === "emprestado" ? posse_texto($r) : t("Indisponível"))) : $v["estado_texto"],
@@ -3809,6 +3810,7 @@ $VARIAVEIS_TABELA = [
     "tipo" => [tk("o tipo (o grupo da árvore onde ele está: a coluna Tipo)"), ""],
     "estado" => [tk("o estado agora, por extenso (Em uso, Em repouso, No winder, Indisponível...)"), ""],
     "disponivel" => [tk("1 se o relógio está disponível para o rodízio, 0 se não"), ""],
+    "no_sorteio" => [tk("1 se o relógio entra no sorteio do rodízio (disponível e com a marca Entra no sorteio do rodízio), 0 se não"), ""],
     "em_uso" => [tk("1 se está no pulso agora"), ""],
     "carga" => [tk("a carga agora, em % (vazio: sem leitura ou indisponível)"), "%"],
     "ultimo_uso" => [tk("a data da última vez no pulso (agora, se está no pulso; vazio: nunca)"), ""],
@@ -3920,7 +3922,7 @@ function total_validar($expressao)
 function tabela_variaveis($linha, $r, $agora)
 {
     $em_dias = function ($data) { return $data === null || $data === "" ? null : dias_de(strtotime(substr((string)$data, 0, 10) . " 00:00:00")); };
-    return ["codigo" => (int)$linha["id"], "nome" => $linha["nome"], "marca" => $linha["marca"], "tipo" => $linha["tipo"], "estado" => $linha["estado_texto"], "disponivel" => $linha["disponivel"] ? 1 : 0,
+    return ["codigo" => (int)$linha["id"], "nome" => $linha["nome"], "marca" => $linha["marca"], "tipo" => $linha["tipo"], "estado" => $linha["estado_texto"], "disponivel" => $linha["disponivel"] ? 1 : 0, "no_sorteio" => $linha["no_sorteio"] ? 1 : 0,
         "em_uso" => $linha["em_uso"] ? 1 : 0, "carga" => $linha["carga"] === null ? null : (float)$linha["carga"],
         "ultimo_uso" => $linha["em_uso"] ? dias_de($agora) : ((int)$linha["ultimo"] > 0 ? dias_de((int)$linha["ultimo"]) : null),
         "manutencao_data" => $linha["manutencao"] ? $em_dias($linha["manutencao"]["data"]) : null, "manutencao_nome" => $linha["manutencao"]["nome"] ?? null,
@@ -6190,6 +6192,8 @@ function plano_montar($modo, $hoje, $de, $ate, $escala)
     foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
         $rels[(int)$r["id"]] = $r;
     }
+    // quem o modo pode escolher: os que entram no sorteio (o relógio fora do sorteio fica em $rels: os avisos da escala o veem)
+    $cands = relogios_do_sorteio($rels);
     $agora = time();
     $pulso = lancamento_tipos()["pulso"] ?? null;
     $gravados = 0;
@@ -6210,9 +6214,9 @@ function plano_montar($modo, $hoje, $de, $ate, $escala)
         $data = $d->format("Y-m-d");
         $m_ini = max($agora, instante($data, cfg("uso_inicio")));
         $p = plano_do_dia($data);
-        if ($p === null && $d >= $de && !dia_livre($data) && count($rels) > 0) {
+        if ($p === null && $d >= $de && !dia_livre($data) && count($cands) > 0) {
             $bloco = bloco_do_dia($blocos, $d);
-            [$id, $motivo, $dias] = escolha_do_dia($modo, $d, $m_ini, $rels, $roteiro, [], $bloco ? $bloco["nome"] : "");
+            [$id, $motivo, $dias] = escolha_do_dia($modo, $d, $m_ini, $cands, $roteiro, [], $bloco ? $bloco["nome"] : "");
             if ($id !== null) {
                 // os dias seguidos: enquanto o dia seguinte estiver vago, não livre e ele continuar candidato (fora da escala, mesmo
                 // depois do horizonte: um relógio para a semana inteira fica a semana inteira, montado o plano em qualquer dia)
@@ -6394,14 +6398,29 @@ function roteiro_testar($texto, $dia)
         $relogios[] = ["id" => $cid, "nome" => $r["nome"], "candidato" => ($c["candidato"] ?? null) !== null && (float)$c["candidato"] != 0,
             "nota" => is_numeric($c["nota"] ?? null) ? round((float)$c["nota"], 2) : null, "peso" => is_numeric($c["peso"] ?? null) ? round((float)$c["peso"], 2) : null,
             "dias" => is_numeric($c["dias"] ?? null) ? max(1, min(366, (int)floor((float)$c["dias"]))) : 1, "garantia" => ($c["garantia"] ?? null) !== null && (float)$c["garantia"] != 0,
-            "dias_sem_uso" => round($c["dias_sem_uso"], 1), "valores" => $valores];
+            "dias_sem_uso" => round($c["dias_sem_uso"], 1), "no_sorteio" => relogio_no_sorteio($r), "valores" => $valores];
     }
-    [$id, $motivo, $dias] = escolha_do_dia(null, $dia, $m_ini, $rels, $arv, [], "", true, "roteiro");
+    [$id, $motivo, $dias] = escolha_do_dia(null, $dia, $m_ini, relogios_do_sorteio($rels), $arv, [], "", true, "roteiro");
     $GLOBALS["SIMULACAO"] = [];
     $GLOBALS["SIMULACAO_VERSAO"]++;
     return ["dia" => $dia->format("Y-m-d"), "dia_semana" => (int)$dia->format("N"), "linhas" => array_map(function ($l) { return ["nome" => $l[0], "expressao" => $l[1]]; }, $lido["linhas"]),
         "erros" => $lido["erros"], "relogios" => $relogios,
         "escolhido" => $id === null ? null : ["relogio_id" => $id, "relogio" => $rels[$id]["nome"], "motivo" => $motivo, "dias" => $dias]];
+}
+
+// O relógio entra no sorteio do rodízio? Só o disponível e com a marca sorteio (o cadastro: Entra no sorteio do rodízio).
+// Fora do sorteio, o rodízio nunca o escolhe sozinho (o plano, a escala, o Decida por mim, o Sortear este dia por, a Sugestão
+// para agora), mas ele continua na coleção: a carga, os avisos, o pulso, o Usando hoje e a escolha à mão de um dia. Sem a
+// coluna (entre o git pull e o Aplicar da v65), todo disponível entra, como antes
+function relogio_no_sorteio($r)
+{
+    return (int)($r["disponivel"] ?? 0) === 1 && (int)($r["sorteio"] ?? 1) === 1;
+}
+
+// Os candidatos do sorteio, de uma lista de relógios (id => linha): os que entram no sorteio (relogio_no_sorteio)
+function relogios_do_sorteio($rels)
+{
+    return array_filter($rels, "relogio_no_sorteio");
 }
 
 // Sorteia um dia só, agora, por uma forma de escolha ($selecao: a chave de formas_de_escolha), entre os relógios disponíveis
@@ -6422,7 +6441,7 @@ function sortear_dia($dia, $selecao)
     }
     $cands = [];
     foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
-        if ($bloco === null || $bloco["no_id"] === null || in_array((int)$bloco["no_id"], no_cadeia($r["no_id"] ?? 0), true)) {
+        if (relogio_no_sorteio($r) && ($bloco === null || $bloco["no_id"] === null || in_array((int)$bloco["no_id"], no_cadeia($r["no_id"] ?? 0), true))) {
             $cands[(int)$r["id"]] = $r;
         }
     }
@@ -6553,8 +6572,9 @@ function rodizio_manual_decidir($de, $ate, $escolhas)
             $escolhido = $p ? (int)$p["relogio_id"] : null;
         } elseif (is_int($e)) {
             $escolhido = $e;
-        } elseif (($e === "auto" || (is_string($e) && strpos($e, "sortear:") === 0)) && count($rels) > 0) {
-            $cands = $rels;
+        } elseif (($e === "auto" || (is_string($e) && strpos($e, "sortear:") === 0)) && count(relogios_do_sorteio($rels)) > 0) {
+            // o dia decidido pelo sistema: só os que entram no sorteio (os escolhidos à mão continuam em $rels, para a simulação)
+            $cands = relogios_do_sorteio($rels);
             $fora = [];
             $amanha = $escolhas[$dia->modify("+1 day")->format("Y-m-d")] ?? null;
             foreach ([[$anterior, t("o de ontem")], [is_int($amanha) ? $amanha : null, t("o de amanhã")]] as [$x, $qual]) {
@@ -8380,6 +8400,27 @@ function manutencao_aberta($rid)
     return manutencoes_abertas()[(int)$rid] ?? null;
 }
 
+// O relógio saiu do sorteio (a marca sorteio desmarcada no cadastro): os dias sorteados dele, de amanhã em diante, saem e são
+// sorteados de novo entre os outros; hoje e os dias escolhidos à mão ficam (são escolha sua), e nada mais muda (a carga, os
+// avisos, as sessões abertas). Devolve a nota do que mudou
+function relogio_sai_do_sorteio($id)
+{
+    $amanha = hoje_da_colecao()->modify("+1 day");
+    $tirados = (int)valor("SELECT COUNT(*) FROM plano WHERE relogio_id = ? AND data >= ? AND origem = 'sorteio'", [(int)$id, $amanha->format("Y-m-d")]);
+    if ($tirados === 0) {
+        return "";
+    }
+    sql("DELETE FROM plano WHERE relogio_id = ? AND data >= ? AND origem = 'sorteio'", [(int)$id, $amanha->format("Y-m-d")]);
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    if (valor("SELECT escala_dias FROM modo WHERE id = ?", [modo_ativo()]) !== null) {
+        gerar_escala($amanha, hoje_da_colecao());
+    } else {
+        garantir_plano(hoje_da_colecao());
+    }
+    return $tirados === 1 ? t(" Saiu do sorteio: 1 dia sorteado dele, de amanhã em diante, foi sorteado de novo; hoje e os dias escolhidos à mão ficam.")
+        : t(" Saiu do sorteio: {1} dias sorteados dele, de amanhã em diante, foram sorteados de novo; hoje e os dias escolhidos à mão ficam.", [1 => $tirados]);
+}
+
 // O relógio sai do rodízio agora (foi para a manutenção, ou saiu da coleção): as sessões abertas dele fecham (o pulso, o
 // winder, que deixa a posição livre, o sol, o carregador); os dias dele no plano, de amanhã em diante, saem e são sorteados
 // de novo; $hoje_tambem: o dia de hoje, se é dele, também sai e fica livre (com a Configuração deixando trocar o relógio de
@@ -9986,6 +10027,10 @@ function sugestao_agora($forma, $tipos = [], $pular = [], $agora = null)
     foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
         $id = (int)$r["id"];
         if (posse_de($r) !== "colecao" || (count($tipos) > 0 && !in_array((int)$r["no_id"], $tipos, true))) {
+            continue;
+        }
+        if (!relogio_no_sorteio($r)) {
+            $fora[] = ["relogio_id" => $id, "relogio" => $r["nome"], "motivo" => "sorteio", "texto" => t("fora do sorteio do rodízio (o cadastro do relógio)")];
             continue;
         }
         $v = visao_relogio($r, $agora);

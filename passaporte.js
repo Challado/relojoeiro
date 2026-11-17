@@ -15,7 +15,7 @@ api({recurso: "passaporte", relogio: id}).then(function (d) {
   res += el("header", {"class": "cabeca-impressa"}, (r.foto !== null ? el("img", {"src": "api.php?recurso=foto&relogio=" + r.id + "&v=" + r.foto, "alt": t("Foto do {1}", {1: r.nome})}) : "")
     + el("div", {}, el("p", {"class": "data"}, t("Passaporte do relógio · código {1}", {1: r.id})) + el("h1", {}, h(r.nome))
       + el("p", {}, [r.marca, r.referencia].filter(function (x) { return x !== null; }).map(h).join(" · ") + (r.marca || r.referencia ? " · " : "") + h(r.caminho))
-      + el("p", {"class": "nota"}, t("{1}{2} · no sistema desde {3}", {1: h(r.posse_texto), 2: r.posse_comportamento === "colecao" ? (r.disponivel ? t(" · no rodízio") : t(" · fora do rodízio")) : "", 3: dataBr(r.criado)}))
+      + el("p", {"class": "nota"}, t("{1}{2} · no sistema desde {3}", {1: h(r.posse_texto), 2: r.posse_comportamento === "colecao" ? (r.no_sorteio ? t(" · no rodízio") : (r.disponivel ? t(" · fora do sorteio do rodízio") : t(" · fora do rodízio"))) : "", 3: dataBr(r.criado)}))
       + (r.observacao !== null ? el("p", {}, h(r.observacao)) : "")));
   res += el("div", {"class": "grade-impressa"},
     el("section", {}, el("h2", {}, t("Compra")) + (c.data === null && c.valor === null && c.loja === null && c.garantia_ate === null ? el("p", {"class": "nota"}, t("Sem dados da compra."))

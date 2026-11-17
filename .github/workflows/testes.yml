@@ -59,6 +59,8 @@ jobs:
         run: php testes/saidas.php
       - name: Sugestão para agora (as formas, os tipos, o pulso, a carga e nada gravado)
         run: php testes/sugestao.php
+      - name: Relógio fora do sorteio do rodízio (o sorteio o deixa de fora; à mão, no pulso e na tabela ele continua)
+        run: php testes/fora_do_sorteio.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

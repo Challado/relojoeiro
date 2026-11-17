@@ -1197,6 +1197,21 @@ $recusa_da_lista(["recurso" => "destinos", "acao" => "salvar", "id" => 0, "tipo"
 $recusa_da_lista(["recurso" => "conta", "acao" => "smtp_salvar", "proprio" => 1, "host" => "smtp.exemplo.invalid", "seguranca" => "starttls"], "seguranca", "email_seguranca");
 $recusa_da_lista(["recurso" => "colecoes", "acao" => "criar", "nome" => "Recusada", "opcao" => "castelo"], "opcao", "colecao_comeca");
 $recusa_da_lista(["recurso" => "usuarios", "acao" => "alterar", "login" => "teste", "papel" => "rei"], "papel", "usuario_papel");
+// o relógio fora do sorteio do rodízio (a marca sorteio, v65): continua disponível e na coleção, mas nenhum sorteio o escolhe;
+// os dias sorteados dele, de amanhã em diante, saem e são sorteados de novo; a ficha, a lista dos Modos, a Sugestão para agora
+// e o teste do roteiro dizem que ele está fora; o valor inválido é recusado; e ele volta ao sorteio
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "sorteio" => "talvez"], false);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "sorteio" => "0"]);
+ler("ficha do relógio fora do sorteio", ["recurso" => "ficha", "relogio" => $rel["pilha"]]);
+ler("plano sem o relógio fora do sorteio", ["recurso" => "plano", "incluir" => "plano"]);
+ler("os relógios dos modos, com o fora do sorteio", ["recurso" => "cadastros", "incluir" => "relogios"]);
+ler("a sugestão sem o relógio fora do sorteio", ["recurso" => "sugestao", "forma" => "fifo"]);
+ler("o teste do roteiro com o relógio fora do sorteio", ["recurso" => "roteiro", "roteiro" => "candidato = 1\nnota = dias_sem_uso", "dia" => $em(2)]);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(14), "relogio_id" => $rel["pilha"]]);
+ler("o dia escolhido à mão do relógio fora do sorteio", ["recurso" => "plano", "incluir" => "plano"]);
+escrever(["recurso" => "rodizio", "acao" => "trocar_dia", "data" => $em(14), "relogio_id" => 0]);
+escrever(["recurso" => "relogio", "acao" => "salvar", "id" => $rel["pilha"], "sorteio" => "1"]);
+ler("ficha do relógio de volta ao sorteio", ["recurso" => "ficha", "relogio" => $rel["pilha"]]);
 escrever(["recurso" => "totais", "acao" => "salvar", "nome" => "Errado", "expressao" => "MEDIA(", "coluna" => "zzz", "largura" => "enorme", "formato" => "x"], false);
 escrever(["recurso" => "totais", "acao" => "salvar", "id" => $total_novo, "expressao" => "MAIOR(carga)"]);
 escrever(["recurso" => "totais", "acao" => "subir", "id" => $total_novo]);

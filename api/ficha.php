@@ -69,6 +69,8 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
     $foto = valor("SELECT atualizado FROM foto WHERE relogio_id = ?", [$id]);
     $nota = (int)$r["disponivel"] === 1 ? nota_do_relogio($r, $agora) : null;
     $saida["relogio"] = ["id" => $id, "nome" => $r["nome"], "no_id" => $r["no_id"] === null ? 0 : (int)$r["no_id"], "disponivel" => (int)$r["disponivel"] === 1,
+        // a marca Entra no sorteio do rodízio (o cadastro) e o que ela dá agora (disponível e marcado: o rodízio pode escolhê-lo)
+        "sorteio" => (int)($r["sorteio"] ?? 1) === 1, "no_sorteio" => relogio_no_sorteio($r),
         "posse" => (string)$r["posse"], "posse_texto" => posse_texto($r), "posse_comportamento" => posse_de($r), "da_colecao" => da_colecao($r),
         // as saídas da coleção: a de agora (emprestado ou fora dela: o motivo, a data, o valor recebido, para quem) e o histórico
         "saida" => ($sa_f = saida_aberta($id)) === null ? null : saida_dados($sa_f),
@@ -152,7 +154,9 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         "dica_foto" => (function () use ($r, $id, $n, $v, $nota, $proxima, $valores) {
             $l = [t("{1} · {2} · código {3}", [1 => $r["nome"], 2 => isset($n[(int)$r["no_id"]]) ? $n[(int)$r["no_id"]]["nome"] : t("sem grupo"), 3 => $id])];
             $l[] = $v["estado_texto"] . " · " . ($v["energia"] !== null ? t("carga {1}%", [1 => (int)round((float)$v["energia"])]) : (string)$v["de"]);
-            if ($nota !== null) {
+            if ($nota !== null && !relogio_no_sorteio($r)) {
+                $l[] = t("Nota {1} · fora do sorteio do rodízio{2}", [1 => motivo_nota($nota["nota"]), 2 => $proxima !== null ? t(" · escolhido à mão para {1}", [1 => data_txt(strtotime($proxima))]) : ""]);
+            } elseif ($nota !== null) {
                 $l[] = t("Nota {1}{2}", [1 => motivo_nota($nota["nota"]), 2 => $proxima !== null ? t(" · próximo dia no rodízio: {1}", [1 => data_txt(strtotime($proxima))]) : ""]);
             } elseif (manutencao_aberta($id) !== null) {
                 $l[] = t("Em manutenção ({1}): fora do rodízio", [1 => manutencao_aberta($id)["oficina"]]);

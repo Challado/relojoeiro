@@ -430,6 +430,7 @@ CREATE TABLE relogio (
     criado       DATETIME NOT NULL,
     copia_banco  TINYINT NOT NULL DEFAULT 0,
     posse        VARCHAR(20) NOT NULL DEFAULT 'colecao',   -- o identificador da situação (lista_item, lista relogio_situacao)
+    sorteio      TINYINT NOT NULL DEFAULT 1,        -- 0: fora do sorteio do rodízio (continua na coleção e pode ser escolhido à mão)
     INDEX (colecao_id),
     FOREIGN KEY (colecao_id) REFERENCES colecao(id) ON DELETE CASCADE,
     FOREIGN KEY (no_id) REFERENCES no(id) ON DELETE CASCADE,
@@ -438,7 +439,8 @@ CREATE TABLE relogio (
     CONSTRAINT ck_relogio_disponivel CHECK (disponivel IN (0, 1)),
     CONSTRAINT ck_relogio_copia_banco CHECK (copia_banco IN (0, 1)),
     CONSTRAINT ck_relogio_posse CHECK (TRIM(posse) <> ''),
-    CONSTRAINT ck_relogio_posse_disponivel CHECK (disponivel IN (0, 1))
+    CONSTRAINT ck_relogio_posse_disponivel CHECK (disponivel IN (0, 1)),
+    CONSTRAINT ck_relogio_sorteio CHECK (sorteio IN (0, 1))
 ) ENGINE=InnoDB;
 
 CREATE TABLE foto (

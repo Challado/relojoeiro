@@ -26,7 +26,13 @@ var dados = null;
 function opcoesDe(sel, comLivre) {
   return el("option", {"value": "0", "selected": sel === "0"}, t("Toda a coleção"))
     + el("optgroup", {"label": t("Um grupo")}, dados.grupos.map(function (g) { return el("option", {"value": String(g.id), "selected": sel === String(g.id)}, h(g.caminho)); }).join(""))
-    + el("optgroup", {"label": t("Um relógio fixo")}, dados.relogios.map(function (r) { return el("option", {"value": "r:" + r.id, "selected": sel === "r:" + r.id}, h(r.nome)); }).join(""))
+    + el("optgroup", {"label": t("Um relógio fixo")}, dados.relogios.map(function (r) {
+      // o relógio que o rodízio não sorteia (indisponível ou fora do sorteio) não serve de fixo: fica na lista, desabilitado,
+      // com o motivo (menos o que o bloco já tem, para ele continuar aparecendo como está)
+      var fora = !r.no_sorteio && sel !== "r:" + r.id;
+      return el("option", {"value": "r:" + r.id, "selected": sel === "r:" + r.id, "disabled": fora, "title": fora ? t("o rodízio não sorteia este relógio (o cadastro dele: Disponível para o rodízio e Entra no sorteio do rodízio)") : null},
+        h(fora ? t("{1} — indisponível: {2}", {1: r.nome, 2: t("o rodízio não sorteia este relógio (o cadastro dele: Disponível para o rodízio e Entra no sorteio do rodízio)")}) : r.nome));
+    }).join(""))
     + (comLivre ? el("option", {"value": "livre", "selected": sel === "livre"}, t("Sem relógio (dia livre)")) : "");
 }
 // o valor de "Escolher de" de um bloco gravado
@@ -220,7 +226,7 @@ function recarregarModos() {
     var res = el("h1", {}, t("Modos de rodízio")) + ondeMuda("modos", [[t("Os modos, os blocos e quem entra em cada um"), t("aqui")],
       [t("O plano dos próximos dias que o modo monta"), lugar("plano.php", t("Rodízio › Plano"))],
       [t("Como o relógio de cada dia é escolhido (a nota, o peso)"), lugar("criterios.php", t("Rodízio › Critérios de escolha"))],
-      [t("Se um relógio entra no rodízio"), t("{1} ou {2}: o relógio › Editar cadastro › Disponível para o rodízio", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})]]);
+      [t("Se um relógio entra no rodízio"), t("{1} ou {2}: o relógio › Editar cadastro › Disponível para o rodízio e Entra no sorteio do rodízio", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})]]);
     if (recado !== "") {
       res += recado;
       recado = "";
@@ -285,7 +291,8 @@ document.addEventListener("click", function (ev) {
       }
       html += el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, el("th", {}, t("Relógio")) + nomes.map(function (n) { return el("th", {}, h(n)); }).join("")))
         + el("tbody", {}, r.relogios.map(function (x) {
-          return el("tr", {"class": x.candidato ? "" : "fora"}, el("td", {}, h(x.nome)) + nomes.map(function (n) {
+          // o relógio fora do sorteio do rodízio (o cadastro dele) aparece, apagado e com o aviso: o roteiro o calcula, mas ele não sai
+          return el("tr", {"class": x.candidato && x.no_sorteio ? "" : "fora"}, el("td", {}, h(x.nome) + (x.no_sorteio ? "" : " " + el("small", {"class": "nota"}, t("fora do sorteio")))) + nomes.map(function (n) {
             var v = x.valores[n];
             return el("td", {"class": "num"}, v === null || v === undefined ? "—" : (typeof v === "number" ? num(v, Number.isInteger(v) ? 0 : 2) : h(String(v))));
           }).join(""));

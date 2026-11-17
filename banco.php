@@ -310,10 +310,12 @@ const ESCOPO_CONDICOES = [
 ];
 
 // As tabelas que a visão mostra na forma de antes: as colunas, na ordem; "*" marca a coluna que aponta para um grupo (a
-// raiz aparece vazia), e uma coluna com SQL é a ligação opcional, vista como a coluna de antes (t_ é a tabela)
+// raiz aparece vazia), "?" a coluna de uma migração que pode ainda não ter sido aplicada (entra na visão só se existe: entre o
+// git pull e o Aplicar, o sistema continua funcionando sem ela), e uma coluna com SQL é a ligação opcional, vista como a coluna
+// de antes (t_ é a tabela)
 const ESCOPO_VISOES = [
     "no" => ["id", "pai_id*", "dono_id", "nome", "ordem"],
-    "relogio" => ["id", "colecao_id", "nome", "apelido", "no_id*", "disponivel", "criado", "copia_banco", "posse"],
+    "relogio" => ["id", "colecao_id", "nome", "apelido", "no_id*", "disponivel", "criado", "copia_banco", "posse", "sorteio?"],
     "campo" => ["id", "identificador", "nome", "tipo", "unidade", "padrao", "no_id*", "ordem", "so_desejado", "calibre", "secao_id", "minimo", "maximo", "multiplo", "alvo", "acessorio_tipo",
         "serve_campo_id"],
     "lancamento_tipo" => ["id", "identificador", "nome", "formato", "unidade", "fecha_as", "no_id*", "ordem", "exclusiva", "mede_gasto", "marcha", "winder", "condicao"],
@@ -408,6 +410,11 @@ function escopo_visao($tabela, $e)
     foreach (ESCOPO_VISOES[$tabela] as $k => $c) {
         if (is_string($k)) {
             $cols[] = $c . " AS " . $k;
+        } elseif (substr($c, -1) === "?") {
+            $c = substr($c, 0, -1);
+            if (banco_tem_coluna($tabela, $c)) {
+                $cols[] = "t_." . $c;
+            }
         } elseif (substr($c, -1) === "*") {
             $c = substr($c, 0, -1);
             $cols[] = "CASE WHEN t_." . $c . " = " . $e["raiz"] . " THEN NULL ELSE t_." . $c . " END AS " . $c;

@@ -1324,7 +1324,8 @@ function op_formulas($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), copia_banco (1 ou 0: a cópia no banco
+// Relógios. Ações: salvar (id: 0 ou ausente cria; nome, no_id, disponivel (1 ou 0), sorteio (1 ou 0: entra no sorteio do rodízio;
+// 0 tira só do sorteio, e ele continua na coleção e pode ser escolhido à mão), copia_banco (1 ou 0: a cópia no banco
 // de todos os documentos dele), calibre_id (o calibre dele; 0 ou vazio tira), marca_id (a marca dele, do cadastro das marcas;
 // 0 ou vazio tira) ou marca (o nome de uma marca do cadastro; vazio tira; também em valores[marca], como antes da v52),
 // valores[identificador]: só muda o que vier no
@@ -1347,6 +1348,14 @@ function op_relogio($acao, $d)
         $no = array_key_exists("no_id", $d) ? no_do_pedido($d["no_id"]) : ($atual ? ($atual["no_id"] === null ? null : (int)$atual["no_id"]) : null);
         $disp = array_key_exists("disponivel", $d) ? ((string)$d["disponivel"] === "1" ? 1 : 0) : ($atual ? (int)$atual["disponivel"] : 1);
         $copia = array_key_exists("copia_banco", $d) ? ((string)$d["copia_banco"] === "1" ? 1 : 0) : ($atual ? (int)$atual["copia_banco"] : 0);
+        // entra no sorteio do rodízio (a marca sorteio): sem a coluna (antes do Aplicar da v65), não se grava
+        $tem_sorteio = banco_tem_coluna("relogio", "sorteio");
+        $sorteio = array_key_exists("sorteio", $d) ? ((string)$d["sorteio"] === "1" ? 1 : 0) : ($atual ? (int)($atual["sorteio"] ?? 1) : 1);
+        if (array_key_exists("sorteio", $d) && !in_array((string)$d["sorteio"], ["0", "1"], true)) {
+            $erros[] = t("sorteio: 1 (entra no sorteio do rodízio) ou 0 (fora do sorteio).");
+        } elseif (array_key_exists("sorteio", $d) && !$tem_sorteio) {
+            $erros[] = t("Entra no sorteio do rodízio: aplique a atualização do banco (a v65) em Manutenção antes.");
+        }
         // a situação na coleção (um item da lista relogio_situacao, pelo identificador; o que ela faz é o comportamento dele):
         // fora da coleção o relógio fica indisponível; voltando para ela sem dizer o disponível, ele volta disponível
         $posse_antes = $atual ? posse_de($atual) : null;
@@ -1420,15 +1429,24 @@ function op_relogio($acao, $d)
         if (count($erros) === 0) {
             if ($atual) {
                 sql("UPDATE relogio SET nome = ?, no_id = ?, disponivel = ?, copia_banco = ?, posse = ? WHERE id = ?", [$nome, no_gravar($no), $disp, $copia, $posse, $id]);
+                if ($tem_sorteio) {
+                    sql("UPDATE relogio SET sorteio = ? WHERE id = ?", [$sorteio, $id]);
+                }
             } else {
                 sql("INSERT INTO relogio (colecao_id, nome, no_id, disponivel, copia_banco, posse, criado) VALUES (?, ?, ?, ?, ?, ?, NOW())", [colecao_atual(), $nome, no_gravar($no), $disp, $copia, $posse]);
                 $id = ultimo_id();
+                if ($tem_sorteio && $sorteio === 0) {
+                    sql("UPDATE relogio SET sorteio = 0 WHERE id = ?", [$id]);
+                }
             }
             relogio_copia_banco($id, true);
             // saiu da coleção: os dias dele no plano, de amanhã em diante, saem e são sorteados de novo (hoje fica: troque pelo
             // "trocar por…" ou pelo "Sortear de novo")
             if ($posse_antes === "colecao" && $comp !== "colecao" && $em_manut === null) {
                 $nota_posse .= relogio_sai_do_rodizio($id, false);
+            } elseif ($atual && $sorteio === 0 && (int)($atual["sorteio"] ?? 1) === 1) {
+                // saiu só do sorteio: os dias sorteados dele, de amanhã em diante, são sorteados de novo entre os outros
+                $nota_posse .= relogio_sai_do_sorteio($id);
             }
             // a saída da coleção (relogio_saida): abre quando ele é emprestado ou sai, fecha quando volta, e guarda o que o pedido disse
             $nota_posse .= saida_registrar($id, $atual, $item_posse, $p_saida);

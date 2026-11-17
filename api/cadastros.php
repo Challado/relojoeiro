@@ -60,7 +60,8 @@ $saida = ["campos" => array_map(function ($c) {
         return ["data" => $d->format("Y-m-d"), "dia_semana" => (int)$d->format("N"), "hoje" => $i === 0];
     }, range(0, 13)),
     "grupos" => array_map(function ($o) { return ["id" => $o[0], "caminho" => no_caminho($o[0])]; }, nos_em_ordem()),
-    "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"]]; }, linhas("SELECT id, nome FROM relogio ORDER BY nome")),
+    // os relógios (para o relógio fixo de um bloco): no_sorteio diz se o rodízio pode escolhê-lo (disponível e com a marca sorteio)
+    "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "no_sorteio" => relogio_no_sorteio($r)]; }, linhas("SELECT * FROM relogio ORDER BY nome")),
     "documento_categorias" => documento_categorias_lista(),
     // os tipos de acessório (o menu Tipo de acessório de um campo para acessório)
     "acessorio_tipos" => lista_opcoes("acessorio_tipo"),
