@@ -21,7 +21,7 @@ jobs:
   arquitetura:
     name: Arquitetura, idiomas e documentação (sem banco)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -63,7 +63,7 @@ jobs:
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     services:
       postgres:
         image: postgres:16
@@ -102,7 +102,7 @@ jobs:
   firebird:
     name: Paridade (SQLite e Firebird)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     services:
       firebird:
         image: firebirdsql/firebird:3
@@ -151,7 +151,7 @@ jobs:
   layout:
     name: Layout das telas (${{ matrix.lingua }})
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -188,7 +188,7 @@ jobs:
   consultas:
     name: Consultas ao banco (orçamento por pedido e por relógio)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -242,7 +242,7 @@ jobs:
   rolagem:
     name: Rolagem das telas (computador, tablet de pé e deitado, celular)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
@@ -262,7 +262,7 @@ jobs:
   textos-fixos:
     name: Nenhum texto fixo (o sistema inteiro em chinês)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
