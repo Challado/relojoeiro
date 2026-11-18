@@ -53,9 +53,14 @@ try {
     exigir_sorteio((int)$linha($oc)["sorteio"] === 1 && relogio_no_sorteio($linha($oc)), "O relógio novo devia entrar no sorteio.");
 
     // ---- antes: a fila e o menos usado pegam o Ocasião (nunca usado), no Sortear este dia por e na Sugestão para agora
-    $s = op_rodizio("trocar_dia", ["data" => $dia(3), "relogio_id" => "sortear:fifo"]);
-    exigir_sorteio($s["ok"] && (int)plano_do_dia($dia(3))["relogio_id"] === $oc, "Antes de sair do sorteio, a fila devia pegar o Ocasião: " . json_encode($s));
-    exigir_sorteio(op_rodizio("trocar_dia", ["data" => $dia(3), "relogio_id" => 0])["ok"], "O dia 3 não voltou a ser sorteado.");
+    // um dia útil (o modo de fábrica sorteia no fim de semana só entre os tradicionais, e os relógios daqui são smartwatches)
+    $util = 3;
+    while ((int)(new DateTimeImmutable($dia($util)))->format("N") > 5) {
+        $util++;
+    }
+    $s = op_rodizio("trocar_dia", ["data" => $dia($util), "relogio_id" => "sortear:fifo"]);
+    exigir_sorteio($s["ok"] && (int)plano_do_dia($dia($util))["relogio_id"] === $oc, "Antes de sair do sorteio, a fila devia pegar o Ocasião: " . json_encode($s));
+    exigir_sorteio(op_rodizio("trocar_dia", ["data" => $dia($util), "relogio_id" => 0])["ok"], "O dia útil não voltou a ser sorteado.");
     exigir_sorteio((int)(sugestao_agora("menos_usado")["sugestao"]["relogio_id"] ?? 0) === $oc, "Antes de sair do sorteio, a sugestão pelo menos usado devia ser o Ocasião.");
 
     // ---- o modo semanal por dia, uma semana: o plano sorteado inclui o Ocasião (pela fila); um dia dele escolhido à mão

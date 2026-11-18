@@ -11,7 +11,7 @@ $ops = ["arvore" => "op_arvore", "campos" => "op_campos", "lancamento_tipos" => 
     "lancamento" => "op_lancamento", "avisos" => "op_avisos", "criterios" => "op_criterios",
     "rodizio" => "op_rodizio", "modos" => "op_modos", "config" => "op_config", "documentos" => "op_documentos", "documento_categorias" => "op_documento_categorias",
     "acessorios" => "op_acessorios", "winders" => "op_winders", "winder_posicoes" => "op_winder_posicoes", "movimentos" => "op_movimentos", "programas" => "op_programas", "servicos" => "op_servicos", "manutencao" => "op_manutencao", "oficinas" => "op_oficinas", "listas" => "op_listas", "reserva" => "op_reserva", "timegrapher" => "op_timegrapher", "destinos" => "op_destinos", "agendas" => "op_agendas", "conta" => "op_conta", "colecoes" => "op_colecoes", "acessos" => "op_acessos",
-    "convites" => "op_convites", "pedidos" => "op_pedidos"];
+    "convites" => "op_convites", "pedidos" => "op_pedidos", "simulador" => "op_simulador"];
 // toda exclusão em dois passos: sem confirmar=1, a API diz o que sai junto (impacto_exclusao, no banco inteiro: uma árvore
 // serve a várias coleções) e não apaga nada; com confirmar=1, apaga. O item tem de ser da coleção do pedido (lido pela visão
 // dela); o que não é, segue para a operação, que responde "não encontrado"

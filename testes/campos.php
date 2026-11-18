@@ -83,6 +83,8 @@ $tudo = ler("foto=nao");
 $ids = array_map(function ($r) { return (int)$r->id; }, $tudo->relogios ?? []);
 $hoje = date("Y-m-d");
 $daqui20 = date("Y-m-d", strtotime("+20 days"));
+// os modos do simulador (os cenários lidos abaixo usam os dois primeiros)
+$modos_sim = array_column(json_decode(json_encode(ler("recurso=simulador")), true)["opcoes"]["modos"] ?? [], "id");
 $para_cada = function ($modelo) use ($ids) {
     return array_map(function ($i) use ($modelo) { return sprintf($modelo, $i); }, $ids);
 };
@@ -104,6 +106,8 @@ $consultas = [
     "proximos" => ["recurso=proximos", "recurso=proximos&pagina=2&por_pagina=3"],
     "desejos" => ["recurso=desejos"],
     "saidas" => array_merge(["recurso=saidas", "recurso=saidas&abertas=1", "recurso=saidas&situacao=vendido"], $para_cada("recurso=saidas&relogio=%d")),
+    "simulador" => ["recurso=simulador", "recurso=simulador&" . http_build_query(["cenarios" => json_encode(array_map(function ($id) { return ["modo" => $id]; }, array_slice($modos_sim, 0, 2))), "semente" => "7"]),
+        "recurso=simulador&" . http_build_query(["cenarios" => json_encode([["modo" => $modos_sim[0] ?? 0]]), "variar" => json_encode(["parametro" => "max_sem_uso", "de" => 0, "ate" => 14, "passo" => 7])]), "recurso=simulador&cenarios=[]"],
     "sugestao" => ["recurso=sugestao", "recurso=sugestao&forma=menos_usado", "recurso=sugestao&forma=aleatorio&pular=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"],
     "estatisticas" => ["recurso=estatisticas", "recurso=estatisticas&de=tudo"],
     "precisao" => array_merge(["recurso=precisao"], $para_cada("recurso=precisao&relogio=%d")),

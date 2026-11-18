@@ -67,6 +67,9 @@ module.exports = [
   { nome: 'cadastros-relatorios', url: 'cadastros.php?aba=relatorios' },
   { nome: 'cadastros-relatorios-editar', url: 'cadastros.php?aba=relatorios&editar=1' },
   { nome: 'modos', url: 'modos.php' },
+  // o simulador: o formulário (dois cenários do modo ativo) e a comparação de uma variação das formas, já simulada
+  { nome: 'simulador', url: 'simulador.php' },
+  { nome: 'simulador-comparacao', url: 'simulador.php?simular=1&semente=7&variar=' + encodeURIComponent(JSON.stringify({ parametro: 'forma' })) },
   { nome: 'modos-editar', url: 'modos.php?editar=2' },
   { nome: 'configuracao', url: 'configuracao.php' },
   // a Configuração mostra um nível por vez (as abas do alto): o do dono (Minhas coleções: o padrão dele para as coleções de

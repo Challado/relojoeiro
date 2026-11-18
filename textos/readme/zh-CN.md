@@ -1,4 +1,4 @@
-<!-- origem: 9c9c797311fc65b4d3a38ab0cd483274c4ba68ba -->
+<!-- origem: fde1fe180ffe05e2ba3043dd271cd25d0e01fd29 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -131,6 +131,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `marcas` | 树的品牌（定义的**品牌**标签），每个都带国家、网站、备注和它的手表 |
 | `saidas` | 离开收藏的记录（借出的和已离开的）：每条含手表、状态、日期、收到的金额、去向、购买、保养、结果和在收藏中的时间；以及当前记录按状态的合计。`relogio=`（某块手表的历史）、`situacao=`、`abertas=1`（只返回当前的） |
 | `sugestao` | 当下推荐（“今天”页面的卡片）：一块现在佩戴、排班之外的手表，按所请求的选择方式（`forma`）和类型（`tipos`），并附原因；`pular` 不重复已推荐过的。正在手腕上的和电量在下限或以下的不参与（`fora[]` 说明原因）。不记录任何内容。 |
+| `simulador` | 轮换模拟器：没有 `cenarios` 时，返回可以选择的内容（模式及其可改变的内容、方式、已启用的手表、默认时段）；带 `cenarios`（模式，以及可选的 `forma`、`ciclo`、`semanas`、`escala_dias`、`max_sem_uso` 和 `relogios`）、`de`、`ate`、`semente` 和 `variar` 时，返回每个方案的模拟（什么都不保存）以及比较 |
 | `calcular` | 一个公式（`expressao=`）在手表上的结果（`relogio=` 一个或多个 id；没有时为全部），不保存，并给出计算的各部分；公式写错：返回 400 和错误 |
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
@@ -182,6 +183,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `lancamento` | `lancar`（上链、电量、电池……）、`iniciar` 和 `encerrar`（戴上和取下手腕、晒太阳、充电器；上链盒要通过上链盒页面放上，即 `winder_posicoes`，除非手表的位置空闲：那时它会回到那里）、`alternar`（时段打开时关闭，关闭时打开：手机上一个按钮就够；上链盒上只能在回到位置时打开）、`periodo`（已经过去的一段时间；上链盒上要带位置 `posicao_id`；当天的手表戴在手腕上时算作轮换中的使用，与它相接的同类型片段（例如仍打开的“戴上”）合并为一段）、`alterar`、`excluir`、`medicao`（把一次消耗测量放入或移出计算：`id`，`usada` 为 1 或 0）。所有操作中，`relogio_id=hoje` 都表示当天的手表 在同类型的一段刚结束的同一时刻开始的 `iniciar` 会与其衔接（该段重新变为开放），没有 `fim` 的 `periodo` 保持开放，从开始一直到现在。 |
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
+| `simulador` | `aplicar`（按模拟时的方案，以及 `de`、`ate`、`semente` 和 `impressao`：只有计划与模拟一致时才保存） |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
 | `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`；带取值规则的字段：`opcoes`、`minimo`、`maximo`、`multiplo`） |
 | `formulas` | `nova`、`alterar`、`excluir` |

@@ -2301,6 +2301,26 @@ foreach ($rel_p as $id_p) {
     escrever(["recurso" => "relogio", "acao" => "excluir", "id" => $id_p, "confirmar" => 1]);
 }
 
+// ---------- o simulador de rodízio ----------
+// o que dá para escolher; dois cenários (o modo ativo como está, e com a garantia de 5 dias e um relógio a menos no sorteio) pela
+// mesma semente (a paridade compara: o mesmo sorteio em todo banco); a variação das formas; as recusas (o período começando
+// hoje, o modo que não existe, a forma que não existe); e o Aplicar: a impressão errada é recusada sem gravar nada, a certa
+// grava o simulado (o modo ativo como está: só o plano do período muda, pelo sorteio da semente)
+$sim_op = ler("simulador, as opcoes", ["recurso" => "simulador"])["opcoes"] ?? [];
+$sim_modo = array_values(array_filter($sim_op["modos"] ?? [], function ($m) { return $m["ativo"]; }))[0]["id"] ?? 0;
+$sim_rels = array_values(array_column(array_filter($sim_op["relogios"] ?? [], function ($r) { return $r["no_sorteio"]; }), "id"));
+$sim_ped = ["recurso" => "simulador", "de" => $sim_op["periodo"]["de"] ?? "", "ate" => $sim_op["periodo"]["ate"] ?? "", "semente" => "424242",
+    "cenarios" => json_encode([["modo" => $sim_modo], ["modo" => $sim_modo, "max_sem_uso" => 5, "relogios" => implode(",", array_slice($sim_rels, 1))]])];
+$sim = ler("simulador, dois cenarios", $sim_ped);
+ler("simulador, a variacao das formas", array_merge($sim_ped, ["cenarios" => json_encode([["modo" => $sim_modo]]), "variar" => json_encode(["parametro" => "forma"])]));
+ler("simulador, o periodo comecando hoje", array_merge($sim_ped, ["de" => date("Y-m-d", strtotime(($sim_op["periodo"]["min"] ?? "") . " -1 day"))]));
+ler("simulador, um modo que nao existe", array_merge($sim_ped, ["cenarios" => json_encode([["modo" => 999999]])]));
+ler("simulador, uma forma que nao existe", array_merge($sim_ped, ["cenarios" => json_encode([["modo" => $sim_modo, "forma" => "adivinhar"]])]));
+$sim_apl = ["recurso" => "simulador", "acao" => "aplicar", "modo" => $sim_modo, "de" => $sim_ped["de"], "ate" => $sim_ped["ate"], "semente" => "424242"];
+escrever(array_merge($sim_apl, ["impressao" => str_repeat("0", 40)]), false);
+escrever(array_merge($sim_apl, ["impressao" => $sim["simulacao"]["cenarios"][0]["resultado"]["impressao"] ?? ""]));
+ler("o plano depois do simulador aplicado", ["recurso" => "plano"]);
+
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {
     fwrite(STDERR, "Não consegui gravar a fotografia: " . json_last_error_msg() . "\n");

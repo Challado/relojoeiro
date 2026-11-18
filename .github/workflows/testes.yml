@@ -61,6 +61,8 @@ jobs:
         run: php testes/sugestao.php
       - name: Relógio fora do sorteio do rodízio (o sorteio o deixa de fora; à mão, no pulso e na tabela ele continua)
         run: php testes/fora_do_sorteio.php
+      - name: Simulador de rodízio (cenários sem gravar nada, a semente, a variação, a comparação, as recusas e o Aplicar igual ao simulado)
+        run: php testes/simulador.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

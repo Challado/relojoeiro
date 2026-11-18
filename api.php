@@ -217,6 +217,20 @@
  *                            de fora o que está no pulso e o que está com a carga no limite ou abaixo dele (fora[] diz por quê).
  *                            Pôr o sugerido no pulso é o recurso=lancamento, acao=iniciar, tipo=pulso (um uso fora do plano).
  *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=sugestao&forma=menos_usado&tipos=5,8"
+ *   recurso=simulador        o simulador de rodízio (a página Simulador): compara cenários antes de escolher um, sem gravar nada.
+ *                            Sem cenarios: {"opcoes": {"rodizio_ativo", "modos": [{"id", "nome", "tipo", "tipo_texto", "ativo",
+ *                            "parametros": {forma, ciclo, semanas, escala_dias, max_sem_uso: {"aplica", "motivo", "valor",
+ *                            "opcoes", "min", "max"}}}], "formas", "relogios": [{"id", "nome", "no_sorteio"}], "parametros",
+ *                            "periodo": {"de", "ate", "min", "max_dias"}, "max_cenarios"}}. Com cenarios (a lista, ou JSON: cada
+ *                            um com modo e, se quiser, forma, ciclo, semanas, escala_dias, max_sem_uso e relogios, os ids dos que
+ *                            entram no sorteio), de, ate (padrão: de amanhã, 4 semanas), semente (vazia: uma nova) e variar
+ *                            (parametro, de, ate, passo: cada cenário vira um por valor), também "simulacao": {"de", "ate",
+ *                            "semente", "cenarios": [{"indice", "rotulo", "cenario", "mudancas" (o que o Aplicar muda), "erros",
+ *                            "resultado": {"dias": [{"data", "relogio_id", "relogio", "origem", "motivo", "muda"}], "resumo",
+ *                            "por_relogio", "impressao", "ate_mostrado"}}], "comparacao": [{"chave", "titulo", "melhor_e",
+ *                            "valores", "melhores"}]}. Cada cenário roda as regras do rodízio numa transação desfeita, com os
+ *                            sorteios pela semente. Aplicar: POST recurso=simulador, acao=aplicar.
+ *                            Ex.: curl -u lucas:senha -G "http://servidor/relojoeiro/api.php" --data-urlencode "recurso=simulador" --data-urlencode "cenarios=[{\"modo\":2},{\"modo\":2,\"forma\":\"fifo\"}]"
  *   recurso=colunas          as colunas cadastradas da tabela dos relógios (Cadastros › Colunas) e o que o construtor delas precisa:
  *                            {"colunas": [{"id", "chave" (c_<identificador>), "identificador", "nome", "modo" (guiado ou expert), "tabela",
  *                            "campo", "funcao", "expressao" (a conta de cada relógio, gravada nos dois modos), "formato", "formato_nome",
@@ -727,6 +741,12 @@
  *                            Ex. salvar: curl -u lucas:senha -d recurso=modos -d acao=salvar -d id=0 -d "nome=Só smartwatch" -d selecao=inteligente -d "blocos[0][nome]=Todo dia" -d "blocos[0][dias][]=1" -d "blocos[0][dias][]=7" -d "blocos[0][no_id]=1" -d "blocos[0][um_por]=dia" http://servidor/relojoeiro/api.php
  *                            Ex. ativar: curl -u lucas:senha -d recurso=modos -d acao=ativar -d id=5 http://servidor/relojoeiro/api.php
  *                            Ex. excluir: curl -u lucas:senha -d recurso=modos -d acao=excluir -d id=6 -d confirmar=1 http://servidor/relojoeiro/api.php
+ *   recurso=simulador         aplicar (o cenário como foi simulado: modo, forma, ciclo, semanas, escala_dias, max_sem_uso, relogios;
+ *                            de, ate; semente e impressao, as da simulação): roda o cenário de novo com a mesma semente e grava
+ *                            só se o plano sair igual ao simulado (senão nada muda, e a resposta pede para simular de novo): os
+ *                            relógios do sorteio, o modo, a garantia, o modo ativo e o plano de de em diante (os dias à mão e os
+ *                            livres ficam). Resposta: ok, mensagem, erros, mudancas, resumo.
+ *                            Ex.: curl -u lucas:senha -d recurso=simulador -d acao=aplicar -d modo=2 -d forma=fifo -d de=2026-12-01 -d ate=2026-12-28 -d semente=12345 -d impressao=<a da simulação> http://servidor/relojoeiro/api.php
  *   recurso=config            salvar (horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (a sessão no sol esquecida fecha
  *                             a essa hora): HH:MM; pulso_auto_inicio e pulso_auto_fim (1 ou 0: pôr no pulso sozinho no
  *                             início do horário de uso, tirar sozinho no fim; 0: só pelo Pôs, só pelo Tirou); carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
@@ -2870,6 +2890,265 @@
  *     sugestao.motivo                por que ele: o motivo da escolha, escrito como o dos dias do plano ("A maior nota (57,8), entre 4
  *                                    candidatos.")
  *     aviso                          por que não há sugestão (nenhum disponível, todos de fora, todos já vistos); null: há sugestão
+ *   recurso=simulador
+ *     opcoes                         o que dá para escolher na simulação
+ *     opcoes.rodizio_ativo           verdadeiro: o rodízio está ligado (desligado, não há o que simular)
+ *     opcoes.modos                   os modos cadastrados, cada um com o que deixa mudar
+ *     opcoes.modos[]                 um modo
+ *     opcoes.modos[].id              o id (o modo do cenário)
+ *     opcoes.modos[].nome            o nome
+ *     opcoes.modos[].tipo            o tipo (semana, semana_fds, dia_semana, aleatorio, escala ou personalizado)
+ *     opcoes.modos[].tipo_texto      o tipo por extenso
+ *     opcoes.modos[].ativo           verdadeiro: é o modo ativo agora
+ *     opcoes.modos[].parametros      o que o modo deixa mudar: forma, ciclo, semanas, escala_dias e max_sem_uso
+ *     opcoes.modos[].parametros.forma
+ *                                    a forma de escolha
+ *     opcoes.modos[].parametros.forma.aplica
+ *                                    verdadeiro: vale neste modo; falso: a tela mostra desabilitado, com o motivo
+ *     opcoes.modos[].parametros.forma.motivo
+ *                                    por que não vale ("" quando vale)
+ *     opcoes.modos[].parametros.forma.valor
+ *                                    o valor de agora; null: não tem
+ *     opcoes.modos[].parametros.forma.opcoes
+ *                                    os valores possíveis (a forma: as formas que o tipo aceita; o ciclo: 0 e 1; nos números, vazio)
+ *     opcoes.modos[].parametros.forma.opcoes[]
+ *                                    um valor
+ *     opcoes.modos[].parametros.forma.min
+ *                                    o menor número aceito; null: não é número
+ *     opcoes.modos[].parametros.forma.max
+ *                                    o maior número aceito; null: não é número
+ *     opcoes.modos[].parametros.ciclo
+ *                                    o ciclo (1 ou 0)
+ *     opcoes.modos[].parametros.ciclo.aplica
+ *                                    verdadeiro: vale neste modo; falso: a tela mostra desabilitado, com o motivo
+ *     opcoes.modos[].parametros.ciclo.motivo
+ *                                    por que não vale ("" quando vale)
+ *     opcoes.modos[].parametros.ciclo.valor
+ *                                    o valor de agora; null: não tem
+ *     opcoes.modos[].parametros.ciclo.opcoes
+ *                                    os valores possíveis (a forma: as formas que o tipo aceita; o ciclo: 0 e 1; nos números, vazio)
+ *     opcoes.modos[].parametros.ciclo.opcoes[]
+ *                                    um valor
+ *     opcoes.modos[].parametros.ciclo.min
+ *                                    o menor número aceito; null: não é número
+ *     opcoes.modos[].parametros.ciclo.max
+ *                                    o maior número aceito; null: não é número
+ *     opcoes.modos[].parametros.semanas
+ *                                    as semanas à frente
+ *     opcoes.modos[].parametros.semanas.aplica
+ *                                    verdadeiro: vale neste modo; falso: a tela mostra desabilitado, com o motivo
+ *     opcoes.modos[].parametros.semanas.motivo
+ *                                    por que não vale ("" quando vale)
+ *     opcoes.modos[].parametros.semanas.valor
+ *                                    o valor de agora; null: não tem
+ *     opcoes.modos[].parametros.semanas.opcoes
+ *                                    os valores possíveis (a forma: as formas que o tipo aceita; o ciclo: 0 e 1; nos números, vazio)
+ *     opcoes.modos[].parametros.semanas.opcoes[]
+ *                                    um valor
+ *     opcoes.modos[].parametros.semanas.min
+ *                                    o menor número aceito; null: não é número
+ *     opcoes.modos[].parametros.semanas.max
+ *                                    o maior número aceito; null: não é número
+ *     opcoes.modos[].parametros.escala_dias
+ *                                    os dias da escala
+ *     opcoes.modos[].parametros.escala_dias.aplica
+ *                                    verdadeiro: vale neste modo; falso: a tela mostra desabilitado, com o motivo
+ *     opcoes.modos[].parametros.escala_dias.motivo
+ *                                    por que não vale ("" quando vale)
+ *     opcoes.modos[].parametros.escala_dias.valor
+ *                                    o valor de agora; null: não tem
+ *     opcoes.modos[].parametros.escala_dias.opcoes
+ *                                    os valores possíveis (a forma: as formas que o tipo aceita; o ciclo: 0 e 1; nos números, vazio)
+ *     opcoes.modos[].parametros.escala_dias.opcoes[]
+ *                                    um valor
+ *     opcoes.modos[].parametros.escala_dias.min
+ *                                    o menor número aceito; null: não é número
+ *     opcoes.modos[].parametros.escala_dias.max
+ *                                    o maior número aceito; null: não é número
+ *     opcoes.modos[].parametros.max_sem_uso
+ *                                    a garantia de rodízio (vale para todos os modos)
+ *     opcoes.modos[].parametros.max_sem_uso.aplica
+ *                                    verdadeiro: vale neste modo; falso: a tela mostra desabilitado, com o motivo
+ *     opcoes.modos[].parametros.max_sem_uso.motivo
+ *                                    por que não vale ("" quando vale)
+ *     opcoes.modos[].parametros.max_sem_uso.valor
+ *                                    o valor de agora; null: não tem
+ *     opcoes.modos[].parametros.max_sem_uso.opcoes
+ *                                    os valores possíveis (a forma: as formas que o tipo aceita; o ciclo: 0 e 1; nos números, vazio)
+ *     opcoes.modos[].parametros.max_sem_uso.opcoes[]
+ *                                    um valor
+ *     opcoes.modos[].parametros.max_sem_uso.min
+ *                                    o menor número aceito; null: não é número
+ *     opcoes.modos[].parametros.max_sem_uso.max
+ *                                    o maior número aceito; null: não é número
+ *     opcoes.formas                  as formas de escolha
+ *     opcoes.formas[]                uma forma
+ *     opcoes.formas[].chave          a chave (o que se manda em forma)
+ *     opcoes.formas[].titulo         o título
+ *     opcoes.formas[].explicacao     a explicação
+ *     opcoes.relogios                os relógios ativos: os que podem entrar no sorteio de um cenário
+ *     opcoes.relogios[]              um relógio
+ *     opcoes.relogios[].id           o id (o que se manda em relogios)
+ *     opcoes.relogios[].nome         o nome
+ *     opcoes.relogios[].no_sorteio   verdadeiro: está no sorteio agora (Entra no sorteio do rodízio)
+ *     opcoes.parametros              os parâmetros que um cenário muda e a variação percorre, na ordem da tela
+ *     opcoes.parametros[]            um parâmetro
+ *     opcoes.parametros[].chave      a chave (forma, ciclo, semanas, escala_dias ou max_sem_uso)
+ *     opcoes.parametros[].titulo     o título
+ *     opcoes.parametros[].numerico   verdadeiro: um número (a variação pede de, ate e passo); falso: a forma ou o ciclo (a variação
+ *                                    percorre todos os valores)
+ *     opcoes.periodo                 o período
+ *     opcoes.periodo.de              o padrão do primeiro dia (amanhã)
+ *     opcoes.periodo.ate             o padrão do último dia (4 semanas)
+ *     opcoes.periodo.min             o primeiro dia aceito (amanhã: hoje fica como está)
+ *     opcoes.periodo.max_dias        quantos dias o período tem, no máximo
+ *     opcoes.max_cenarios            quantos cenários uma simulação tem, no máximo (com a variação)
+ *     simulacao                      a simulação (só com cenarios)
+ *     simulacao.de                   o primeiro dia
+ *     simulacao.ate                  o último dia
+ *     simulacao.semente              a semente dos sorteios (a mesma dá o mesmo plano; o Aplicar manda a mesma)
+ *     simulacao.cenarios             os cenários, na ordem do pedido (com a variação, cada valor é um)
+ *     simulacao.cenarios[]           um cenário
+ *     simulacao.cenarios[].indice    a posição (de 0)
+ *     simulacao.cenarios[].rotulo    o modo e o que muda nele, por extenso ("Um por dia · Menos usado · garantia 14 dias · sem Galaxy")
+ *     simulacao.cenarios[].cenario   o cenário conferido: o que se manda no Aplicar
+ *     simulacao.cenarios[].cenario.modo
+ *                                    o id do modo
+ *     simulacao.cenarios[].cenario.forma
+ *                                    a forma (ausente: como está)
+ *     simulacao.cenarios[].cenario.ciclo
+ *                                    o ciclo, 1 ou 0 (ausente: como está)
+ *     simulacao.cenarios[].cenario.semanas
+ *                                    as semanas à frente (ausente: como está)
+ *     simulacao.cenarios[].cenario.escala_dias
+ *                                    os dias da escala (ausente: como está)
+ *     simulacao.cenarios[].cenario.max_sem_uso
+ *                                    a garantia de rodízio (ausente: como está)
+ *     simulacao.cenarios[].cenario.relogios
+ *                                    os ids dos relógios do sorteio (ausente: os de agora)
+ *     simulacao.cenarios[].cenario.relogios[]
+ *                                    um id
+ *     simulacao.cenarios[].mudancas  o que o Aplicar muda, por extenso, na ordem em que muda
+ *     simulacao.cenarios[].mudancas[]
+ *                                    uma mudança
+ *     simulacao.cenarios[].erros     por que o cenário não simulou (vazio: simulou)
+ *     simulacao.cenarios[].erros[]   um erro
+ *     simulacao.cenarios[].resultado o resultado; null: o cenário não simulou (erros diz por quê)
+ *     simulacao.cenarios[].resultado.dias
+ *                                    os dias do período, na ordem
+ *     simulacao.cenarios[].resultado.dias[]
+ *                                    um dia
+ *     simulacao.cenarios[].resultado.dias[].data
+ *                                    a data (AAAA-MM-DD)
+ *     simulacao.cenarios[].resultado.dias[].dia_semana
+ *                                    o dia da semana: 1 segunda ... 7 domingo
+ *     simulacao.cenarios[].resultado.dias[].dia_semana_curto
+ *                                    o dia da semana abreviado, no idioma do pedido (seg... dom)
+ *     simulacao.cenarios[].resultado.dias[].relogio_id
+ *                                    o id do relógio; null: sem relógio
+ *     simulacao.cenarios[].resultado.dias[].relogio
+ *                                    o nome do relógio ("" sem relógio)
+ *     simulacao.cenarios[].resultado.dias[].origem
+ *                                    sorteio, manual (escolhido à mão: fica em todo cenário), livre (dia livre) ou vazio (sem candidato)
+ *     simulacao.cenarios[].resultado.dias[].motivo
+ *                                    por que esse relógio, a frase do sorteio
+ *     simulacao.cenarios[].resultado.dias[].muda
+ *                                    verdadeiro: o dia é diferente do plano de agora
+ *     simulacao.cenarios[].resultado.resumo
+ *                                    o resumo do período
+ *     simulacao.cenarios[].resultado.resumo.dias
+ *                                    quantos dias o período mostra
+ *     simulacao.cenarios[].resultado.resumo.com_relogio
+ *                                    quantos dias têm relógio
+ *     simulacao.cenarios[].resultado.resumo.livres
+ *                                    quantos são livres
+ *     simulacao.cenarios[].resultado.resumo.vazios
+ *                                    quantos ficam sem relógio por falta de candidato
+ *     simulacao.cenarios[].resultado.resumo.manuais
+ *                                    quantos foram escolhidos à mão (ficam como estão)
+ *     simulacao.cenarios[].resultado.resumo.relogios_no_sorteio
+ *                                    quantos relógios estão no sorteio do cenário
+ *     simulacao.cenarios[].resultado.resumo.relogios_usados
+ *                                    quantos relógios diferentes aparecem no período
+ *     simulacao.cenarios[].resultado.resumo.sem_dias
+ *                                    os relógios do sorteio sem nenhum dia no período
+ *     simulacao.cenarios[].resultado.resumo.sem_dias[]
+ *                                    um relógio
+ *     simulacao.cenarios[].resultado.resumo.sem_dias[].relogio_id
+ *                                    o id
+ *     simulacao.cenarios[].resultado.resumo.sem_dias[].relogio
+ *                                    o nome
+ *     simulacao.cenarios[].resultado.resumo.menos_dias
+ *                                    os dias do relógio do sorteio que tem menos
+ *     simulacao.cenarios[].resultado.resumo.mais_dias
+ *                                    os dias do que tem mais
+ *     simulacao.cenarios[].resultado.resumo.maior_intervalo
+ *                                    o relógio do sorteio que fica mais tempo parado (entre dois dias, contando da última vez antes do
+ *                                    período, ou até o fim dele); null: nenhum
+ *     simulacao.cenarios[].resultado.resumo.maior_intervalo.relogio_id
+ *                                    o id
+ *     simulacao.cenarios[].resultado.resumo.maior_intervalo.relogio
+ *                                    o nome
+ *     simulacao.cenarios[].resultado.resumo.maior_intervalo.dias
+ *                                    quantos dias parado
+ *     simulacao.cenarios[].resultado.resumo.maior_intervalo.nunca_usado
+ *                                    verdadeiro: nunca foi ao pulso
+ *     simulacao.cenarios[].resultado.resumo.maior_sequencia
+ *                                    o relógio que fica mais dias seguidos
+ *     simulacao.cenarios[].resultado.resumo.maior_sequencia.relogio_id
+ *                                    o id; null: nenhum
+ *     simulacao.cenarios[].resultado.resumo.maior_sequencia.relogio
+ *                                    o nome
+ *     simulacao.cenarios[].resultado.resumo.maior_sequencia.dias
+ *                                    quantos dias seguidos
+ *     simulacao.cenarios[].resultado.resumo.trocas
+ *                                    quantas vezes o relógio muda de um dia para o outro
+ *     simulacao.cenarios[].resultado.resumo.dias_que_mudam
+ *                                    quantos dias são diferentes do plano de agora
+ *     simulacao.cenarios[].resultado.por_relogio
+ *                                    cada relógio do sorteio (e o que aparece no período à mão), do que tem mais dias para o que tem menos
+ *     simulacao.cenarios[].resultado.por_relogio[]
+ *                                    um relógio
+ *     simulacao.cenarios[].resultado.por_relogio[].relogio_id
+ *                                    o id
+ *     simulacao.cenarios[].resultado.por_relogio[].relogio
+ *                                    o nome
+ *     simulacao.cenarios[].resultado.por_relogio[].no_sorteio
+ *                                    verdadeiro: está no sorteio do cenário
+ *     simulacao.cenarios[].resultado.por_relogio[].dias
+ *                                    quantos dias no período
+ *     simulacao.cenarios[].resultado.por_relogio[].porcentagem
+ *                                    a parte do período, em %
+ *     simulacao.cenarios[].resultado.por_relogio[].primeiro
+ *                                    o primeiro dia dele no período; null: nenhum
+ *     simulacao.cenarios[].resultado.por_relogio[].maior_intervalo
+ *                                    o maior tempo parado, em dias (entre dois dias, da última vez antes do período, ou até o fim); null:
+ *                                    nunca usado e sem dia
+ *     simulacao.cenarios[].resultado.por_relogio[].parado_no_fim
+ *                                    há quantos dias está parado no último dia do período; null: nunca usado
+ *     simulacao.cenarios[].resultado.por_relogio[].nunca_usado
+ *                                    verdadeiro: nunca foi ao pulso, nem no período
+ *     simulacao.cenarios[].resultado.impressao
+ *                                    a impressão digital dos dias (o Aplicar confere com ela)
+ *     simulacao.cenarios[].resultado.ate_mostrado
+ *                                    o último dia mostrado (na escala, o fim dela, se vier antes de ate)
+ *     simulacao.comparacao           as medidas, cada uma com o valor de cada cenário
+ *     simulacao.comparacao[]         uma medida
+ *     simulacao.comparacao[].chave   a chave (relogios_usados, sem_dias, maior_intervalo, diferenca, vazios, maior_sequencia, trocas,
+ *                                    dias_que_mudam)
+ *     simulacao.comparacao[].titulo  o título
+ *     simulacao.comparacao[].melhor_e
+ *                                    maior ou menor: qual valor é o melhor; vazio: questão de gosto
+ *     simulacao.comparacao[].valores o valor de cada cenário, na ordem deles
+ *     simulacao.comparacao[].valores[]
+ *                                    um valor; null: o cenário não simulou
+ *     simulacao.comparacao[].melhores
+ *                                    os índices dos cenários com o melhor valor (vazio: questão de gosto, ou todos empatam)
+ *     simulacao.comparacao[].melhores[]
+ *                                    um índice
+ *     erro                           (400) por que a simulação foi recusada
+ *     erros                          (400) cada motivo
+ *     erros[]                        um motivo
  *   recurso=saidas
  *     disponivel                     verdadeiro: a tabela das saídas existe (a migração v64 aplicada); falso: aplique em Configuração, e as
  *                                    listas vêm vazias
@@ -8715,6 +8994,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/saidas.php";
 } elseif ($recurso === "sugestao") {
     require __DIR__ . "/api/sugestao.php";
+} elseif ($recurso === "simulador") {
+    require __DIR__ . "/api/simulador.php";
 } elseif ($recurso === "unidades") {
     require __DIR__ . "/api/unidades.php";
 } elseif ($recurso === "servicos") {

@@ -507,6 +507,35 @@ en el modo, se rehace entera). **Sortear de nuevo** y **Borrar todo** siempre em
 del modo. **Borrar un período** solo con el comienzo borra desde él hasta el final del plan y vuelve a montar hasta donde los
 días del modo dejan (el modo de 30 días va hasta el 30.º, contado desde hoy).
 
+### El simulador
+
+Antes de cambiar el modo, la forma de elección o la garantía de rotación, se puede ver cómo quedaría. En el menú
+**Rotación › Simulador**, cada **escenario** es uno de sus modos con lo que usted quiere cambiar en él: la **forma de
+elección**, el **ciclo**, las **semanas por delante**, los **días de la escala**, la **garantía de rotación** y los
+**relojes en el sorteo** (desmarcar uno lo saca solo de ese escenario). Lo que no vale en el modo aparece deshabilitado, con
+el motivo al lado (en el aleatorio, por ejemplo, no hay forma ni ciclo). La página empieza con dos escenarios del modo
+activo; **+ Escenario** agrega otro (hasta 8), y **Variar un parámetro** hace los escenarios de una vez: cada forma de
+elección, el ciclo encendido y apagado, o un número de tanto a tanto (la garantía de 7 a 21 días, de 7 en 7, da tres
+escenarios). Elija el **período** (de mañana en adelante, hasta 120 días) y haga clic en **Simular**.
+
+Nada se guarda: cada escenario corre las reglas de verdad de la rotación (el mismo **Sortear de nuevo**, desde el primer día
+del período en adelante; los días elegidos a mano y los libres se quedan) y todo se deshace al final. Los sorteos usan una
+**semilla**: la misma para todos los escenarios, para que la comparación sea justa, y la misma semilla da el mismo sorteo
+(vacía, una nueva cada vez; el motivo del día dice "el generador del simulador"). El resultado muestra:
+
+| Parte | Qué tiene |
+|---|---|
+| **Comparación** | una columna por escenario y una fila por medida: relojes que van a la muñeca, relojes del sorteo sin ningún día, el mayor tiempo parado, la diferencia entre el más y el menos usado, los días sin reloj, los días seguidos del mismo reloj, los cambios y los días que cambian respecto al plan actual. El mejor de cada medida lleva ★; las de **gusto** (días seguidos, cambios, lo que cambia) no tienen mejor |
+| **Día a día** | los días lado a lado, un escenario por columna; el día distinto del plan actual destacado, el elegido a mano marcado, y el motivo de cada elección al dejar el ratón encima |
+| **Cada reloj** | los días y la parte del período en cada escenario, y el mayor tiempo parado |
+
+¿Le gustó uno? **Aplicar este** muestra lo que va a cambiar (el modo que pasa a ser el activo, la forma, la garantía, los
+relojes que salen o entran en el sorteo, el plan del período) y, al confirmar, guarda todo y el plan **igual a lo que usted
+vio**. Si algo cambió desde la simulación (un uso, un día elegido a mano), el plan no saldría igual: no se guarda nada y el
+sistema pide simular de nuevo. La dirección de la página guarda la simulación (con la semilla): recargar, o guardar el
+enlace, vuelve a ella. Por la API: `recurso=simulador` (con `cenarios`, `de`, `ate`, `semente` y `variar`) y, para guardar,
+`recurso=simulador`, `acao=aplicar`.
+
 ### Consumo medido por las lecturas
 
 Una lectura que sigue bajando puede medir el gasto aunque supere la estimación: la diferencia ayuda a corregir el modelo. Si hubo carga sin una sesión registrada, use medir=0 para no usar el intervalo en la calibración.
@@ -1872,6 +1901,7 @@ solo la **Ayuda** y el **Pasaporte**, que son hojas de lectura, quedan en una co
 | **Destinos** (`destinos.php`, abierta desde la página Avisos) | Adónde van los mensajes de la colección: cada webhook, correo o Web Push, con el mensaje, el idioma, lo que recibe, las pruebas y cómo sale hoy. Vea [Mensajes y calendarios](#mensajes-y-calendarios). |
 | **Calendarios** (`agendas.php`, abierta desde la página Avisos) | Los calendarios de la colección (Google, CalDAV, Outlook, enlace ICS), con la plantilla del evento, lo que recibe, la sincronización, el evento de prueba y lo que tiene que estar en él ahora. |
 | **Modos de rotación** (`modos.php`, menú **Rotación**) | Los modos de rotación: la tabla (el modo activo marcado, el tipo, el criterio, las semanas y de dónde elige) con **Editar**, **Activar** y **Eliminar**, y el formulario de un modo, con la pantalla de su tipo: el nombre y el tipo; de dónde elegir (por tramo o por día de la semana), el período de la escala o el guion escrito a mano con **Probar en todos los relojes**; las semanas adelante (con la lista de las semanas); el criterio de elección y el ciclo; y, en los tipos listos, el guion generado (solo lectura, con **copiar este guion** a un Personalizado). Vea [Los modos de rotación](#los-modos-de-rotación). |
+| **Simulador** (`simulador.php`, menú **Rotación**) | Compara escenarios (un modo con la forma, el ciclo, las semanas, los días de la escala, la garantía y los relojes del sorteo que usted quiera) en el mismo período, sin guardar nada: la comparación con el mejor de cada medida, los días lado a lado y cada reloj. **Aplicar este** guarda el elegido igual al simulado. Vea [El simulador](#el-simulador). |
 | **Criterios** (`criterios.php`) | Los conjuntos de criterios por lugar (todos los relojes, un grupo o un reloj), con parámetros, subparámetros, rangos y la nota de cada reloj con la cuenta abierta. Tiene **Restaurar los criterios iniciales**. |
 | **Grupos** (`grupos.php`) | El árbol: crear, renombrar, mover, ordenar, eliminar (lo que era del grupo pasa al de arriba) y elegir el grupo de cada reloj. |
 | **Definiciones** (`cadastros.php`) | Campos, tipos de registro, fórmulas (con **Probar**), los totales (la pestaña **Totales**: vea [Los totales](#los-totales)), las columnas de la tabla de relojes (la pestaña **Columnas**: vea **Columnas suyas**), los calibres (la pestaña **Calibres**: vea [Los calibres](#los-calibres)), las marcas (la pestaña **Marcas**: vea [Las marcas](#las-marcas)), los informes guardados (la pestaña **Informes**: vea [Los informes guardados](#los-informes-guardados)), las secciones de la ficha (la pestaña **Secciones**: vea [Las secciones de la ficha](#las-secciones-de-la-ficha)), las unidades (la pestaña **Unidades**: vea [Las unidades](#las-unidades)) y las categorías de documentos: todo lo que el sistema usa que no es código (los avisos están en la página **Avisos**, y los modos de rotación, en **Modos de rotación**). |
@@ -2137,6 +2167,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `marcas` | las marcas del árbol (la pestaña **Marcas** de Definiciones), cada una con el país, el sitio, la observación y sus relojes |
 | `saidas` | las salidas de la colección (los prestados y los que salieron): de cada una, el reloj, la situación, las fechas, el valor recibido, a quién, la compra, los servicios, el resultado y el tiempo en la colección; y las sumas de las de ahora por situación. `relogio=` (el historial de uno), `situacao=`, `abertas=1` (solo las de ahora) |
 | `sugestao` | la Sugerencia para ahora (la tarjeta de la página Hoy): un reloj para usar ahora, fuera de la escala, por la forma de elección (`forma`) y los tipos (`tipos`) pedidos, con el motivo; `pular` no repite los ya sugeridos. Quedan fuera el que está en la muñeca y el que tiene la carga en el límite o por debajo de él (`fora[]` dice por qué). No graba nada. |
+| `simulador` | el simulador de rotación: sin `cenarios`, lo que se puede elegir (los modos y lo que cada uno deja cambiar, las formas, los relojes activos, el período por defecto); con `cenarios` (el modo y, si quiere, `forma`, `ciclo`, `semanas`, `escala_dias`, `max_sem_uso` y `relogios`), `de`, `ate`, `semente` y `variar`, la simulación de cada uno, sin guardar nada, y la comparación |
 | `calcular` | el resultado de una fórmula (`expressao=`) en los relojes (`relogio=` un id o varios; sin él, todos), sin guardar, con las partes de la cuenta; fórmula mal escrita: 400 con los errores |
 | `foto` | la foto de un reloj (`relogio=<id>`): la imagen, no JSON |
 | `documentos` | los documentos de un reloj (`relogio=<id>`; sin él, de todos), con las categorías, el resumen de la NF-e de cada XML, la carpeta y el límite |
@@ -2188,6 +2219,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `lancamento` | `lancar` (cuerda, carga, pila...), `iniciar` y `encerrar` (poner y quitar de la muñeca, del sol, del cargador; del winder, poner es por la página Winders, `winder_posicoes`, salvo que el reloj tenga su lugar libre: entonces vuelve ahí), `alternar` (cierra la sesión si está abierta, la abre si está cerrada: un solo botón en el móvil; en el winder, solo abre de vuelta al lugar), `periodo` (un período que ya pasó; en el winder, con la posición, `posicao_id`; en la muñeca del reloj del día es uso de la rotación, y los tramos del mismo tipo con los que se toca, como el Poner que quedó abierto, se vuelven uno), `alterar`, `excluir`, `medicao` (una medición del consumo entra o sale de la cuenta: `id`, `usada` 1 o 0). En todas, `relogio_id=hoje` es el reloj del día El `iniciar` que empieza en el mismo instante en que terminó un tramo del mismo tipo se une a él (vuelve a quedar abierto), y el `periodo` sin `fim` queda abierto, del inicio hasta ahora. |
 | `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
+| `simulador` | `aplicar` (el escenario como se simuló, `de`, `ate`, `semente` e `impressao`: guarda solo si el plan sale igual al simulado) |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) y `relogios` (el grupo de cada reloj) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (y `ordem` en los campos; el campo con las reglas del valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
@@ -2660,6 +2692,11 @@ En su ficha (**Editar ficha**), desmarque **Entra en el sorteo de la rotación**
 los avisos, y usted lo usa cuando quiera (**Me lo puse**, **Usando hoy**, el **cambiar por…** de un día), pero el sorteo (el
 plan, la escala, **Sortear este día por**, **Decide por mí**, la **Sugerencia para ahora**) ya no lo elige. Sus días ya
 sorteados, de mañana en adelante, se sortean de nuevo. Para sacarlo de todo, incluso de los avisos, desmarque **Reloj activo**.
+
+**¿Y si quiero comparar modos antes de elegir uno?**
+En el menú **Rotación › Simulador**: arme dos o más escenarios (el modo, la forma de elección, la garantía, los relojes del
+sorteo...), elija el período y haga clic en **Simular**. Nada se guarda; la comparación muestra el mejor de cada medida, y
+**Aplicar este** guarda el que más le guste, igual a lo que usted vio. Vea [El simulador](#el-simulador).
 
 **¿Y si quiero elegir yo los relojes de un período?**
 En el cuadro **Modo de rotación** de la página Hoy, elija **Rotación manual**, ponga el inicio y el fin y haga clic en **OK**:

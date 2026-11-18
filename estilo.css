@@ -2222,3 +2222,19 @@ form.marcar-pulso button { white-space: nowrap; }
 }
 /* a grade de dados do quadro (campo, valor, identificação...): a tabela que não cabe na largura rola para o lado dentro dela, não vaza do quadro */
 .dados-grade > div { overflow-x: auto; max-width: 100%; }
+
+/* o Simulador: os cenários lado a lado na grade, a lista dos relógios do sorteio em colunas, e na comparação o melhor de cada
+   medida em destaque; nos dias, o que muda em relação ao plano de agora e o dia escolhido à mão */
+.simulador .sim-cenario { margin: 0 0 1rem; }
+.simulador .sim-cenario legend, .simulador .sim-periodo legend, .simulador .sim-variar legend { font-weight: 600; }
+.simulador label.desabilitado { color: var(--cinza); }
+.simulador .sim-relogios summary { cursor: pointer; margin: .4rem 0; }
+.simulador .sim-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .2rem 1rem; }
+.simulador table.sim-comparacao th[scope="row"] { text-align: left; font-weight: 500; }
+.simulador table.sim-comparacao .sim-col { min-width: 10rem; vertical-align: top; }
+.simulador .sim-numero { display: block; font-size: .78rem; color: var(--cinza); }
+.simulador td.sim-melhor { font-weight: 700; color: var(--safira); }
+.simulador table.sim-dias td.sim-muda { background: #eef3fb; }
+.simulador table.sim-dias td.sim-mao { font-style: italic; }
+.simulador table.sim-por-relogio td.sim-zero { color: var(--ambar); }
+.simulador .rolagem { margin: 0 0 1rem; }

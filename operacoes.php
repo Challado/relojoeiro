@@ -4923,6 +4923,22 @@ function op_rodizio($acao, $d)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// O simulador de rodízio (a página Simulador; simulador_motor.php). Ação: aplicar (o cenário como foi simulado: modo, forma, ciclo,
+// semanas, escala_dias, max_sem_uso e relogios, os ids dos que entram no sorteio; o período, de e ate; a semente e a impressao
+// da simulação): roda o cenário de novo com a mesma semente e grava só se o plano sair igual ao simulado (senão, nada muda e a
+// resposta pede para simular de novo). Grava como as portas de sempre: os relógios do sorteio (relogio salvar: sorteio), o
+// modo (modos salvar), a garantia (config salvar: max_sem_uso), o modo ativo e o plano sorteado de novo de "de" em diante (os
+// dias escolhidos à mão e os livres ficam). Simular é uma leitura: recurso=simulador (api/simulador.php).
+// ---------------------------------------------------------------------------------------------------------------------
+function op_simulador($acao, $d)
+{
+    if ($acao !== "aplicar") {
+        return resultado([t("Ação desconhecida: use aplicar.")], "");
+    }
+    return simulador_aplicar($d);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Modos de rodízio. Ações: salvar (id: 0 cria; nome; tipo: semana, semana_fds, dia_semana, aleatorio, escala ou
 // personalizado (sem o tipo, inferido dos blocos: modo_tipo_inferir); selecao: uma das formas_de_escolha;
 // escala_dias: de 7 a 730, só na escala; semanas: 1 a 8, quantas semanas à frente o plano vem montado (não na escala);

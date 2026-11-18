@@ -229,6 +229,11 @@ function sorteio($min, $max)
     if ($max <= $min) {
         return $min;
     }
+    if (isset($GLOBALS["SIMULADOR_SEMENTE"])) {
+        // o simulador: a semente dele (o gerador do PHP), a mesma ao simular e ao aplicar
+        aleatorio_fonte(t("o gerador do simulador"));
+        return mt_rand($min, $max);
+    }
     if ($semente !== false) {
         aleatorio_fonte(t("semente de teste"));
         return mt_rand($min, $max);
@@ -276,6 +281,10 @@ function aleatorio_16()
 {
     static $lote = [];
     static $fonte = "";
+    if (isset($GLOBALS["SIMULADOR_SEMENTE"])) {
+        aleatorio_fonte(t("o gerador do simulador"));
+        return mt_rand(0, 65535);
+    }
     if (count($lote) === 0) {
         [$lote, $fonte] = aleatorio_lote(64);
     }
@@ -4711,6 +4720,11 @@ function cfg_cru($chave, $novo = null)
 {
     // a configuração da coleção do pedido (sem coleção, só o idioma da instalação)
     static $cache = [];
+    if ($chave === null) {
+        // esquecer o que foi lido (o simulador, depois de desfazer a transação de um cenário)
+        $cache = [];
+        return "";
+    }
     $c = colecao_atual();
     if ($c === null) {
         return $chave === "idioma" ? sis("idioma") : "";
@@ -12406,3 +12420,5 @@ require_once __DIR__ . "/alertas.php";
 require_once __DIR__ . "/contas.php";
 // o back-end de escrita (as operações que as páginas e a API chamam)
 require_once __DIR__ . "/operacoes.php";
+// o simulador de rodízio (a página Simulador: cenários simulados sem gravar, comparados, e o escolhido aplicado)
+require_once __DIR__ . "/simulador_motor.php";

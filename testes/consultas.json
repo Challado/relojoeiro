@@ -22,15 +22,15 @@
     },
     "por_pedido": {
         "GET ": {
-            "consultas": 677,
-            "identicas": 345
+            "consultas": 674,
+            "identicas": 342
         },
         "GET acessorios": {
             "consultas": 42,
             "identicas": 0
         },
         "GET agendas": {
-            "consultas": 251,
+            "consultas": 249,
             "identicas": 158
         },
         "GET ajuda": {
@@ -98,8 +98,8 @@
             "identicas": 3
         },
         "GET config": {
-            "consultas": 195,
-            "identicas": 34
+            "consultas": 184,
+            "identicas": 28
         },
         "GET conta": {
             "consultas": 46,
@@ -110,8 +110,8 @@
             "identicas": 1
         },
         "GET criterios": {
-            "consultas": 84,
-            "identicas": 13
+            "consultas": 82,
+            "identicas": 11
         },
         "GET cron": {
             "consultas": 23,
@@ -122,8 +122,8 @@
             "identicas": 0
         },
         "GET destinos": {
-            "consultas": 288,
-            "identicas": 186
+            "consultas": 285,
+            "identicas": 176
         },
         "GET documento": {
             "consultas": 23,
@@ -162,8 +162,8 @@
             "identicas": 8
         },
         "GET hoje": {
-            "consultas": 459,
-            "identicas": 126
+            "consultas": 448,
+            "identicas": 120
         },
         "GET hora_certa": {
             "consultas": 22,
@@ -350,7 +350,7 @@
             "identicas": 0
         },
         "GET roteiro": {
-            "consultas": 57,
+            "consultas": 58,
             "identicas": 2
         },
         "GET saidas": {
@@ -360,6 +360,10 @@
         "GET servicos": {
             "consultas": 34,
             "identicas": 0
+        },
+        "GET simulador": {
+            "consultas": 764,
+            "identicas": 398
         },
         "GET sql": {
             "consultas": 23,
@@ -678,8 +682,8 @@
             "identicas": 0
         },
         "POST manutencao.salvar": {
-            "consultas": 254,
-            "identicas": 20
+            "consultas": 243,
+            "identicas": 16
         },
         "POST manutencao.situacao": {
             "consultas": 49,
@@ -758,8 +762,8 @@
             "identicas": 0
         },
         "POST relogio.salvar": {
-            "consultas": 239,
-            "identicas": 14
+            "consultas": 235,
+            "identicas": 13
         },
         "POST reserva.excluir": {
             "consultas": 525,
@@ -786,52 +790,52 @@
             "identicas": 0
         },
         "POST rodizio.apagar_tudo": {
-            "consultas": 175,
-            "identicas": 39
+            "consultas": 165,
+            "identicas": 34
         },
         "POST rodizio.manual": {
-            "consultas": 331,
-            "identicas": 149
+            "consultas": 323,
+            "identicas": 143
         },
         "POST rodizio.modo": {
             "consultas": 34,
             "identicas": 3
         },
         "POST rodizio.periodo": {
-            "consultas": 256,
-            "identicas": 76
+            "consultas": 250,
+            "identicas": 72
         },
         "POST rodizio.periodo_livre": {
-            "consultas": 267,
-            "identicas": 78
+            "consultas": 261,
+            "identicas": 74
         },
         "POST rodizio.periodo_sortear": {
-            "consultas": 332,
-            "identicas": 95
+            "consultas": 326,
+            "identicas": 91
         },
         "POST rodizio.proxima_semana": {
-            "consultas": 141,
+            "consultas": 138,
             "identicas": 27
         },
         "POST rodizio.resortear": {
-            "consultas": 539,
-            "identicas": 170
+            "consultas": 543,
+            "identicas": 168
         },
         "POST rodizio.resortear_hoje": {
-            "consultas": 176,
-            "identicas": 27
+            "consultas": 164,
+            "identicas": 25
         },
         "POST rodizio.sem_relogio": {
-            "consultas": 34,
+            "consultas": 35,
             "identicas": 2
         },
         "POST rodizio.trocar_dia": {
-            "consultas": 326,
-            "identicas": 138
+            "consultas": 321,
+            "identicas": 135
         },
         "POST rodizio.usando": {
             "consultas": 285,
-            "identicas": 79
+            "identicas": 80
         },
         "POST saidas.excluir": {
             "consultas": 525,
@@ -860,6 +864,10 @@
         "POST servicos.salvar": {
             "consultas": 47,
             "identicas": 0
+        },
+        "POST simulador.aplicar": {
+            "consultas": 165,
+            "identicas": 36
         },
         "POST sql.executar": {
             "consultas": 22,
@@ -934,8 +942,8 @@
             "identicas": 0
         },
         "cli cron.php": {
-            "consultas": 1849,
-            "identicas": 523
+            "consultas": 1809,
+            "identicas": 498
         },
         "cli instalar.php": {
             "consultas": 31,

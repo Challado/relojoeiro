@@ -521,6 +521,36 @@ tirage** et **Tout effacer** commencent toujours un nouveau planning avec les jo
 avec seulement le début efface de lui jusqu'à la fin du plan et reconstruit aussi loin que les jours du mode le permettent (le
 mode de 30 jours va jusqu'au 30e, compté à partir d'aujourd'hui).
 
+### Le simulateur
+
+Avant de changer le mode, la façon de choisir ou la garantie de rotation, on peut voir ce que cela donnerait. Dans le menu
+**Rotation › Simulateur**, chaque **scénario** est un de vos modes avec ce que vous voulez y changer : la **façon de
+choisir**, le **cycle**, les **semaines à l'avance**, les **jours de l'échelle**, la **garantie de rotation** et les
+**montres dans le tirage** (en décocher une la retire de ce scénario seulement). Ce qui ne vaut pas dans le mode apparaît
+désactivé, avec la raison à côté (dans l'aléatoire, par exemple, il n'y a ni façon ni cycle). La page commence avec deux
+scénarios du mode actif ; **+ Scénario** en ajoute un autre (jusqu'à 8), et **Faire varier un paramètre** crée les
+scénarios d'un coup : chaque façon de choisir, le cycle activé et désactivé, ou un nombre de tant à tant (la garantie de 7
+à 21 jours, de 7 en 7, donne trois scénarios). Choisissez la **période** (à partir de demain, jusqu'à 120 jours) et cliquez
+sur **Simuler**.
+
+Rien n'est enregistré : chaque scénario applique les vraies règles de la rotation (le même **Tirer à nouveau**, à partir du
+premier jour de la période ; les jours choisis à la main et les libres restent) et tout est annulé à la fin. Les tirages
+utilisent une **graine** : la même pour tous les scénarios, pour que la comparaison soit juste, et la même graine donne le
+même tirage (vide, une nouvelle à chaque fois ; la raison du jour dit « le générateur du simulateur »). Le résultat montre :
+
+| Partie | Ce qu'elle contient |
+|---|---|
+| **Comparaison** | une colonne par scénario et une ligne par mesure : montres qui vont au poignet, montres du tirage sans aucun jour, le plus long temps au repos, la différence entre la plus et la moins portée, les jours sans montre, les jours d'affilée de la même montre, les changements et les jours qui diffèrent du plan actuel. Le meilleur de chaque mesure reçoit ★ ; celles de **goût** (jours d'affilée, changements, ce qui diffère) n'ont pas de meilleur |
+| **Jour par jour** | les jours côte à côte, un scénario par colonne ; le jour différent du plan actuel en évidence, celui choisi à la main marqué, et la raison de chaque choix au survol |
+| **Chaque montre** | les jours et la part de la période dans chaque scénario, et le plus long temps au repos |
+
+Un vous plaît ? **Appliquer celui-ci** montre ce qui va changer (le mode qui devient l'actif, la façon, la garantie, les
+montres qui sortent du tirage ou y entrent, le plan de la période) et, à la confirmation, enregistre tout et le plan **tel
+que vous l'avez vu**. Si quelque chose a changé depuis la simulation (un usage, un jour choisi à la main), le plan ne
+sortirait pas pareil : rien n'est enregistré et le système demande de simuler à nouveau. L'adresse de la page garde la
+simulation (avec la graine) : recharger, ou garder le lien, y revient. Par l'API : `recurso=simulador` (avec `cenarios`,
+`de`, `ate`, `semente` et `variar`) et, pour enregistrer, `recurso=simulador`, `acao=aplicar`.
+
 ### Consommation mesurée par les relevés
 
 Une lecture qui continue de baisser peut mesurer la consommation même au-dessus de l’estimation : cet écart aide à corriger le modèle. Si une recharge a eu lieu sans session enregistrée, utilisez medir=0 pour exclure cet intervalle de l’étalonnage.
@@ -1934,6 +1964,7 @@ milieu.
 | **Destinations** (`destinos.php`, ouverte depuis la page Alertes) | Où vont les messages de la collection : chaque webhook, e-mail ou Web Push, avec le message, la langue, ce qu'il reçoit, les tests et ce qui part aujourd'hui. Voir [Messages et agendas](#messages-et-agendas). |
 | **Agendas** (`agendas.php`, ouverte depuis la page Alertes) | Les agendas de la collection (Google, CalDAV, Outlook, lien ICS), avec le modèle de l'événement, ce qu'elle reçoit, la synchronisation, l'événement de test et ce qui doit y être maintenant. |
 | **Modes de rotation** (`modos.php`, menu **Rotation**) | Les modes de rotation : le tableau (le mode actif marqué, le type, le critère, les semaines et d'où il choisit) avec **Modifier**, **Activer** et **Supprimer**, et le formulaire d'un mode, avec l'écran de son type : le nom et le type ; d'où choisir (par tranche ou par jour de la semaine), la période du planning ou le scénario écrit à la main avec **Tester sur toutes les montres** ; les semaines en avant (avec la liste des semaines) ; le critère de choix et le cycle ; et, dans les types prêts, le scénario généré (lecture seule, avec **copier ce scénario** vers un Personnalisé). Voir [Les modes de rotation](#les-modes-de-rotation). |
+| **Simulateur** (`simulador.php`, menu **Rotation**) | Compare des scénarios (un mode avec la façon, le cycle, les semaines, les jours de l'échelle, la garantie et les montres du tirage que vous voulez) sur la même période, sans rien enregistrer : la comparaison avec le meilleur de chaque mesure, les jours côte à côte et chaque montre. **Appliquer celui-ci** enregistre celui choisi tel que simulé. Voir [Le simulateur](#le-simulateur). |
 | **Critères** (`criterios.php`) | Les ensembles de critères par endroit (toutes les montres, un groupe ou une montre), avec paramètres, sous-paramètres, tranches et la note de chaque montre avec le calcul détaillé. Il y a **Restaurer les critères initiaux**. |
 | **Groupes** (`grupos.php`) | L'arbre : créer, renommer, déplacer, trier, supprimer (ce qui appartenait au groupe passe à celui du dessus) et choisir le groupe de chaque montre. |
 | **Définitions** (`cadastros.php`) | Champs, types de saisie, formules (avec **Tester**), les totaux (l'onglet **Totaux** : voir [Les totaux](#les-totaux)), les colonnes du tableau des montres (l'onglet **Colonnes** : voir **Vos colonnes**), les calibres (l'onglet **Calibres** : voir [Les calibres](#les-calibres)), les marques (l’onglet **Marques** : voir [Les marques](#les-marques)), les rapports enregistrés (l’onglet **Rapports** : voir [Les rapports enregistrés](#les-rapports-enregistrés)), les sections de la fiche (l'onglet **Sections** : voir [Les sections de la fiche](#les-sections-de-la-fiche)), les unités (l'onglet **Unités** : voir [Les unités](#les-unités)) et catégories de documents : tout ce que le système utilise et qui n'est pas du code (les alertes sont dans la page **Alertes**, et les modes de rotation dans **Modes de rotation**). |
@@ -2206,6 +2237,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `marcas` | les marques de l’arbre (l’onglet **Marques** des Définitions), chacune avec le pays, le site, l’observation et ses montres |
 | `saidas` | les sorties de la collection (les prêtées et celles qui sont sorties) : pour chacune, la montre, le statut, les dates, le montant reçu, à qui, l’achat, les services, le résultat et le temps dans la collection ; et les sommes de celles en cours par statut. `relogio=` (l’historique d’une montre), `situacao=`, `abertas=1` (seulement celles en cours) |
 | `sugestao` | la Suggestion pour maintenant (la carte de la page Aujourd'hui) : une montre à porter maintenant, hors du planning, selon la méthode de choix (`forma`) et les types (`tipos`) demandés, avec le motif ; `pular` ne répète pas celles déjà suggérées. Sont écartées celle qui est au poignet et celles dont la charge est à la limite ou en dessous (`fora[]` dit pourquoi). N'enregistre rien. |
+| `simulador` | le simulateur de rotation : sans `cenarios`, ce qu'on peut choisir (les modes et ce que chacun laisse changer, les façons, les montres actives, la période par défaut) ; avec `cenarios` (le mode et, si vous voulez, `forma`, `ciclo`, `semanas`, `escala_dias`, `max_sem_uso` et `relogios`), `de`, `ate`, `semente` et `variar`, la simulation de chacun, sans rien enregistrer, et la comparaison |
 | `calcular` | le résultat d'une formule (`expressao=`) sur les montres (`relogio=` un id ou plusieurs ; sans lui, toutes), sans enregistrer, avec les parties du calcul ; formule mal écrite : 400 avec les erreurs |
 | `foto` | la photo d'une montre (`relogio=<id>`) : l'image, pas du JSON |
 | `documentos` | les documents d'une montre (`relogio=<id>` ; sans lui, de toutes), avec les catégories, le résumé de la NF-e de chaque XML, le dossier et la limite |
@@ -2257,6 +2289,7 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `lancamento` | `lancar` (remontage, charge, pile...), `iniciar` et `encerrar` (mettre et retirer du poignet, du soleil, du chargeur ; du remontoir, mettre se fait par la page Remontoirs, `winder_posicoes`, sauf si la montre a sa place libre : alors elle y retourne), `alternar` (ferme la session si elle est ouverte, l'ouvre si elle est fermée : un seul bouton sur le téléphone ; sur le remontoir, n'ouvre que pour le retour à la place), `periodo` (une période déjà passée ; sur le remontoir, avec la position, `posicao_id` ; au poignet de la montre du jour c'est un usage de la rotation, et les périodes du même type qu'elle touche, comme le Mettre resté ouvert, n'en font plus qu'une), `alterar`, `excluir`, `medicao` (une mesure de la consommation entre dans le calcul ou en sort : `id`, `usada` 1 ou 0). Dans toutes, `relogio_id=hoje` est la montre du jour Un `iniciar` qui commence au même instant où un tronçon du même type s’est terminé s’y raccorde (il redevient ouvert), et un `periodo` sans `fim` reste ouvert, du début jusqu’à maintenant. |
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
+| `simulador` | `aplicar` (le scénario tel qu'il a été simulé, `de`, `ate`, `semente` et `impressao` : n'enregistre que si le plan sort comme simulé) |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groupes) et `relogios` (le groupe de chaque montre) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (et `ordem` dans les champs ; le champ avec les règles de valeur : `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
@@ -2742,6 +2775,12 @@ Dans sa fiche (**Modifier la fiche**), décochez **Participe au tirage de la rot
 **remplacer par…** d'un jour), mais le tirage (le plan, l'échelle, **Tirer ce jour au sort par**, **Décider pour moi**, la
 **Suggestion pour maintenant**) ne la choisit plus. Ses jours déjà tirés au sort, à partir de demain, sont tirés à nouveau.
 Pour la sortir de tout, même des alertes, décochez **Montre active**.
+
+**Et si je veux comparer des modes avant d'en choisir un ?**
+Dans le menu **Rotation › Simulateur** : montez deux scénarios ou plus (le mode, la façon de choisir, la garantie, les
+montres du tirage...), choisissez la période et cliquez sur **Simuler**. Rien n'est enregistré ; la comparaison montre le
+meilleur de chaque mesure, et **Appliquer celui-ci** enregistre celui qui vous plaît le plus, tel que vous l'avez vu. Voir
+[Le simulateur](#le-simulateur).
 
 **Et si je veux choisir moi-même les montres d'une période ?**
 Dans le cadre **Mode de rotation** de la page Aujourd'hui, choisissez **Rotation manuelle**, indiquez le début et la fin et

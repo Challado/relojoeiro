@@ -526,6 +526,35 @@ refeita inteira). O **Sortear de novo** e o **Apagar tudo** sempre começam uma 
 **Apagar um período** só com o começo apaga dele até o fim do plano e monta de novo até onde os dias do modo deixam (o modo de
 30 dias vai até o 30º, contado de hoje).
 
+### O simulador
+
+Antes de trocar o modo, a forma de escolha ou a garantia de rodízio, dá para ver como ficaria. No menu **Rodízio ›
+Simulador**, cada **cenário** é um modo dos seus com o que você quer mudar nele: a **forma de escolha**, o **ciclo**, as
+**semanas à frente**, os **dias da escala**, a **garantia de rodízio** e os **relógios no sorteio** (desmarcar um tira ele
+só daquele cenário). O que não vale no modo aparece desabilitado, com o motivo ao lado (no aleatório, por exemplo, não há
+forma nem ciclo). A página começa com dois cenários do modo ativo; o **+ Cenário** põe outro (até 8), e **Variar um
+parâmetro** faz os cenários de uma vez: cada forma de escolha, o ciclo ligado e desligado, ou um número de tanto a tanto
+(a garantia de 7 a 21 dias, de 7 em 7, dá três cenários). Escolha o **período** (de amanhã em diante, até 120 dias) e
+clique em **Simular**.
+
+Nada é gravado: cada cenário roda as regras de verdade do rodízio (o mesmo **Sortear de novo**, do primeiro dia do período
+em diante; os dias escolhidos à mão e os livres ficam) e tudo é desfeito no fim. Os sorteios usam uma **semente**: a mesma
+para todos os cenários, para a comparação ser justa, e a mesma semente dá o mesmo sorteio (vazia, uma nova a cada vez; o
+motivo do dia diz "o gerador do simulador"). O resultado mostra:
+
+| Parte | O que tem |
+|---|---|
+| **Comparação** | uma coluna por cenário e uma linha por medida: relógios que vão ao pulso, relógios do sorteio sem nenhum dia, o maior tempo parado, a diferença entre o mais e o menos usado, os dias sem relógio, os dias seguidos do mesmo relógio, as trocas e os dias que mudam em relação ao plano de agora. O melhor de cada medida leva ★; as de **gosto** (os dias seguidos, as trocas, o que muda) não têm melhor |
+| **Dia a dia** | os dias lado a lado, um cenário por coluna; o dia diferente do plano de agora em destaque, o escolhido à mão marcado, e o motivo de cada escolha parando o mouse |
+| **Cada relógio** | os dias e a parte do período em cada cenário, e o maior tempo parado |
+
+Gostou de um? **Aplicar este** mostra o que vai mudar (o modo que passa a ser o ativo, a forma, a garantia, os relógios que
+saem ou entram no sorteio, o plano do período) e, confirmando, grava tudo e o plano **igual ao que você viu**. Se alguma
+coisa mudou desde a simulação (um uso, um dia escolhido à mão), o plano não sairia igual: nada é gravado e o sistema pede
+para simular de novo. O endereço da página guarda a simulação (com a semente): recarregar, ou guardar o link, volta a ela.
+Pela API: `recurso=simulador` (com `cenarios`, `de`, `ate`, `semente` e `variar`) e, para gravar, `recurso=simulador`,
+`acao=aplicar`.
+
 ### Gasto medido pelas leituras
 
 Uma leitura que continua caindo pode medir gasto mesmo acima da estimativa: a diferença ajuda a corrigir o modelo. Se houve recarga sem sessão registrada, use medir=0 para não usar o intervalo na calibração.
@@ -1893,6 +1922,7 @@ No computador, todas as páginas usam a largura toda da janela, com uma margem m
 | **Destinos** (`destinos.php`, aberta pela página Avisos) | Para onde vão as mensagens da coleção: cada webhook, e-mail ou Web Push, com a mensagem, o idioma, o que recebe, os testes e como sai hoje. Veja [Mensagens e agendas](#mensagens-e-agendas). |
 | **Agendas** (`agendas.php`, aberta pela página Avisos) | As agendas da coleção (Google, CalDAV, Outlook, link ICS), com o modelo do evento, o que recebe, a sincronização, o evento de teste e o que tem de estar nela agora. |
 | **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
+| **Simulador** (`simulador.php`, menu **Rodízio**) | Compara cenários (um modo com a forma, o ciclo, as semanas, os dias da escala, a garantia e os relógios do sorteio que você quiser) no mesmo período, sem gravar nada: a comparação com o melhor de cada medida, os dias lado a lado e cada relógio. **Aplicar este** grava o escolhido igual ao simulado. Veja [O simulador](#o-simulador). |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), as colunas da tabela dos relógios (a aba **Colunas**: veja **Colunas suas**, em A mesma informação em todos os tamanhos), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as marcas (a aba **Marcas**: veja [As marcas](#as-marcas)), os relatórios cadastrados (a aba **Relatórios**: veja [Os relatórios cadastrados](#os-relatórios-cadastrados)), as divisórias da ficha (a aba **Divisórias**: veja [As divisórias da ficha](#as-divisórias-da-ficha)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
@@ -2152,6 +2182,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `marcas` | as marcas da árvore (a aba **Marcas** dos Cadastros), cada uma com o país, o site, a observação e os relógios dela |
 | `saidas` | as saídas da coleção (os emprestados e os que saíram): de cada uma, o relógio, a situação, as datas, o valor recebido, para quem, a compra, os serviços, o resultado e o tempo na coleção; e as somas das de agora por situação. `relogio=` (o histórico de um), `situacao=`, `abertas=1` (só as de agora) |
 | `sugestao` | a Sugestão para agora (o cartão da página Hoje): um relógio para usar agora, fora da escala, pela forma de escolha (`forma`) e pelos tipos (`tipos`) pedidos, com o motivo; `pular` não repete os já sugeridos. Ficam de fora o que está no pulso e o que está com a carga no limite ou abaixo dele (`fora[]` diz por quê). Não grava nada. |
+| `simulador` | o simulador de rodízio: sem `cenarios`, o que dá para escolher (os modos e o que cada um deixa mudar, as formas, os relógios ativos, o período padrão); com `cenarios` (o modo e, se quiser, `forma`, `ciclo`, `semanas`, `escala_dias`, `max_sem_uso` e `relogios`), `de`, `ate`, `semente` e `variar`, a simulação de cada um, sem gravar nada, e a comparação |
 | `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios (`relogio=` um id ou vários; sem ele, todos), sem gravar, com as partes da conta; fórmula mal escrita: 400 com os erros |
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
@@ -2203,6 +2234,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `lancamento` | `lancar` (corda, carga, pilha...), `iniciar` e `encerrar` (pôr e tirar do pulso, do sol, do carregador; do winder, o pôr é pela página Winders, o `winder_posicoes`, a não ser que o relógio tenha o lugar dele livre: aí volta para lá), `alternar` (fecha a sessão se está aberta, abre se está fechada: um botão só no celular; no winder, abre só de volta ao lugar), `periodo` (um período que já passou; no winder, com a posição, `posicao_id`; no pulso do relógio do dia é uso do rodízio, e os trechos do mesmo tipo em que ele encosta, como o Pôr que ficou aberto, viram um só), `alterar`, `excluir`, `medicao` (uma medição do gasto entra ou sai da conta: `id`, `usada` 1 ou 0). Em todas, `relogio_id=hoje` é o relógio do dia O `iniciar` que começa no instante em que acabou um trecho do mesmo tipo emenda nele (ele volta a ficar aberto), e o `periodo` sem `fim` fica aberto, do início até agora. |
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
+| `simulador` | `aplicar` (o cenário como foi simulado, `de`, `ate`, `semente` e `impressao`: grava só se o plano sair igual ao simulado) |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos; o campo com as regras do valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
@@ -2659,6 +2691,11 @@ No cadastro dele (**Editar cadastro**), desmarque **Entra no sorteio do rodízio
 os avisos, e você o usa quando quiser (o **Pôs no pulso**, o **Usando hoje**, o **trocar por…** de um dia), mas o sorteio
 (o plano, a escala, o **Sortear este dia por**, o **Decida por mim**, a **Sugestão para agora**) não o escolhe mais. Os dias
 já sorteados dele, de amanhã em diante, são sorteados de novo. Para tirá-lo de tudo, até dos avisos, desmarque **Relógio ativo**.
+
+**E se eu quiser comparar modos antes de escolher um?**
+No menu **Rodízio › Simulador**: monte dois ou mais cenários (o modo, a forma de escolha, a garantia, os relógios no
+sorteio...), escolha o período e clique em **Simular**. Nada é gravado; a comparação mostra o melhor de cada medida, e
+**Aplicar este** grava o que mais agradar, igual ao que você viu. Veja [O simulador](#o-simulador).
 
 **E se eu quiser escolher eu mesmo os relógios de um período?**
 No quadro **Modo de rodízio** da página Hoje, escolha **Rodízio manual**, ponha o começo e o fim e clique em **OK**: os dias

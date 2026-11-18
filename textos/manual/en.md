@@ -1,4 +1,4 @@
-<!-- origem: 3ffd02df6ad789e6cbd2f6e9ee48a5eefe41266f -->
+<!-- origem: be49e346d71723561688c4118aa5f78ed1ca3ba5 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -463,6 +463,35 @@ schedule is dropped, and the next build (the Today page, the cron) already uses 
 it was generated with: another number in the mode, it is rebuilt whole). **Draw again** and **Erase all** always start a new
 schedule with the mode's current days. **Erase a period** with only the start erases from it to the end of the plan and builds
 again as far as the mode's days allow (the 30-day mode goes up to the 30th, counted from today).
+
+### The simulator {#o-simulador}
+
+Before changing the mode, the way of choosing or the rotation guarantee, you can see how it would turn out. In the menu
+**Rotation › Simulator**, each **scenario** is one of your modes with what you want to change in it: the **way of
+choosing**, the **cycle**, the **weeks ahead**, the **scale days**, the **rotation guarantee** and the **watches in the
+draw** (unticking one takes it out of that scenario only). What does not apply in the mode shows disabled, with the reason
+beside it (in the random one, for example, there is no way nor cycle). The page starts with two scenarios of the active
+mode; **+ Scenario** adds another (up to 8), and **Vary a parameter** makes the scenarios at once: each way of choosing, the
+cycle on and off, or a number from this to that (the guarantee from 7 to 21 days, in steps of 7, gives three scenarios).
+Choose the **period** (from tomorrow on, up to 120 days) and click **Simulate**.
+
+Nothing is saved: each scenario runs the real rotation rules (the same **Draw again**, from the first day of the period on;
+the days chosen by hand and the free ones stay) and everything is undone at the end. The draws use a **seed**: the same for
+all scenarios, so the comparison is fair, and the same seed gives the same draw (empty, a new one each time; the day's
+reason says "the simulator's generator"). The result shows:
+
+| Part | What it has |
+|---|---|
+| **Comparison** | one column per scenario and one row per measure: watches that go on the wrist, watches in the draw without any day, the longest idle time, the difference between the most and the least used, the days without a watch, the consecutive days of the same watch, the changes and the days that differ from the current plan. The best of each measure gets ★; the **taste** ones (consecutive days, changes, what differs) have no best |
+| **Day by day** | the days side by side, one scenario per column; the day that differs from the current plan highlighted, the one chosen by hand marked, and the reason for each choice when hovering |
+| **Each watch** | the days and the share of the period in each scenario, and the longest idle time |
+
+Like one? **Apply this one** shows what will change (the mode that becomes the active one, the way, the guarantee, the
+watches that leave or enter the draw, the period's plan) and, on confirming, saves everything and the plan **exactly as you
+saw it**. If something changed since the simulation (a use, a day chosen by hand), the plan would not come out the same:
+nothing is saved and the system asks you to simulate again. The page's address keeps the simulation (with the seed):
+reloading, or saving the link, goes back to it. Through the API: `recurso=simulador` (with `cenarios`, `de`, `ate`,
+`semente` and `variar`) and, to save, `recurso=simulador`, `acao=aplicar`.
 
 ### Consumption measured by the readings {#gasto-medido-pelas-leituras}
 
@@ -1793,6 +1822,7 @@ On a computer, every page uses the whole width of the window, with a minimum mar
 | **Destinations** (`destinos.php`, opened from the Alerts page) | Where the collection's messages go: each webhook, e-mail or Web Push, with the message, the language, what it receives, the tests and how it goes out today. See [Messages and calendars](#mensagens-e-agendas). |
 | **Calendars** (`agendas.php`, opened from the Alerts page) | The collection's calendars (Google, CalDAV, Outlook, ICS link), with the event template, what it receives, the sync, the test event and what has to be in it now. |
 | **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#os-modos-de-rodízio). |
+| **Simulator** (`simulador.php`, menu **Rotation**) | Compares scenarios (a mode with the way, the cycle, the weeks, the scale days, the guarantee and the watches in the draw you want) in the same period, without saving anything: the comparison with the best of each measure, the days side by side and each watch. **Apply this one** saves the chosen one exactly as simulated. See [The simulator](#o-simulador). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#os-totais)), the columns of the watches table (the **Columns** tab: see **Your own columns**), the calibers (the **Calibers** tab: see [Calibers](#os-calibres)), the brands (the **Brands** tab: see [Brands](#as-marcas)), the saved reports (the **Reports** tab: see [Saved reports](#os-relatórios-cadastrados)), the record sections (the **Sections** tab: see [Record sections](#as-divisórias-da-ficha)), the units (the **Units** tab: see [Units](#as-unidades)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
@@ -2071,6 +2101,11 @@ In its record (**Edit record**), untick **Enters the rotation draw** and save. I
 alerts, and you wear it whenever you want (**Put on the wrist**, **Wearing today**, a day's **change to…**), but the draw
 (the plan, the scale, **Draw this day by**, **Decide for me**, **Suggestion for now**) no longer chooses it. Its days already
 drawn, from tomorrow on, are drawn again. To take it out of everything, even the alerts, untick **Active watch**.
+
+**What if I want to compare modes before choosing one?**
+In the menu **Rotation › Simulator**: build two or more scenarios (the mode, the way of choosing, the guarantee, the watches
+in the draw...), choose the period and click **Simulate**. Nothing is saved; the comparison shows the best of each measure,
+and **Apply this one** saves the one you like best, exactly as you saw it. See [The simulator](#o-simulador).
 
 **What if I want to choose the watches for a period myself?**
 In the **Rotation mode** box on the Today page, choose **Manual rotation**, set the start and the end and click **OK**: the
