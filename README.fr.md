@@ -2741,7 +2741,7 @@ Marquez son **Mise au poignet** : l'usage est enregistré, et le plan ne change 
 
 La même liste a le groupe **Tirer ce jour au sort par** : *la meilleure note*, *tirage selon la note*, *aléatoire, toutes
 avec la même chance* *file : la plus longtemps sans usage* ou *le moins utilisé : le moins de jours d'usage au total*. Seul ce jour est tiré au sort sur-le-champ, selon ce mode,
-parmi les montres du bloc du mode actif qui couvre le jour (sans bloc, parmi toutes les disponibles), sans la montre que le
+parmi les montres du bloc du mode actif qui couvre le jour (sans bloc, parmi toutes les disponibles ; dans le mode personnalisé, seulement celles que la ligne `candidato` du roteiro accepte ce jour-là, comme dans le plan), sans la montre que le
 jour avait ; la garantie de rotation passe en premier (sauf en aléatoire), et les jours précédents du plan comptent comme
 usage. Le jour reste *à la main*, avec le motif *« Tiré au sort à la main (la meilleure note) : … »*, et c'est pourquoi
 Refaire le tirage et le cron le respectent ; **retirer au sort** rend le jour au mode. Aujourd'hui, la montre tirée va au

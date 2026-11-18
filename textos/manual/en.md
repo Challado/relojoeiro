@@ -1,4 +1,4 @@
-<!-- origem: be49e346d71723561688c4118aa5f78ed1ca3ba5 -->
+<!-- origem: 0294a74a993d3589d0f405bf12fef052aa64a527 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -2069,7 +2069,7 @@ change.
 
 The same list has the group **Draw this day by**: *the highest score*, *draw by score*, *random, all with the same chance*
 *queue: the longest without use* or *the least used: the fewest days of use in total*. Only that day is drawn on the spot, by that way, among the watches of the active mode's
-block that covers the day (no block: among all the available ones), without the watch the day had; the rotation guarantee
+block that covers the day (no block: among all the available ones; in the customized mode, only those the roteiro's `candidato` line accepts on that day, as in the plan), without the watch the day had; the rotation guarantee
 comes first (except on random), and the previous days of the plan count as use. The day stays *by hand*, with the reason
 *"Drawn by hand (the highest score): …"*, which is why Draw again and the cron respect it; **draw again** gives the day back
 to the mode. Today, the drawn watch goes to the wrist from now on. Through the API: `recurso=rodizio`, `acao=trocar_dia`,

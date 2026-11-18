@@ -2660,7 +2660,7 @@ muñeca**: el uso queda registrado, y el plan no cambia.
 
 La misma lista tiene el grupo **Sortear este día por**: *la mayor nota*, *sorteo por la nota*, *aleatorio, todos con la misma
 probabilidad* *fila: el más tiempo sin uso* o *el menos usado: menos días de uso en total*. Solo ese día se sortea en el momento, por esa forma, entre los relojes del bloque
-del modo activo que cubre el día (sin bloque, entre todos los disponibles), sin el reloj que tenía el día; la garantía de
+del modo activo que cubre el día (sin bloque, entre todos los disponibles; en el modo personalizado, solo los que la línea `candidato` del roteiro acepta ese día, como en el plan), sin el reloj que tenía el día; la garantía de
 rotación va por delante (menos en el aleatorio), y los días anteriores del plan cuentan como uso. El día queda *a mano*, con el
 motivo *"Sorteado a mano (la mayor nota): …"*, y por eso el Sortear de nuevo y el cron lo respetan; **volver a sortear**
 devuelve el día al modo. Hoy, el sorteado pasa a la muñeca desde ese momento. Por la API: `recurso=rodizio`, `acao=trocar_dia`,

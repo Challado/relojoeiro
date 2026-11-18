@@ -6439,7 +6439,9 @@ function relogios_do_sorteio($rels)
 
 // Quem o Sortear este dia por pode escolher num dia ($dia: DateTimeImmutable), pelo modo ativo: os relógios do sorteio
 // (relogio_no_sorteio) do grupo do bloco que cobre o dia (o relógio fixo do bloco não vale: é um sorteio) ou, sem modo ou
-// sem bloco no dia, todos os do sorteio. Devolve [o modo ou null, o bloco ou null, id => relógio, na ordem do cadastro]
+// sem bloco no dia, todos os do sorteio. No modo personalizado, o roteiro escrito à mão diz quem é candidato no dia (a linha
+// candidato), como no plano: quem ela tira não é sorteado. Nos outros tipos o roteiro é gerado dos blocos, que já valem aqui.
+// Devolve [o modo ou null, o bloco ou null, id => relógio, na ordem do cadastro]
 function sortear_dia_candidatos($dia)
 {
     $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]) ?: null;
@@ -6450,14 +6452,23 @@ function sortear_dia_candidatos($dia)
             $cands[(int)$r["id"]] = $r;
         }
     }
+    if ($modo && ($modo["tipo"] ?? "") === "personalizado") {
+        $candidato = ["candidato" => modo_roteiro($modo)["candidato"]];
+        $m_ini = max(time(), instante($dia->format("Y-m-d"), cfg("uso_inicio")));
+        foreach ($cands as $id => $r) {
+            $c = roteiro_calcular($candidato, $r, $dia, $m_ini);
+            if (($c["candidato"] ?? null) === null || (float)$c["candidato"] == 0) {
+                unset($cands[$id]);
+            }
+        }
+    }
     return [$modo, $bloco, $cands];
 }
 
-// Sorteia um dia só, agora, por uma forma de escolha ($selecao: a chave de formas_de_escolha), entre os relógios disponíveis
-// do bloco do modo ativo que cobre o dia (do grupo dele; o relógio fixo não vale: é um sorteio) ou, sem modo ou sem bloco no
-// dia, entre todos. O relógio que o dia já tem fica de fora, se houver outro (quem sorteia o dia quer trocar). Os dias
-// anteriores do plano, de hoje até a véspera, são simulados no pulso como no garantir_plano, para a nota e os dias sem uso
-// contarem com eles. Devolve [o id ou null, o motivo]; quem chama grava o dia
+// Sorteia um dia só, agora, por uma forma de escolha ($selecao: a chave de formas_de_escolha), entre os candidatos do dia
+// pelo modo ativo (sortear_dia_candidatos: o grupo do bloco que cobre o dia, ou a linha candidato do personalizado). O
+// relógio que o dia já tem fica de fora, se houver outro (quem sorteia o dia quer trocar). Os dias anteriores do plano, de
+// hoje até a véspera, são simulados no pulso como no garantir_plano, para a nota e os dias sem uso contarem com eles. Devolve [o id ou null, o motivo]; quem chama grava o dia
 function sortear_dia($dia, $selecao)
 {
     $hoje = hoje_da_colecao();

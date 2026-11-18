@@ -2659,7 +2659,8 @@ e o plano não muda.
 
 A mesma lista tem o grupo **Sortear este dia por**: *a maior nota*, *sorteio pela nota*, *aleatório, todos com a mesma chance*
 *fila: o mais tempo sem uso* ou *o menos usado: menos dias de uso no total*. Só aquele dia é sorteado na hora, por essa forma, entre os relógios do bloco do modo ativo
-que cobre o dia (sem bloco, entre todos os disponíveis), sem o relógio que o dia tinha; a garantia de rodízio vem na frente
+que cobre o dia (sem bloco, entre todos os disponíveis; no modo personalizado, só os que a linha `candidato` do roteiro
+aceita no dia, como no plano), sem o relógio que o dia tinha; a garantia de rodízio vem na frente
 (menos no aleatório), e os dias anteriores do plano contam como uso. O dia fica *à mão*, com o motivo *"Sorteado à mão (a
 maior nota): …"*, e por isso o Sortear de novo e o cron o respeitam; **voltar a sortear** devolve o dia ao modo. Hoje, o
 sorteado vai para o pulso a partir de agora. Pela API: `recurso=rodizio`, `acao=trocar_dia`, `relogio_id=sortear:<forma>`

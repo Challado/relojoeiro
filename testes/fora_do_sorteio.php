@@ -4,6 +4,7 @@
 // ele continua na coleção: disponível, com a carga e os avisos, e pode ser escolhido à mão (trocar_dia, usando, o Rodízio
 // manual); os dias sorteados dele, de amanhã em diante, são sorteados de novo quando ele sai, e os escolhidos à mão ficam; a
 // marca volta e ele volta ao sorteio; o valor inválido é recusado; e o relógio fixo de um bloco também não vale se está fora.
+// No modo personalizado, o Sortear este dia por só escolhe quem a linha candidato do roteiro aceita no dia, como o plano.
 // Base SQLite nova e descartável.
 if (PHP_SAPI !== "cli") {
     http_response_code(404);
@@ -207,7 +208,37 @@ try {
     exigir_sorteio(op_relogio("salvar", ["id" => $oc, "disponivel" => "0"])["ok"] && !relogio_no_sorteio($linha($oc)), "O indisponível entrou no sorteio.");
     exigir_sorteio(!op_rodizio("trocar_dia", ["data" => $dia(13), "relogio_id" => $oc])["ok"], "O indisponível foi escolhido à mão.");
 
-    echo "Fora do sorteio (" . count($dias_do_oc) . " modos, um de cada tipo; o dia de cada um vem do motor): o plano, a escala, o relógio fixo, o Sortear este dia por, o Decida por mim, a Sugestão para agora e o teste do roteiro o deixam de fora; à mão, no pulso e na tabela ele continua; a saída refaz os dias sorteados dele e guarda os escolhidos à mão; a volta e o valor inválido conferem.\n";
+    // ---- no modo personalizado, o Sortear este dia por segue a linha candidato do roteiro, como o plano: com um tradicional
+    // na coleção, o roteiro que só aceita os tradicionais sorteia só ele (por todas as formas), o que só aceita os smartwatches
+    // nunca o sorteia, e o que não aceita ninguém recusa o dia
+    $corda = op_relogio("salvar", ["nome" => "Corda", "no_id" => (int)valor("SELECT id FROM no WHERE nome = 'Corda manual'"), "disponivel" => 1]);
+    exigir_sorteio($corda["ok"], "Não criou o tradicional: " . implode(" ", $corda["erros"] ?? []));
+    $tr = (int)$corda["id"];
+    $d3 = $dia(3);
+    foreach (["candidato = NO_GRUPO(\"Tradicional\")" => true, "candidato = NO_GRUPO(\"Smartwatch\")" => false] as $linha_c => $so_ele) {
+        $pm = op_modos("salvar", ["nome" => $so_ele ? "Só tradicional" : "Só smartwatch", "tipo" => "personalizado", "semanas" => 1, "roteiro" => $linha_c . "\nnota = dias_sem_uso"]);
+        exigir_sorteio($pm["ok"], "Não criou o personalizado: " . implode(" ", $pm["erros"] ?? []));
+        modo_ativar($pm["id"]);
+        sql("DELETE FROM plano WHERE data >= ?", [$dia(1)]);
+        garantir_plano($hoje);
+        $no_plano = (int)valor("SELECT COUNT(*) FROM plano WHERE data >= ? AND relogio_id = ?", [$dia(1), $tr]);
+        $outros = (int)valor("SELECT COUNT(*) FROM plano WHERE data >= ? AND relogio_id <> ?", [$dia(1), $tr]);
+        exigir_sorteio($so_ele ? ($no_plano > 0 && $outros === 0) : $no_plano === 0, "O plano do " . $linha_c . " não seguiu a linha candidato.");
+        $cands = array_keys(sortear_dia_candidatos(new DateTimeImmutable($d3))[2]);
+        exigir_sorteio($so_ele ? $cands === [$tr] : !in_array($tr, $cands, true), "Os candidatos do Sortear pelo " . $linha_c . " não seguiram o roteiro: " . json_encode($cands));
+        foreach (array_keys(formas_de_escolha()) as $forma) {
+            $s = op_rodizio("trocar_dia", ["data" => $d3, "relogio_id" => "sortear:" . $forma]);
+            $pegou = (int)(plano_do_dia($d3)["relogio_id"] ?? 0);
+            exigir_sorteio($s["ok"] && ($so_ele ? $pegou === $tr : $pegou !== $tr), "O Sortear este dia por " . $forma . " no " . $linha_c . " escolheu " . $pegou . ".");
+        }
+    }
+    $nenhum = op_modos("salvar", ["nome" => "Ninguém", "tipo" => "personalizado", "semanas" => 1, "roteiro" => "candidato = 0"]);
+    exigir_sorteio($nenhum["ok"], "Não criou o personalizado sem candidatos.");
+    modo_ativar($nenhum["id"]);
+    exigir_sorteio(count(sortear_dia_candidatos(new DateTimeImmutable($d3))[2]) === 0 && !op_rodizio("trocar_dia", ["data" => $d3, "relogio_id" => "sortear:fifo"])["ok"],
+        "Sem nenhum candidato no roteiro, o Sortear este dia por devia recusar.");
+
+    echo "Fora do sorteio (" . count($dias_do_oc) . " modos, um de cada tipo; o dia de cada um vem do motor): o plano, a escala, o relógio fixo, o Sortear este dia por, o Decida por mim, a Sugestão para agora e o teste do roteiro o deixam de fora; à mão, no pulso e na tabela ele continua; a saída refaz os dias sorteados dele e guarda os escolhidos à mão; a volta e o valor inválido conferem; no personalizado, o Sortear este dia por segue a linha candidato do roteiro.\n";
     $codigo = 0;
 } catch (Throwable $e) {
     fwrite(STDERR, "FALHOU: " . $e->getMessage() . " (" . basename($e->getFile()) . ":" . $e->getLine() . ")\n");
