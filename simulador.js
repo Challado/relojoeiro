@@ -176,7 +176,7 @@ function montarSimulador() {
         + el("label", {}, t("Até {1}", {1: el("input", {"type": "date", "id": "p-ate", "min": OP.periodo.min, "value": estado.ate})}))
         + el("label", {}, t("Semente {1}", {1: el("input", {"type": "number", "id": "p-semente", "inputmode": "numeric", "min": 1, "value": estado.semente, "placeholder": t("vazio: uma nova")})})))
       + el("p", {"class": "nota"}, t("De amanhã em diante (hoje fica como está), no máximo {1} dias. A mesma semente dá o mesmo sorteio; vazia, uma nova a cada simulação.", {1: OP.periodo.max_dias})))
-    + estado.cenarios.map(cartaoCenario).join("")
+    + el("div", {"class": "sim-cenarios"}, estado.cenarios.map(cartaoCenario).join(""))
     + el("div", {"class": "botoes"}, el("button", {"type": "button", "class": "leve", "id": "mais-cenario", "disabled": estado.cenarios.length >= OP.max_cenarios,
       "title": estado.cenarios.length >= OP.max_cenarios ? t("no máximo {1} cenários", {1: OP.max_cenarios}) : ""}, t("+ Cenário")))
     + formVariar()

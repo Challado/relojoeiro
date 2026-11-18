@@ -1504,7 +1504,7 @@ table.compacta th { font-size: .78rem; text-transform: uppercase; letter-spacing
 table.compacta td { vertical-align: middle; }
 
 /* quadros um embaixo do outro: sempre com espaço entre eles (dentro de uma grade, quem separa é a grade) */
-:not(.config-grade):not(.modelos) > .cartao-config + .cartao-config { margin-top: 1rem; }
+:not(.config-grade):not(.modelos):not(.sim-cenarios) > .cartao-config + .cartao-config { margin-top: 1rem; }
 /* botões depois de uma tabela: separados dela, alinhados à esquerda */
 .rolagem + .botoes, table + .botoes, .rolagem + form .botoes { margin-top: .9rem; }
 
@@ -2225,13 +2225,24 @@ form.marcar-pulso button { white-space: nowrap; }
 
 /* o Simulador: os cenários lado a lado na grade, a lista dos relógios do sorteio em colunas, e na comparação o melhor de cada
    medida em destaque; nos dias, o que muda em relação ao plano de agora e o dia escolhido à mão */
-.simulador .sim-cenario { margin: 0 0 1rem; }
+.simulador .sim-cenario { margin: 0; }
+/* os quadros do simulador são blocos (o fieldset geral é uma linha flexível, que encolhia a grade dos campos e jogava os
+   relógios e as notas para o lado); os campos de cada quadro na grade da largura toda, e os cenários lado a lado */
+.simulador fieldset.cartao-config { display: block; margin: 0 0 1rem; }
+.simulador fieldset.cartao-config > .form-grade + * { margin-top: .6rem; }
+.simulador .sim-cenarios { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr)); gap: 1rem; margin: 0 0 1rem; align-items: start; }
+.simulador .sim-cenarios > .cartao-config { margin: 0; }
+.simulador .form-grade { align-content: start; }
+.simulador .sim-cenario .form-grade > label:first-child { grid-column: 1 / -1; }
+.simulador #mais-cenario { margin-bottom: 1rem; }
+.simulador #resultado { margin-top: 1.5rem; }
+.simulador tr.sim-aplicar button { white-space: nowrap; }
 .simulador .sim-cenario legend, .simulador .sim-periodo legend, .simulador .sim-variar legend { font-weight: 600; }
 .simulador label.desabilitado { color: var(--cinza); }
 .simulador .sim-relogios summary { cursor: pointer; margin: .4rem 0; }
 .simulador .sim-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .2rem 1rem; }
-.simulador table.sim-comparacao th[scope="row"] { text-align: left; font-weight: 500; }
-.simulador table.sim-comparacao .sim-col { min-width: 10rem; vertical-align: top; }
+.simulador table.sim-comparacao th[scope="row"] { text-align: left; font-weight: 500; white-space: normal; min-width: 9rem; max-width: 18rem; }
+.simulador table.sim-comparacao .sim-col { min-width: 10rem; max-width: 20rem; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
 .simulador .sim-numero { display: block; font-size: .78rem; color: var(--cinza); }
 .simulador td.sim-melhor { font-weight: 700; color: var(--safira); }
 .simulador table.sim-dias td.sim-muda { background: #eef3fb; }
