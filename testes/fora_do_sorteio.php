@@ -52,21 +52,63 @@ try {
     $linha = function ($id) { return linha("SELECT * FROM relogio WHERE id = ?", [$id]); };
     exigir_sorteio((int)$linha($oc)["sorteio"] === 1 && relogio_no_sorteio($linha($oc)), "O relógio novo devia entrar no sorteio.");
 
-    // ---- antes: a fila e o menos usado pegam o Ocasião (nunca usado), no Sortear este dia por e na Sugestão para agora
-    // um dia útil (o modo de fábrica sorteia no fim de semana só entre os tradicionais, e os relógios daqui são smartwatches)
-    $util = 3;
-    while ((int)(new DateTimeImmutable($dia($util)))->format("N") > 5) {
-        $util++;
-    }
-    $s = op_rodizio("trocar_dia", ["data" => $dia($util), "relogio_id" => "sortear:fifo"]);
-    exigir_sorteio($s["ok"] && (int)plano_do_dia($dia($util))["relogio_id"] === $oc, "Antes de sair do sorteio, a fila devia pegar o Ocasião: " . json_encode($s));
-    exigir_sorteio(op_rodizio("trocar_dia", ["data" => $dia($util), "relogio_id" => 0])["ok"], "O dia útil não voltou a ser sorteado.");
-    exigir_sorteio((int)(sugestao_agora("menos_usado")["sugestao"]["relogio_id"] ?? 0) === $oc, "Antes de sair do sorteio, a sugestão pelo menos usado devia ser o Ocasião.");
-
-    // ---- o modo semanal por dia, uma semana: o plano sorteado inclui o Ocasião (pela fila); um dia dele escolhido à mão
+    // ---- os modos do teste (só cadastrados aqui; cada um é ativado no seu trecho): um por dia, todo dia, pela fila; a escala
+    // pela fila; o relógio fixo (o Ocasião) num bloco; e um personalizado; e um em que o smartwatch só entra no domingo. Com os de fábrica, há um modo de cada tipo
     $modo = op_modos("salvar", ["nome" => "Um por dia", "tipo" => "dia_semana", "selecao" => "fifo", "semanas" => 2,
         "blocos" => [["nome" => "Todo dia", "no_id" => "", "dias" => [1, 2, 3, 4, 5, 6, 7], "um_por" => "dia"]]]);
     exigir_sorteio($modo["ok"], "Não criou o modo: " . implode(" ", $modo["erros"] ?? []));
+    $esc = op_modos("salvar", ["nome" => "Escala", "tipo" => "escala", "selecao" => "fifo", "escala_dias" => 14,
+        "blocos" => [["nome" => "Todo dia", "no_id" => "", "dias" => [1, 2, 3, 4, 5, 6, 7], "um_por" => "dia"]]]);
+    exigir_sorteio($esc["ok"], "Não criou a escala: " . implode(" ", $esc["erros"] ?? []));
+    $fixo = op_modos("salvar", ["nome" => "Fixo", "tipo" => "dia_semana", "selecao" => "inteligente", "semanas" => 1,
+        "blocos" => [["nome" => "Todo dia", "relogio_id" => $oc, "dias" => [1, 2, 3, 4, 5, 6, 7], "um_por" => "dia"]]]);
+    exigir_sorteio($fixo["ok"], "Não criou o modo com o relógio fixo: " . implode(" ", $fixo["erros"] ?? []));
+    // (o smartwatch só no domingo: o dia que o motor acha tem de ser um domingo, em qualquer dia em que o teste rode)
+    $domingo = op_modos("salvar", ["nome" => "Só no domingo", "tipo" => "dia_semana", "selecao" => "fifo", "semanas" => 1,
+        "blocos" => [["nome" => "Domingo", "no_id" => $grupo, "dias" => [7], "um_por" => "dia"],
+            ["nome" => "Os outros dias", "no_id" => (int)valor("SELECT id FROM no WHERE nome = 'Tradicional'"), "dias" => [1, 2, 3, 4, 5, 6], "um_por" => "dia"]]]);
+    exigir_sorteio($domingo["ok"], "Não criou o modo do domingo: " . implode(" ", $domingo["erros"] ?? []));
+    $pers = op_modos("salvar", ["nome" => "Roteiro", "tipo" => "personalizado", "semanas" => 1, "roteiro" => "candidato = 1\nnota = dias_sem_uso"]);
+    exigir_sorteio($pers["ok"], "Não criou o modo personalizado: " . implode(" ", $pers["erros"] ?? []));
+
+    // ---- antes: em cada modo cadastrado (os de fábrica, os daqui e os que vierem), a fila pega o Ocasião (nunca usado) no
+    // primeiro dia em que o modo o deixa ser sorteado. Esse dia vem do motor (sortear_dia_candidatos: o bloco do modo que
+    // cobre o dia e o grupo dele), não de uma regra do teste (dia útil, fim de semana): o modo novo, ou outro modo de fábrica,
+    // entra sozinho. Num modo em que ele nunca é candidato (o "Um por semana" de fábrica sorteia só os tradicionais, e os
+    // relógios daqui são smartwatches), confere o outro lado: a fila não o pega. Duas semanas bastam para qualquer bloco
+    $ativo_antes = modo_ativo();
+    $dia_do_oc = function () use ($oc, $hoje) {
+        for ($n = 1; $n <= 14; $n++) {
+            $d = $hoje->modify("+" . $n . " day");
+            if (isset(sortear_dia_candidatos($d)[2][$oc])) {
+                return $d->format("Y-m-d");
+            }
+        }
+        return null;
+    };
+    $dias_do_oc = [];
+    foreach (linhas("SELECT id, nome, tipo FROM modo ORDER BY id") as $m) {
+        modo_ativar((int)$m["id"]);
+        sql("DELETE FROM plano");
+        $d = $dia_do_oc();
+        $dias_do_oc[(int)$m["id"]] = $d;
+        $alvo = $d ?? $dia(1);
+        $s = op_rodizio("trocar_dia", ["data" => $alvo, "relogio_id" => "sortear:fifo"]);
+        $pegou = (int)(plano_do_dia($alvo)["relogio_id"] ?? 0) === $oc;
+        exigir_sorteio($d === null ? !$pegou : ($s["ok"] && $pegou), "Antes de sair do sorteio, no modo " . $m["nome"] . " (" . $m["tipo"] . "), "
+            . ($d === null ? "a fila pegou o Ocasião, que o modo não deixa ser sorteado" : "a fila devia pegar o Ocasião em " . $d) . ": " . json_encode([$s["mensagem"] ?? "", $s["erros"] ?? []]));
+    }
+    $d7 = $dias_do_oc[(int)$domingo["id"]] ?? null;
+    exigir_sorteio($d7 !== null && (new DateTimeImmutable($d7))->format("N") === "7", "No modo Só no domingo, o dia achado devia ser um domingo: " . json_encode($d7));
+    sql("DELETE FROM plano");
+    modo_ativar($ativo_antes);
+    // um modo de cada tipo (o tipo novo precisa de um modo aqui em cima), e o teste não é vazio: algum modo o sorteia
+    $faltam = array_diff(array_column(modo_tipos_lista(), "chave"), array_column(linhas("SELECT tipo FROM modo"), "tipo"));
+    exigir_sorteio(count($faltam) === 0, "Nenhum modo do tipo " . implode(", ", $faltam) . " foi conferido: cadastre um no começo deste teste.");
+    exigir_sorteio(count(array_filter($dias_do_oc)) > 0, "Nenhum modo deixa o Ocasião ser sorteado: o teste não confere nada.");
+    exigir_sorteio((int)(sugestao_agora("menos_usado")["sugestao"]["relogio_id"] ?? 0) === $oc, "Antes de sair do sorteio, a sugestão pelo menos usado devia ser o Ocasião.");
+
+    // ---- o modo semanal por dia, uma semana: o plano sorteado inclui o Ocasião (pela fila); um dia dele escolhido à mão
     modo_ativar($modo["id"]);
     sql("DELETE FROM plano");
     garantir_plano($hoje);
@@ -111,9 +153,6 @@ try {
         "O teste do roteiro devia mostrar o Ocasião fora do sorteio e não escolhê-lo.");
 
     // ---- e a escala inteligente (pela fila: sem o Ocasião, ninguém nunca usado)
-    $esc = op_modos("salvar", ["nome" => "Escala", "tipo" => "escala", "selecao" => "fifo", "escala_dias" => 14,
-        "blocos" => [["nome" => "Todo dia", "no_id" => "", "dias" => [1, 2, 3, 4, 5, 6, 7], "um_por" => "dia"]]]);
-    exigir_sorteio($esc["ok"], "Não criou a escala: " . implode(" ", $esc["erros"] ?? []));
     modo_ativar($esc["id"]);
     sql("DELETE FROM plano WHERE origem = 'sorteio'");
     cfg_set("escala_fim", "");
@@ -121,14 +160,29 @@ try {
     exigir_sorteio((int)valor("SELECT COUNT(*) FROM plano WHERE data >= ?", [$dia(0)]) >= 7 && $do_oc("sorteio") === 0, "A escala sorteou o relógio fora do sorteio.");
 
     // ---- o relógio fixo de um bloco também não vale: o bloco dele fica sem relógio sorteado
-    $fixo = op_modos("salvar", ["nome" => "Fixo", "tipo" => "dia_semana", "selecao" => "inteligente", "semanas" => 1,
-        "blocos" => [["nome" => "Todo dia", "relogio_id" => $oc, "dias" => [1, 2, 3, 4, 5, 6, 7], "um_por" => "dia"]]]);
-    exigir_sorteio($fixo["ok"], "Não criou o modo com o relógio fixo: " . implode(" ", $fixo["erros"] ?? []));
     modo_ativar($fixo["id"]);
     sql("DELETE FROM plano WHERE origem = 'sorteio'");
     garantir_plano($hoje);
     exigir_sorteio($do_oc("sorteio") === 0, "O relógio fixo fora do sorteio foi sorteado.");
+
+    // ---- e em cada modo cadastrado (os mesmos do começo): nem o plano (ou a escala) nem o Sortear este dia por, pela fila,
+    // no dia em que o modo o sorteava, escolhem o Ocasião
+    foreach (linhas("SELECT id, nome, tipo FROM modo ORDER BY id") as $m) {
+        modo_ativar((int)$m["id"]);
+        sql("DELETE FROM plano WHERE origem = 'sorteio'");
+        cfg_set("escala_fim", "");
+        garantir_plano($hoje);
+        exigir_sorteio($do_oc("sorteio") === 0, "Fora do sorteio, o plano do modo " . $m["nome"] . " (" . $m["tipo"] . ") sorteou o Ocasião.");
+        $d = $dias_do_oc[(int)$m["id"]] ?? null;
+        if ($d !== null && $d !== $manual_d) {
+            $s = op_rodizio("trocar_dia", ["data" => $d, "relogio_id" => "sortear:fifo"]);
+            exigir_sorteio((int)(plano_do_dia($d)["relogio_id"] ?? 0) !== $oc, "Fora do sorteio, o Sortear este dia pela fila do modo " . $m["nome"] . " escolheu o Ocasião em " . $d . ".");
+        }
+    }
+    sql("DELETE FROM plano WHERE origem = 'sorteio'");
+    cfg_set("escala_fim", "");
     modo_ativar($modo["id"]);
+    garantir_plano($hoje);
 
     // ---- mas ele continua na coleção: à mão, hoje e num dia que vem; o Usando hoje; a carga e os avisos; a linha da tabela
     $mao = op_rodizio("trocar_dia", ["data" => $dia(2), "relogio_id" => $oc]);
@@ -153,7 +207,7 @@ try {
     exigir_sorteio(op_relogio("salvar", ["id" => $oc, "disponivel" => "0"])["ok"] && !relogio_no_sorteio($linha($oc)), "O indisponível entrou no sorteio.");
     exigir_sorteio(!op_rodizio("trocar_dia", ["data" => $dia(13), "relogio_id" => $oc])["ok"], "O indisponível foi escolhido à mão.");
 
-    echo "Fora do sorteio: o plano, a escala, o relógio fixo, o Sortear este dia por, o Decida por mim, a Sugestão para agora e o teste do roteiro o deixam de fora; à mão, no pulso e na tabela ele continua; a saída refaz os dias sorteados dele e guarda os escolhidos à mão; a volta e o valor inválido conferem.\n";
+    echo "Fora do sorteio (" . count($dias_do_oc) . " modos, um de cada tipo; o dia de cada um vem do motor): o plano, a escala, o relógio fixo, o Sortear este dia por, o Decida por mim, a Sugestão para agora e o teste do roteiro o deixam de fora; à mão, no pulso e na tabela ele continua; a saída refaz os dias sorteados dele e guarda os escolhidos à mão; a volta e o valor inválido conferem.\n";
     $codigo = 0;
 } catch (Throwable $e) {
     fwrite(STDERR, "FALHOU: " . $e->getMessage() . " (" . basename($e->getFile()) . ":" . $e->getLine() . ")\n");

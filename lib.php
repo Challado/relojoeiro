@@ -6437,6 +6437,22 @@ function relogios_do_sorteio($rels)
     return array_filter($rels, "relogio_no_sorteio");
 }
 
+// Quem o Sortear este dia por pode escolher num dia ($dia: DateTimeImmutable), pelo modo ativo: os relógios do sorteio
+// (relogio_no_sorteio) do grupo do bloco que cobre o dia (o relógio fixo do bloco não vale: é um sorteio) ou, sem modo ou
+// sem bloco no dia, todos os do sorteio. Devolve [o modo ou null, o bloco ou null, id => relógio, na ordem do cadastro]
+function sortear_dia_candidatos($dia)
+{
+    $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]) ?: null;
+    $bloco = $modo ? bloco_do_dia(modo_blocos((int)$modo["id"]), $dia) : null;
+    $cands = [];
+    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
+        if (relogio_no_sorteio($r) && ($bloco === null || $bloco["no_id"] === null || in_array((int)$bloco["no_id"], no_cadeia($r["no_id"] ?? 0), true))) {
+            $cands[(int)$r["id"]] = $r;
+        }
+    }
+    return [$modo, $bloco, $cands];
+}
+
 // Sorteia um dia só, agora, por uma forma de escolha ($selecao: a chave de formas_de_escolha), entre os relógios disponíveis
 // do bloco do modo ativo que cobre o dia (do grupo dele; o relógio fixo não vale: é um sorteio) ou, sem modo ou sem bloco no
 // dia, entre todos. O relógio que o dia já tem fica de fora, se houver outro (quem sorteia o dia quer trocar). Os dias
@@ -6446,19 +6462,7 @@ function sortear_dia($dia, $selecao)
 {
     $hoje = hoje_da_colecao();
     $agora = time();
-    $modo = linha("SELECT * FROM modo WHERE id = ?", [modo_ativo()]) ?: null;
-    $bloco = null;
-    foreach ($modo ? modo_blocos((int)$modo["id"]) : [] as $b) {
-        if ($bloco === null && in_array($dia->format("N"), explode(",", $b["dias"]), true)) {
-            $bloco = $b;
-        }
-    }
-    $cands = [];
-    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY id") as $r) {
-        if (relogio_no_sorteio($r) && ($bloco === null || $bloco["no_id"] === null || in_array((int)$bloco["no_id"], no_cadeia($r["no_id"] ?? 0), true))) {
-            $cands[(int)$r["id"]] = $r;
-        }
-    }
+    [$modo, $bloco, $cands] = sortear_dia_candidatos($dia);
     $fora = [];
     $atual = plano_do_dia($dia->format("Y-m-d"));
     if ($atual && isset($cands[(int)$atual["relogio_id"]]) && count($cands) > 1) {
