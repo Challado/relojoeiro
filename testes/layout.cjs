@@ -686,10 +686,57 @@ async function estressar() {
   if (!fp || fp.test('ficha')) {
     await conferirEspelho(relatorio, total);
   }
-  const b = await chromium.launch();
+  // as telas em grupos de LAYOUT_PARALELO (6): as 18 de uma vez num Chromium só, por uns 20 minutos, pesavam demais e o
+  // navegador às vezes caía no meio ("Target page, context or browser has been closed"). Se ele cair mesmo assim, um
+  // navegador novo refaz só as telas interrompidas, uma vez cada (os problemas de uma tela só entram no relatório quando
+  // ela termina, para a tela refeita não contar em dobro); a que derruba o navegador de novo vira erro no relatório
+  const PARALELO = Math.max(1, parseInt(process.env.LAYOUT_PARALELO || '6', 10));
+  const fila = TELAS.filter((t) => !ft || ft.test(t.nome)).map((t) => ({ tela: t, vez: 0 }));
+  let b = await chromium.launch();
   await conferirDetector(b);
-  await Promise.all(TELAS.filter((t) => !ft || ft.test(t.nome)).map((t) => auditarTela(b, t, fp, relatorio, total)));
+  let abrindo = null;
+  let reaberto = 0;
+  let feitas = 0;
+  const navegador = () => {
+    if (b.isConnected()) return Promise.resolve(b);
+    if (!abrindo) {
+      console.log('o navegador caiu: abrindo outro');
+      reaberto++;
+      abrindo = chromium.launch().then((novo) => { b = novo; abrindo = null; return novo; });
+    }
+    return abrindo;
+  };
+  let pendentes = fila.length;
+  await Promise.all(Array.from({ length: Math.min(PARALELO, fila.length) }, async () => {
+    // até a última tela terminar: a refeita volta para a fila depois que as outras já saíram dela
+    while (pendentes > 0) {
+      if (fila.length === 0) {
+        await new Promise((r) => setTimeout(r, 500));
+        continue;
+      }
+      const item = fila.shift();
+      const rel = [];
+      const tot = {};
+      try {
+        await auditarTela(await navegador(), item.tela, fp, rel, tot);
+        feitas++;
+      } catch (e) {
+        if (item.vez === 0 && /has been closed|disconnected|crashed/i.test(e.message)) {
+          item.vez = 1;
+          console.log('o navegador caiu na tela ' + item.tela.nome + ': ela vai ser refeita (' + e.message.split('\n')[0] + ')');
+          fila.push(item);
+          continue;
+        }
+        rel.push([item.tela.nome, '-', 'erro', 'a conferência parou: ' + e.message.split('\n')[0], ''].join('\t'));
+        tot.erro = (tot.erro || 0) + 1;
+      }
+      relatorio.push(...rel);
+      for (const k of Object.keys(tot)) total[k] = (total[k] || 0) + tot[k];
+      pendentes--;
+    }
+  }));
   await b.close();
+  console.log('telas conferidas: ' + feitas + ' de ' + TELAS.filter((t) => !ft || ft.test(t.nome)).length + (reaberto > 0 ? ' (o navegador caiu e foi reaberto ' + reaberto + ' vez' + (reaberto > 1 ? 'es' : '') + ')' : ''));
   relatorio.sort();
   fs.writeFileSync(SAIDA + '/relatorio.tsv', relatorio.join('\n') + '\n');
   // agrupado: o mesmo problema na mesma página, com as telas em que aparece
