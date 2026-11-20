@@ -1312,7 +1312,7 @@ $MIGRACOES = [
     "v54" => ["migracao_v54.sql", tk("os relatórios cadastrados: em Cadastros › Relatórios e pela API (recurso=relatorios), cada um com as colunas (uma expressão por relógio, o formato e a conta do rodapé), o filtro, a ordem, o agrupamento e quais relógios; eles aparecem no catálogo dos relatórios (Meus relatórios), com o CSV"), "relatorio"],
     "v55" => ["migracao_v55.sql", tk("o SQL pela API (recurso=sql, só o master: SELECT, INSERT, ALTER TABLE ... ADD COLUMN e, com a aprovação na Configuração do sistema, UPDATE e DELETE), com o registro de cada execução; e os parâmetros de operação do config.php (o cadastro aberto, os dias da demonstração e do convite, o tamanho dos documentos, a espera das telas, o lote, a cópia de segurança) também na Configuração › Sistema e pela API"), "sql_execucao"],
     "v56" => ["migracao_v56.sql", tk("o rodízio em três níveis: padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração"), "sistema.chave=migracao_v56", "migracao_v56_dados"],
-    "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem"],
+    "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem|sistema.chave=migracao_v67"],
     "v59" => ["migracao_v59.sql", tk("o menos usado: a forma de escolha (o relógio com menos dias de uso no total) e o critério Menos usado nas notas; a escala inteligente escolhe a forma e os critérios que usa no cálculo"), "modo_criterio", "migracao_v59_dados"],
     "v60" => ["migracao_v60.sql", tk("a coluna Tempo de uso na tabela dos relógios (o tempo no pulso somado, em dias, horas, minutos e segundos), com o formato de total Tempo e a variável tempo_de_uso; e a escolha das colunas da tabela da página Hoje, em três níveis (padrão do sistema, preferência do usuário e escolha da coleção)"), "sistema.chave=migracao_v60", "migracao_v60_dados"],
     "v61" => ["migracao_v61.sql", tk("o construtor de colunas da tabela dos relógios (Cadastros › Colunas): colunas suas, escolhendo o campo do banco, a função (soma, média, menor, maior, contagem) e o formato (casas decimais, moeda, tempo, data), ou escrevendo a expressão; elas entram na escolha das colunas da página Hoje"), "coluna"],
@@ -1322,6 +1322,7 @@ $MIGRACOES = [
     "v64" => ["migracao_v64.sql", tk("as saídas da coleção: cada vez que um relógio é emprestado ou sai (vendido, presenteado, arquivado e os motivos do seu cadastro), ficam a data, o valor recebido, para quem foi e a observação, e a volta fecha a saída sem apagar o histórico; e as abas por situação em cima da tabela dos relógios e da galeria (na coleção, emprestado, desejado, vendido...), cada uma com o que é dela"), "sistema.chave=migracao_v64", "migracao_v64_dados"],
     "v65" => ["migracao_v65.sql", tk("o relógio fora do sorteio do rodízio: a marca Entra no sorteio do rodízio, no cadastro do relógio. Desmarcada, o rodízio nunca escolhe o relógio sozinho (o plano, a escala, o Decida por mim, o Sortear este dia por e a Sugestão para agora), mas ele continua na coleção: a carga, os avisos, o Pôs no pulso, o Usando hoje e a escolha à mão de um dia. O Relógio ativo desmarcado continua tirando o relógio de tudo"), "relogio.sorteio"],
     "v66" => ["migracao_v66.sql", tk("a vistoria periódica: a Configuração ganha \"Vistoria: a cada quantos dias conferir cada relógio\" (0 desliga, e vem desligada); ligada, cada relógio ativo ganha o aviso Vistoria, que vence esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro) e se resolve com o lançamento Vistoria, pelo botão em Hoje é dia de ou pela página Vistorias, várias de uma vez; um serviço ou o fim de uma manutenção só contam como vistoria se você marcar"), "sistema.chave=migracao_v66", "migracao_v66_dados"],
+    "v67" => ["migracao_v67.sql", tk("o rodízio ligado e o passar o relógio de ontem sem uso para hoje entram nas opções em três níveis, como as outras, e vão para a página Rodízio › Ajustes do rodízio (as abas Esta coleção, Minhas coleções e Sistema): o padrão do sistema sai dos parâmetros de operação, a preferência do dono sai das colunas do usuário (que saem do banco), e a retomada do rodízio fica em cada coleção"), "sistema.chave=migracao_v67", "migracao_v67_dados"],
 ];
 
 // O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
@@ -1401,6 +1402,51 @@ function migracao_v66_dados($nova = false)
         });
     }
     sis_set("migracao_v66", "1");
+}
+
+// v67: o rodízio ligado e o passar o relógio de ontem para hoje no registro das opções (opcoes.php). Copia o padrão do
+// sistema (o parâmetro param_<chave> vira padrao_<chave>), a preferência de cada dono (as colunas do usuário viram linhas de
+// usuario_opcao) e a retomada do rodízio (a que valia para cada coleção que herdava: a dela, a do dono e a do sistema, a maior,
+// fica na coleção); depois tira as colunas do usuário. Numa instalação nova ($nova), o schema.sql já não as tem: só a marca
+function migracao_v67_dados($nova = false)
+{
+    if (!$nova && banco_tem_coluna("usuario", "rodizio_ativo")) {
+        sem_escopo(function () {
+            foreach (["rodizio_ativo", "recupera_ontem"] as $k) {
+                $v = trim((string)sis("param_" . $k));
+                if (in_array($v, ["0", "1"], true) && trim((string)sis("padrao_" . $k)) === "") {
+                    sis_set("padrao_" . $k, $v);
+                }
+            }
+            $retomada_sistema = (int)sis("rodizio_retomado_em");
+            sql("DELETE FROM sistema WHERE chave IN ('param_rodizio_ativo', 'param_recupera_ontem', 'rodizio_retomado_em')");
+            sis(null);
+            foreach (linhas("SELECT id, rodizio_ativo, recupera_ontem FROM usuario ORDER BY id") as $u) {
+                foreach (["rodizio_ativo", "recupera_ontem"] as $k) {
+                    if ($u[$k] !== null && $u[$k] !== "") {
+                        sql("DELETE FROM usuario_opcao WHERE usuario_id = ? AND chave = ?", [(int)$u["id"], $k]);
+                        sql("INSERT INTO usuario_opcao (usuario_id, chave, valor) VALUES (?, ?, ?)", [(int)$u["id"], $k, (string)(int)$u[$k]]);
+                    }
+                }
+            }
+            // a retomada: a coleção com escolha própria já guardava a dela; a que herdava usava a maior entre a dela, a do dono e
+            // (quando o dono também herdava) a do sistema
+            foreach (linhas("SELECT c.id, u.rodizio_ativo, u.rodizio_retomado_em FROM colecao c JOIN usuario u ON u.id = c.dono_id ORDER BY c.id") as $c) {
+                $escolha = (string)valor("SELECT valor FROM config WHERE colecao_id = ? AND chave = 'rodizio_ativo'", [(int)$c["id"]]);
+                if (in_array($escolha, ["0", "1"], true)) {
+                    continue;
+                }
+                $propria = (int)valor("SELECT valor FROM config WHERE colecao_id = ? AND chave = 'rodizio_retomado_em'", [(int)$c["id"]]);
+                $herdada = max((int)strtotime((string)($c["rodizio_retomado_em"] ?? "")), $c["rodizio_ativo"] === null ? $retomada_sistema : 0);
+                if ($herdada > $propria) {
+                    sql("REPLACE INTO config (colecao_id, chave, valor) VALUES (?, ?, ?)", [(int)$c["id"], "rodizio_retomado_em", (string)$herdada]);
+                }
+            }
+        });
+        banco_script("ALTER TABLE usuario DROP CONSTRAINT ck_usuario_rodizio;\nALTER TABLE usuario DROP CONSTRAINT ck_usuario_recupera_ontem;\n"
+            . "ALTER TABLE usuario DROP COLUMN rodizio_ativo;\nALTER TABLE usuario DROP COLUMN rodizio_retomado_em;\nALTER TABLE usuario DROP COLUMN recupera_ontem;");
+    }
+    sis_set("migracao_v67", "1");
 }
 
 function migracao_v62_dados($nova = false)
@@ -4631,7 +4677,7 @@ function duracao_texto($dias)
 function vistoria_motivo_desligada()
 {
     if ((int)cfg("vistoria_dias") <= 0) {
-        return t("A vistoria está desligada: em Configuração, \"Vistoria: a cada quantos dias conferir cada relógio\" está em 0.");
+        return t("A vistoria está desligada: em Avisos › Ajustes dos avisos, \"Vistoria: a cada quantos dias conferir cada relógio\" está em 0.");
     }
     $ativo = false;
     foreach (avisos_todos()["vistoria"] ?? [] as $v) {
@@ -4910,55 +4956,41 @@ function cfg_set($chave, $valor)
     cfg_cru($chave, (string)$valor);
 }
 
-// O padrão é do sistema; o dono pode substituí-lo para suas coleções, e cada coleção pode substituir o dono.
-// Lê o dono da coleção, mesmo quando o pedido é de um membro ou do cron. Uma consulta por coleção a cada alteração.
-function rodizio_dono()
+// Uma opção ligada/desligada das três hierarquias (opcoes.php) vista por nível, como as páginas Hoje, Plano, Ficha e a API a
+// recebem: ativo (o que vale), colecao e usuario (a escolha de cada nível: true, false ou null quando herda), sistema (o que o
+// sistema faz valer: a escolha do master, senão o padrão de fábrica) e origem (colecao, usuario, sistema ou padrao)
+function opcao_sim_nao_niveis($chave)
 {
-    static $cache = [];
-    $c = colecao_atual();
-    $k = (int)$c . ":" . ($GLOBALS["RODIZIO_USUARIO_VERSAO"] ?? 0) . ":" . fuso_atual();
-    if (!array_key_exists($k, $cache)) {
-        $cache[$k] = $c === null ? null : sem_escopo(function () use ($c) {
-            return linha("SELECT u.id, u.rodizio_ativo, u.rodizio_retomado_em, u.recupera_ontem FROM usuario u JOIN colecao c ON c.dono_id = u.id WHERE c.id = ?", [$c]);
-        });
-    }
-    return $cache[$k];
+    $sn = function ($v) { return in_array($v, ["0", "1"], true) ? $v === "1" : null; };
+    $colecao = $sn(cfg_cru($chave));
+    $usuario = $sn(opcoes_do_usuario(opcoes_dono_id())[$chave] ?? "");
+    [$sistema, $origem_s] = opcao_do_sistema_ou_padrao($chave);
+    return ["ativo" => cfg($chave) === "1", "colecao" => $colecao, "usuario" => $usuario, "sistema" => $sistema === "1",
+        "origem" => $colecao !== null ? "colecao" : ($usuario !== null ? "usuario" : $origem_s)];
 }
 
+// O rodízio ligado (rodizio_ativo, opcoes.php): o padrão é do sistema; o dono pode substituí-lo para suas coleções, e cada
+// coleção pode substituir o dono. Vale o da coleção do pedido, mesmo para um membro ou o cron
 function rodizio_configuracao()
 {
-    $escolha = cfg("rodizio_ativo");
-    $geral = parametro_gravado("rodizio_ativo");
-    $dono = rodizio_dono();
-    $usuario = ($dono["rodizio_ativo"] ?? null) === null ? null : (int)$dono["rodizio_ativo"] === 1;
-    $colecao = in_array($escolha, ["0", "1"], true) ? $escolha === "1" : null;
-    return ["ativo" => $colecao ?? $usuario ?? ($geral !== 0), "colecao" => $colecao, "usuario" => $usuario, "sistema" => $geral !== 0,
-        "origem" => $colecao !== null ? "colecao" : ($usuario !== null ? "usuario" : ($geral !== null ? "sistema" : "padrao"))];
+    return opcao_sim_nao_niveis("rodizio_ativo");
 }
 
 function rodizio_ativo()
 {
-    return rodizio_configuracao()["ativo"];
+    return cfg("rodizio_ativo") !== "0";
 }
 
-// Passar o relógio de ontem para hoje (recupera_ontem), em três níveis como o rodízio: a escolha da coleção (config, vazio
-// herda), a do dono (usuario.recupera_ontem, vazio herda) e a do sistema (o parâmetro recupera_ontem; padrão desligado).
-// Ligado, o relógio do plano de ontem que não foi ao pulso nem um pouquinho passa para hoje e os outros dias do plano
-// andam um dia (plano_recuperar_ontem)
+// Passar o relógio de ontem para hoje (recupera_ontem, opcoes.php; padrão desligado). Ligado, o relógio do plano de ontem que
+// não foi ao pulso nem um pouquinho passa para hoje e os outros dias do plano andam um dia (plano_recuperar_ontem)
 function recupera_ontem_configuracao()
 {
-    $escolha = cfg("recupera_ontem");
-    $dono = rodizio_dono();
-    $usuario = ($dono["recupera_ontem"] ?? null) === null ? null : (int)$dono["recupera_ontem"] === 1;
-    $colecao = in_array($escolha, ["0", "1"], true) ? $escolha === "1" : null;
-    $sistema = parametro_gravado("recupera_ontem") === 1;
-    return ["ativo" => $colecao ?? $usuario ?? $sistema, "colecao" => $colecao, "usuario" => $usuario, "sistema" => $sistema,
-        "origem" => $colecao !== null ? "colecao" : ($usuario !== null ? "usuario" : "sistema")];
+    return opcao_sim_nao_niveis("recupera_ontem");
 }
 
 function recupera_ontem_ativo()
 {
-    return recupera_ontem_configuracao()["ativo"];
+    return cfg("recupera_ontem") === "1";
 }
 
 // O relógio foi ao pulso no dia ($dia, AAAA-MM-DD, o da coleção), nem que seja um pouquinho: alguma sessão do tipo No pulso
@@ -5028,16 +5060,11 @@ function plano_recuperar_ontem($hoje)
     return true;
 }
 
-// Ao retomar no meio do dia, só começa a contar o uso automático a partir da retomada.
+// Ao retomar no meio do dia, só começa a contar o uso automático a partir da retomada: o instante em que o rodízio da coleção
+// voltou a valer (opcoes_efeitos, em qualquer nível que o religou)
 function rodizio_retomado_em()
 {
-    $colecao = (int)cfg("rodizio_retomado_em");
-    if (in_array(cfg("rodizio_ativo"), ["0", "1"], true)) {
-        return $colecao;
-    }
-    $dono = rodizio_dono();
-    return max($colecao, (int)strtotime((string)($dono["rodizio_retomado_em"] ?? "")),
-        ($dono["rodizio_ativo"] ?? null) === null ? (int)sis("rodizio_retomado_em") : 0);
+    return (int)cfg("rodizio_retomado_em");
 }
 
 // O usuário do site que veio no pedido (HTTP Basic, com a senha conferida), ou "" (as páginas e a API)
@@ -5720,7 +5747,7 @@ function modo_escolhe_forma($modo)
 function modo_tipos_lista()
 {
     $explica = [
-        "semana" => t("Um relógio para a semana inteira, do primeiro ao último dia dela (a semana começa no dia da Configuração). Escolha de onde ele sai e o critério; o Sortear de novo sorteia um para cada semana."),
+        "semana" => t("Um relógio para a semana inteira, do primeiro ao último dia dela (a semana começa no dia escolhido em Rodízio › Ajustes do rodízio). Escolha de onde ele sai e o critério; o Sortear de novo sorteia um para cada semana."),
         "semana_fds" => t("Dois trechos na semana: de segunda a sexta e no fim de semana, cada um com o seu grupo e com um relógio para o trecho inteiro ou um por dia."),
         "dia_semana" => t("Um relógio por dia, e cada dia da semana diz de onde ele sai: um grupo, um relógio fixo ou nenhum (dia livre)."),
         "aleatorio" => t("Um relógio por dia, todos com a mesma chance, sem olhar os critérios nem a garantia de rodízio. O de ontem fica de fora, se houver outro."),
@@ -6904,8 +6931,8 @@ function documentos_pasta_erro()
     return $erro;
 }
 
-// O maior documento aceito pelo sistema, em bytes, antes do limite do PHP: o gravado na Configuração do sistema
-// (documentos_limite), senão o DOCUMENTOS_LIMITE do config.php (ou o MANUAL_LIMITE, o nome antigo), senão 100 MB; 0 ou
+// O maior documento aceito pelo sistema, em bytes, antes do limite do PHP: o gravado na página Sistema (Parâmetros de operação,
+// documentos_limite), senão o DOCUMENTOS_LIMITE do config.php (ou o MANUAL_LIMITE, o nome antigo), senão 100 MB; 0 ou
 // negativo: sem limite do sistema
 function documentos_limite_sistema()
 {
@@ -8631,7 +8658,7 @@ function relogio_sai_do_rodizio($id, $hoje_tambem)
         sql("DELETE FROM plano WHERE data = ?", [$hoje->format("Y-m-d")]);
         plano_livre_marcar($hoje->format("Y-m-d"));
         $nota .= trocar_hoje_permitido() ? t(" Hoje ficou livre: escolha outro relógio para hoje, se quiser.")
-            : t(" Hoje ficou sem relógio (a Configuração não deixa trocar o relógio de hoje no próprio dia).");
+            : t(" Hoje ficou sem relógio (os Ajustes do rodízio não deixam trocar o relógio de hoje no próprio dia).");
     }
     $amanha = $hoje->modify("+1 day");
     $tirados = (int)valor("SELECT COUNT(*) FROM plano WHERE relogio_id = ? AND data >= ?", [(int)$id, $amanha->format("Y-m-d")]);
@@ -10086,7 +10113,7 @@ function dia_sem_relogio_permitido()
 // a recusa de um dia sem relógio com a opção desligada: uma frase só, para todas as portas
 function dia_sem_relogio_recusa()
 {
-    return t("Os dias sem relógio estão desligados na Configuração (Dias sem relógio (folga)).");
+    return t("Os dias sem relógio estão desligados em Rodízio › Ajustes do rodízio (Dias sem relógio (folga)).");
 }
 
 // O dia de hoje já começou no pulso: pondo sozinho, passou o início do horário de uso; senão, o relógio do dia já foi posto
@@ -10630,7 +10657,7 @@ function simular_lancamento($rid, $tipo, $ini, $fim, $valor, $so_uso = false)
 }
 
 // O primeiro dia de uma escala que começa agora (o Sortear de novo, o Apagar tudo, a primeira, a de um modo mudado). Pela
-// Configuração (escala_inicio): amanha (o padrão), hoje, ou amanhã quando o dia de hoje já começou no pulso com o relógio do
+// Rodízio › Ajustes do rodízio (escala_inicio): amanha (o padrão), hoje, ou amanhã quando o dia de hoje já começou no pulso com o relógio do
 // plano; hoje, sempre hoje (o de hoje que já começou conta como o 1º dia, e a escala de 7 dias vai até daqui a 6).
 function escala_comeco_novo($hoje)
 {
@@ -11602,7 +11629,7 @@ function backup_ativo()
 function backup_pasta_erro()
 {
     if (!backup_ativo()) {
-        return t("a cópia de segurança está desligada (Configuração › Sistema, ou BACKUP_ATIVO = false no config.php)");
+        return t("a cópia de segurança está desligada (Sistema › Parâmetros de operação, ou BACKUP_ATIVO = false no config.php)");
     }
     if (!defined("BACKUP_PASTA") || trim((string)BACKUP_PASTA) === "") {
         return t("sem BACKUP_PASTA no config.php: a cópia de segurança automática está desligada");
@@ -11819,7 +11846,7 @@ function lote_maximo()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Os parâmetros de operação do sistema inteiro: o master muda em Configuração › Sistema, ou pela API (recurso=config,
+// Os parâmetros de operação do sistema inteiro: o master muda na página Sistema, ou pela API (recurso=config,
 // parametros[<chave>]=<valor>; vazio volta a valer o config.php). Cada um vale o gravado no sistema (a tabela sistema, a
 // chave param_<chave>); sem ele, a linha de mesmo nome do config.php; sem as duas, o padrão. O que é credencial, chave,
 // caminho ou endereço de servidor (o banco, o e-mail, a pasta das cópias, os segredos) e o TEXTOS_ESTRITO (lido antes do
@@ -11827,8 +11854,6 @@ function lote_maximo()
 // padrão, o menor e o maior (no inteiro)]
 // ---------------------------------------------------------------------------------------------------------------------
 const PARAMETROS_SISTEMA = [
-    "rodizio_ativo" => [null, "sim_nao", 1, 0, 1],
-    "recupera_ontem" => [null, "sim_nao", 0, 0, 1],
     "cadastro_aberto" => ["CADASTRO_ABERTO", "sim_nao", 1, 0, 1],
     "demo_dias" => ["DEMO_DIAS", "inteiro", 30, 0, 3650],
     "convite_dias" => ["CONVITE_DIAS", "inteiro", 7, 1, 365],
@@ -11845,8 +11870,6 @@ const PARAMETROS_SISTEMA = [
 function parametros_sistema_textos()
 {
     return [
-        "rodizio_ativo" => [t("Rodízio: padrão do sistema"), t("1: ligado; 0: desligado. Cada coleção pode herdar este padrão ou escolher seu próprio valor.")],
-        "recupera_ontem" => [t("Passar o relógio de ontem para hoje: padrão do sistema"), t("1: o relógio do plano de ontem que não foi ao pulso nem um pouquinho passa para hoje, e os outros dias do plano andam um dia; 0: desligado. Cada usuário e cada coleção pode herdar este padrão ou escolher o seu.")],
         "cadastro_aberto" => [t("Cadastro aberto"), t("1: qualquer um cria a conta pela página de cadastro (com os dias de demonstração); 0: só entra quem o master cria ou quem tem um convite")],
         "demo_dias" => [t("Dias da demonstração"), t("os dias da conta criada pelo cadastro aberto, até virar oficial (0: já nasce oficial)")],
         "convite_dias" => [t("Dias do convite"), t("os dias que um convite ou um pedido de acesso espera; depois, o cron apaga")],
@@ -11874,8 +11897,7 @@ function parametros_sistema_lista()
     $valores = ["cadastro_aberto" => cadastro_aberto() ? 1 : 0, "demo_dias" => demo_dias(), "convite_dias" => convite_dias(),
         "documentos_limite" => documentos_limite_sistema(), "api_espera" => api_espera_segundos(), "lote_maximo" => lote_maximo(),
         "backup_ativo" => backup_ativo() ? 1 : 0, "backup_manter" => backup_manter(), "backup_documentos" => backup_com_documentos() ? 1 : 0,
-        "sql_alteracoes" => sql_alteracoes_aprovadas() ? 1 : 0,
-        "rodizio_ativo" => parametro_gravado("rodizio_ativo") !== 0 ? 1 : 0, "recupera_ontem" => parametro_gravado("recupera_ontem") === 1 ? 1 : 0];
+        "sql_alteracoes" => sql_alteracoes_aprovadas() ? 1 : 0];
     $textos = parametros_sistema_textos();
     $res = [];
     foreach (PARAMETROS_SISTEMA as $k => [$linha, $tipo, $padrao, $min, $max]) {
@@ -11918,7 +11940,7 @@ function parametros_sistema_conferir($vindos)
     return [$erros, $gravar];
 }
 
-// UPDATE e DELETE pelo recurso=sql: só com a aprovação ligada na Configuração do sistema (sql_alteracoes; sem ela, não)
+// UPDATE e DELETE pelo recurso=sql: só com a aprovação ligada na página Sistema, em Parâmetros de operação (sql_alteracoes; sem ela, não)
 function sql_alteracoes_aprovadas()
 {
     return parametro_gravado("sql_alteracoes") === 1;
@@ -11928,7 +11950,7 @@ function sql_alteracoes_aprovadas()
 // O SQL pelo recurso=sql (só o master; sem o escopo das coleções: o banco inteiro). Um comando por vez, no SQL do MySQL (o
 // mesmo das migrações: cada banco recebe a tradução dele). Valem: SELECT (as linhas, até o limite), INSERT, ALTER TABLE
 // <tabela> ADD [COLUMN] <coluna> <tipo> (um campo novo, NULL ou com DEFAULT, numa tabela que não é do sistema) e, só com a
-// aprovação ligada na Configuração do sistema (sql_alteracoes), UPDATE e DELETE. O resto (DROP, TRUNCATE, CREATE, o ALTER
+// aprovação ligada na página Sistema (sql_alteracoes), UPDATE e DELETE. O resto (DROP, TRUNCATE, CREATE, o ALTER
 // que não é ADD COLUMN, o SELECT ... INTO, o parâmetro ?, mais de um comando) é recusado antes de ir ao banco, e também:
 // comentário no comando (/* */, -- e #: o MySQL executa o que está em /*! */ e o tradutor não vê), o INSERT que atualiza
 // (ON DUPLICATE KEY, ON CONFLICT, OR REPLACE: seria um UPDATE sem a aprovação), o INSERT na tabela sistema (a aprovação mora
@@ -12034,7 +12056,7 @@ function sql_classificar($comando)
             return [strtolower($primeira), $texto, t("Palavra não aceita no comando: {1}.", [1 => implode(", ", $proibidas)])];
         }
         if ($primeira !== "INSERT" && !sql_alteracoes_aprovadas()) {
-            return [strtolower($primeira), $texto, t("UPDATE e DELETE só rodam com a aprovação ligada na Configuração do sistema (SQL: UPDATE e DELETE aprovados).")];
+            return [strtolower($primeira), $texto, t("UPDATE e DELETE só rodam com a aprovação ligada em Sistema › Parâmetros de operação (SQL: UPDATE e DELETE aprovados).")];
         }
         // o registro do SQL não se escreve (nem citado dentro do comando)
         foreach ($sem_espaco as $x) {
@@ -12051,7 +12073,7 @@ function sql_classificar($comando)
             }
             $alvo = sql_tabela_alvo($sem_espaco, "INSERT");
             if (in_array($alvo, SQL_TABELAS_SEM_INSERT, true)) {
-                return ["insert", $texto, t("A tabela {1} só muda pela Configuração: o INSERT do SQL não escreve nela.", [1 => $alvo])];
+                return ["insert", $texto, t("A tabela {1} só muda pelas páginas Configuração e Sistema: o INSERT do SQL não escreve nela.", [1 => $alvo])];
             }
         }
         return [strtolower($primeira), $texto, ""];

@@ -92,7 +92,7 @@ async function vistoriasDo(id) {
     // desligada: a página diz por quê, e a caixa do serviço fica desabilitada com o motivo
     await api({ recurso: 'config', acao: 'salvar', vistoria_dias: '0' }, true);
     await p.goto(BASE + 'vistorias.php', { waitUntil: 'networkidle' });
-    conferir(await p.locator('#vistorias .aviso').count() === 1 && await p.locator('#vistorias a[href="configuracao.php"]').count() === 1, 'desligada, a página diz por quê e leva à Configuração');
+    conferir(await p.locator('#vistorias .aviso').count() === 1 && await p.locator('#vistorias a[href="avisos.php#ajustes-avisos"]').count() === 1, 'desligada, a página diz por quê e leva a Avisos › Ajustes dos avisos');
     await p.goto(BASE + 'ficha.php?id=' + lista.relogios[0].relogio_id, { waitUntil: 'networkidle' });
     conferir(await caixaServ.isDisabled() && (await p.locator('.servico-form .caixa-vistoria small').first().textContent()).length > 0, 'desligada, a caixa do serviço fica desabilitada, com o motivo');
     conferir(erros.length === 0, 'nenhum erro de página: ' + JSON.stringify(erros));

@@ -445,14 +445,14 @@ function opcoesSortearDia(atual, formas) {
 // "Sortear este dia por", da API
 function formTrocarDia(p, relogios, hoje, trocaHoje, semRelogio, formas) {
   if (p.data === hoje && !trocaHoje) {
-    return el("span", {"class": "nota", "title": t("Configuração: Trocar o relógio de hoje no próprio dia")}, t("hoje fica (troca a partir de amanhã)"));
+    return el("span", {"class": "nota", "title": t("Rodízio › Ajustes do rodízio: Trocar o relógio de hoje no próprio dia")}, t("hoje fica (troca a partir de amanhã)"));
   }
   var opcoes = el("option", {"value": "", "selected": true, "disabled": true}, p.origem === "livre" ? t("escolher…") : t("trocar por…"))
     + el("optgroup", {"label": t("Um relógio")}, relogios.filter(function (r) { return r.disponivel && r.id !== p.relogio_id; }).map(function (r) {
       return el("option", {"value": r.id}, h(r.nome));
     }).join(""))
     + opcoesSortearDia("", formas)
-    // o dia de folga: sem relógio e sem sorteio (o dia que já é livre não precisa; com a folga desligada na Configuração, não há)
+    // o dia de folga: sem relógio e sem sorteio (o dia que já é livre não precisa; com a folga desligada em Rodízio › Ajustes do rodízio, não há)
     + (semRelogio && p.origem !== "livre" ? el("option", {"value": "livre"}, t("Sem relógio (dia livre)")) : "")
     + ((p.origem === "manual" || p.origem === "livre") && p.data > hoje ? el("option", {"value": "0"}, t("↺ voltar a sortear")) : "");
   return el("form", {"data-recurso": "rodizio", "class": "trocar-dia"}, el("input", {"type": "hidden", "name": "acao", "value": "trocar_dia"})
@@ -495,7 +495,7 @@ function navPaginas(pagina, paginas, atributo) {
 // dia_sem_relogio da API (falso: o "deixar os dias livres" fica na lista, desabilitado, com o motivo)
 function formApagarPeriodo(hoje, semRelogio) {
   var livres = t("Apagar e deixar os dias livres");
-  var motivo = t("os dias sem relógio estão desligados na Configuração");
+  var motivo = t("os dias sem relógio estão desligados em Rodízio › Ajustes do rodízio");
   return el("form", {"data-recurso": "rodizio", "class": "apagar-periodo", "onsubmit": "return confirm(this.getAttribute(this.acao.value === 'periodo_livre' ? 'data-confirma-livre' : 'data-confirma'))",
       "data-confirma": t("Apagar os dias deste período do plano (escolhidos à mão, sorteados e livres)? O modo de rodízio monta esses dias de novo."),
       "data-confirma-livre": t("Apagar os dias deste período do plano (escolhidos à mão, sorteados e livres) e deixar todos livres? Eles ficam sem relógio e sem sorteio, até você escolher um relógio para cada um ou apagar o período de novo.")},
@@ -522,7 +522,7 @@ function formApagarTudo(trocaHoje) {
     + el("div", {"class": "linha-apagar"}, (trocaHoje ? el("label", {"class": "check"}, t("{1} Excluindo hoje (apaga também o dia de hoje)", {1: el("input", {"type": "checkbox", "name": "hoje", "value": "1"})})) : "")
       + el("button", {"class": "leve"}, t("Apagar tudo")))
     + ajudaNota("apagar-tudo", t("Apagar tudo"), trocaHoje ? t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Marcando \"Excluindo hoje\", apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir de agora). Depois, o modo de rodízio monta o plano de novo, do zero.")
-      : t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Depois, o modo de rodízio monta o plano de novo, do zero. O dia de hoje fica: na Configuração, o relógio de hoje não se troca no próprio dia.")));
+      : t("Limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres. Depois, o modo de rodízio monta o plano de novo, do zero. O dia de hoje fica: nos Ajustes do rodízio, o relógio de hoje não se troca no próprio dia.")));
 }
 
 // Os dias do plano com os dias livres no meio, na ordem das datas (um dia livre: sem relógio, para escolher à mão)
@@ -913,6 +913,13 @@ function salvarSemMover(form, res, atualizar) {
   }).then(function () { avisoFlutuanteGravacao(textoResposta(res), !res.ok, res.mudancas); });
 }
 
+// um botão que grava uma ação pela API (um formulário só com os campos escondidos): Minha conta, a página Sistema
+function formAcao(recurso, acao, campos, botao, classe) {
+  return el("form", {"data-recurso": recurso, "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": acao})
+    + Object.keys(campos).map(function (k) { return el("input", {"type": "hidden", "name": k, "value": campos[k]}); }).join("")
+    + el("button", {"class": classe || "leve"}, botao));
+}
+
 var aoGravar = function (form, res) { window.location.reload(); };
 document.addEventListener("submit", function (ev) {
   var form = ev.target;
@@ -1289,14 +1296,71 @@ function colunasAplicar(tabela, colunas) {
 }
 
 // Os campos de uma lista de opções, em grupos; prefixo: o nome do conjunto na gravação (opcoes[<chave>], padroes[<chave>]);
-// vazio, o nome é a própria chave (a Configuração da coleção)
+// vazio, o nome é a própria chave (a Configuração da coleção). Com um assunto só, sem o título dele (a página já é do assunto)
 function camposOpcoes(lista, prefixo) {
   return lista.grupos.map(function (g) {
-    return el("h3", {}, h(g.texto)) + lista.opcoes.filter(function (o) { return o.grupo === g.chave; }).map(function (o) {
+    return (lista.grupos.length > 1 ? el("h3", {}, h(g.texto)) : "") + lista.opcoes.filter(function (o) { return o.grupo === g.chave; }).map(function (o) {
       return campoOpcao(o, prefixo ? prefixo + "[" + o.chave + "]" : o.chave, "largo");
     }).join("");
   }).join("");
 }
+// As abas dos níveis das opções de uma página (a Configuração, Rodízio › Ajustes do rodízio, Avisos): Esta coleção, Minhas
+// coleções (só o dono da coleção aberta tem) e Sistema (só o master), com a nota do que cada nível guarda. A página mostra um
+// nível por vez: o elemento de fora tem data-nivel-visto, e o que é de um nível, data-nivel (o estilo.css esconde os outros)
+var NIVEIS_OPCOES = ["colecao", "dono", "sistema"];
+function nivelDoEndereco() {
+  var n = (/(?:^|[?&])nivel=(colecao|dono|sistema)(?:&|$)/.exec(window.location.search) || [])[1];
+  return n || null;
+}
+function abasNiveis(nivel, temDono, temSistema) {
+  var aba = function (n, texto) {
+    return el("a", {"href": "?nivel=" + n, "data-nivel-ir": n, "class": nivel === n ? "ativa" : null, "aria-current": nivel === n ? "page" : null}, texto);
+  };
+  return el("nav", {"class": "abas abas-nivel", "aria-label": t("Nível das opções")},
+      aba("colecao", t("Esta coleção")) + (temDono ? aba("dono", t("Minhas coleções")) : "") + (temSistema ? aba("sistema", t("Sistema")) : ""))
+    + el("p", {"class": "nota nota-nivel", "data-nivel": "colecao"}, t("O que vale nesta coleção. A opção vazia (Herdar) segue o padrão do dono (a aba Minhas coleções) e, sem ele, o do sistema."))
+    + (temDono ? el("p", {"class": "nota nota-nivel", "data-nivel": "dono"}, t("Valem nas coleções de que você é dono que não escolheram a sua (na aba Esta coleção), inclusive para os membros e o cron. Vazio, vale o padrão do sistema.")) : "")
+    + (temSistema ? el("p", {"class": "nota nota-nivel", "data-nivel": "sistema"}, t("O padrão do sistema inteiro (só o master muda): vale em toda coleção que não escolheu a sua e cujo dono não escolheu o dele. Vazio, vale o padrão de fábrica.")) : "");
+}
+// Uma página de um assunto das opções (o que a API manda em recurso=opcoes): as abas dos níveis, os quadros da coleção (a
+// página monta, com as explicações de cada opção) e os do dono e do sistema (os campos de cada opção, dono[<chave>] e
+// padroes[<chave>]), tudo num formulário da Configuração (recurso=config, acao=salvar) com o Salvar preso no pé. Quem não é
+// dono nem master só tem a coleção: sem as abas
+function painelNiveis(d, quadrosColecao, nivel) {
+  var temDono = !!(d.dono && d.dono.pode_mudar === true && d.dono.opcoes);
+  var temSistema = !!(d.sistema && d.sistema.pode_mudar === true && d.sistema.opcoes);
+  var comNiveis = temDono || temSistema;
+  var visto = nivel === "dono" && temDono ? "dono" : (nivel === "sistema" && temSistema ? "sistema" : "colecao");
+  var quadro = function (n, titulo, corpo) {
+    return el("section", {"class": "cartao-config", "data-nivel": comNiveis ? n : null}, el("h2", {}, h(titulo)) + el("div", {"class": "cartao-corpo campos"}, corpo));
+  };
+  return el("div", {"data-niveis": "", "data-nivel-visto": comNiveis ? visto : null},
+    (comNiveis ? abasNiveis(visto, temDono, temSistema) : "")
+    + el("form", {"data-recurso": "config", "class": "form-niveis"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+      + el("div", {"class": "config-grade", "data-nivel": comNiveis ? "colecao" : null}, quadrosColecao)
+      + (temDono ? quadro("dono", t("Minhas coleções"), camposOpcoes(d.dono.opcoes, "dono")) : "")
+      + (temSistema ? quadro("sistema", t("Padrões do sistema"), camposOpcoes(d.sistema.opcoes, "padroes")) : "")
+      + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar")))));
+}
+// trocar de nível sem recarregar (o que foi digitado nos outros continua na página e o Salvar grava tudo); o nível fica no endereço
+document.addEventListener("click", function (ev) {
+  var a = ev.target.closest ? ev.target.closest("[data-niveis] .abas-nivel a[data-nivel-ir]") : null;
+  if (!a) {
+    return;
+  }
+  ev.preventDefault();
+  var raiz = a.closest("[data-niveis]");
+  var nivel = a.getAttribute("data-nivel-ir");
+  raiz.setAttribute("data-nivel-visto", nivel);
+  raiz.querySelectorAll(".abas-nivel a").forEach(function (x) {
+    var ativa = x === a;
+    x.classList.toggle("ativa", ativa);
+    if (ativa) { x.setAttribute("aria-current", "page"); } else { x.removeAttribute("aria-current"); }
+  });
+  var url = new URL(window.location.href);
+  url.searchParams.set("nivel", nivel);
+  history.replaceState(history.state, "", url.href);
+});
 // o botão Herdar de uma opção de número ou de hora: esvazia o campo, e o nível de cima passa a valer
 document.addEventListener("click", function (ev) {
   var b = ev.target.closest ? ev.target.closest("[data-herdar]") : null;
@@ -1470,6 +1534,12 @@ var contaPronta = document.querySelector("[data-menu-conta]") ? api({recurso: "c
   aplicarNivel(m.ocultos || []);
   if (m.master) {
     document.querySelectorAll("[data-so-master]").forEach(function (a) {
+      a.hidden = false;
+    });
+  }
+  // Minhas coleções (o padrão do dono para as coleções dele): só para quem é dono da coleção aberta
+  if ((m.colecoes || []).some(function (c) { return c.id === m.colecao && c.papel === "dono"; })) {
+    document.querySelectorAll("[data-so-dono]").forEach(function (a) {
       a.hidden = false;
     });
   }

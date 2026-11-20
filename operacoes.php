@@ -4449,7 +4449,7 @@ function op_criterios($acao, $d)
 function op_rodizio($acao, $d)
 {
     if (!rodizio_ativo()) {
-        return resultado([t("O rodízio está desligado. Ative na Configuração para alterar o plano; as marcações manuais continuam disponíveis.")], "");
+        return resultado([t("O rodízio está desligado. Ative em Rodízio › Ajustes do rodízio para alterar o plano; as marcações manuais continuam disponíveis.")], "");
     }
     $erros = [];
     $msg = "";
@@ -4462,7 +4462,7 @@ function op_rodizio($acao, $d)
     // trocar o relógio de hoje no próprio dia (a Configuração, trocar_hoje): desligado, o padrão, o de hoje fica e tudo o que
     // o trocaria é recusado (ou, no Sortear de novo, vale a partir de amanhã)
     $trava_hoje = !trocar_hoje_permitido();
-    $recusa_hoje = t("O relógio de hoje não se troca no próprio dia (Configuração: Trocar o relógio de hoje no próprio dia): a troca vale a partir de amanhã. As marcações do pulso continuam livres.");
+    $recusa_hoje = t("O relógio de hoje não se troca no próprio dia (Rodízio › Ajustes do rodízio: Trocar o relógio de hoje no próprio dia): a troca vale a partir de amanhã. As marcações do pulso continuam livres.");
     // troca o relógio de hoje a partir de agora: a sessão de rodízio do anterior termina agora (ou sai, se nem começou)
     // e a do novo começa agora (se ainda está no horário de uso)
     $troca_hoje = function ($novo_id, $motivo) use ($hoje, $agora, $ini_uso, $fim_uso) {
@@ -4550,7 +4550,7 @@ function op_rodizio($acao, $d)
     } elseif (($acao === "sem_relogio" || $acao === "usando") && $trava_hoje) {
         $erros[] = $recusa_hoje;
     } elseif (($acao === "sem_relogio" || $acao === "periodo_livre") && !dia_sem_relogio_permitido()) {
-        // a folga desligada na Configuração: nenhuma porta deixa um dia sem relógio
+        // a folga desligada em Rodízio › Ajustes do rodízio: nenhuma porta deixa um dia sem relógio
         $erros[] = dia_sem_relogio_recusa();
     } elseif ($acao === "sem_relogio") {
         // hoje sem relógio: o dia fica livre (sem relógio e sem sorteio, como os dias livres do plano) e a sessão do rodízio de
@@ -4724,7 +4724,7 @@ function op_rodizio($acao, $d)
         } elseif ($de_p < $hoje) {
             $erros[] = t("O período começa num dia que já passou: o que foi usado se corrige nas marcações.");
         } elseif ($acao === "periodo" && $de_p == $hoje && $trava_hoje) {
-            $erros[] = t("O período começa hoje, mas o relógio de hoje não se troca no próprio dia (Configuração: Trocar o relógio de hoje no próprio dia): comece o período amanhã.");
+            $erros[] = t("O período começa hoje, mas o relógio de hoje não se troca no próprio dia (Rodízio › Ajustes do rodízio: Trocar o relógio de hoje no próprio dia): comece o período amanhã.");
         } elseif ($ate_p < $de_p) {
             $erros[] = t("O fim do período vem antes do começo.");
         } elseif (!$apagar_p && $de_p->diff($ate_p)->days > 730) {
@@ -5210,12 +5210,6 @@ function op_config($acao, $d)
     $hoje = hoje_da_colecao();
     $hora_ok = "/^([01][0-9]|2[0-3]):[0-5][0-9]\$/";
     if ($acao === "salvar") {
-        if (array_key_exists("rodizio_ativo", $d) && (is_array($d["rodizio_ativo"]) || !in_array((string)$d["rodizio_ativo"], ["", "0", "1"], true))) {
-            $erros[] = t("Rodízio: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
-        }
-        if (array_key_exists("recupera_ontem", $d) && (is_array($d["recupera_ontem"]) || !in_array((string)$d["recupera_ontem"], ["", "0", "1"], true))) {
-            $erros[] = t("Passar o relógio de ontem: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
-        }
         // as opções das três hierarquias (a tabela OPCOES, opcoes.php): um conferidor só; vazio herda do nível acima
         [$erros_o, $opcoes_ok] = opcoes_conferir(array_intersect_key($d, OPCOES));
         $erros = array_merge($erros, $erros_o);
@@ -5244,29 +5238,19 @@ function op_config($acao, $d)
                 }
             }
         }
-        // o padrão do dono para as coleções dele (dono[<chave>]: as opções das três hierarquias, e dono[rodizio_ativo] e
-        // dono[recupera_ontem]; vazio herda o sistema): só o dono da coleção do pedido muda, pela aba Minhas coleções. Conferido
-        // aqui com os conferidores de sempre e gravado, depois, pela porta do conta/alterar
+        // o padrão do dono para as coleções dele (dono[<chave>]: as opções das três hierarquias; vazio herda o sistema): só o
+        // dono da coleção do pedido muda, pela aba Minhas coleções. Conferido aqui com os conferidores de sempre e gravado,
+        // depois, pela porta do conta/alterar
         $dono_pedido = null;
         if (array_key_exists("dono", $d)) {
             $uid_d = (int)(usuario_atual()["id"] ?? 0);
             if ($uid_d === 0 || $uid_d !== opcoes_dono_id()) {
                 $erros[] = t("O padrão das coleções do dono é de quem é dono desta coleção: só ele muda.");
             } elseif (!is_array($d["dono"])) {
-                $erros[] = t("dono: os campos dono[<chave>], um para cada opção que muda (e dono[rodizio_ativo] e dono[recupera_ontem]).");
+                $erros[] = t("dono: os campos dono[<chave>], um para cada opção que muda.");
             } else {
                 $dono_pedido = [];
                 $opcoes_d = $d["dono"];
-                foreach (["rodizio_ativo", "recupera_ontem"] as $k_d) {
-                    if (array_key_exists($k_d, $opcoes_d)) {
-                        if (is_array($opcoes_d[$k_d]) || !in_array((string)$opcoes_d[$k_d], ["", "0", "1"], true)) {
-                            $erros[] = t("dono[{1}]: 1 (ligado), 0 (desligado) ou vazio (herdar do sistema).", [1 => $k_d]);
-                        } else {
-                            $dono_pedido[$k_d] = (string)$opcoes_d[$k_d];
-                        }
-                        unset($opcoes_d[$k_d]);
-                    }
-                }
                 if (count($opcoes_d) > 0) {
                     [$erros_d, $dono_ok] = opcoes_conferir($opcoes_d);
                     $erros = array_merge($erros, $erros_d);
@@ -5354,23 +5338,8 @@ function op_config($acao, $d)
             if (array_key_exists("cron_espera_rodadas", $d) && usuario_master()) {
                 sis_set("cron_espera_rodadas", trim((string)$d["cron_espera_rodadas"]));
             }
-            $rodizio_antes = rodizio_ativo();
-            $retomada_antes = rodizio_retomado_em();
-            $geral_antes = parametro_gravado("rodizio_ativo") !== 0;
             foreach ($param_gravar as $k_p => $v_p) {
                 sis_set("param_" . $k_p, $v_p);
-            }
-            if (!$geral_antes && parametro_gravado("rodizio_ativo") !== 0) {
-                sis_set("rodizio_retomado_em", (string)time());
-            }
-            if (array_key_exists("rodizio_ativo", $d)) {
-                cfg_set("rodizio_ativo", (string)$d["rodizio_ativo"]);
-            }
-            if (array_key_exists("recupera_ontem", $d)) {
-                cfg_set("recupera_ontem", (string)$d["recupera_ontem"]);
-            }
-            if (rodizio_ativo()) {
-                cfg_set("rodizio_retomado_em", (string)max((int)cfg("rodizio_retomado_em"), $rodizio_antes ? $retomada_antes : time()));
             }
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             // a força da senha é do sistema inteiro: só o master muda
@@ -5392,7 +5361,8 @@ function op_config($acao, $d)
             if (array_key_exists("encostado_ativo", $d)) {
                 sql("UPDATE aviso SET ativo = ? WHERE identificador = 'encostado'", [(string)$d["encostado_ativo"] === "1" ? 1 : 0]);
             }
-            // o que depende do valor que vale: o "fecha às" dos tipos No pulso e No sol, o fim da escala inteligente
+            // o que depende do valor que vale: o "fecha às" dos tipos No pulso e No sol, o fim da escala inteligente, a retomada
+            // do rodízio
             opcoes_efeitos($foto_opcoes, array_keys($opcoes_ok));
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             $msg = t("Configuração salva.");

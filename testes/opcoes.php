@@ -119,8 +119,8 @@ try {
     $r_d = op_config("salvar", ["dono" => ["carga_limiar" => "33", "rodizio_ativo" => "0", "recupera_ontem" => "1"]]);
     exigir_opcoes($r_d["ok"] && cfg("carga_limiar") === "33", "O dono não gravou o padrão dele pela Configuração: " . implode(" ", $r_d["erros"] ?? []));
     exigir_opcoes((opcoes_do_usuario((int)$dono["usuario_id"])["carga_limiar"] ?? "") === "33", "O dono[carga_limiar] não foi para o nível do usuário.");
-    $u_d = sem_escopo(function () use ($dono) { return linha("SELECT rodizio_ativo, recupera_ontem FROM usuario WHERE id = ?", [$dono["usuario_id"]]); });
-    exigir_opcoes((int)$u_d["rodizio_ativo"] === 0 && (int)$u_d["recupera_ontem"] === 1, "O dono[rodizio_ativo] e o dono[recupera_ontem] não foram gravados.");
+    $u_d = opcoes_do_usuario((int)$dono["usuario_id"]);
+    exigir_opcoes(($u_d["rodizio_ativo"] ?? "") === "0" && ($u_d["recupera_ontem"] ?? "") === "1", "O dono[rodizio_ativo] e o dono[recupera_ontem] não foram para o nível do usuário (desde a v67, como as outras opções).");
     banco_escopo($segunda["id"]);
     exigir_opcoes(cfg("carga_limiar") === "33", "O padrão do dono gravado pela Configuração não valeu na outra coleção dele.");
     banco_escopo($primeira);
@@ -188,9 +188,10 @@ try {
     exigir_opcoes(op_conta("alterar", ["opcoes" => ["painel_modo" => ""]])["ok"], "Não limpou o painel.");
 
     // ---- a migração leva o valor igual ao padrão de fábrica para o vazio: todas as opções com padrão que existiam na v58
-    // estão nela (as que nasceram depois, como a abas_vazias, a pulso_um_so e a vistoria_dias, nunca tiveram o padrão gravado no config: nada a limpar)
+    // estão nela (as que nasceram depois, como a abas_vazias, a pulso_um_so e a vistoria_dias, nunca tiveram o padrão gravado no config: nada a limpar;
+    // o rodízio ligado e o passar o relógio de ontem para hoje só entraram no registro na v67, e o vazio deles sempre foi herdar)
     $sql = (string)file_get_contents(dirname(__DIR__) . "/migracao_v58.sql");
-    $depois_da_v58 = ["abas_vazias", "pulso_um_so", "sugestao_agora", "dia_sem_relogio", "vistoria_dias"];
+    $depois_da_v58 = ["abas_vazias", "pulso_um_so", "sugestao_agora", "dia_sem_relogio", "vistoria_dias", "rodizio_ativo", "recupera_ontem"];
     foreach (OPCOES as $k => [, , $padrao]) {
         if ($padrao !== "" && !in_array($k, array_merge(["gasto_motor", "documentos_copia"], $depois_da_v58), true)) {
             exigir_opcoes(strpos($sql, "chave = '" . $k . "' AND valor = '" . $padrao . "'") !== false, "A migração v58 não limpa " . $k . ".");

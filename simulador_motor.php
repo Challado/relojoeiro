@@ -540,7 +540,7 @@ function simulador_periodo($de, $ate)
 function simulador_simular($brutos, $de, $ate, $semente, $variar)
 {
     if (!rodizio_ativo()) {
-        return ["erros" => [t("O rodízio está desligado (Configuração): não há sorteio para simular.")]];
+        return ["erros" => [t("O rodízio está desligado (Rodízio › Ajustes do rodízio): não há sorteio para simular.")]];
     }
     [$de, $ate, $erros] = simulador_periodo($de, $ate);
     $semente = trim((string)$semente);
@@ -640,7 +640,7 @@ function simulador_opcoes()
 function simulador_aplicar($d)
 {
     if (!rodizio_ativo()) {
-        return resultado([t("O rodízio está desligado (Configuração): não há sorteio para aplicar.")], "");
+        return resultado([t("O rodízio está desligado (Rodízio › Ajustes do rodízio): não há sorteio para aplicar.")], "");
     }
     [$de, $ate, $erros] = simulador_periodo($d["de"] ?? "", $d["ate"] ?? "");
     [$cen, $e] = simulador_cenario_ler($d, 1);

@@ -1540,8 +1540,16 @@ ler("hoje de volta a todas as colunas", ["recurso" => "hoje", "incluir" => $cols
 // config/salvar grava dono[<chave>] (uma opção, o rodízio e o relógio de ontem), o que a coleção herda muda, e o valor que
 // não existe, a chave que não existe e o dono que não é uma lista são recusados sem gravar nada; no fim, tudo volta a herdar
 ler("config com o nível do dono", ["recurso" => "config", "incluir" => "dono"]);
+// as opções de cada assunto nos três níveis, como as páginas delas (Rodízio › Ajustes do rodízio, Avisos) as leem; o grupo que
+// não existe é recusado; e o que é do sistema inteiro (a página Sistema)
+ler("opcoes do rodizio nos tres niveis", ["recurso" => "opcoes", "grupo" => "rodizio"]);
+ler("opcoes dos avisos nos tres niveis", ["recurso" => "opcoes", "grupo" => "avisos"]);
+ler("opcoes de dois assuntos", ["recurso" => "opcoes", "grupo" => "rotina,telas"]);
+ler("opcoes de um grupo que nao existe", ["recurso" => "opcoes", "grupo" => "nada"]);
+ler("sistema inteiro", ["recurso" => "sistema"]);
 escrever(["recurso" => "config", "acao" => "salvar", "dono" => ["plano_por_pagina" => "45", "rodizio_ativo" => "1", "recupera_ontem" => "0"]]);
 ler("config com o padrão do dono gravado", ["recurso" => "config", "incluir" => "dono,mostrar_ate"]);
+ler("opcoes do rodizio com o padrão do dono gravado", ["recurso" => "opcoes", "grupo" => "rodizio"]);
 ler("conta com o padrão do dono gravado", ["recurso" => "conta", "incluir" => "usuario,opcoes"]);
 // os nomes que o próprio sistema dá ao criar a conta (a árvore "Grupos de <login>") são dados de quem usa, que pode trocá-los:
 // entram na lista dos textos gravados, para a conferência dos textos fixos (que agora abre a Minha conta, onde eles aparecem)
@@ -1758,8 +1766,8 @@ escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["convite_d
 escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["lote_maximo" => "0"]], false);
 escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["nao_existe" => "1"]], false);
 escrever(["recurso" => "config", "acao" => "salvar", "parametros" => ["cadastro_aberto" => "2"]], false);
-$par_cfg = ler("2 config com os parametros", ["recurso" => "config"]);
-$par_v = array_column($par_cfg["sistema"]["parametros"] ?? [], null, "chave");
+$par_cfg = ler("2 sistema com os parametros", ["recurso" => "sistema"]);
+$par_v = array_column($par_cfg["parametros"] ?? [], null, "chave");
 if (($par_v["convite_dias"]["valor"] ?? null) !== 10 || ($par_v["convite_dias"]["origem"] ?? "") !== "sistema" || ($par_v["cadastro_aberto"]["valor"] ?? null) !== 0) {
     $falhas[] = "parâmetros do sistema: o gravado não vale";
 }

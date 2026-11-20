@@ -10,7 +10,8 @@ const apiJs = fs.readFileSync(path.join(__dirname, '..', 'api.js'), 'utf8');
 // os ajudantes das opções em três níveis (campoOpcao, camposOpcoes, o botão Herdar), os mesmos do api.js
 const ajudantesOpcoes = apiJs.slice(apiJs.indexOf('function origemOpcao'), apiJs.indexOf('// Uma senha nova com a confirmação'));
 // a lista de opções que a API entrega (chave, grupo, tipo, valores): só o que a tela usa
-const OPCOES_FIXTURE = [['horario_manha','rotina','hora'],['horario_noite','rotina','hora'],['uso_inicio','rotina','hora'],['pulso_auto_inicio','rotina','sim_nao'],['pulso_um_so','rotina','sim_nao'],['dia_sem_relogio','rotina','sim_nao'],['uso_fim','rotina','hora'],['pulso_auto_fim','rotina','sim_nao'],['sol_fim','rotina','hora'],['sol_auto_fim','rotina','sim_nao'],['semana_inicio','rotina','enum',['segunda','domingo']],['escala_inicio','rotina','enum',['amanha','hoje']],['escala_periodo','rotina','enum',['corridos','semana','mes']],['semana_ultimo_dia','rotina','enum',['dia_seguinte','semana_seguinte']],['trocar_hoje','rotina','sim_nao'],['max_sem_uso','limites','inteiro'],['sorteio_casas','limites','inteiro'],['carga_limiar','limites','inteiro'],['sol_limiar','limites','inteiro'],['previsao_limite','limites','decimal'],['gasto_motor','limites','enum',['individual','horas','robusto']],['medicao_base','limites','enum',['dias','leituras']],['medicao_janela_dias','limites','inteiro'],['medicao_janela_leituras','limites','inteiro'],['medicao_meia_vida_dias','limites','inteiro'],['encostado_dias','limites','inteiro'],['vistoria_dias','limites','inteiro'],['documentos_copia','limites','enum',['individual','todos','nenhum']],['painel_modo','telas','enum',['lado','flutuante']],['destaque_hoje','telas','enum',['dia','pulso']],['abas_vazias','telas','enum',['sempre','com_relogio']],['sugestao_agora','telas','sim_nao'],['calibre_campos','telas','enum',['movimento','todos']],['relojinho_modo','telas','enum',['hora','aleatorio','sem_repeticao']],['hora_relogio','telas','enum',['ambos','analogico','digital','anadigi']],['proximos_por_pagina','telas','inteiro'],['plano_por_pagina','telas','inteiro'],['atualizar_segundos','telas','inteiro'],['colunas_hoje','telas','lista',['codigo','nome','estado']]];
+// (como a API manda em recurso=config: só os assuntos da Configuração; o rodízio e os avisos têm as páginas deles)
+const OPCOES_FIXTURE = [['horario_manha','rotina','hora'],['horario_noite','rotina','hora'],['uso_inicio','rotina','hora'],['pulso_auto_inicio','rotina','sim_nao'],['pulso_um_so','rotina','sim_nao'],['uso_fim','rotina','hora'],['pulso_auto_fim','rotina','sim_nao'],['sol_fim','rotina','hora'],['sol_auto_fim','rotina','sim_nao'],['carga_limiar','limites','inteiro'],['sol_limiar','limites','inteiro'],['previsao_limite','limites','decimal'],['gasto_motor','limites','enum',['individual','horas','robusto']],['medicao_base','limites','enum',['dias','leituras']],['medicao_janela_dias','limites','inteiro'],['medicao_janela_leituras','limites','inteiro'],['medicao_meia_vida_dias','limites','inteiro'],['documentos_copia','limites','enum',['individual','todos','nenhum']],['painel_modo','telas','enum',['lado','flutuante']],['destaque_hoje','telas','enum',['dia','pulso']],['abas_vazias','telas','enum',['sempre','com_relogio']],['sugestao_agora','telas','sim_nao'],['calibre_campos','telas','enum',['movimento','todos']],['relojinho_modo','telas','enum',['hora','aleatorio','sem_repeticao']],['hora_relogio','telas','enum',['ambos','analogico','digital','anadigi']],['proximos_por_pagina','telas','inteiro'],['plano_por_pagina','telas','inteiro'],['atualizar_segundos','telas','inteiro'],['colunas_hoje','telas','lista',['codigo','nome','estado']]];
 function listaOpcoes(valores = {}) {
   return {grupos:[{chave:'rotina',texto:'Rotina do dia'},{chave:'limites',texto:'Limites e contas'},{chave:'telas',texto:'Telas'}],opcoes:OPCOES_FIXTURE.map(([chave,grupo,tipo,vals])=>({chave,grupo,tipo,titulo:'Opção '+chave,minimo:tipo==='inteiro'||tipo==='decimal'?0:null,maximo:tipo==='inteiro'||tipo==='decimal'?100000:null,
     valores:vals?vals.map(v=>({valor:v,texto:'Valor '+v})):null,padrao:'',escolha:valores[chave]||'',herdado:vals?vals[0]:(tipo==='hora'?'07:00':'1'),origem_herdado:'padrao',efetivo:'',origem:'padrao'}))};
@@ -19,10 +20,9 @@ const salvas = {'pt-BR':'Configuração salva.',en:'Configuration saved.','zh-CN
 function dadosConfig() {
   return {config:{idioma:'pt-BR',horario_manha:'06:30',horario_noite:'20:00',uso_inicio:'07:00',uso_fim:'22:00',encostado_dias:'30'},
     linguas:Object.keys(salvas).map(codigo=>({codigo,nome:codigo})),fuso_sistema:'UTC',fusos:[{nome:'UTC',deslocamento:'+00:00'}],
-    mostrar_ate:{proximos:7,plano:31},atualizar_segundos:60,relojinho:{modo:'hora',modelos:24},cron_estado:{situacao:'rodando',texto:'Cron OK',registro:'registro\n'.repeat(30)},
-    sol_fim:'18:00',sol_auto_fim:true,config_php_copia:null,
-    senha_politica:{regras:{tamanho:8,maiusculas:1,minusculas:1,numeros:1,simbolos:1},texto:'A senha precisa de pelo menos 8 caracteres.'},sistema:{pode_mudar:true,url_sistema:'https://exemplo.invalid'},
-    aleatorio:{ultimo_lote:null,fora_desde:null},eventos:[],destinos:[],agendas:[],
+    mostrar_ate:{proximos:7,plano:31},atualizar_segundos:60,relojinho:{modo:'hora',modelos:24},
+    sol_fim:'18:00',sol_auto_fim:true,config_php_copia:null,sistema:{pode_mudar:true,padroes:null},dono:{pode_mudar:false,opcoes:null},
+    eventos:[],destinos:[],agendas:[],
     opcoes:listaOpcoes({horario_manha:'06:30',horario_noite:'20:00',uso_inicio:'07:00',uso_fim:'22:00',encostado_dias:'30'})};
 }
 const base = `
@@ -100,12 +100,11 @@ async function recarga(page){
     for(const viewport of [{width:390,height:844},{width:820,height:1180},{width:1440,height:900}]){
       const ctx=await browser.newContext({viewport});const page=await ctx.newPage();page.setDefaultTimeout(5000);const erros=[];page.on('pageerror',e=>erros.push(e.message));
       await montar(page,inicial());
-      await page.evaluate(()=>{document.querySelector('details').open=true;window.formAnterior=document.getElementById('form-config');window.scrollTo(0,900);});
+      await page.evaluate(()=>{window.formAnterior=document.getElementById('form-config');window.scrollTo(0,900);});
       const y=await page.evaluate(()=>scrollY);
       await salvar(page);await page.locator('#aviso-config [role=status]').waitFor();
       assert.equal(await page.evaluate(()=>scrollY),y);
       assert.equal(await page.evaluate(()=>document.getElementById('form-config')===window.formAnterior),true);
-      assert.equal(await page.locator('details').getAttribute('open'),'');
       assert.equal(await page.locator('#configuracao > .acao').count(),0);
       assert.equal(await page.locator('#aviso-config [role=status]').textContent(),salvas['pt-BR']);total++;
       for(const lingua of ['en','zh-CN','es']){
@@ -137,16 +136,17 @@ async function recarga(page){
     }
     // Cookie automático antigo, parâmetro lingua= na URL, âncora e armazenamento indisponível.
     const ctx=await browser.newContext({viewport:{width:390,height:844}});const page=await ctx.newPage();
-    const f=inicial();f.url='http://relojoeiro.test/configuracao.php?lingua=pt-BR&outro=1#copia';f.semStorage=true;f.cookies.lingua_auto='pt-BR';
-    // (a âncora de um quadro do sistema abre a página do master no nível do sistema: o Idioma é da coleção, na outra aba; o
-    // nível escolhido vai no endereço, e a página volta nele depois de recarregar)
+    const f=inicial();f.url='http://relojoeiro.test/configuracao.php?lingua=pt-BR&outro=1&nivel=sistema#ancora';f.semStorage=true;f.cookies.lingua_auto='pt-BR';
+    f.dados.sistema.padroes=listaOpcoes({});
+    // (o nível no endereço abre a página nele: o Idioma é da coleção, na outra aba; o nível escolhido vai no endereço, e a
+    // página volta nele depois de recarregar)
     await montar(page,f);
     assert.equal(await page.getAttribute('#configuracao','data-nivel-visto'),'sistema');
     await page.click('.abas-nivel a[data-nivel-ir=colecao]');
     assert.equal(new URL((await estado(page)).url).searchParams.get('nivel'),'colecao');
     await page.selectOption('[name=idioma]','fr');await page.evaluate(()=>window.scrollTo(0,800));
     const pos=await page.evaluate(()=>appTeste.posicao());await salvar(page);await recarga(page);
-    const depois=await estado(page);assert.equal(new URL(depois.url).searchParams.has('lingua'),false);assert.equal(new URL(depois.url).hash,'#copia');
+    const depois=await estado(page);assert.equal(new URL(depois.url).searchParams.has('lingua'),false);assert.equal(new URL(depois.url).hash,'#ancora');
     assert.equal(depois.cookies.lingua,'fr');assert.equal(depois.cookies.lingua_auto,undefined);
     const topo=await page.evaluate(p=>Array.from(document.querySelectorAll('.par-campo')).find(e=>e.querySelector('[name]')?.name===p.campo)?.getBoundingClientRect().top,pos);
     if(pos.campo)assert.ok(Math.abs(topo-pos.topo)<2);total++;
@@ -154,38 +154,20 @@ async function recarga(page){
     const pessoal=inicial();pessoal.lingua='en';pessoal.cookies.lingua='en';await montar(page,pessoal);
     await salvar(page);await page.locator('#aviso-config').waitFor();
     assert.equal(await page.getAttribute('html','lang'),'en');assert.equal((await estado(page)).posts.at(-1).lingua,undefined);total++;
-    // Herança do rodízio: o estado efetivo vem da API e o formulário envia a escolha da coleção.
-    const rotacao=inicial();rotacao.dados.config.rodizio_ativo='';
-    rotacao.dados.rodizio={ativo:false,sistema:false,colecao:null,usuario:null,origem:'sistema'};
-    await montar(page,rotacao);
-    assert.equal(await page.inputValue('[name=rodizio_ativo]'),'');
-    assert.match(await page.locator('[name=rodizio_ativo] option:checked').textContent(),/desligado/);
-    await page.selectOption('[name=rodizio_ativo]','1');await salvar(page);await page.locator('#aviso-config').waitFor();
-    assert.equal((await estado(page)).posts.at(-1).rodizio_ativo,'1');
-    await page.selectOption('[name=rodizio_ativo]','0');await salvar(page);await page.locator('#aviso-config').waitFor();
-    assert.equal((await estado(page)).posts.at(-1).rodizio_ativo,'0');
-    await page.selectOption('[name=rodizio_ativo]','');await salvar(page);await page.locator('#aviso-config').waitFor();
-    assert.equal((await estado(page)).posts.at(-1).rodizio_ativo,'');total++;
-    rotacao.dados.rodizio={ativo:true,sistema:false,colecao:null,usuario:true,origem:'usuario'};
-    await montar(page,rotacao);
-    assert.equal(await page.inputValue('[name=rodizio_ativo]'),'');
-    assert.match(await page.locator('[name=rodizio_ativo] option:checked').textContent(),/usuário \(ligado\)/);
-    assert.match(await page.locator('body').innerText(),/herdado do usuário/);total++;
-    // Voltar ao padrão geral precisa indicar o valor padrão, mesmo quando há uma substituição gravada.
-    const sistema=inicial();sistema.dados.sistema.parametros=[{chave:'rodizio_ativo',nome:'Rodízio: padrão do sistema',descricao:'1 ligado; 0 desligado',tipo:'sim_nao',valor:0,origem:'sistema',config_php:null,config_valor:null,padrao:1,minimo:0,maximo:1}];
-    await montar(page,sistema);
-    assert.equal(await page.locator('[name="parametros[rodizio_ativo]"] option[value=""]').textContent(),'Padrão: sim');
-    await page.click('.abas-nivel a[data-nivel-ir=sistema]');
-    await page.selectOption('[name="parametros[rodizio_ativo]"]','');await salvar(page);await page.locator('#aviso-config').waitFor();
-    assert.equal((await estado(page)).posts.at(-1)['parametros[rodizio_ativo]'],'');total++;
+    // O rodízio (Rodízio › Ajustes do rodízio), os avisos (Avisos) e o que é do sistema inteiro (Sistema) têm as páginas deles.
+    const semOutros=inicial();await montar(page,semOutros);
+    for(const n of ['rodizio_ativo','recupera_ontem','semana_inicio','trocar_hoje','sorteio_casas','encostado_ativo','encostado_dias','vistoria_dias','url_sistema','cron_espera_rodadas','senha_tamanho']){
+      assert.equal(await page.locator('[name="'+n+'"]').count(),0,n+' ainda está na Configuração');
+    }
+    assert.equal(await page.locator('[name^="parametros["], #copia, #sql, .registro-cron').count(),0);total++;
     // As opções em três níveis: vazio herda (a primeira escolha da lista diz de onde), o botão Herdar esvazia o campo de hora e de
     // número, e o padrão do sistema (só o master) grava em padroes[<chave>].
     const herda=inicial();herda.dados.sistema.padroes=listaOpcoes({uso_fim:'23:00'});herda.dados.opcoes=listaOpcoes({uso_fim:'21:30',carga_limiar:'30',painel_modo:'flutuante'});
     await montar(page,herda);
     assert.equal(await page.inputValue('[name=uso_fim]'),'21:30');
     assert.equal(await page.inputValue('[name=carga_limiar]'),'30');
-    assert.match(await page.locator('[name=semana_inicio] option').first().textContent(),/^Herdar \(Valor segunda, padrão de fábrica\)$/);
-    assert.equal(await page.inputValue('[name=semana_inicio]'),'');
+    assert.match(await page.locator('[name=destaque_hoje] option').first().textContent(),/^Herdar \(Valor dia, padrão de fábrica\)$/);
+    assert.equal(await page.inputValue('[name=destaque_hoje]'),'');
     assert.equal(await page.inputValue('[name=painel_modo]'),'flutuante');
     await page.click('[data-herdar=uso_fim]');await page.click('[data-herdar=carga_limiar]');
     assert.equal(await page.inputValue('[name=uso_fim]'),'');assert.equal(await page.inputValue('[name=carga_limiar]'),'');
@@ -206,7 +188,7 @@ async function recarga(page){
     assert.equal(await page.inputValue('[name="padroes[carga_limiar]"]'),'35');assert.equal(await page.isVisible('[name=uso_fim]'),true);
     await salvar(page);await page.locator('#aviso-config').waitFor();
     const gravado=(await estado(page)).posts.at(-1);
-    assert.equal(gravado.uso_fim,'');assert.equal(gravado.carga_limiar,'');assert.equal(gravado.semana_inicio,'');
+    assert.equal(gravado.uso_fim,'');assert.equal(gravado.carga_limiar,'');assert.equal(gravado.destaque_hoje,'');
     assert.equal(gravado['padroes[uso_fim]'],'23:00');assert.equal(gravado['padroes[carga_limiar]'],'35');assert.equal(gravado['padroes[painel_modo]'],'flutuante');total++;
     // quem não é master não vê os padrões do sistema
     const semMaster=inicial();semMaster.dados.sistema.pode_mudar=false;semMaster.dados.sistema.padroes=null;
@@ -217,34 +199,33 @@ async function recarga(page){
     // O dono da coleção tem a aba Minhas coleções (o padrão dele para as coleções de que é dono): o master que é dono vê as três
     // abas; a do dono grava em dono[<chave>] pelo mesmo Salvar, e nenhum rótulo fica duas vezes à vista em nenhuma delas.
     const comDono=inicial();comDono.dados.sistema.padroes=listaOpcoes({});comDono.dados.opcoes=listaOpcoes({});
-    comDono.dados.dono={pode_mudar:true,rodizio_ativo:null,recupera_ontem:true,rodizio_sistema:true,recupera_ontem_sistema:false,opcoes:listaOpcoes({uso_fim:'22:30'})};
+    comDono.dados.dono={pode_mudar:true,opcoes:listaOpcoes({uso_fim:'22:30'})};
     await montar(page,comDono);
     assert.deepEqual(await page.locator('.abas-nivel a').evaluateAll(a=>a.map(x=>x.getAttribute('data-nivel-ir'))),['colecao','dono','sistema']);
     assert.equal(await page.isVisible('[name="dono[uso_fim]"]'),false);
     await page.click('.abas-nivel a[data-nivel-ir=dono]');
     assert.equal(await page.getAttribute('#configuracao','data-nivel-visto'),'dono');
     assert.equal(await page.isVisible('[name="dono[uso_fim]"]'),true);assert.equal(await page.isVisible('[name=uso_fim]'),false);assert.equal(await page.isVisible('[name="padroes[uso_fim]"]'),false);
-    assert.equal(await page.inputValue('[name="dono[uso_fim]"]'),'22:30');assert.equal(await page.inputValue('[name="dono[rodizio_ativo]"]'),'');assert.equal(await page.inputValue('[name="dono[recupera_ontem]"]'),'1');
-    assert.match(await page.locator('[name="dono[rodizio_ativo]"] option').first().textContent(),/^Herdar do sistema \(ligado\)$/);
+    assert.equal(await page.inputValue('[name="dono[uso_fim]"]'),'22:30');assert.equal(await page.locator('[name="dono[rodizio_ativo]"]').count(),0);
     assert.deepEqual(await rotulosRepetidos(),[]);
-    await page.fill('[name="dono[carga_limiar]"]','40');await page.selectOption('[name="dono[rodizio_ativo]"]','0');
+    await page.fill('[name="dono[carga_limiar]"]','40');
     await salvar(page);await page.locator('#aviso-config').waitFor();
     const gravadoDono=(await estado(page)).posts.at(-1);
-    assert.equal(gravadoDono['dono[carga_limiar]'],'40');assert.equal(gravadoDono['dono[rodizio_ativo]'],'0');assert.equal(gravadoDono['dono[uso_fim]'],'22:30');total++;
-    // O dono que não é master: duas abas (a coleção e Minhas coleções); as senhas e o cron, que ele só vê, ficam com a coleção.
+    assert.equal(gravadoDono['dono[carga_limiar]'],'40');assert.equal(gravadoDono['dono[uso_fim]'],'22:30');total++;
+    // O dono que não é master: duas abas (a coleção e Minhas coleções), e os quatro quadros da coleção.
     const soDono=inicial();soDono.dados.sistema.pode_mudar=false;soDono.dados.sistema.padroes=null;
-    soDono.dados.dono={pode_mudar:true,rodizio_ativo:null,recupera_ontem:null,rodizio_sistema:true,recupera_ontem_sistema:false,opcoes:listaOpcoes({})};
+    soDono.dados.dono={pode_mudar:true,opcoes:listaOpcoes({})};
     await montar(page,soDono);
     assert.deepEqual(await page.locator('.abas-nivel a').evaluateAll(a=>a.map(x=>x.getAttribute('data-nivel-ir'))),['colecao','dono']);
     assert.equal(await page.locator('#configuracao [data-nivel=sistema]').count(),0);
-    assert.equal(await page.locator('#configuracao .cartao-config[data-nivel=colecao]').count()>=6,true);total++;
+    assert.equal(await page.locator('#configuracao .cartao-config[data-nivel=colecao]').count(),4);total++;
     // Quem é master mas não é o dono desta coleção: só a coleção e o sistema.
-    const soMaster=inicial();soMaster.dados.dono={pode_mudar:false,rodizio_ativo:null,recupera_ontem:null,rodizio_sistema:true,recupera_ontem_sistema:false,opcoes:null};
+    const soMaster=inicial();soMaster.dados.sistema.padroes=listaOpcoes({});soMaster.dados.dono={pode_mudar:false,opcoes:null};
     await montar(page,soMaster);
     assert.deepEqual(await page.locator('.abas-nivel a').evaluateAll(a=>a.map(x=>x.getAttribute('data-nivel-ir'))),['colecao','sistema']);
     assert.equal(await page.locator('[name^="dono["]').count(),0);total++;
     // O empilhamento acompanha largura, texto e altura sem trocar a ordem dos campos nem sobrepor cartões.
-    const layout=inicial();layout.dados.sistema.parametros=Array.from({length:6},(_,i)=>({chave:'teste'+i,nome:'Parâmetro '+i,descricao:'Descrição da opção. '.repeat(i+2),tipo:'sim_nao',valor:1,origem:'padrao',config_php:null,config_valor:null,padrao:1,minimo:0,maximo:1}));
+    const layout=inicial();layout.dados.sistema.padroes=listaOpcoes({});
     await page.setViewportSize({width:1440,height:900});await montar(page,layout);
     const compacta=()=>page.waitForFunction(()=>[...document.querySelectorAll('#form-config .config-grade, #form-config .parametros-sistema')].every(g=>{
       const rs=[...g.children].map(e=>e.getBoundingClientRect());
@@ -262,10 +243,10 @@ async function recarga(page){
     await page.setViewportSize({width:1100,height:700});await compacta();
     assert.deepEqual(await page.locator('#form-config [name]').evaluateAll(es=>es.map(e=>e.name)),nomes);
     assert.equal(await page.evaluate(()=>document.activeElement===campoLayout),true);total++;
-    // O cron cresce ao abrir o registro, mesmo com requestAnimationFrame adiado (aba em segundo plano ou CI ocupado).
+    // Um quadro que cresce é medido de novo, mesmo com requestAnimationFrame adiado (aba em segundo plano ou CI ocupado).
     await page.evaluate(()=>{window.animacaoOriginal=window.requestAnimationFrame;window.animacoesPendentes=[];window.requestAnimationFrame=fn=>{animacoesPendentes.push(fn);return animacoesPendentes.length;};});
     await page.waitForTimeout(100);
-    await page.evaluate(()=>{document.querySelector('.registro-cron').open=true;});await compacta();
+    await page.evaluate(()=>{const d=document.createElement('div');d.style.height='300px';document.querySelectorAll('.config-grade .cartao-config')[1].append(d);});await compacta();
     await page.evaluate(()=>{window.requestAnimationFrame=animacaoOriginal;animacoesPendentes.forEach(fn=>animacaoOriginal(fn));});total++;
     await ctx.close();console.log(total+' cenários de componente passaram (Chromium; sem rede/banco).');
   }finally{await browser.close();}

@@ -1518,6 +1518,9 @@ function banco_ajustar_id($tabela)
 //   ALTER TABLE t ADD CONSTRAINT nome CHECK (condição)
 //     a regra de validação (CHECK do SQL padrão) entra com este nome; se já havia uma com ele, é trocada (a migração pode
 //     rodar de novo). As linhas que já existem têm de cumprir a regra, senão o banco recusa. No SQLite a tabela é refeita.
+//   ALTER TABLE t DROP CONSTRAINT nome
+//     a regra de validação (CHECK) com este nome sai; sem ela, nada (a migração pode rodar de novo). Antes do DROP COLUMN de
+//     uma coluna que uma regra usa: no SQLite e no MySQL a coluna não sai com a regra em pé. No SQLite a tabela é refeita.
 //     No MySQL 8, a condição não pode usar a coluna id (AUTO_INCREMENT) nem uma coluna de chave estrangeira com ON DELETE
 //     SET NULL (o MySQL recusa as duas).
 // E, para uma migração que parou no meio poder rodar de novo: o ADD COLUMN de uma coluna que já existe e o ADD INDEX com
@@ -1545,7 +1548,40 @@ function banco_estrutura($comando)
         banco_regra($m[1], $m[2], $m[3]);
         return true;
     }
+    if (preg_match("/^ALTER TABLE `?(\\w+)`? DROP CONSTRAINT `?(\\w+)`?\$/i", $c, $m) === 1) {
+        banco_regra_remover($m[1], $m[2]);
+        return true;
+    }
     return false;
+}
+
+// Tira a regra de validação (CHECK) de uma tabela, pelo nome; sem ela, nada
+function banco_regra_remover($tabela, $nome)
+{
+    $banco = banco_tipo();
+    if ($banco === "firebird") {
+        $nome = banco_fb_nome($nome);
+        if ((int)valor("SELECT COUNT(*) FROM RDB\$RELATION_CONSTRAINTS WHERE RDB\$RELATION_NAME = ? AND RDB\$CONSTRAINT_NAME = ?", [strtoupper($tabela), strtoupper($nome)]) > 0) {
+            banco_direto("ALTER TABLE " . banco_tabela_sql($tabela) . " DROP CONSTRAINT " . $nome);
+        }
+        return;
+    }
+    if ($banco === "sqlite") {
+        sqlite_refazer($tabela, function ($partes) use ($nome) {
+            return array_values(array_filter($partes, function ($p) use ($nome) {
+                return preg_match("/^CONSTRAINT\\s+[\"`]?" . preg_quote($nome, "/") . "[\"`]?\\s/i", trim($p)) !== 1;
+            }));
+        });
+        return;
+    }
+    if ($banco === "pgsql") {
+        banco_direto("ALTER TABLE " . $tabela . " DROP CONSTRAINT IF EXISTS " . $nome);
+        return;
+    }
+    if ((int)valor("SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?
+        AND CONSTRAINT_TYPE = 'CHECK'", [$tabela, $nome]) > 0) {
+        banco_direto("ALTER TABLE `" . $tabela . "` DROP CONSTRAINT `" . $nome . "`");
+    }
 }
 
 // A regra de validação (CHECK) de uma tabela, com nome: a que já havia com o mesmo nome sai antes

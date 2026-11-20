@@ -1,4 +1,4 @@
-<!-- origem: 7410b6b66d7810e3c5129639c5f53ffc5b74efd5 -->
+<!-- origem: a40413b72a85465d6b778080b45633eee4044944 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -102,8 +102,8 @@ La API hace también lo que viene antes y alrededor de las pantallas: **instala 
 `aprovacoes`) y hace el **login de las páginas** (`recurso=entrar`: cuando el login se cae con la página ya abierta, la API pide el usuario y la
 contraseña y lo devuelve a la página; al abrir, la propia página ya los pide, antes de enviar nada). Los
 scripts de línea de comandos (`instalar.php` e `importar.php`) son atajos: llaman a las mismas operaciones de la API. El
-`senha.php` es la excepción a propósito: cambia la contraseña de una cuenta por el servidor, sin la fuerza de la
-Configuración (quien tiene el servidor en la mano decide), lo que la API no hace.
+`senha.php` es la excepción a propósito: cambia la contraseña de una cuenta por el servidor, sin la regla de fuerza de la
+contraseña (quien tiene el servidor en la mano decide), lo que la API no hace.
 
 Fuera de la API solo queda el **cron** (`cron.php`, el reloj del sistema: monta el plan, abre y cierra la sesión del día,
 envía los mensajes, sincroniza los calendarios, dispara los eventos y cuida de las copias de los documentos), que usa las
@@ -156,6 +156,8 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `eventos`, `destinos`, `agendas` | los eventos personalizados; los destinos de los mensajes, con lo que recibe cada uno y la vista previa de hoy; los calendarios, con lo que tiene que estar en cada uno |
 | `ics` | el calendario de un calendario de tipo enlace ICS (sin login, por la clave del enlace) |
 | `config`, `cron` | la configuración de la colección (con el resumen de los destinos y de los calendarios y la situación del cron: nunca se ejecutó, detenido o funcionando); las ejecuciones del cron, con el resumen del período. En `cron`: `de=` y `ate=` (fecha, o fecha y hora), `situacao=` (`atividade`, por defecto; `erro`, `nada` o `todas`), `busca=` (texto en el registro), `limite=` (por defecto 100, máximo 1000) y `pagina=`; cada uno vale también con `cron_` delante (`cron_de`...) |
+| `opcoes` | las opciones de la colección de un tema (`grupo=`: `rotina`, `limites`, `telas`, `rodizio` o `avisos`; uno o más, separados por comas) en los tres niveles: la colección, el valor predeterminado del dueño y el del sistema (cada nivel con `pode_mudar`), y en cada opción la elección, lo que vale y de dónde viene. Es lo que leen las páginas Ajustes de la rotación y Avisos |
+| `sistema` | solo el master: lo que es de todo el sistema (la dirección, las vueltas del cron, los parámetros de operación, la fuerza de la contraseña, la situación del cron, la fuente de los sorteos y el servidor de correo del `config.php`). Es lo que lee la página Sistema |
 | `arvore`, `cadastros` | los grupos; todo lo que muestra la página Definiciones |
 | `unidades` | las unidades del árbol (la pestaña **Unidades** de Definiciones), en el orden de las magnitudes, cada una con la conversión en texto y cuántos campos, tipos y fórmulas la usan |
 | `marcas` | las marcas del árbol (la pestaña **Marcas** de Definiciones), cada una con el país, el sitio, la observación y sus relojes |
@@ -220,7 +222,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (y `ordem` en los campos; el campo con las reglas del valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar` (el master también `parametros[<chave>]`: los parámetros de operación del sistema), `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (el dueño también `dono[<chave>]`: el valor predeterminado de sus colecciones; el master también `padroes[<chave>]`: el valor predeterminado del sistema, y `parametros[<chave>]`: los parámetros de operación del sistema), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, correo o Web Push, con lo que recibe), `testar` (`qual=`: texto, mañana o noche), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook o ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (con la `senha`, o con el `senha_hash` de otro sistema; el primer usuario, con el token, es el master) y, solo el master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
@@ -252,7 +254,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 ### El SQL por la API {#o-sql-pela-api}
 
 Todo lo que las pantallas hacen, la API lo hace; y lo que ninguna pantalla hace, el master lo hace por el SQL
-(`recurso=sql`, o el cuadro **Base de datos (SQL)** de la Configuración): un comando a la vez, en el SQL de MySQL (el sistema
+(`recurso=sql`, o el cuadro **Base de datos (SQL)** de la página Sistema): un comando a la vez, en el SQL de MySQL (el sistema
 lo traduce para la base en uso, como en las migraciones), sin el alcance de las colecciones.
 
 | Comando | Cuándo vale |
@@ -260,7 +262,7 @@ lo traduce para la base en uso, como en las migraciones), sin el alcance de las 
 | `SELECT` | siempre (sin `INTO`); la base ya devuelve como máximo `limite` filas (predeterminado 200, hasta 5000), y la respuesta dice si cortó |
 | `INSERT` | siempre, menos el que actualiza (`ON DUPLICATE KEY`, `ON CONFLICT`, `OR REPLACE`: sería un `UPDATE` sin la aprobación) y menos en las tablas `sistema` y `sql_execucao` |
 | `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | siempre: un campo nuevo (`NULL`, o `NOT NULL` con `DEFAULT`; sin clave, índice ni posición) en una tabla que existe y no es del sistema (cuentas, tokens, accesos, `sistema`, `colecao`, `no`), uno a la vez |
-| `UPDATE`, `DELETE` | solo con la aprobación activada en el cuadro **Sistema** de la Configuración (`parametros[sql_alteracoes]=1`) |
+| `UPDATE`, `DELETE` | solo con la aprobación activada en los **Parámetros de operación** de la página Sistema (`parametros[sql_alteracoes]=1`) |
 | el resto (`DROP`, `TRUNCATE`, `CREATE`, otro `ALTER`, más de un comando, el parámetro `?`, un comentario en el comando) | nunca: rechazado antes de llegar a la base |
 
 Cada petición, la rechazada, la que dio error y la que funcionó, queda en el registro (la tabla `sql_execucao`, leída en
@@ -383,7 +385,7 @@ siguiente sale enseguida, sin tocar la base, y anota el salto en un archivo junt
 vuelta que sostenía el bloqueo registra, como error, cuántas salieron así y cuánto tardó.
 
 La vuelta que toma el bloqueo graba en él el número de su proceso; después de **Vueltas del cron antes de matar la
-trabada** (Configuración; por defecto 10) vueltas saltadas seguidas, la siguiente comprueba que el proceso es el del
+trabada** (la página Sistema; por defecto 10) vueltas saltadas seguidas, la siguiente comprueba que el proceso es el del
 cron, mata la trabada y corre en su lugar, con el error en el registro.
 
 En SQLite, ponga el archivo de la base (`DB_ARQUIVO`) **fuera de la carpeta que publica el servidor web**, en una carpeta en
@@ -436,7 +438,7 @@ entran por **Crear cuenta** (`cadastro.php`), por una invitación suya, o el mas
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | la aplicación registrada en Microsoft, para los calendarios de Outlook (vea abajo) |
 | `DOCUMENTOS_PASTA` | la carpeta de los archivos de los documentos (el manual, la factura, fotos, videos), **fuera de la carpeta publicada**, con permiso de escritura para el usuario de PHP. Sin ella, la página Documentos avisa que falta y no acepta envíos. Ej.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionales: la copia de seguridad de la base (vea [Copia de seguridad](#cópia-de-segurança)). La carpeta, **fuera de la carpeta publicada** (sin ella, no hay copia automática); cuántas se guardan (predeterminado 7); y si lleva el contenido de los documentos guardado en la base (predeterminado: no). |
-| `BACKUP_ATIVO` | opcional: `false` desactiva la copia de seguridad: sin copia automática, sin **Hacer una copia ahora** y sin el cuadro **Copia de seguridad** en la Configuración (ni el aviso de que falta la carpeta). Sin ella: activada |
+| `BACKUP_ATIVO` | opcional: `false` desactiva la copia de seguridad: sin copia automática, sin **Hacer una copia ahora** y sin el cuadro **Copia de seguridad** en la página Sistema. Sin ella: activada |
 | `DOCUMENTOS_LIMITE` | opcional: el mayor documento aceptado, en bytes. Sin ella, 100 MB (`104857600`); `0` o `-1`, sin límite del sistema. `MANUAL_LIMITE`, el nombre antiguo, todavía vale cuando ella no existe. El límite de PHP y el de nginx siguen valiendo (vea [El tamaño de los envíos](#o-tamanho-dos-envios-os-documentos)). Ej.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionales, solo para el `importar.php` con este sistema en Postgres, SQLite o Firebird: dónde está el MySQL del sistema anterior |
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | opcionales, solo para pruebas: las direcciones de las fuentes de los números aleatorios (`https://www.random.org/integers/` y `https://qrng.anu.edu.au/API/jsonI.php`). Cambiadas, los sorteos piden los números a un servidor de prueba |
@@ -447,8 +449,8 @@ entran por **Crear cuenta** (`cadastro.php`), por una invitación suya, o el mas
 | `LOTE_MAXIMO` | opcional: cuántas operaciones caben en un lote (`recurso=lote`). Sin ella, 100 |
 
 Los parámetros de operación (`CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS`, `DOCUMENTOS_LIMITE`, `API_ESPERA`, `LOTE_MAXIMO`,
-`BACKUP_ATIVO`, `BACKUP_MANTER` y `BACKUP_DOCUMENTOS`) el master los cambia también en el cuadro **Sistema** de la
-Configuración (o por la API: `recurso=config`, `parametros[<chave>]`): lo guardado allí vale por encima de la línea del
+`BACKUP_ATIVO`, `BACKUP_MANTER` y `BACKUP_DOCUMENTOS`) el master los cambia también en los **Parámetros de operación** de la
+página Sistema (o por la API: `recurso=config`, `parametros[<chave>]`): lo guardado allí vale por encima de la línea del
 `config.php`, y vacío vuelve a valer la línea. Las credenciales, las claves, las carpetas y las direcciones de los servidores
 quedan solo en el `config.php`.
 
@@ -473,7 +475,7 @@ configuración en el servidor:
   puso, y lo da por enviado si la respuesta es 2xx. Los mensajes largos se dividen en partes.
 - **Correo:** el servidor SMTP en el `config.php` (`SMTP_HOST`, el puerto, la seguridad, el usuario y la contraseña; en Gmail
   y en Outlook, una contraseña de aplicación) y el `EMAIL_REMETENTE`; o `EMAIL_METODO = "mail"`, con un sendmail en el
-  servidor. Con el `IMAP_*`, cada correo enviado recibe una copia en Enviados. El master lo prueba en **Mi cuenta › Servidor
+  servidor. Con el `IMAP_*`, cada correo enviado recibe una copia en Enviados. El master lo prueba en la página **Sistema**, en **Servidor
   de correo**: el cuadro muestra lo que el sistema leyó del `config.php` (el método, el remitente, el SMTP, el IMAP y el POP; las
   contraseñas solo como *definida* o no) y señala lo que está mal o falta (sin el `EMAIL_METODO`, el puerto que no combina con la
   seguridad, la contraseña vacía, el PHP sin `openssl`...). **Probar las conexiones** entra en el SMTP, en el IMAP (y revisa la
@@ -733,7 +735,7 @@ ciclos mayores, que ningún `CHECK` alcanza) y las de los vínculos opcionales.
 | `migracao_v2.sql` … `migracao_v24.sql` | las migraciones, aplicadas por la página Configuración |
 | [`config.exemplo.php`](config.exemplo.php) | el modelo del `config.php` |
 | [`instalar.php`](instalar.php) | instala el `schema.sql` en la base del `config.php`, cualquiera de ellas (lo mismo que `recurso=instalacao`) |
-| [`senha.php`](senha.php) | cambia la contraseña de una cuenta por la línea de comandos del servidor, sin la fuerza de la Configuración: `php senha.php <login> <contraseña>`; sin los dos, el menú con los usuarios y la contraseña pedida dos veces, sin aparecer (crear cuenta es por la API o por las pantallas) |
+| [`senha.php`](senha.php) | cambia la contraseña de una cuenta por la línea de comandos del servidor, sin la regla de fuerza de la contraseña: `php senha.php <login> <contraseña>`; sin los dos, el menú con los usuarios y la contraseña pedida dos veces, sin aparecer (crear cuenta es por la API o por las pantallas) |
 | [`importar.php`](importar.php) | importa los datos del sistema anterior (lo mismo que `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | el guion para reescribir el sistema desde cero (el `recurso=reconstrucao` de la API) |
 | [`.htaccess`](.htaccess) | la protección de los archivos internos en Apache (y el login del sitio con PHP por FastCGI) |

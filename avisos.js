@@ -1,5 +1,7 @@
 // Avisos: tudo o que o sistema lembra, num lugar só (o avisos.php). Lê a API (recurso=cadastros: os avisos dos relógios, os
-// grupos e os tipos de lançamento; recurso=config: os lembretes, os relógios, os destinos e as agendas) e monta três partes:
+// grupos e os tipos de lançamento; recurso=config: os lembretes, os relógios, os destinos e as agendas; recurso=opcoes,
+// grupo=avisos: os dias do Encostado e da Vistoria nos três níveis) e monta os Ajustes dos avisos (as abas Esta coleção,
+// Minhas coleções e Sistema, pelo painelNiveis do api.js; gravados pela Configuração, recurso=config, acao=salvar) e três partes:
 // os avisos dos relógios (calculados pelas fórmulas, o cadastro da árvore: recurso=avisos), os lembretes (os eventos
 // personalizados da coleção, com hora e repetição: recurso=config, acao=evento_salvar e evento_excluir) e para onde vão
 // (o resumo dos destinos e das agendas, com o caminho para as páginas deles). avisos.php?editar=<id>#form abre um aviso para
@@ -47,9 +49,10 @@ function mostrarRepeticao() {
 
 // lê e monta a página
 function recarregarAvisos() {
-  return Promise.all([api({recurso: "cadastros"}), api({recurso: "config"})]).then(function (r) {
+  return Promise.all([api({recurso: "cadastros"}), api({recurso: "config"}), api({recurso: "opcoes", grupo: "avisos"})]).then(function (r) {
     var dc = r[0];
     var dg = r[1];
+    var dn = r[2];
     var q = new URLSearchParams(window.location.search);
     var editar = parseInt(q.get("editar") || "0", 10);
     var res = el("h1", {}, t("Avisos")) + el("nav", {"class": "abas"}, el("a", {"href": "#avisos-relogios"}, t("Avisos dos relógios")) + el("a", {"href": "#lembretes"}, t("Lembretes"))
@@ -59,12 +62,27 @@ function recarregarAvisos() {
         [t("Os dados que o aviso usa (a data da última revisão, a da pilha)"), t("{1} ou {2}: o relógio › Editar cadastro", {1: lugar("index.php", t("Hoje")), 2: lugar("ficha.php", t("Ficha"))})],
         [t("O lançamento que resolve o aviso (dar corda, carregar)"), lugar("cadastros.php?aba=lancamentos", t("Cadastros › Tipos de lançamento"))],
         [t("Os lembretes com hora e repetição"), t("aqui: Lembretes")], [t("Para onde vão (Telegram, e-mail, agendas)"), t("aqui: Para onde vão")],
-        [t("A carga em que avisa"), lugar("configuracao.php", t("Sistema › Configuração"))]])
+        [t("Quantos dias até o Encostado e a Vistoria"), t("aqui: Ajustes dos avisos")],
+        [t("A carga em que avisa"), lugar("configuracao.php", t("Configuração"))]])
       + ajudaNota("pagina", t("O que esta página reúne"), t("Tudo o que o sistema lembra: os avisos dos relógios, que ele calcula sozinho pelos dados de cada um (dar corda, carregar, trocar a pilha...); os lembretes, que você marca com hora e repetição; e para onde vão os dois (os destinos das mensagens e as agendas)."));
     if (recado !== "") {
       res += recado;
       recado = "";
     }
+    // ---------- os ajustes dos avisos: o Encostado e a Vistoria, nos três níveis ----------
+    var oa = {};
+    dn.colecao.opcoes.forEach(function (o) { oa[o.chave] = o; });
+    var exA = function (chave, titulo, html) { return ajuda(chave, titulo, el("p", {}, html)); };
+    // a caixa liga ou desliga o aviso Encostado inteiro (todas as versões dele na árvore, a coluna da Hoje e o filtro); os dias, o limite
+    var encostadoLigado = String(dg.config.encostado_ativo) !== "0";
+    var ajustes = el("section", {"class": "cartao-config"}, el("h2", {}, t("Ajustes dos avisos")) + el("div", {"class": "cartao-corpo campos"},
+      parCampo(t("Avisar quando um relógio fica encostado"), el("input", {"type": "hidden", "name": "encostado_ativo", "value": "0"})
+        + el("input", {"type": "checkbox", "name": "encostado_ativo", "value": "1", "checked": encostadoLigado}), "check",
+        exA("encostado", t("O aviso Encostado"), t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong>; a caixa desliga tudo (o aviso, a coluna da Hoje e o filtro), o mesmo que desligar todas as versões do aviso Encostado em Avisos dos relógios.")))
+      + campoOpcao(oa.encostado_dias, "encostado_dias", null)
+      // a vistoria periódica: cada relógio ativo ganha o aviso Vistoria a cada tantos dias (0 desliga)
+      + campoOpcao(oa.vistoria_dias, "vistoria_dias", null, exA("vistoria", t("A vistoria periódica"), t("Com um número de dias, cada relógio ativo ganha o aviso <strong>Vistoria</strong> esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro): é para olhar o relógio (a bateria, a pilha, o vidro, a pulseira) e nenhum ficar esquecido com algo errado. Registre pelo botão em Hoje é dia de ou várias de uma vez na página Vistorias. 0 desliga.")))));
+    res += el("div", {"id": "ajustes-avisos"}, painelNiveis(dn, ajustes, nivelDoEndereco()));
     // ---------- 1. os avisos dos relógios ----------
     var e = null;
     dc.avisos.forEach(function (x) { if (x.id === editar) { e = x; } });
@@ -176,8 +194,10 @@ document.addEventListener("change", function (ev) {
 aoGravar = function (form, res, dados) {
   if (!res.ok) { return salvarSemMover(form, res, function () {}); }
   recado = "";
-  var parte = dados.get("recurso") === "avisos" ? "avisos-relogios" : "lembretes";
-  history.replaceState(null, "", "avisos.php#" + parte);
+  var parte = dados.get("recurso") === "avisos" ? "avisos-relogios" : (dados.get("acao") === "salvar" ? "ajustes-avisos" : "lembretes");
+  // a edição acaba (sai o editar= e o evento= do endereço); a aba de nível dos ajustes fica
+  var nivel = nivelDoEndereco();
+  history.replaceState(null, "", "avisos.php" + (nivel ? "?nivel=" + nivel : "") + "#" + parte);
   return salvarSemMover(form, res, recarregarAvisos);
 };
 

@@ -73,7 +73,7 @@
       if (f.fazer && tr.dataset.fazer !== f.fazer) {
         ok = false;
       }
-      // o filtro Encostado só vale com a coluna à mostra (o aviso ligado na Configuração)
+      // o filtro Encostado só vale com a coluna à mostra (o aviso ligado em Avisos › Ajustes dos avisos)
       var comEncostado = !tabela.classList.contains("sem-encostado");
       if (comEncostado && f.encostado === "sim" && tr.dataset.encostadoEstado !== "sim") {
         ok = false;

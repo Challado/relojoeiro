@@ -326,7 +326,7 @@ Os modos ficam na página **Modos de rodízio** (menu **Rodízio**). Cada modo t
 faz sentido nele:
 
 - **Um por semana**: um relógio para a semana inteira, do primeiro ao último dia dela (de segunda a domingo, ou de domingo a
-  sábado: a semana começa no dia escolhido na Configuração, **A semana começa**). Você diz de onde ele sai (a coleção, um
+  sábado: a semana começa no dia escolhido em Rodízio › Ajustes do rodízio, **A semana começa**). Você diz de onde ele sai (a coleção, um
   grupo ou um relógio fixo) e o critério de escolha.
 - **Semana e fim de semana**: dois trechos, de segunda a sexta e no sábado e domingo, cada um com o seu grupo e com **um
   relógio para o trecho** ou **um por dia**. O que vem pronto: o smartwatch na semana, um tradicional por dia no fim dela.
@@ -364,8 +364,8 @@ mudaram; 11 ficaram com o mesmo relógio."* e uma tabelinha com cada dia que mud
 semanas com as datas). O plano vai até o último dia da última delas: o domingo, ou o sábado com a semana começando no
 domingo (com uma semana só, no último dia da semana o plano traz também o primeiro da seguinte, para o aviso da véspera), e a
 semana seguinte entra quando a sua vez chega. Com **No último dia da semana, os modos por semana montam** em *A semana
-seguinte inteira*, na Configuração, no último dia da semana as semanas do modo já contam da semana que vem, e ela vem
-montada inteira. A semana começa no dia escolhido na Configuração (**A semana começa**: na
+seguinte inteira*, em Rodízio › Ajustes do rodízio, no último dia da semana as semanas do modo já contam da semana que vem, e ela vem
+montada inteira. A semana começa no dia escolhido em Rodízio › Ajustes do rodízio (**A semana começa**: na
 segunda-feira, o padrão, ou no domingo), e o ciclo, a próxima semana e o relógio para a semana inteira contam dela. Fora
 da escala, em qualquer modo (mesmo com uma semana só), o **Sortear de novo** tem também **a próxima semana**: ela sai pelo modo atual, com os dias que ainda
 faltam desta semana contados como uso, como se você já tivesse usado os relógios do plano (o uso conta nos dias sem uso e na nota; a carga não, porque não se sabe
@@ -374,7 +374,7 @@ segunda não volta na terça só por parecer parado. Os dias escolhidos à mão 
 semana: ela já planeja o próprio período.
 
 **A lista mostra sempre todas as opções.** A que não vale agora fica desabilitada, com o motivo no próprio texto: *"inclusive
-hoje — indisponível: desligado na Configuração (Trocar o relógio de hoje no próprio dia)"*, *"a próxima semana — indisponível: a
+hoje — indisponível: desligado em Rodízio › Ajustes do rodízio (Trocar o relógio de hoje no próprio dia)"*, *"a próxima semana — indisponível: a
 escala já planeja o próprio período"*, *"a partir de hoje — indisponível: o dia de hoje já começou no pulso"*. Ligando a Configuração, ou
 mudando o modo, a opção volta a poder ser escolhida.
 
@@ -430,7 +430,7 @@ Os números chegam num lote (64 números de 16 bits por pedido), e cada sorteio 
 último múltiplo inteiro da faixa: todos os resultados têm exatamente a mesma chance. Cada serviço tem 4 segundos para
 responder; se os dois falham, o sistema usa o do PHP e não tenta de novo por 10 minutos (assim nenhuma página fica esperando).
 O motivo de cada dia sorteado diz de onde veio o número (*"Sorteio simples, entre 4 candidatos, todos com a mesma chance
-(RANDOM.ORG)."*), e a **Configuração** mostra o último lote (quadro **Sorteios**). O que é segredo não usa estes serviços: o sal das
+(RANDOM.ORG)."*), e a página **Sistema** mostra o último lote (quadro **Sorteios**). O que é segredo não usa estes serviços: o sal das
 senhas e os nomes dos arquivos dos documentos continuam com o gerador do PHP, porque um número que viaja pela internet não serve
 para segredo.
 
@@ -444,7 +444,7 @@ no quadro **Modo de rodízio** da página Hoje (cada um abaixo de uma linha, com
   mão, os sorteados e os livres), e a lista diz o que fica no lugar: em **Apagar e remover os registros** (a de início), o
   modo de rodízio monta esses dias de novo, só eles: os outros dias ficam como estão (na escala inteligente também); em
   **Apagar e deixar os dias livres**, eles ficam livres, sem relógio e sem sorteio, para você escolher à mão (com os **Dias
-  sem relógio (folga)** desligados na Configuração, essa escolha fica desabilitada). O botão **Apagar** pede confirmação.
+  sem relógio (folga)** desligados em Rodízio › Ajustes do rodízio, essa escolha fica desabilitada). O botão **Apagar** pede confirmação.
 - **Apagar tudo**: limpa toda a programação, de amanhã em diante: os dias escolhidos à mão, os sorteados e os livres.
   Marcando **Excluindo hoje**, apaga de hoje em diante (se sair outro relógio para hoje, ele passa a ser o do pulso a partir
   de agora). Depois, o modo de rodízio monta o plano de novo, do zero: até o último dia da última das semanas do modo (as
@@ -516,7 +516,7 @@ e só o *o que fazer* deles é refeito (a carga simulada muda com o período nov
 refazem a escala inteira.
 
 A escala **vai até os dias do modo** (de 7 a 730, na página Modos de rodízio), contados de hoje (de amanhã, se o dia de hoje
-já começou no pulso; com **A escala inteligente começa** em *Sempre hoje*, na Configuração, hoje é sempre o 1º dia, e a escala
+já começou no pulso; com **A escala inteligente começa** em *Sempre hoje*, em Rodízio › Ajustes do rodízio, hoje é sempre o 1º dia, e a escala
 de 7 dias vai até daqui a 6). Com **A escala inteligente fecha** em *No fim da semana*, o período vai em semanas inteiras,
 pela **A semana começa**: a de uma semana, numa terça, vai até o domingo (com a semana começando na segunda), e no último
 dia da semana monta a semana seguinte inteira; em *No fim do mês*, em meses inteiros (a de um mês vai até o último dia do
@@ -922,7 +922,7 @@ do envio.
 Ao gravar, o relógio fica **em manutenção**: inativo até voltar (com a etiqueta *em manutenção* no painel
 e o estado *Em manutenção* na página Hoje), as sessões abertas dele fecham (no pulso, no sol, no carregador; no winder, a
 posição fica livre), os dias dele no plano de amanhã em diante saem e são sorteados de novo, e os avisos de carga, corda e
-pilha param. Se ele era o **relógio de hoje**, hoje fica livre: com a Configuração deixando trocar o relógio de hoje no
+pilha param. Se ele era o **relógio de hoje**, hoje fica livre: com os Ajustes do rodízio deixando trocar o relógio de hoje no
 próprio dia, você escolhe outro; sem ela, hoje fica sem relógio. Mudar o **Relógio ativo** enquanto ele está na oficina
 muda o da volta.
 
@@ -971,7 +971,7 @@ soma o da coleção). O **Passaporte** traz os serviços. Pela API: `recurso=ser
 Um relógio pode ficar com algo errado sem ninguém ver: a bateria no fim, a pilha vazando, o vidro trincado, a pulseira
 soltando, a umidade no mostrador. A vistoria é para isso: de tempos em tempos, pegar cada relógio e conferir.
 
-Ligue em **Configuração**, **Vistoria: a cada quantos dias conferir cada relógio** (0 desliga; de fábrica vem desligada). Com
+Ligue em **Avisos › Ajustes dos avisos**, **Vistoria: a cada quantos dias conferir cada relógio** (0 desliga; de fábrica vem desligada). Com
 um número de dias, cada relógio ativo ganha o aviso **Vistoria**, que vence esses dias depois da última vistoria dele; sem
 nenhuma, da data da compra (os antigos já começam vencidos); sem data da compra, do dia em que ele foi cadastrado. O relógio
 na manutenção, inativo ou fora da coleção não vence.
@@ -1115,7 +1115,7 @@ Os campos de usuário e senha de um serviço de fora (o servidor de e-mail próp
 **Usuários** ficam somente leitura até o clique: o navegador não os preenche sozinho com o login salvo de quem está usando
 (num par usuário e senha ele ignora o `autocomplete="off"`, e o login dele acabaria gravado na conta de outra pessoa).
 
-**A senha** tem a força que o master escolhe na **Configuração**, no cartão **Senhas**: o tamanho mínimo e quantas letras
+**A senha** tem a força que o master escolhe na página **Sistema**, no cartão **Senhas**: o tamanho mínimo e quantas letras
 maiúsculas, minúsculas, números e símbolos ela precisa ter, no mínimo (o padrão: 8 caracteres, com 1 de cada). Vale para
 toda senha nova: a conta criada, a troca em **Minha conta**, a senha nova pelo link do **Esqueci a senha**, a do master em
 **Usuários**; as que já existem continuam valendo (o `senha.php`, no servidor, troca sem ela). Todo lugar que define uma senha pede também o
@@ -1519,8 +1519,8 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 | Acertar a hora | `acertar_hora` | Tradicional | o Acerto da hora. Vence quando o desvio estimado passa de *Acertar a hora a partir de* (padrão 60 s), pela marcha medida; avisa 2 dias antes. |
 | Marcha fora do esperado | `marcha_fora` | Tradicional | uma nova leitura do desvio. Vence na leitura cuja marcha saiu da *Marcha esperada* ou, com 4 medições ou mais, ficou longe do histórico do próprio relógio (mais que 3 vezes a variação, e no mínimo 5 s/dia). |
 | Garantia vencendo | `garantia` | todos | (nada: só avisa) |
-| Encostado | `encostado` | todos (os da coleção, ativos) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (a Configuração, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). Não entra na próxima manutenção nem no **O que fazer**: a tabela tem a coluna **Encostado**, com quanto falta ou quanto passou. |
-| Vistoria | `vistoria` | todos (os ativos, fora da manutenção) | a Vistoria. Só com a Configuração **Vistoria: a cada quantos dias conferir cada relógio** acima de 0 (de fábrica, 0: desligada). Vence esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do dia do cadastro). Veja [A vistoria periódica](#a-vistoria-periódica). |
+| Encostado | `encostado` | todos (os da coleção, ativos) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (Avisos › Ajustes dos avisos, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). Não entra na próxima manutenção nem no **O que fazer**: a tabela tem a coluna **Encostado**, com quanto falta ou quanto passou. |
+| Vistoria | `vistoria` | todos (os ativos, fora da manutenção) | a Vistoria. Só com **Vistoria: a cada quantos dias conferir cada relógio** (Avisos › Ajustes dos avisos) acima de 0 (de fábrica, 0: desligada). Vence esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do dia do cadastro). Veja [A vistoria periódica](#a-vistoria-periódica). |
 
 Os avisos vão no alerta da manhã. Um aviso marcado **na hora** (na página **Avisos**, a caixa *na hora*) vai também pelo
 Telegram **no minuto em que vence**, uma vez só, até ser resolvido: é assim que o **Tirar do carregador** chega quando a bateria
@@ -1586,47 +1586,22 @@ As autonomias saem em segundos para a API (`recurso=autonomia`) e por extenso na
 
 ## A Configuração, opção por opção
 
-A página **Configuração** guarda as opções **da coleção** (cada coleção tem as suas). Entre parênteses, o nome de cada uma na API
-(`recurso=config`, na chave `config`), para quem automatiza; o padrão de uma coleção nova vem no fim de cada linha.
+As opções **da coleção** (cada coleção tem as suas) ficam em três páginas, cada uma com o seu assunto: a **Configuração** (a rotina do dia, os limites e as contas, as telas), **Rodízio › Ajustes do rodízio** (o rodízio, a semana e a escala, o sorteio) e **Avisos › Ajustes dos avisos** (o Encostado e a vistoria). O que é do sistema inteiro fica na página **Sistema** (só o master). Entre parênteses, o nome de cada opção na API (`recurso=config`, na chave `config`), para quem automatiza; o padrão de uma coleção nova vem no fim de cada linha.
 
-**As opções em três níveis.** Cada opção da coleção que não é do sistema inteiro (os horários, os limites, o gasto da
-bateria, a semana e a escala, as telas: 33 ao todo) segue a hierarquia **sistema → usuário → coleção**, a mesma do rodízio:
-o **master** escolhe o padrão do sistema (no quadro **Padrões do sistema**), cada **dono** escolhe o padrão das coleções
-dele (na aba **Minhas coleções** da Configuração) e cada **coleção** pode escolher a dela. O mais específico prevalece; o de
-cima é só um padrão, nunca um bloqueio. Um campo vazio **herda** (o rótulo diz de onde vem o valor de agora: do usuário, do
-sistema ou o padrão de fábrica); nas listas, a primeira escolha é **Herdar (…)**; nos campos de hora e de número, o botão
-**Herdar** esvazia o campo. Vale também para os membros e para o cron, que seguem o dono da coleção. Coleção nova já nasce
-herdando tudo; as que já existiam seguem com o valor que tinham, e a migração v58 passa para o vazio os que estavam iguais
-ao padrão de fábrica. Mudar um padrão refaz o que depende dele em cada coleção que herda (o "fecha às" do pulso e do sol, o
-fim da escala inteligente); um horário de uso que deixaria alguma coleção com o fim antes do início é recusado e nada muda.
-Pela API: `config/salvar` com a chave da opção (a coleção), `conta/alterar` com `opcoes[<chave>]` (o dono) e `config/salvar`
-com `padroes[<chave>]` (o sistema, só o master); a resposta de `recurso=config` traz `opcoes` com a escolha de cada nível, o
-que herda e de onde.
+**As opções em três níveis.** Cada opção da coleção que não é do sistema inteiro (os horários, os limites, o gasto da bateria, o rodízio, a semana e a escala, os avisos, as telas: 41 ao todo) segue a hierarquia **sistema → usuário → coleção**: o **master** escolhe o padrão do sistema (na aba **Sistema** de cada página), cada **dono** escolhe o padrão das coleções dele (na aba **Minhas coleções**) e cada **coleção** pode escolher a dela. O mais específico prevalece; o de cima é só um padrão, nunca um bloqueio. Um campo vazio **herda** (o rótulo diz de onde vem o valor de agora: do usuário, do sistema ou o padrão de fábrica); nas listas, a primeira escolha é **Herdar (…)**; nos campos de hora e de número, o botão **Herdar** esvazia o campo. Vale também para os membros e para o cron, que seguem o dono da coleção. Coleção nova já nasce herdando tudo; as que já existiam seguem com o valor que tinham, e a migração v58 passa para o vazio os que estavam iguais ao padrão de fábrica (a v67 traz o rodízio ligado e o relógio de ontem para a mesma hierarquia). Mudar um padrão refaz o que depende dele em cada coleção que herda (o "fecha às" do pulso e do sol, o fim da escala inteligente, a hora em que o rodízio voltou); um horário de uso que deixaria alguma coleção com o fim antes do início é recusado e nada muda. Pela API: `config/salvar` com a chave da opção (a coleção), `dono[<chave>]` (o dono; ou `conta/alterar` com `opcoes[<chave>]`) e `padroes[<chave>]` (o sistema, só o master); `recurso=opcoes&grupo=<grupo>` traz as opções de um assunto (`rotina`, `limites`, `telas`, `rodizio` ou `avisos`) com a escolha de cada nível, o que herda e de onde, e `recurso=config` traz as da Configuração.
 
-**Um nível por vez.** A Configuração mostra um nível das opções por vez, pelas abas do alto: **Esta coleção** (o que vale
-nesta coleção: os quadros **Rotina do dia**, **Limites e contas**, **Telas**, **Sorteios** e **Avisos, lembretes e
-mensagens**), **Minhas coleções** (só o dono da coleção aberta: o padrão dele para as coleções de que é dono, com o rodízio,
-o relógio de ontem e cada opção) e **Sistema** (só o master: o que é do sistema inteiro, **Senhas**, **Cron**, **Sistema**,
-**Padrões do sistema**, **Cópia de segurança** e o **SQL**). Assim cada opção aparece uma vez só na tela, e não a da
-coleção, a do dono e a do sistema uma embaixo da outra. Trocar de aba não perde o que você digitou, e o **Salvar
-configuração** grava todos os níveis de uma vez. Quem não é dono nem master vê tudo numa página só. Em **Minha conta** fica
-só o que é da pessoa (o e-mail, o idioma, o fuso, a senha), com o caminho para a aba **Minhas coleções**.
+**Um nível por vez.** Cada uma das três páginas mostra um nível por vez, pelas abas do alto: **Esta coleção** (o que vale nesta coleção), **Minhas coleções** (só o dono da coleção aberta: o padrão dele para as coleções de que é dono) e **Sistema** (só o master: o padrão do sistema). Assim cada opção aparece uma vez só na tela, e não a da coleção, a do dono e a do sistema uma embaixo da outra. Trocar de aba não perde o que você digitou, e o botão de salvar grava todos os níveis de uma vez. Quem não é dono nem master vê só a coleção, sem abas. No menu, **Configuração › Minhas coleções** abre direto a aba do dono. Em **Minha conta** fica só o que é da pessoa (o e-mail, o idioma, o fuso, a senha, o servidor de e-mail próprio), com o caminho para a aba **Minhas coleções** de cada página.
 
-Ficam de fora, de propósito: o que é do sistema inteiro por natureza (a força da senha, o endereço do sistema, as rodadas do cron e
-os parâmetros do quadro **Sistema**), o idioma e o fuso (seguem a pessoa que olha: a escolha dela, depois a da coleção, depois a do
-sistema), o rodízio e o relógio de ontem sem uso (já têm os três níveis, com a coluna própria do usuário) e o que só pode ficar no
-`config.php` (o banco, as chaves, as pastas e o e-mail).
+Ficam de fora, de propósito: o que é do sistema inteiro por natureza (a força da senha, o endereço do sistema, as rodadas do cron e os parâmetros de operação, na página **Sistema**), o idioma e o fuso (seguem a pessoa que olha: a escolha dela, depois a da coleção, depois a do sistema) e o que só pode ficar no `config.php` (o banco, as chaves, as pastas e o e-mail).
 
-Os cartões se distribuem pelos espaços livres, conforme a largura da tela e a altura do conteúdo. O quadro **Sistema**
-ocupa a largura toda, com suas opções em colunas; no celular, fica uma coluna só. A distribuição acompanha mudanças
-de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
+Os cartões se distribuem pelos espaços livres, conforme a largura da tela e a altura do conteúdo; no celular, fica uma coluna só. A distribuição acompanha mudanças de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
 
-### Geral
+### A página Configuração
+
+Na página **Configuração** (no menu **Configuração**), a rotina do dia, os limites e as contas e as telas:
 
 | Opção | O que faz |
 |---|---|
-| **Rodízio da coleção** (`rodizio_ativo`) | **Herdar do usuário** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). A hierarquia é **sistema → usuário → coleção**: cada nível herda o anterior ou o substitui. Na aba **Minhas coleções** da Configuração, **Rodízio: padrão das minhas coleções** (`conta/alterar`, `rodizio_ativo` vazio/1/0) vale nas coleções de que a pessoa é dona, inclusive para membros e cron; não depende de quem abriu a página. A escolha explícita da coleção prevalece sobre o usuário e o sistema. Em **Sistema**, só o master muda **Rodízio: padrão do sistema** (`parametros[rodizio_ativo]`, padrão `1`). A API mostra o estado efetivo e a origem em `rodizio` nos recursos `config`, `hoje`, `plano` e `ficha`. Desligado, pausa sorteios, entradas automáticas no pulso, preparação e projeções do plano; cadastro, leituras, avisos de manutenção e marcações manuais continuam funcionando. A programação e o histórico são preservados: **Plano** mostra a programação guardada, sem ações de alteração, e **Hoje** mostra a pausa ou quem está no pulso. As sessões já registradas continuam seguindo suas regras de encerramento. Ao ligar novamente, o plano volta a valer; uma nova sessão automática só começa a contar a partir da retomada, sem preencher o tempo pausado. As agendas deixam de incluir o relógio do dia e a véspera na próxima sincronização; os demais avisos e eventos continuam. A migração **v56** acrescenta a preferência à conta; quem já existe começa herdando, com o padrão geral ligado. |
-| **Relógio de ontem sem uso passa para hoje** (`recupera_ontem`) | **Herdar do usuário** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). Ligado, se o relógio do plano de **ontem** não foi ao pulso **nem um pouquinho** (você usou outro, ou nenhum), ele **passa para hoje** e todos os outros dias do plano, de hoje em diante (e os dias livres), **andam um dia**; foi usado, mesmo que pouco, e nada muda. Não passa: o mesmo relógio dois dias seguidos (o que passou ontem não passa de novo), um relógio indisponível, na manutenção ou fora da coleção, um hoje livre, nem quando o relógio de hoje já foi ao pulso. A conta é feita uma vez por dia, quando o plano de hoje é montado (a página Hoje ou o cron); o dia de hoje fica à mão no plano, com o motivo *Passou de ontem: não foi usado*. Três níveis como o rodízio: **sistema** (só o master, em **Sistema**, `parametros[recupera_ontem]`, padrão desligado) → **usuário** (na aba **Minhas coleções** da Configuração, `conta/alterar`, `recupera_ontem` vazio/1/0) → **coleção** (aqui, `recupera_ontem`); a API mostra o estado efetivo e a origem em `recupera_ontem` do `recurso=config`. |
 | **Horário de uso, início e fim** (`uso_inicio`, `uso_fim`) | o período do dia em que um relógio está no pulso. Vale para o plano, as previsões e o "dia de uso" do gasto medido (das 7h às 22h, 15 horas). Padrão: 07:00 e 22:00. |
 | **Pôr no pulso sozinho** (`pulso_auto_inicio`) | a escolha ao lado do início: ligado, o relógio do dia entra no pulso sozinho no início do horário de uso; desligado, só pelo **Pôs**. Se nessa hora ele está noutro lugar (no carregador, no sol, no winder), espera ele sair de lá, e o período no pulso começa quando ele saiu. Padrão: ligado. |
 | **Tirar do pulso sozinho** (`pulso_auto_fim`) | a escolha ao lado do fim: ligado, ele sai do pulso sozinho no fim do horário de uso (é o "fecha às" do tipo No pulso); desligado, só pelo **Tirou**. Padrão: ligado. |
@@ -1635,28 +1610,15 @@ de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
 | **Rodada da noite** (`horario_noite`) | a hora da mensagem da véspera: o relógio de amanhã e o que preparar. Padrão: 20:00. |
 | **A sessão no sol esquecida fecha às** (`sol_fim`, que grava o "fecha às" do tipo No sol) | quem pôs no sol e esqueceu do **Tirou** tem a sessão fechada nessa hora. Padrão: 18:00. |
 | **Tirar do sol sozinho** (`sol_auto_fim`) | a escolha ao lado da hora do sol: ligado, o solar sai do sol sozinho nessa hora; desligado, a sessão no sol fica aberta até o **Tirar do sol** (esquecida, ele continua carregando na conta), e a hora fica guardada para quando ela for ligada de novo. Padrão: marcada. |
-| **A semana começa** (`semana_inicio`) | o primeiro dia da semana do rodízio: **Na segunda-feira** (`segunda`) ou **No domingo** (`domingo`). O plano dos [modos de rodízio](#os-modos-de-rodízio) vem montado até o último dia da semana (o domingo ou o sábado), e o ciclo, a próxima semana e o relógio para a semana inteira contam dela; vale para os próximos sorteios (o que já está no plano fica; **Sortear de novo** refaz). A função `SEMANA_DO_ANO()` das fórmulas continua a semana ISO. Padrão: segunda-feira. |
-| **A escala inteligente começa** (`escala_inicio`) | de onde a [escala inteligente](#a-escala-inteligente) conta os dias do modo: **Amanhã, se o dia de hoje já começou no pulso** (`amanha`, o padrão: o dia de hoje que já começou fica de fora da conta, e a escala de 7 dias vai de amanhã até daqui a 7, com o dia da semana de hoje aparecendo de novo no fim) ou **Sempre hoje** (`hoje`: hoje é o 1º dia, e a escala de 7 dias vai até daqui a 6). O relógio de hoje que já começou no pulso não muda nos dois casos. Mudou: o fim da escala sai, e a próxima montagem (a página Hoje, o cron) refaz a escala contando do primeiro dia novo. |
-| **A escala inteligente fecha** (`escala_periodo`) | onde termina o período da [escala inteligente](#a-escala-inteligente): **Nos dias corridos do período** (`corridos`, o padrão: os dias do modo contados do primeiro dia dela; a de uma semana, numa terça, vai até a terça seguinte), **No fim da semana (semanas inteiras)** (`semana`: os dias ÷ 7, arredondado; a de uma semana vai até o último dia da semana, pela **A semana começa**, e no último dia da semana monta a semana seguinte inteira) ou **No fim do mês (meses inteiros)** (`mes`: os dias ÷ 30,4, arredondado; a de um mês vai até o último dia do mês, a de meio ano até o fim do 6º mês contando o de agora; no último dia do mês, até o fim do mês seguinte; com menos de 4 semanas, como no fim da semana). Quando o período acaba, o seguinte começa no dia depois do fim, do mesmo jeito. Mudou (ou mudou a semana, fechando na semana ou no mês): o fim da escala sai, e a próxima montagem refaz a escala. |
-| **No último dia da semana, os modos por semana montam** (`semana_ultimo_dia`) | nos modos que planejam por semana (fora da escala): **Só o dia seguinte** (`dia_seguinte`, o padrão: no último dia da semana o plano traz o dia de amanhã, e a semana seguinte entra inteira no dia em que ela começa) ou **A semana seguinte inteira** (`semana_seguinte`: no último dia da semana, as semanas do modo contam da semana que vem, que vem montada inteira; com a semana começando na segunda, no domingo o plano traz de segunda a domingo). A lista das semanas da página Modos de rodízio segue a escolha. |
-| **Dias sem relógio (folga)** (`dia_sem_relogio`) | ligado (o padrão), dá para deixar um dia **sem relógio**, a folga: o **Sem relógio (dia livre)** aparece no **trocar por…** de cada dia (Próximos dias e Plano) e no Rodízio manual, e o **Sem relógio hoje**, no dia de hoje (com a troca no próprio dia ligada). Desligado, essas opções não aparecem e a API recusa a folga (`sem_relogio`, `periodo_livre`, `trocar_dia` com `relogio_id=livre` e `manual` com `livre` num dia novo); os dias que já estão livres continuam livres, até você escolher um relógio para eles ou voltar a sortear. Padrão: ligado. |
-| **Trocar o relógio de hoje no próprio dia** (`trocar_hoje`) | desligado (o padrão), o relógio de hoje fica: o **trocar por…** e o **escolher…** do dia de hoje, o **Usando hoje**, o **Sortear de novo** *inclusive hoje*, o **Sem relógio hoje** e o **Excluindo hoje** do Apagar tudo não aparecem, no Rodízio manual o dia de hoje fica parado, e o **Sortear de novo** vale a partir de amanhã mesmo com o dia ainda por começar (a API recusa o que trocaria o de hoje): o relógio de amanhã se escolhe até hoje. Ligado, o de hoje também se troca no próprio dia, e o novo passa a ser o do pulso a partir de agora. As marcações do pulso (**Pôs** e **Tirou**) continuam livres nos dois casos. Padrão: desligado. |
 | **Limite de carga** (`carga_limiar`) | a carga (%) em que os avisos mandam carregar ou dar corda; o campo **Limite de carga** de um relógio vale no lugar dele. De 1 a 99. Padrão: 20. |
 | **Limite do solar** (`sol_limiar`) | a carga (%) em que o solar deve ir para o sol. De 1 a 99. Padrão: 70. |
 | **Limite da previsão** (`previsao_limite`) | a carga (%) que a previsão do smartwatch usa para "chega ao limite em...". De 0 a 100. Padrão: 20. O aviso Carregar converte a taxa por dia de uso em dias civis e não prevê datas além de 366 dias. A previsão detalhada procura o instante do limite com precisão de até um minuto. `chega_limite_em` traz data e hora, no formato `AAAA-MM-DD HH:MM:SS`. |
-| **Casas decimais dos pesos** (`sorteio_casas`) | de 0 a 8, padrão 2, em Configuração › Sorteios. Os pesos são arredondados antes do sorteio; se todos os positivos virarem zero, usa os pesos originais. Peso zero não participa. |
-| **Garantia de rodízio** (`max_sem_uso`) | nenhum relógio passa mais que esses dias sem uso: o que passa entra na frente de todos. 0 desliga. Padrão: 21. |
-| **Avisar quando um relógio fica encostado** (`encostado_ativo`) | marcada, o aviso **Encostado** funciona; desmarcada, ele some inteiro (o aviso, a coluna da página Hoje e o filtro). É o mesmo que ligar ou desligar o aviso `encostado` na página **Avisos**. Padrão: marcada. |
-| **Aviso Encostado: dias sem ir ao pulso** (`encostado_dias`) | depois de quantos dias sem ir ao pulso um relógio da coleção ganha o aviso **Encostado** (em **Hoje é dia de**: *Encostado*, *"o limite de dias sem ir ao pulso vence há 2d, 11/10/2026 18:00"*). De 1 a 3650. Padrão: 30. A caixa acima liga e desliga o aviso. |
-| **Vistoria: a cada quantos dias conferir cada relógio (0 desliga)** (`vistoria_dias`) | a vistoria periódica: com um número de dias, cada relógio ativo ganha o aviso **Vistoria** esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro). De 0 a 3650. Padrão: 0 (desligada). Veja [A vistoria periódica](#a-vistoria-periódica). |
 | **Gasto da bateria: como calcular (válido para todos os relógios)** (`gasto_motor`) | qual dos cinco motores do [gasto medido pelas leituras](#gasto-medido-pelas-leituras) faz a conta, para todos os relógios da coleção: **1. Pelas horas registradas (o motor original)**, **2. ... (robusto)**, **3. Pela marcação: duas taxas separadas**, **4. Só o cadastro** ou **5. Pelas fórmulas do cadastro**. Padrão: vazio (*Individual (no relógio ou no grupo)*: o campo **Como calcular o gasto da bateria** de cada relógio, senão o padrão dele, senão o motor 1). |
 | **Gasto medido: contar por** (`medicao_base`) | o que entra na conta do gasto medido: **Dias** (`dias`, as medições dos últimos tantos dias) ou **Leituras** (`leituras`, as últimas tantas medições de cada tipo, em uso e em repouso). Padrão: dias. |
 | **Gasto medido: média dos últimos (dias)** (`medicao_janela_dias`) | a janela do gasto medido, contando por dias: as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
 | **Gasto medido: últimas leituras (de cada tipo)** (`medicao_janela_leituras`) | a janela contando por leituras: quantas medições de cada tipo entram. De 2 a 1000. Padrão: 20. |
 | **Gasto medido: meia-vida dos dados (dias; 0 desliga)** (`medicao_meia_vida_dias`) | De 0 a 3650 dias; padrão 0. Com N, o peso temporal cai à metade após N dias. Aplica-se aos motores horas, robusto, marcação e MEDIDO nas fórmulas. Não altera as leituras nem a carga. |
 | **Cópia dos documentos no banco (válido para todos os relógios)** (`documentos_copia`) | para a coleção inteira: **Todos os arquivos** (`todos`), **Nenhum arquivo** (`nenhum`) ou vazio (*Individual (no relógio ou no arquivo)*). É o primeiro dos três níveis da cópia (veja [Os documentos do relógio](#os-documentos-do-relógio)). Padrão: vazio. |
-| **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda, e o dos links dos e-mails, do ICS e do retorno do Outlook. É do sistema inteiro: só o master muda. Padrão: vazio (o endereço por onde a página foi aberta). |
-| **Rodadas do cron antes de matar a travada** (`cron_espera_rodadas`) | o cron roda uma rodada por vez, e cada uma grava o número do processo dela no arquivo de trava. Achando a anterior ainda rodando, a rodada sai sem rodar e conta o pulo; depois deste número de rodadas puladas seguidas, a próxima confere que o processo é o do cron, mata a travada e roda no lugar dela, com o erro no registro. De 0 a 1440; 0 nunca mata (só espera). É do sistema inteiro: só o master muda. Padrão: 10. |
 | **Próximos dias: mostrar até** (`proximos_por_pagina`) e **Plano: mostrar até** (`plano_por_pagina`) | quantos dias os **Próximos dias** da página Hoje e o **Dia a dia** da página Plano mostram de cada vez (de 1 a 366). Passando disso, embaixo aparece o navegador das páginas: **<** (anterior), os números (a primeira, a última e até duas de cada lado da atual, com … nos saltos) e **>** (próxima); parando o mouse em cima, a dica diz *Anterior*, *Próximo* ou *Página N*. Padrão: 7 e 31. |
 | **Intervalo de atualização das páginas** (`atualizar_segundos`) | de quantos em quantos segundos a **Hoje** (com o relógio aberto no painel), a **Ficha**, o **Plano**, os **Totais** e o **Histórico** leem tudo de novo sozinhos, sem recarregar: de 1 a 86400; **0** desliga; vazio, 60. Negativo ou acima disso, a Configuração recusa. Veja [As páginas se atualizam sozinhas](#as-páginas-se-atualizam-sozinhas). |
 | **Fuso horário (quem não escolheu outro em Minha conta)** (`fuso`) | o fuso horário da coleção: o de quem não escolheu o seu em **Minha conta**, e o do cron, das mensagens e das agendas dela (veja [O fuso horário](#o-fuso-horário)). Vazio: o do sistema (o `FUSO` do `config.php`). |
@@ -1669,9 +1631,34 @@ de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
 | **Sugestão para agora (página Hoje)** (`sugestao_agora`) | ligada, a página Hoje ganha o cartão **Sugestão para agora**, entre os avisos de hoje e os Próximos dias: você escolhe a forma de escolha e os tipos de relógio, e o sistema sugere um para usar agora, fora da escala (veja [Sugestão para agora](#sugestão-para-agora)). Padrão: desligada. |
 | **Reloginho da barra** (`relojinho_modo`) | o reloginho do canto da barra e da aba tem 24 modelos, um para cada hora do dia. **Normal** (`hora`): cada hora tem o seu (à 0 o Clássico, às 16 o Digital, às 23 o Futurista). **Aleatório** (`aleatorio`): cada hora sorteia um dos 24, e pode repetir. **Aleatório sem repetição** (`sem_repeticao`): os 24 embaralhados, cada um aparece uma vez no dia. O sorteio é do dia: o mesmo em toda página e aparelho, e outro no dia seguinte. Padrão: normal. |
 
-Na página, cada opção fica numa linha, com o nome à esquerda e o campo à direita, em quadros (Rotina do dia, Limites e contas,
-Telas, Cron, Sorteios e o resumo **Avisos, lembretes e mensagens**, com o caminho para a página **Avisos**); o botão **Salvar
-configuração** fica numa barra presa no pé da tela.
+Na página, cada opção fica numa linha, com o nome à esquerda e o campo à direita, em quadros (Rotina do dia, Limites e contas, Telas e o resumo **Avisos, lembretes e mensagens**, com o caminho para a página **Avisos**); o botão **Salvar configuração** fica numa barra presa no pé da tela. As outras duas páginas das opções são iguais, com o botão **Salvar**.
+
+### Ajustes do rodízio
+
+A página **Ajustes do rodízio** (no menu **Rodízio**) reúne as opções do rodízio em três quadros, **O rodízio**, **A semana e a escala inteligente** e **O sorteio e a garantia**, com as mesmas abas de nível. Pela API, `recurso=opcoes&grupo=rodizio`.
+
+| Opção | O que faz |
+|---|---|
+| **Rodízio ligado** (`rodizio_ativo`) | **Herdar** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`), nos três níveis, como as outras opções: na aba **Minhas coleções**, o padrão das coleções de que a pessoa é dona (`dono[rodizio_ativo]`), que vale também para os membros e o cron e não depende de quem abriu a página; na aba **Sistema**, o padrão do sistema, só o master (`padroes[rodizio_ativo]`, padrão `1`). A escolha explícita da coleção prevalece sobre o usuário e o sistema. A API mostra o estado efetivo e a origem em `rodizio` nos recursos `hoje`, `plano` e `ficha`. Desligado, pausa sorteios, entradas automáticas no pulso, preparação e projeções do plano; cadastro, leituras, avisos de manutenção e marcações manuais continuam funcionando. A programação e o histórico são preservados: **Plano** mostra a programação guardada, sem ações de alteração, e **Hoje** mostra a pausa ou quem está no pulso. As sessões já registradas continuam seguindo suas regras de encerramento. Ao ligar novamente, o plano volta a valer; uma nova sessão automática só começa a contar a partir da retomada, sem preencher o tempo pausado. As agendas deixam de incluir o relógio do dia e a véspera na próxima sincronização; os demais avisos e eventos continuam. A migração **v67** passa a opção para o registro das opções: o padrão do sistema e a preferência de cada dono vão para os níveis delas, e cada coleção guarda a hora em que o rodízio voltou. |
+| **Relógio de ontem sem uso passa para hoje** (`recupera_ontem`) | **Herdar** (vazio, padrão), **Ligado** (`1`) ou **Desligado** (`0`). Ligado, se o relógio do plano de **ontem** não foi ao pulso **nem um pouquinho** (você usou outro, ou nenhum), ele **passa para hoje** e todos os outros dias do plano, de hoje em diante (e os dias livres), **andam um dia**; foi usado, mesmo que pouco, e nada muda. Não passa: o mesmo relógio dois dias seguidos (o que passou ontem não passa de novo), um relógio indisponível, na manutenção ou fora da coleção, um hoje livre, nem quando o relógio de hoje já foi ao pulso. A conta é feita uma vez por dia, quando o plano de hoje é montado (a página Hoje ou o cron); o dia de hoje fica à mão no plano, com o motivo *Passou de ontem: não foi usado*. Três níveis, como as outras opções: **sistema** (só o master, na aba **Sistema**, `padroes[recupera_ontem]`, padrão desligado) → **usuário** (na aba **Minhas coleções**, `dono[recupera_ontem]`) → **coleção** (`recupera_ontem`). |
+| **Dias sem relógio (folga)** (`dia_sem_relogio`) | ligado (o padrão), dá para deixar um dia **sem relógio**, a folga: o **Sem relógio (dia livre)** aparece no **trocar por…** de cada dia (Próximos dias e Plano) e no Rodízio manual, e o **Sem relógio hoje**, no dia de hoje (com a troca no próprio dia ligada). Desligado, essas opções não aparecem e a API recusa a folga (`sem_relogio`, `periodo_livre`, `trocar_dia` com `relogio_id=livre` e `manual` com `livre` num dia novo); os dias que já estão livres continuam livres, até você escolher um relógio para eles ou voltar a sortear. Padrão: ligado. |
+| **Trocar o relógio de hoje no próprio dia** (`trocar_hoje`) | desligado (o padrão), o relógio de hoje fica: o **trocar por…** e o **escolher…** do dia de hoje, o **Usando hoje**, o **Sortear de novo** *inclusive hoje*, o **Sem relógio hoje** e o **Excluindo hoje** do Apagar tudo não aparecem, no Rodízio manual o dia de hoje fica parado, e o **Sortear de novo** vale a partir de amanhã mesmo com o dia ainda por começar (a API recusa o que trocaria o de hoje): o relógio de amanhã se escolhe até hoje. Ligado, o de hoje também se troca no próprio dia, e o novo passa a ser o do pulso a partir de agora. As marcações do pulso (**Pôs** e **Tirou**) continuam livres nos dois casos. Padrão: desligado. |
+| **A semana começa** (`semana_inicio`) | o primeiro dia da semana do rodízio: **Na segunda-feira** (`segunda`) ou **No domingo** (`domingo`). O plano dos [modos de rodízio](#os-modos-de-rodízio) vem montado até o último dia da semana (o domingo ou o sábado), e o ciclo, a próxima semana e o relógio para a semana inteira contam dela; vale para os próximos sorteios (o que já está no plano fica; **Sortear de novo** refaz). A função `SEMANA_DO_ANO()` das fórmulas continua a semana ISO. Padrão: segunda-feira. |
+| **A escala inteligente começa** (`escala_inicio`) | de onde a [escala inteligente](#a-escala-inteligente) conta os dias do modo: **Amanhã, se o dia de hoje já começou no pulso** (`amanha`, o padrão: o dia de hoje que já começou fica de fora da conta, e a escala de 7 dias vai de amanhã até daqui a 7, com o dia da semana de hoje aparecendo de novo no fim) ou **Sempre hoje** (`hoje`: hoje é o 1º dia, e a escala de 7 dias vai até daqui a 6). O relógio de hoje que já começou no pulso não muda nos dois casos. Mudou: o fim da escala sai, e a próxima montagem (a página Hoje, o cron) refaz a escala contando do primeiro dia novo. |
+| **A escala inteligente fecha** (`escala_periodo`) | onde termina o período da [escala inteligente](#a-escala-inteligente): **Nos dias corridos do período** (`corridos`, o padrão: os dias do modo contados do primeiro dia dela; a de uma semana, numa terça, vai até a terça seguinte), **No fim da semana (semanas inteiras)** (`semana`: os dias ÷ 7, arredondado; a de uma semana vai até o último dia da semana, pela **A semana começa**, e no último dia da semana monta a semana seguinte inteira) ou **No fim do mês (meses inteiros)** (`mes`: os dias ÷ 30,4, arredondado; a de um mês vai até o último dia do mês, a de meio ano até o fim do 6º mês contando o de agora; no último dia do mês, até o fim do mês seguinte; com menos de 4 semanas, como no fim da semana). Quando o período acaba, o seguinte começa no dia depois do fim, do mesmo jeito. Mudou (ou mudou a semana, fechando na semana ou no mês): o fim da escala sai, e a próxima montagem refaz a escala. |
+| **No último dia da semana, os modos por semana montam** (`semana_ultimo_dia`) | nos modos que planejam por semana (fora da escala): **Só o dia seguinte** (`dia_seguinte`, o padrão: no último dia da semana o plano traz o dia de amanhã, e a semana seguinte entra inteira no dia em que ela começa) ou **A semana seguinte inteira** (`semana_seguinte`: no último dia da semana, as semanas do modo contam da semana que vem, que vem montada inteira; com a semana começando na segunda, no domingo o plano traz de segunda a domingo). A lista das semanas da página Modos de rodízio segue a escolha. |
+| **Casas decimais dos pesos** (`sorteio_casas`) | de 0 a 8, padrão 2. Os pesos são arredondados antes do sorteio; se todos os positivos virarem zero, usa os pesos originais. Peso zero não participa. |
+| **Garantia de rodízio** (`max_sem_uso`) | nenhum relógio passa mais que esses dias sem uso: o que passa entra na frente de todos. 0 desliga. Padrão: 21. |
+
+### Ajustes dos avisos
+
+No alto da página **Avisos**, o quadro **Ajustes dos avisos** traz as opções dos avisos, com as mesmas abas de nível. Pela API, `recurso=opcoes&grupo=avisos`.
+
+| Opção | O que faz |
+|---|---|
+| **Avisar quando um relógio fica encostado** (`encostado_ativo`) | marcada, o aviso **Encostado** funciona; desmarcada, ele some inteiro (o aviso, a coluna da página Hoje e o filtro). É o mesmo que ligar ou desligar o aviso `encostado` na página **Avisos**. Padrão: marcada. |
+| **Aviso Encostado: dias sem ir ao pulso** (`encostado_dias`) | depois de quantos dias sem ir ao pulso um relógio da coleção ganha o aviso **Encostado** (em **Hoje é dia de**: *Encostado*, *"o limite de dias sem ir ao pulso vence há 2d, 11/10/2026 18:00"*). De 1 a 3650. Padrão: 30. A caixa acima liga e desliga o aviso. |
+| **Vistoria: a cada quantos dias conferir cada relógio (0 desliga)** (`vistoria_dias`) | a vistoria periódica: com um número de dias, cada relógio ativo ganha o aviso **Vistoria** esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro). De 0 a 3650. Padrão: 0 (desligada). Veja [A vistoria periódica](#a-vistoria-periódica). |
 
 ### Mensagens e agendas
 
@@ -1702,8 +1689,14 @@ mostra cada um com **Vai para** (os destinos e as agendas que o recebem); um eve
 
 ### Sistema (só o master)
 
-O quadro **Sistema** traz o que é do sistema inteiro e antes só mudava no `config.php`. Cada campo vazio segue a linha do
-`config.php` (ou o padrão), e o rótulo diz de onde vem o valor de agora.
+A página **Sistema** (no menu **Sistema**, só o master) reúne o que é do sistema inteiro: **Endereço e cron**, **Senhas** (a força da senha), os **Parâmetros de operação**, o estado do **Cron**, os **Sorteios** (a fonte dos números aleatórios), o **Servidor de e-mail** (o do `config.php`, com o teste), a **Cópia de segurança** e o **SQL**. Pela API, `recurso=sistema` lê tudo isso (só o master), e as gravações são as do `config/salvar`.
+
+| Opção | O que faz |
+|---|---|
+| **Endereço do sistema** (`url_sistema`) | o endereço que a âncora `{link}` põe nas mensagens e na agenda, e o dos links dos e-mails, do ICS e do retorno do Outlook. É do sistema inteiro: só o master muda. Padrão: vazio (o endereço por onde a página foi aberta). |
+| **Rodadas do cron antes de matar a travada** (`cron_espera_rodadas`) | o cron roda uma rodada por vez, e cada uma grava o número do processo dela no arquivo de trava. Achando a anterior ainda rodando, a rodada sai sem rodar e conta o pulo; depois deste número de rodadas puladas seguidas, a próxima confere que o processo é o do cron, mata a travada e roda no lugar dela, com o erro no registro. De 0 a 1440; 0 nunca mata (só espera). É do sistema inteiro: só o master muda. Padrão: 10. |
+
+Os **Parâmetros de operação** trazem o que é do sistema inteiro e antes só mudava no `config.php`; o quadro ocupa a largura toda, com as opções em colunas. Cada campo vazio segue a linha do `config.php` (ou o padrão), e o rótulo diz de onde vem o valor de agora.
 
 | Opção | O que faz | Padrão |
 |---|---|---|
@@ -1714,12 +1707,9 @@ O quadro **Sistema** traz o que é do sistema inteiro e antes só mudava no `con
 | **Espera das telas pela API** | em segundos (0: sem limite) | 120 |
 | **Operações num lote** | no máximo quantas num `recurso=lote` | 100 |
 | **Cópia de segurança ligada**, **Cópias guardadas**, **Documentos na cópia** | a cópia da noite, quantas ficam e se leva o conteúdo dos documentos | sim, 7, não |
-| **Passar o relógio de ontem para hoje: padrão do sistema** | o padrão das coleções que não escolheram (veja a opção da coleção, em Rotina do dia) | não |
 | **SQL: UPDATE e DELETE aprovados** | libera o UPDATE e o DELETE no [SQL pela API](#o-sql-pela-api) | não |
 
-**Padrões do sistema.** Logo abaixo do quadro, o master escolhe o padrão de cada opção da coleção (os horários, os limites, o
-gasto da bateria e as telas: veja **As opções em três níveis**, no começo desta seção). Vazio, vale o padrão de fábrica; uma coleção
-ou um dono que escolheu a sua mantém a escolha. Pela API, `padroes[<chave>]` no `config/salvar`.
+**Padrões do sistema.** O padrão de cada opção da coleção fica na aba **Sistema** de cada página das opções (a Configuração, os Ajustes do rodízio e os Ajustes dos avisos: veja **As opções em três níveis**, no começo desta seção). Vazio, vale o padrão de fábrica; uma coleção ou um dono que escolheu a sua mantém a escolha. Pela API, `padroes[<chave>]` no `config/salvar`.
 
 ### O que o sistema guarda sozinho
 
@@ -1731,6 +1721,7 @@ coluna `ativo` da tabela `modo`, e troca-se na página Hoje.) Na coleção (a ta
 | `escala_fim`, `escala_gerada` | até que dia vai a escala inteligente e quando ela foi gerada. |
 | `ultima_manha`, `ultima_noite` | o dia da última rodada da manhã e da noite (para não rodar duas vezes). |
 | `na_hora_enviados` | os avisos "na hora" que já foram e ainda estão vencidos (`relogio_id:aviso`): não vão de novo; saem da lista quando deixam de vencer. |
+| `rodizio_retomado_em` | quando o rodízio da coleção voltou a ser ligado: a sessão automática só conta dali, sem preencher o tempo pausado. |
 
 E do sistema inteiro (a tabela `sistema`):
 
@@ -1741,7 +1732,8 @@ E do sistema inteiro (a tabela `sistema`):
 | `aleatorio_ultima`, `aleatorio_fora` | a fonte do último lote de números aleatórios e desde quando os serviços de fora falharam. |
 | `url_sistema`, `idioma` | o endereço do sistema e o idioma da instalação. |
 | `cron_espera_rodadas` | as rodadas do cron puladas seguidas antes de a próxima matar a travada. |
-| `param_<chave>` | os parâmetros de operação gravados no quadro **Sistema** (vazio: vale o `config.php`). |
+| `param_<chave>` | os parâmetros de operação gravados na página **Sistema** (vazio: vale o `config.php`). |
+| `padrao_<chave>` | o padrão do sistema de cada opção da coleção (vazio: o de fábrica). |
 | `demo_avisos` | os avisos de vencimento da conta de demonstração que já foram (para não mandar duas vezes). |
 | `migracao_v25` | a marca de que a migração v25 (a passagem para várias pessoas) foi aplicada. |
 
@@ -1849,7 +1841,7 @@ o painel.</sub>
 **A mesma informação em todos.** A tabela dos relógios tem sempre as mesmas colunas (por padrão, as 14: código, relógio, marca, tipo,
 estado, carga, última vez usado, tempo de uso, próxima manutenção, em, o que fazer, encostado, comprado em e valor, ou as que você
 escolher: veja **As colunas da tabela**), os filtros de cada uma e a ordem por qualquer coluna, no computador, no tablet e no celular; nada é escondido por falta de espaço (a única exceção é de propósito: com a caixa **Avisar
-quando um relógio fica encostado** desmarcada na Configuração, a coluna Encostado e o filtro dela somem em todos os tamanhos). Quando a tabela inteira cabe na largura que ela tem de
+quando um relógio fica encostado** desmarcada em Avisos › Ajustes dos avisos, a coluna Encostado e o filtro dela somem em todos os tamanhos). Quando a tabela inteira cabe na largura que ela tem de
 verdade (com ou sem o painel aberto ao lado), ela aparece como tabela, e o texto de uma célula quebra linha só se precisar.
 Quando não cabe, cada relógio vira um cartão com os mesmos campos, na mesma ordem, cada um com o nome da coluna em cima
 (em duas colunas no celular, em cinco no tablet), os títulos viram os botões de **Ordenar por** e os filtros ficam todos, com o
@@ -1860,7 +1852,7 @@ Os **Próximos dias** também mostram todos os dias da escala em qualquer tela.
 marque as que quer ver e ponha na ordem com **▲** e **▼**; **Salvar colunas** vale para a coleção (cabeçalho, filtros, linhas e
 rodapé seguem a lista, e a coluna escondida perde a ordenação e o filtro que tinha), e **Herdar** volta a valer a lista do nível
 de cima. A coluna **Relógio** não se esconde. A mesma escolha existe em três níveis, como as outras opções: o **padrão do
-sistema** (Configuração › Sistema), a **preferência do usuário** (Minha conta, para as coleções de que é dono) e a **escolha da
+sistema** (a aba Sistema da Configuração), a **preferência do usuário** (a aba Minhas coleções da Configuração, para as coleções de que é dono) e a **escolha da
 coleção** (Configuração, ou o botão Colunas); o mais específico vale, vazio herda, e sem escolha em nenhum nível aparecem as de
 sempre, na ordem de sempre, e as suas que você marcou como **Aparece na tabela sem ninguém escolher** (veja **Colunas suas**). Pela API: a opção `colunas_hoje` (as chaves separadas por vírgula, na ordem que você quer, ex.
 `nome,uso,marca`) em `config/salvar`, em `conta/alterar` (`opcoes[colunas_hoje]`) e em `config/salvar` do master
@@ -1892,15 +1884,15 @@ O **formato** é o tradutor do valor: **Número**, **Inteiro**, **Com 2 casas**,
 **Tempo** (*1d 4h 30m*) ou **Texto**; com **Casas decimais** (de 0 a 6; vazio, o padrão do formato) e, no dinheiro, o **Símbolo da moeda**
 (*R$*, *US$*, *€*...). Vazio, o formato é o que combina com a fonte (uma data sai como data, uma contagem como inteiro, a soma de reais como
 dinheiro). A coluna ganha o **nome** que você der, e a chave `c_<identificador>` (o identificador, de até 18 letras, sai do nome e não muda depois):
-ela entra no botão **Colunas**, na Configuração, em Minha conta e em Sistema como qualquer outra, com cabeçalho, **busca no texto** e
+ela entra no botão **Colunas** e nas três abas da Configuração como qualquer outra, com cabeçalho, **busca no texto** e
 **ordem por número** (os vazios por último). Só as colunas que aparecem são calculadas. Marque **Aparece na tabela sem ninguém
 escolher** para ela valer de início. As colunas ficam na ordem do cadastro (**↑** e **↓**), valem para as coleções que usam a árvore
 e saem da escolha quando você as exclui. No painel do botão **Colunas** há o link **Criar ou editar colunas**, que leva direto a esta aba. Pela API: `recurso=colunas` (a lista, o **dicionário de fontes** e o teste) e, na escrita,
 `salvar`, `subir`, `descer` e `excluir`; o `recurso=hoje` traz o valor de cada uma em `relogios[].colunas_extras`.
 
 **O menu** junta as páginas por assunto: **Hoje**, **Avisos** e **Hora certa** soltos (os de todo dia); **Rodízio**
-(Plano, Modos de rodízio, Critérios de escolha), **Coleção** (Galeria, Ficha, Acessórios, Winders, Programas, Movimentos, Desejos, Estatísticas, Totais, Grupos), **Sistema**
-(Configuração, Cadastros, Execuções do cron e, só para o master, Usuários) e **Conta** (Minha conta, Aprovações), cada grupo
+(Plano, Modos de rodízio, Critérios de escolha, Simulador, Ajustes do rodízio), **Coleção** (Galeria, Ficha, Manutenção, Vistorias, Acessórios, Winders, Programas, Movimentos, Desejos, Estatísticas, Totais, Grupos), **Relatórios**, **Configuração**
+(Configuração, Minhas coleções, só para o dono, e Cadastros), **Sistema** (Execuções do cron e, só para o master, Sistema e Usuários) e **Conta** (Minha conta, Aprovações), cada grupo
 com a setinha que abre a lista dele num clique (outro clique, um clique fora ou o Esc fecha); e **Ajuda**. O grupo da página
 aberta fica sublinhado. No celular, o menu recolhido abre com os grupos já abertos, cada um com o nome em cima. Aberto, ele nunca passa da altura da tela:
 rola por dentro até o último item (o idioma), e a página de trás fica parada. O menu tem,
@@ -1948,15 +1940,17 @@ No computador, todas as páginas usam a largura toda da janela, com uma margem m
 | **Hora certa** (`hora.php`) | A hora do servidor para acertar os relógios, no seu fuso horário: o relógio escolhido na Configuração (**Relógio da Hora certa**): o analógico (caixa de aço, mostrador claro com os índices, os numerais 12, 6 e 9, a janela da data no 3, ponteiros em lança com faixa luminosa e o dos segundos vermelho com contrapeso), o digital (uma caixa escura com visor de cristal líquido: o dia da semana e a data, a hora grande com os "88:88:88" apagados atrás, o UTC e a fase da lua), o anadigi (o visor digital dentro do mostrador analógico) ou os dois, um ao lado do outro; andam segundo a segundo, acertados pela API (descontando o tempo do pedido; embaixo, quanto o relógio do aparelho está adiantado ou atrasado), com a data por extenso, a hora UTC e o fuso (e de onde ele veio); os quadros **Fuso e UTC** (o fuso, o deslocamento, a hora Zulu, a letra militar do fuso, como *P (Papa)*, e o grupo data-hora, *131433P OCT 26*), **Calendário** (dia do ano, semana ISO, trimestre, dia juliano, Unix) e **Lua** (a fase, a idade, a parte iluminada e as próximas cheia e nova, pelo ciclo médio: pode errar por um dia); e **Como acertar**. Lê a API de novo a cada minuto. Pela API: `recurso=hora_certa`. |
 | **Documentos** (`documentos.php`) | Os documentos de um relógio (ou de todos), aberta pela ficha: o envio de vários arquivos, uma aba por categoria, a galeria das fotos em tela cheia com apresentação, os vídeos em sequência na ordem escolhida, o visualizador de PDF, o resumo da NF-e do XML, e o download do resto. Veja [Os documentos do relógio](#os-documentos-do-relógio). |
 | **Histórico** (`historico.php`) | A linha do tempo de um relógio: em uso pelo rodízio, em uso fora do plano (no pulso sem ser o relógio do dia), no winder, no sol, em repouso, e cada corda, carga e troca de pilha. Mostra quanto tempo e que porcentagem ficou em cada estado, com filtro de período e de estado. |
-| **Avisos** (`avisos.php`) | Tudo o que o sistema lembra, num lugar só: os **avisos dos relógios** (o cadastro: a fórmula da data, a antecedência, o texto, o lançamento que resolve, *na hora*...), os **lembretes** (os eventos personalizados, com hora e repetição) e **Para onde vão** (os destinos das mensagens e as agendas, com os links das páginas deles). Veja [Mensagens e agendas](#mensagens-e-agendas). |
-| **Configuração** (`configuracao.php`) | As opções da coleção (os horários, os limites, as telas, o idioma), a situação do cron, o resumo dos avisos, dos lembretes e das mensagens (com o caminho para a página **Avisos**), a **Cópia de segurança** (só o master: as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**), o quadro **Sistema** (só o master: os parâmetros de operação que antes só mudavam no `config.php`, e a aprovação do UPDATE e do DELETE pelo SQL), o **Banco de dados (SQL)** (só o master: um comando por vez, com o resultado e o registro; veja [O SQL pela API](#o-sql-pela-api)) e o botão que aplica as migrações do banco. Veja [A Configuração, opção por opção](#a-configuração-opção-por-opção). |
+| **Avisos** (`avisos.php`) | Tudo o que o sistema lembra, num lugar só: o quadro **Ajustes dos avisos** (o Encostado e a vistoria, nas abas de nível), os **avisos dos relógios** (o cadastro: a fórmula da data, a antecedência, o texto, o lançamento que resolve, *na hora*...), os **lembretes** (os eventos personalizados, com hora e repetição) e **Para onde vão** (os destinos das mensagens e as agendas, com os links das páginas deles). Veja [Mensagens e agendas](#mensagens-e-agendas). |
+| **Configuração** (`configuracao.php`) | As opções da coleção (a rotina do dia, os limites e as contas, as telas, o idioma), nas abas **Esta coleção**, **Minhas coleções** (o dono) e **Sistema** (o master), o resumo dos avisos, dos lembretes e das mensagens (com o caminho para a página **Avisos**) e o botão que aplica as migrações do banco. Veja [A Configuração, opção por opção](#a-configuração-opção-por-opção). |
 | **Destinos** (`destinos.php`, aberta pela página Avisos) | Para onde vão as mensagens da coleção: cada webhook, e-mail ou Web Push, com a mensagem, o idioma, o que recebe, os testes e como sai hoje. Veja [Mensagens e agendas](#mensagens-e-agendas). |
 | **Agendas** (`agendas.php`, aberta pela página Avisos) | As agendas da coleção (Google, CalDAV, Outlook, link ICS), com o modelo do evento, o que recebe, a sincronização, o evento de teste e o que tem de estar nela agora. |
 | **Modos de rodízio** (`modos.php`, menu **Rodízio**) | Os modos de rodízio: a tabela (o modo ativo marcado, o tipo, o critério, as semanas e de onde escolhe) com **Editar**, **Ativar** e **Excluir**, e o formulário de um modo, com a tela do tipo dele: o nome e o tipo; de onde escolher (por trecho ou por dia da semana), o período da escala ou o roteiro escrito à mão com **Testar em todos os relógios**; as semanas à frente (com a lista das semanas); o critério de escolha e o ciclo; e, nos tipos prontos, o roteiro gerado (só leitura, com **copiar este roteiro** para um Personalizado). Veja [Os modos de rodízio](#os-modos-de-rodízio). |
 | **Simulador** (`simulador.php`, menu **Rodízio**) | Compara cenários (um modo com a forma, o ciclo, as semanas, os dias da escala, a garantia e os relógios do sorteio que você quiser) no mesmo período, sem gravar nada: a comparação com o melhor de cada medida, os dias lado a lado e cada relógio. **Aplicar este** grava o escolhido igual ao simulado. Veja [O simulador](#o-simulador). |
+| **Ajustes do rodízio** (`rodizio.php`, menu **Rodízio**) | As opções do rodízio (o rodízio ligado, o relógio de ontem, a folga, a troca no próprio dia, a semana e a escala, o sorteio e a garantia), nas mesmas três abas da Configuração. Veja [Ajustes do rodízio](#ajustes-do-rodízio). |
 | **Critérios** (`criterios.php`) | Os conjuntos de critérios por lugar (todos os relógios, um grupo ou um relógio), com parâmetros, subparâmetros, faixas e a nota de cada relógio com a conta aberta. Tem **Restaurar os critérios iniciais**. |
 | **Grupos** (`grupos.php`) | A árvore: criar, renomear, mover, ordenar, excluir (o que era do grupo passa para o de cima) e escolher o grupo de cada relógio. |
 | **Cadastros** (`cadastros.php`) | Campos, tipos de lançamento, fórmulas (com o **Testar**), os totais (a aba **Totais**: veja [Os totais](#os-totais)), as colunas da tabela dos relógios (a aba **Colunas**: veja **Colunas suas**, em A mesma informação em todos os tamanhos), os calibres (a aba **Calibres**: veja [Os calibres](#os-calibres)), as marcas (a aba **Marcas**: veja [As marcas](#as-marcas)), os relatórios cadastrados (a aba **Relatórios**: veja [Os relatórios cadastrados](#os-relatórios-cadastrados)), as divisórias da ficha (a aba **Divisórias**: veja [As divisórias da ficha](#as-divisórias-da-ficha)), as unidades (a aba **Unidades**: veja [As unidades](#as-unidades)) e as categorias de documentos: tudo o que o sistema usa e que não é código (os avisos ficam na página **Avisos**, e os modos de rodízio, na **Modos de rodízio**). |
+| **Sistema** (`sistema.php`, só o master) | O que é do sistema inteiro: o endereço e o cron, as senhas, os **Parâmetros de operação** (o que antes só mudava no `config.php`, e a aprovação do UPDATE e do DELETE pelo SQL), a situação do cron, os sorteios, o servidor de e-mail (com o teste), a **Cópia de segurança** (as cópias da pasta, com **Baixar** e **Restaurar**, e o **Fazer uma cópia agora**) e o **Banco de dados (SQL)** (um comando por vez, com o resultado e o registro; veja [O SQL pela API](#o-sql-pela-api)). Veja [Sistema (só o master)](#sistema-só-o-master). |
 | **Execuções do cron** (`execucoes.php`) | O que o cron fez a cada rodada, quanto tempo levou e os erros, com filtros. |
 | **Minha conta** (`conta.php`, menu **Conta › Minha conta**) | As coleções que você vê (abrir, criar, renomear, excluir, sair), as suas árvores de grupos (copiar, renomear, excluir), pedir acesso à coleção de alguém (pelo código que o dono passou), os seus dados (o seu código, o e-mail, o idioma, o modo da interface, a senha), o **aplicativo no celular** (lembrar este aparelho, instalar, os aparelhos lembrados), os **tokens de API** (para os seus scripts), as **notificações neste aparelho** (o Web Push), o **envio dos seus e-mails** (pelo servidor do sistema ou pelo seu: o Gmail, o Outlook) e excluir a conta. Veja [Várias pessoas](#várias-pessoas-contas-coleções-e-acesso) e [O aplicativo no celular](#o-aplicativo-no-celular). |
 | **Aprovações** (`aprovacoes.php`) | Os pedidos de acesso às suas coleções (aprovar, recusar), os convites que membros fizeram e esperam você, **Convidar** (por e-mail), os convites que você fez e quem vê as suas coleções (tirar o acesso). O menu mostra **Aprovações (N)** quando há algo esperando. |
@@ -2058,7 +2052,7 @@ As telas falam seis línguas: **português** (o original), **inglês**, **chinê
 **francês**. Cada pessoa escolhe a sua no seletor do fim do menu (PT, EN, 中文, हिं, ES, FR); a escolha fica no navegador
 dela (o cookie `lingua`, por um ano) e não muda a das outras. Quem nunca escolheu segue o padrão, e acompanha o padrão
 quando ele muda (o cookie gravado sozinho é marcado como automático); só a escolha no seletor prende o idioma. Gravar outro idioma na **Configuração** (o padrão) ou em **Minha conta** (o da conta) solta a escolha do seletor: a página abre de novo no idioma que vale agora. Quem ainda não escolheu vê o **idioma padrão** da instalação
-(Configuração › Geral); sem padrão, o do navegador (se for um dos seis), senão português. As datas e os números seguem o
+(Configuração); sem padrão, o do navegador (se for um dos seis), senão português. As datas e os números seguem o
 idioma: 13/10/2026 e 1.234,56 em português, 10/13/2026 e 1,234.56 em inglês, 2026-10-13 em chinês.
 
 Todo texto passa por uma função, `t("o texto em português")`, no PHP (a API, o cron, os scripts) e no JavaScript das
@@ -2155,7 +2149,7 @@ sem login), as **contas** (`conta`, `colecoes`, `acessos`, `convites`, `pedidos`
 (`recurso=entrar`: quando o login cai com a página já aberta, a API pede o usuário e a senha e devolve para a página; ao
 abrir, a própria página já pede, antes de mandar qualquer coisa). Os scripts de linha de comando (`instalar.php` e
 `importar.php`) são atalhos: chamam as mesmas operações da API. O `senha.php` é a exceção de propósito: troca a senha de uma
-conta pelo servidor, sem a força da Configuração (quem tem o servidor na mão decide), o que a API não faz.
+conta pelo servidor, sem a regra de força da senha (quem tem o servidor na mão decide), o que a API não faz.
 
 Fora da API fica só o **cron** (`cron.php`, o relógio do sistema: monta o plano, abre e fecha a sessão do dia, manda as
 mensagens, sincroniza a agenda, dispara os eventos e cuida das cópias dos documentos), que usa as mesmas funções que a API usa;
@@ -2208,6 +2202,8 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `eventos`, `destinos`, `agendas` | os eventos personalizados; os destinos das mensagens, com o que cada um recebe e a prévia de hoje; as agendas, com o que tem de estar em cada uma |
 | `ics` | o calendário de uma agenda do tipo link ICS (sem login, pela chave do link) |
 | `config`, `cron` | a configuração da coleção (com o resumo dos destinos e das agendas e a situação do cron: nunca rodou, parado ou rodando); as execuções do cron, com o resumo do período. No `cron`: `de=` e `ate=` (data, ou data e hora), `situacao=` (`atividade`, o padrão; `erro`, `nada` ou `todas`), `busca=` (texto no registro), `limite=` (padrão 100, máximo 1000) e `pagina=`; cada um também vale com `cron_` na frente (`cron_de`...) |
+| `opcoes` | as opções da coleção de um assunto (`grupo=`: `rotina`, `limites`, `telas`, `rodizio` ou `avisos`; um ou mais, separados por vírgula) nos três níveis: a coleção, o padrão do dono e o do sistema (cada nível com `pode_mudar`), e em cada opção a escolha, o que vale e de onde vem. É o que as páginas Ajustes do rodízio e Avisos leem |
+| `sistema` | só o master: o que é do sistema inteiro (o endereço, as rodadas do cron, os parâmetros de operação, a força da senha, a situação do cron, a fonte dos sorteios e o servidor de e-mail do `config.php`). É o que a página Sistema lê |
 | `arvore`, `cadastros` | os grupos; tudo o que a página Cadastros mostra |
 | `unidades` | as unidades da árvore (a aba **Unidades** dos Cadastros), na ordem das grandezas, cada uma com a conversão em texto e quantos campos, tipos e fórmulas a usam |
 | `marcas` | as marcas da árvore (a aba **Marcas** dos Cadastros), cada uma com o país, o site, a observação e os relógios dela |
@@ -2272,7 +2268,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos; o campo com as regras do valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar` (o master também `parametros[<chave>]`: os parâmetros de operação do sistema), `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (o dono também `dono[<chave>]`: o padrão das coleções dele; o master também `padroes[<chave>]`: o padrão do sistema, e `parametros[<chave>]`: os parâmetros de operação do sistema), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, com o que recebe), `testar` (`qual=`: texto, manhã ou noite), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (com a `senha`, ou com o `senha_hash` de outro sistema; o primeiro usuário, pelo token, é o master) e, só o master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
@@ -2304,7 +2300,7 @@ por motivo) numa escrita recusada:
 ### O SQL pela API
 
 Tudo o que as telas fazem, a API faz; e o que nenhuma tela faz, o master faz pelo SQL (`recurso=sql`, ou o quadro **Banco
-de dados (SQL)** da Configuração): um comando por vez, no SQL do MySQL (o sistema traduz para o banco em uso, como nas
+de dados (SQL)** da página Sistema): um comando por vez, no SQL do MySQL (o sistema traduz para o banco em uso, como nas
 migrações), sem o escopo das coleções.
 
 | Comando | Quando vale |
@@ -2312,7 +2308,7 @@ migrações), sem o escopo das coleções.
 | `SELECT` | sempre (sem `INTO`); o banco já devolve no máximo `limite` linhas (padrão 200, até 5000), e a resposta diz se cortou |
 | `INSERT` | sempre, menos o que atualiza (`ON DUPLICATE KEY`, `ON CONFLICT`, `OR REPLACE`: seria um `UPDATE` sem a aprovação) e menos nas tabelas `sistema` e `sql_execucao` |
 | `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | sempre: um campo novo (`NULL`, ou `NOT NULL` com `DEFAULT`; sem chave, índice nem posição) numa tabela que existe e não é do sistema (contas, tokens, acessos, `sistema`, `colecao`, `no`), um por vez |
-| `UPDATE`, `DELETE` | só com a aprovação ligada no quadro **Sistema** da Configuração (`parametros[sql_alteracoes]=1`) |
+| `UPDATE`, `DELETE` | só com a aprovação ligada nos **Parâmetros de operação** da página Sistema (`parametros[sql_alteracoes]=1`) |
 | o resto (`DROP`, `TRUNCATE`, `CREATE`, outro `ALTER`, mais de um comando, o parâmetro `?`, comentário no comando) | nunca: recusado antes de ir ao banco |
 
 Cada pedido, o recusado, o que deu erro e o que deu certo, fica no registro (a tabela `sql_execucao`, lida em
@@ -2415,7 +2411,7 @@ php instalar.php
 #    a confirmação, o login e o e-mail únicos)
 curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode acao=salvar --data-urlencode login=seu_login \
   --data-urlencode senha=... --data-urlencode senha_confirmacao=... http://servidor/relojoeiro/api.php
-#    esqueceu a senha de alguém (ou a sua) e o servidor não manda e-mail? No servidor, sem a força da Configuração:
+#    esqueceu a senha de alguém (ou a sua) e o servidor não manda e-mail? No servidor, sem a regra de força da senha:
 #    php senha.php seu_login senha_nova      (sem os dois: o menu com os usuários, e a senha pedida sem aparecer)
 
 # 6. o cron, a cada minuto (ele é mudo: não escreve nada e não manda e-mail)
@@ -2432,7 +2428,7 @@ hora, sem tocar no banco, e anota o pulo num arquivo ao lado da trava (`<trava>.
 registra, como erro, quantas saíram assim e quanto tempo ela levou.
 
 A rodada que pega a trava grava nela o número do processo dela; depois de **Rodadas do cron antes de matar a travada**
-(Configuração; padrão 10) rodadas puladas seguidas, a próxima confere que o processo é o do cron, mata a travada e roda
+(a página Sistema; padrão 10) rodadas puladas seguidas, a próxima confere que o processo é o do cron, mata a travada e roda
 no lugar dela, com o erro no registro.
 
 No SQLite, ponha o arquivo do banco (`DB_ARQUIVO`) **fora da pasta que o servidor web publica**, numa pasta em que o
@@ -2484,7 +2480,7 @@ pessoas entram pelo **Criar conta** (`cadastro.php`), por um convite seu, ou o m
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | o aplicativo registrado na Microsoft, para as agendas do Outlook (veja abaixo) |
 | `DOCUMENTOS_PASTA` | a pasta dos arquivos dos documentos (o manual, a nota, fotos, vídeos), **fora da pasta publicada**, com permissão de escrita para o usuário do PHP. Sem ela, a página Documentos avisa que falta e não aceita envios. Ex.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | opcionais: a cópia de segurança do banco (veja [Cópia de segurança](#cópia-de-segurança)). A pasta, **fora da pasta publicada** (sem ela, não há cópia automática); quantas ficam (padrão 7); e se leva o conteúdo dos documentos guardado no banco (padrão: não). |
-| `BACKUP_ATIVO` | opcional: `false` desliga a cópia de segurança: sem cópia automática, sem **Fazer uma cópia agora** e sem o quadro **Cópia de segurança** na Configuração (nem o aviso de que falta a pasta). Sem ela: ligada |
+| `BACKUP_ATIVO` | opcional: `false` desliga a cópia de segurança: sem cópia automática, sem **Fazer uma cópia agora** e sem o quadro **Cópia de segurança** na página Sistema. Sem ela: ligada |
 | `DOCUMENTOS_LIMITE` | opcional: o maior documento aceito, em bytes. Sem ela, 100 MB (`104857600`); `0` ou `-1`, sem limite do sistema. O `MANUAL_LIMITE`, o nome antigo, ainda vale quando ela não existe. O limite do PHP e o do nginx continuam valendo (veja [O tamanho dos envios](#o-tamanho-dos-envios-os-documentos)). Ex.: `define("DOCUMENTOS_LIMITE", 524288000);` para 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | opcionais, só para o `importar.php` com este sistema no Postgres, no SQLite ou no Firebird: onde está o MySQL do sistema anterior |
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | opcionais, só para testes: os endereços das fontes dos números aleatórios (`https://www.random.org/integers/` e `https://qrng.anu.edu.au/API/jsonI.php`). Trocados, os sorteios pedem os números a um servidor de teste |
@@ -2495,7 +2491,7 @@ pessoas entram pelo **Criar conta** (`cadastro.php`), por um convite seu, ou o m
 | `LOTE_MAXIMO` | opcional: quantas operações cabem num lote (`recurso=lote`). Sem ela, 100 |
 
 Os parâmetros de operação (`CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS`, `DOCUMENTOS_LIMITE`, `API_ESPERA`, `LOTE_MAXIMO`,
-`BACKUP_ATIVO`, `BACKUP_MANTER` e `BACKUP_DOCUMENTOS`) o master muda também no quadro **Sistema** da Configuração (ou pela API:
+`BACKUP_ATIVO`, `BACKUP_MANTER` e `BACKUP_DOCUMENTOS`) o master muda também nos **Parâmetros de operação** da página Sistema (ou pela API:
 `recurso=config`, `parametros[<chave>]`): o gravado lá vale por cima da linha do `config.php`, e vazio volta a valer a linha.
 As credenciais, as chaves, as pastas e os endereços dos servidores ficam só no `config.php`.
 
@@ -2519,7 +2515,7 @@ Cada coleção cria os destinos e as agendas dela nas páginas **Destinos** e **
   pôs, e considera enviado se a resposta for 2xx. Mensagens longas são divididas em partes.
 - **E-mail:** o servidor SMTP no `config.php` (`SMTP_HOST`, a porta, a segurança, o usuário e a senha; no Gmail e no Outlook,
   uma senha de app) e o `EMAIL_REMETENTE`; ou `EMAIL_METODO = "mail"`, com um sendmail no servidor. Com o `IMAP_*`, cada e-mail
-  enviado ganha uma cópia em Enviados. O master testa em **Minha conta › Servidor de e-mail**: o quadro mostra o que o sistema
+  enviado ganha uma cópia em Enviados. O master testa na página **Sistema**, em **Servidor de e-mail**: o quadro mostra o que o sistema
   leu do `config.php` (o método, o remetente, o SMTP, o IMAP e o POP; as senhas só como *definida* ou não) e aponta o que está
   errado ou faltando (sem o `EMAIL_METODO`, a porta que não combina com a segurança, a senha vazia, o PHP sem `openssl`...).
   **Testar as conexões** entra no SMTP, no IMAP (e confere a pasta Enviados) e no POP sem mandar nada; **Mandar um e-mail de
@@ -2685,7 +2681,7 @@ ajustam). Num dia escolhido à mão, a mesma lista tem **voltar a sortear**. Tam
 ou de amanhã, ou montar **a próxima semana** em qualquer dia; com **Sobrescrever tudo** marcado, os dias escolhidos à mão e
 os livres também saem e são sorteados de novo.
 
-**O dia de hoje não se troca no próprio dia**, a não ser que a Configuração deixe (**Trocar o relógio de hoje no próprio dia**,
+**O dia de hoje não se troca no próprio dia**, a não ser que os Ajustes do rodízio deixem (**Trocar o relógio de hoje no próprio dia**,
 desmarcada no padrão): no dia de hoje, no lugar do **trocar por…**, aparece *hoje fica (troca a partir de amanhã)*, e o que você
 muda vale de amanhã em diante. Quer usar outro relógio hoje assim mesmo? Marque o **Pôs no pulso** dele: o uso fica registrado,
 e o plano não muda.
@@ -2705,7 +2701,7 @@ relógio e sem sorteio, como os dias livres do plano. Se o relógio do dia já e
 tempo que já ficou conta como uso; o que nem começou não conta), e nenhum relógio vai ao pulso sozinho hoje. Os outros dias
 não mudam. Mudou de ideia? O quadro passa a mostrar **Hoje sem relógio** com o **escolher…**: o relógio escolhido vai para
 o pulso a partir de agora; ou **Sortear de novo** *inclusive hoje*, no modo de rodízio. Pela API: `recurso=rodizio`,
-`acao=sem_relogio`. Só com a troca no próprio dia ligada na Configuração (**Trocar o relógio de hoje no próprio dia**).
+`acao=sem_relogio`. Só com a troca no próprio dia ligada em Rodízio › Ajustes do rodízio (**Trocar o relógio de hoje no próprio dia**).
 
 **E um dia que vem: dá para deixar sem relógio (um dia de folga)?**
 Dá. No **trocar por…** daquele dia (em **Próximos dias** ou na página **Plano**), escolha **Sem relógio (dia livre)** e
@@ -2715,7 +2711,7 @@ Rodízio manual. No dia de hoje, a mesma opção faz o que o **Sem relógio hoje
 dia ligada). Pela API: `recurso=rodizio`, `acao=trocar_dia`, `relogio_id=livre`.
 
 **E se eu não quiser dia sem relógio nenhum?**
-Na **Configuração**, em **Rotina do dia**, desligue **Dias sem relógio (folga)**. O **Sem relógio (dia livre)** some do
+Em **Rodízio › Ajustes do rodízio**, no quadro **O rodízio**, desligue **Dias sem relógio (folga)**. O **Sem relógio (dia livre)** some do
 **trocar por…** e do Rodízio manual, o **Sem relógio hoje** some da página Hoje, e a API recusa a folga. Os dias que já
 estavam livres continuam livres, até você escolher um relógio para eles ou voltar a sortear. A opção vem ligada, e vale nos
 três níveis (o sistema, a sua conta e a coleção).
@@ -2727,7 +2723,7 @@ os avisos, e você o usa quando quiser (o **Pôs no pulso**, o **Usando hoje**, 
 já sorteados dele, de amanhã em diante, são sorteados de novo. Para tirá-lo de tudo, até dos avisos, desmarque **Relógio ativo**.
 
 **E se um relógio ficar esquecido com a bateria no fim, ou com algo errado?**
-Ligue a vistoria periódica em **Configuração** (**Vistoria: a cada quantos dias conferir cada relógio**): cada relógio
+Ligue a vistoria periódica em **Avisos › Ajustes dos avisos** (**Vistoria: a cada quantos dias conferir cada relógio**): cada relógio
 ativo ganha o aviso **Vistoria** a cada tantos dias, em **Hoje é dia de**, e a página **Coleção › Vistorias** registra
 várias de uma vez. Veja [A vistoria periódica](#a-vistoria-periódica).
 
@@ -2851,7 +2847,7 @@ nova, as mais velhas saem. A pasta dentro da publicada é recusada (qualquer um 
 - **Os documentos:** os arquivos já ficam na pasta deles, e a cópia deles dentro do banco (que pode ser grande) só entra na
   cópia de segurança com `BACKUP_DOCUMENTOS = true`. Sem ela, ao restaurar, os documentos voltam sem a cópia no banco e o cron
   refaz a que for pedida.
-- **Na Configuração**, em **Cópia de segurança**: as cópias da pasta (quando, o tamanho, com ou sem documentos), **Baixar**
+- **Na página Sistema**, em **Cópia de segurança**: as cópias da pasta (quando, o tamanho, com ou sem documentos), **Baixar**
   (guarde uma fora do servidor de vez em quando), **Restaurar** e **Fazer uma cópia agora**.
 - **Restaurar** volta o banco inteiro para aquela cópia: antes, o sistema guarda uma cópia do que está agora (dá para voltar
   atrás); depois, num passo só, troca todos os registros pelos da cópia. Se algo falha no meio, nada muda.
@@ -2862,8 +2858,7 @@ nova, as mais velhas saem. A pasta dentro da publicada é recusada (qualquer um 
   arquivos da pasta na hora, mas as cópias de segurança feitas antes guardam o que havia, até saírem pela regra do
   `BACKUP_MANTER` (7 dias, sem a linha). Para tirar de vez, apague também as cópias velhas da pasta.
 - **Para desligar** (outra rotina já copia o banco, ou é uma instalação de teste): `define("BACKUP_ATIVO", false);` no
-  `config.php`. O cron não faz cópia, a escrita `fazer` é recusada e o quadro **Cópia de segurança** some da Configuração,
-  com o aviso de que falta a pasta.
+  `config.php`. O cron não faz cópia, a escrita `fazer` é recusada e o quadro **Cópia de segurança** some da página Sistema.
 
 Antes de restaurar, o sistema confere o gzip inteiro, o JSON, as tabelas, as colunas e os binários. Nas cópias novas,
 confere também a quantidade de registros de cada tabela; cópias antigas válidas continuam aceitas. Uma cópia reprovada nessa conferência não
@@ -3025,7 +3020,7 @@ maiores, que nenhum `CHECK` alcança) e as das ligações opcionais.
 | `migracao_v2.sql` … `migracao_v25.sql` | as migrações, aplicadas pela página Configuração |
 | [`config.exemplo.php`](config.exemplo.php) | o modelo do `config.php` |
 | [`instalar.php`](instalar.php) | instala o `schema.sql` no banco do `config.php`, qualquer um dos três (o mesmo que `recurso=instalacao`) |
-| [`senha.php`](senha.php) | troca a senha de uma conta pela linha de comando do servidor, sem a força da Configuração: `php senha.php <login> <senha>`; sem os dois, o menu com os usuários e a senha pedida duas vezes, sem aparecer (criar conta é pela API ou pelas telas) |
+| [`senha.php`](senha.php) | troca a senha de uma conta pela linha de comando do servidor, sem a regra de força da senha: `php senha.php <login> <senha>`; sem os dois, o menu com os usuários e a senha pedida duas vezes, sem aparecer (criar conta é pela API ou pelas telas) |
 | [`importar.php`](importar.php) | importa os dados do sistema anterior (o mesmo que `recurso=importacao`) |
 | [`reconstrucao.php`](reconstrucao.php) | o roteiro para reescrever o sistema do zero (o `recurso=reconstrucao` da API) |
 | [`.htaccess`](.htaccess) | a proteção dos arquivos internos no Apache (e o login do site com o PHP por FastCGI) |

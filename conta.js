@@ -29,12 +29,6 @@ aoGravar = function (form, res, dados) {
   return salvarSemMover(form, res, carregarConta);
 };
 
-function formAcao(recurso, acao, campos, botao, classe) {
-  return el("form", {"data-recurso": recurso, "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": acao})
-    + Object.keys(campos).map(function (k) { return el("input", {"type": "hidden", "name": k, "value": campos[k]}); }).join("")
-    + el("button", {"class": classe || "leve"}, botao));
-}
-
 function quadroColecoes(d) {
   var linhas = d.colecoes.map(function (c) {
     var acoes = c.id !== d.colecao ? el("button", {"type": "button", "class": "leve", "onclick": "escolherColecao(" + c.id + "); return false"}, t("Abrir")) : el("span", {"class": "estado estado-atividade"}, t("aberta"));
@@ -111,9 +105,9 @@ function quadroDados(d) {
       + parCampo(t("Idioma"), el("select", {"name": "idioma"}, el("option", {"value": "", "selected": !u.idioma}, t("O da coleção")) + d.linguas.map(function (l) {
         return el("option", {"value": l.codigo, "selected": u.idioma === l.codigo}, h(l.nome));
       }).join("")))
-      // o padrão das coleções de que a pessoa é dona (o rodízio, o relógio de ontem e cada opção das três hierarquias) mora na
-      // Configuração, na aba Minhas coleções, junto dos outros dois níveis: aqui, só o caminho
-      + el("p", {"class": "nota largo"}, t("O padrão das suas coleções (o rodízio, os horários, os limites e as telas) fica na {1}, na aba Minhas coleções.", {1: el("a", {"href": "configuracao.php?nivel=dono"}, t("Configuração"))}))
+      // o padrão das coleções de que a pessoa é dona mora na aba Minhas coleções de cada página das opções (a Configuração,
+      // Rodízio › Ajustes do rodízio e Avisos › Ajustes dos avisos), junto dos outros dois níveis: aqui, só o caminho
+      + el("p", {"class": "nota largo"}, t("O padrão das suas coleções fica na aba Minhas coleções de cada página: {1} (os horários, os limites e as telas), {2} (o rodízio) e {3} (o Encostado e a vistoria).", {1: el("a", {"href": "configuracao.php?nivel=dono"}, t("Configuração")), 2: el("a", {"href": "rodizio.php?nivel=dono"}, t("Ajustes do rodízio")), 3: el("a", {"href": "avisos.php?nivel=dono#ajustes-avisos"}, t("Ajustes dos avisos"))}))
       // o fuso horário da pessoa: as datas e horas que ela vê e digita (no banco fica tudo no fuso do sistema)
       + parCampo(t("Fuso horário"), el("select", {"name": "fuso"}, opcoesFuso(d.fusos, u.fuso, d.fuso.colecao ? t("O da coleção ({1})", {1: d.fuso.colecao.replace(/_/g, " ")}) : t("O do sistema ({1})", {1: d.fuso.sistema.replace(/_/g, " ")}),
         t("O do navegador (neste aparelho: {1})", {1: (fusoNavegador() || "?").replace(/_/g, " ")}))), "largo")
@@ -251,58 +245,6 @@ function ligarPush() {
   });
 }
 
-// o servidor (só o master): o teste do e-mail do config.php
-// O servidor de e-mail (só o master): a configuração que o sistema leu do config.php (as senhas só como definida ou não), os
-// problemas achados nela, o teste das conexões (SMTP, IMAP e POP, sem mandar nada) e o e-mail de teste; depois do teste, o
-// resultado de cada parte e a conversa com os servidores (TESTE_EMAIL, guardado entre uma montagem e outra da página)
-var TESTE_EMAIL = null;
-function quadroServidor(d) {
-  if (d.usuario.papel !== "master" || !d.email) {
-    return "";
-  }
-  var e = d.email;
-  var seg = function (s) { return nomeNaLista("email_seguranca", s); };
-  var conta = function (c) {
-    return h(c.host + ":" + c.porta) + " · " + seg(c.seguranca) + " · " + (c.usuario !== "" ? t("usuário {1}", {1: h(c.usuario)}) : t("sem usuário"))
-      + " · " + (c.senha ? t("senha definida") : el("strong", {}, t("sem senha")));
-  };
-  var linhas = [[t("Método"), e.metodo === "smtp" ? t("SMTP (o servidor de e-mail do config.php)") : (e.metodo === "mail" ? t("mail() do PHP (o sendmail do servidor)") : el("strong", {}, t("desligado")))],
-    [t("Remetente"), e.remetente !== "" ? h(e.remetente) : el("strong", {}, t("falta"))]];
-  if (e.metodo === "smtp") {
-    linhas.push([t("SMTP (envio)"), conta(e.smtp)]);
-  }
-  linhas.push([t("IMAP (cópia em Enviados)"), e.imap ? conta(e.imap) + " · " + t("pasta {1}", {1: h(e.imap.pasta)}) : el("span", {"class": "nota"}, t("não configurado (opcional)"))]);
-  linhas.push([t("POP (só o teste da conta)"), e.pop ? conta(e.pop) : el("span", {"class": "nota"}, t("não configurado (opcional)"))]);
-  var res = el("h2", {}, t("Servidor de e-mail (master)"))
-    + ajudaNota("email-sistema", t("O e-mail do sistema"), t("O sistema manda e-mail pelo que está no config.php (EMAIL_METODO, EMAIL_REMETENTE, SMTP_*, IMAP_*, POP_*): os convites, o Esqueci a senha, os avisos da conta e os destinos do tipo e-mail. Aqui está o que ele leu de lá, e o teste."))
-    + el("div", {"class": "rolagem"}, el("table", {"class": "compacta tabela-dados config-email"}, el("thead", {}, el("tr", {}, el("th", {}, t("Parte")) + el("th", {}, t("O que o sistema leu do config.php"))))
-      + el("tbody", {}, linhas.map(function (l) {
-        return el("tr", {}, el("td", {}, l[0]) + el("td", {}, l[1]));
-      }).join(""))));
-  if (e.problemas.length > 0) {
-    res += el("div", {"class": "alerta-cron"}, el("strong", {}, t("Para corrigir no config.php:")) + el("ul", {}, e.problemas.map(function (p) { return el("li", {}, h(p)); }).join("")));
-  }
-  if (e.metodo !== null) {
-    res += el("div", {"class": "botoes"}, formAcao("conta", "email_testar", {para: ""}, t("Testar as conexões (sem mandar nada)")))
-      + el("form", {"data-recurso": "conta", "class": "form-linha"}, el("input", {"type": "hidden", "name": "acao", "value": "email_testar"})
-        + el("input", {"type": "email", "name": "para", "required": true, "value": d.usuario.email || "", "placeholder": t("para quem"), "aria-label": t("Para")})
-        + el("button", {}, t("Mandar um e-mail de teste")))
-      + ajudaNota("teste-email", t("O teste do e-mail"), t("O teste conecta e entra no SMTP (sem mandar nada), no IMAP (e confere a pasta Enviados) e no POP; o e-mail de teste passa por tudo isso e sai de verdade. A conversa com os servidores aparece embaixo, sem as senhas."));
-  }
-  if (TESTE_EMAIL) {
-    var r = TESTE_EMAIL;
-    var partes = [["smtp", t("SMTP")], ["imap", t("IMAP")], ["pop", t("POP")], ["envio", t("E-mail de teste")]].filter(function (p) { return r[p[0]]; });
-    res += el("h3", {}, t("Resultado do teste"))
-      + (partes.length > 0 ? el("ul", {"class": "teste-email"}, partes.map(function (p) {
-        var x = r[p[0]];
-        return el("li", {}, el("span", {"class": "estado " + (x.ok ? "estado-uso" : "estado-repouso")}, x.ok ? t("ok") : t("falhou")) + " " + el("strong", {}, p[1]) + (x.erro ? ": " + h(x.erro) : ""));
-      }).join("")) : el("p", {"class": "nota"}, t("Nada para testar: o envio está desligado.")))
-      + (r.registro && r.registro.length > 0 ? el("details", {"class": "registro-cron", "open": true}, el("summary", {}, t("Conversa com os servidores"))
-        + el("pre", {}, h(r.registro.join("\n")))) : "");
-  }
-  return el("section", {"class": "cartao-config", "id": "servidor"}, res);
-}
-
 // Envio dos meus e-mails (todos): por onde saem os e-mails que a pessoa manda, o servidor do sistema (o padrão) ou o SMTP
 // dela (Gmail, Outlook, o do provedor). A escolha mostra os campos do SMTP; a senha gravada não volta (vazia: mantém). O
 // teste do SMTP próprio fica na página até o próximo (TESTE_SMTP)
@@ -366,7 +308,7 @@ function carregarConta() {
     }
     res += quadroColecoes(d) + quadroArvores(d) + quadroPedir(d)
       + el("p", {"class": "nota"}, t("Para convidar alguém para as suas coleções, ou ver quem as vê: {1}.", {1: el("a", {"href": "aprovacoes.php"}, t("Aprovações e convites"))}))
-      + quadroDados(d) + quadroApp(d) + quadroTokens(d) + quadroPush(d) + quadroEnvio(d) + quadroServidor(d) + quadroExcluir(d);
+      + quadroDados(d) + quadroApp(d) + quadroTokens(d) + quadroPush(d) + quadroEnvio(d) + quadroExcluir(d);
     document.getElementById("conta").innerHTML = res;
   });
 }
@@ -375,10 +317,6 @@ function carregarConta() {
 var gravarConta = aoGravar;
 aoGravar = function (form, res, dados) {
   CHAVES_VAPID = res.config || null;
-  // o teste do e-mail fica na página até o próximo
-  if (dados.get("recurso") === "conta" && dados.get("acao") === "email_testar") {
-    TESTE_EMAIL = res.teste || null;
-  }
   if (dados.get("recurso") === "conta" && (dados.get("acao") === "smtp_testar" || dados.get("acao") === "smtp_salvar")) {
     TESTE_SMTP = dados.get("acao") === "smtp_testar" ? res.teste || null : null;
   }

@@ -163,7 +163,7 @@ function montarSimulador() {
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Simulador")));
   res += ajudaNota("simulador", t("Como o simulador funciona"), t("Cada cenário é um modo com o que você quer mudar nele (a forma de escolha, o ciclo, as semanas, os dias da escala, a garantia de rodízio) e os relógios que entram no sorteio. Todos rodam no mesmo período, com as regras de verdade do rodízio, e nada é gravado. Compare e, no que mais agradar, clique em Aplicar este: o modo, as mudanças e o plano simulado são gravados igual ao que você viu (os dias escolhidos à mão e os livres ficam)."));
   if (!OP.rodizio_ativo) {
-    res += el("p", {"class": "aviso"}, t("O rodízio está desligado: não há sorteio para simular.")) + el("a", {"href": "configuracao.php"}, t("Configuração"));
+    res += el("p", {"class": "aviso"}, t("O rodízio está desligado: não há sorteio para simular.")) + el("a", {"href": "rodizio.php"}, t("Ajustes do rodízio"));
     porHtml(document.getElementById("simulador"), res);
     return;
   }

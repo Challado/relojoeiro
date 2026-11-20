@@ -42,11 +42,14 @@ function topo($titulo, $ativo, $publica = false)
         "index.php" => t("Hoje"),
         "avisos.php" => t("Avisos"),
         "hora.php" => t("Hora certa"),
-        t("Rodízio") => ["plano.php" => t("Plano"), "modos.php" => t("Modos de rodízio"), "criterios.php" => t("Critérios de escolha"), "simulador.php" => t("Simulador")],
+        t("Rodízio") => ["plano.php" => t("Plano"), "modos.php" => t("Modos de rodízio"), "criterios.php" => t("Critérios de escolha"), "simulador.php" => t("Simulador"), "rodizio.php" => t("Ajustes do rodízio")],
         t("Coleção") => ["galeria.php" => t("Galeria"), "ficha.php" => t("Ficha"), "manutencao.php" => t("Manutenção"), "vistorias.php" => t("Vistorias"), "acessorios.php" => t("Acessórios"), "winders.php" => t("Winders"), "programas.php" => t("Programas"), "movimentos.php" => t("Movimentos"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "totais.php" => t("Totais"),
             "grupos.php" => t("Grupos")],
         "relatorios.php" => t("Relatórios"),
-        t("Sistema") => ["configuracao.php" => t("Configuração"), "cadastros.php" => t("Cadastros"), "execucoes.php" => t("Execuções do cron"), "usuarios.php" => t("Usuários")],
+        // a Configuração (o que vale nesta coleção, o padrão das coleções do dono e os cadastros) e o Sistema (o que é do sistema
+        // inteiro: só o master)
+        t("Configuração") => ["configuracao.php" => t("Configuração"), "configuracao.php?nivel=dono" => t("Minhas coleções"), "cadastros.php" => t("Cadastros")],
+        t("Sistema") => ["sistema.php" => t("Sistema"), "execucoes.php" => t("Execuções do cron"), "usuarios.php" => t("Usuários")],
         t("Conta") => ["conta.php" => t("Minha conta"), "aprovacoes.php" => t("Aprovações")],
         "ajuda.php" => t("Ajuda"),
     ];
@@ -72,7 +75,7 @@ function topo($titulo, $ativo, $publica = false)
     echo "  <button type=\"button\" class=\"menu-botao\" aria-expanded=\"false\" aria-controls=\"menu-itens\"><span class=\"menu-pagina\">" . htmlspecialchars($atual ?? t($titulo), ENT_QUOTES, "UTF-8") . "</span><span class=\"menu-abre\">" . t("Menu") . "</span></button>\n"
         . "  <div class=\"menu-itens\" id=\"menu-itens\">\n";
     $link = function ($url, $nome) use ($ativo) {
-        return "<a href=\"" . $url . "\"" . ($url === $ativo ? " class=\"ativo\" aria-current=\"page\"" : "") . ($url === "usuarios.php" ? " data-so-master hidden" : "") . ">" . htmlspecialchars($nome, ENT_QUOTES, "UTF-8") . "</a>";
+        return "<a href=\"" . $url . "\"" . ($url === $ativo ? " class=\"ativo\" aria-current=\"page\"" : "") . (in_array($url, ["usuarios.php", "sistema.php"], true) ? " data-so-master hidden" : ($url === "configuracao.php?nivel=dono" ? " data-so-dono hidden" : "")) . ">" . htmlspecialchars($nome, ENT_QUOTES, "UTF-8") . "</a>";
     };
     foreach ($menu as $chave => $item) {
         if (is_array($item)) {

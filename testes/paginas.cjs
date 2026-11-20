@@ -73,10 +73,15 @@ module.exports = [
   // as vistorias (o cenário termina com a vistoria ligada): as que vencem na semana (os atrasados marcados) e todas
   { nome: 'vistorias', url: 'vistorias.php' },
   { nome: 'vistorias-todos', url: 'vistorias.php?todos=1' },
+  // os ajustes do rodízio nos três níveis (a coleção, as coleções do dono e o sistema) e a página Sistema (só o master)
+  { nome: 'rodizio', url: 'rodizio.php' },
+  { nome: 'rodizio-dono', url: 'rodizio.php?nivel=dono' },
+  { nome: 'rodizio-sistema', url: 'rodizio.php?nivel=sistema' },
+  { nome: 'sistema', url: 'sistema.php' },
   { nome: 'modos-editar', url: 'modos.php?editar=2' },
   { nome: 'configuracao', url: 'configuracao.php' },
   // a Configuração mostra um nível por vez (as abas do alto): o do dono (Minhas coleções: o padrão dele para as coleções de
-  // que é dono) e o do sistema (os padrões, os parâmetros, as senhas, o cron, a cópia de segurança e o SQL)
+  // que é dono) e o do sistema (os padrões do sistema das opções da página)
   { nome: 'configuracao-dono', url: 'configuracao.php?nivel=dono' },
   { nome: 'configuracao-sistema', url: 'configuracao.php?nivel=sistema' },
   { nome: 'avisos', url: 'avisos.php' },

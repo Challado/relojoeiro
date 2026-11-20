@@ -323,7 +323,7 @@ The modes are on the **Rotation modes** page (menu **Rotation**). Each mode has 
 for what makes sense in it:
 
 - **One per week**: a watch for the whole week, from its first to its last day (Monday to Sunday, or Sunday to Saturday: the week starts on
-  the day chosen in the Settings, **The week starts**). You say where it comes from (the collection, a group or a fixed
+  the day chosen in Rotation › Rotation settings, **The week starts**). You say where it comes from (the collection, a group or a fixed
   watch) and the choice criterion.
 - **Week and weekend**: two stretches, Monday to Friday and Saturday and Sunday, each with its own group and with **one
   watch for the stretch** or **one per day**. The ready-made one: the smartwatch during the week, one traditional per day at
@@ -361,7 +361,7 @@ the **Reason** for the new one). With the table, the box stays until you close i
 **The weeks.** Outside the schedule, each mode says **how many weeks ahead** the plan comes built (1 to 8; the list shows the
 weeks with their dates). The plan goes up to the last day of the last of them: Sunday, or Saturday with the week starting on
 Sunday (with a single week, on the last day of the week the plan also brings the first of the next one, for the day-before
-reminder), and the following week comes in when its turn comes. With **On the last day of the week, the weekly modes build** set to *The whole next week*, in the Settings, on the last day of the week the mode's weeks already count from next week, and it comes fully built. The week starts on the day chosen in the Settings (**The
+reminder), and the following week comes in when its turn comes. With **On the last day of the week, the weekly modes build** set to *The whole next week*, in Rotation › Rotation settings, on the last day of the week the mode's weeks already count from next week, and it comes fully built. The week starts on the day chosen in Rotation › Rotation settings (**The
 week starts**: on Monday, the default, or on Sunday), and the cycle, the next week and the watch for the whole week count
 from it. Outside the smart schedule, in any mode (even with just one week),
 **Draw again** also has **next week**: it comes out of the current mode, with the days still left this week counted as use,
@@ -370,7 +370,7 @@ not, because no one knows whether the watch will be charged). Each day is chosen
 already on the wrist, which is why Monday's watch does not come back on Tuesday just because it looks idle. The days chosen
 by hand stay. On the smart schedule there is no next week: it already plans its own period.
 
-**The list always shows every option.** The one that does not apply now stays disabled, with the reason in its own text: *"including today — unavailable: turned off in the Settings (Change today's watch on the same day)"*, *"the next week — unavailable: the smart schedule already plans its own period"*, *"from today — unavailable: today has already started on the wrist"*. Turning the setting on, or changing the mode, makes the option available again.
+**The list always shows every option.** The one that does not apply now stays disabled, with the reason in its own text: *"including today — unavailable: turned off in Rotation › Rotation settings (Change today's watch on the same day)"*, *"the next week — unavailable: the smart schedule already plans its own period"*, *"from today — unavailable: today has already started on the wrist"*. Turning the setting on, or changing the mode, makes the option available again.
 
 ### The mode's script
 
@@ -425,7 +425,7 @@ The numbers arrive in a batch (64 16-bit numbers per request), and each draw use
 beyond the last whole multiple of the range: every result has exactly the same chance. Each service has 4 seconds to answer;
 if both fail, the system uses PHP's and doesn't try again for 10 minutes (so no page is left waiting). The reason of each
 drawn day says where the number came from (*"Simple draw, among 4 candidates, all with the same chance (RANDOM.ORG)."*), and
-**Settings** shows the last batch (the **Draws** box). What is secret doesn't use these services: the password salt and the
+the **System** page shows the last batch (the **Draws** box). What is secret doesn't use these services: the password salt and the
 names of the document files keep using PHP's generator, because a number that travels over the internet is no good for
 secrets.
 
@@ -439,7 +439,7 @@ day) and in the **Rotation mode** box on the Today page (each below a line, like
   chosen by hand, the drawn ones and the free ones), and the list says what takes their place: with **Clear and remove the
   records** (the initial one), the rotation mode builds these days again, only them: the other days stay as they are (in the
   smart schedule too); with **Clear and leave the days free**, they stay free, with no watch and no draw, for you to choose
-  by hand (with **Days without a watch (day off)** turned off in Settings, this choice is disabled). The **Clear** button
+  by hand (with **Days without a watch (day off)** turned off in Rotation › Rotation settings, this choice is disabled). The **Clear** button
   asks for confirmation.
 - **Erase all**: clears the whole schedule, from tomorrow on: the days chosen by hand, the drawn ones and the free ones.
   Ticking **Including today**, it erases from today on (if another watch comes up for today, it becomes the one on the wrist
@@ -507,7 +507,7 @@ and only their *what to do* is redone (the simulated charge changes with the new
 rebuild the whole schedule.
 
 The schedule **goes up to the mode's days** (from 7 to 730, on the Rotation modes page), counted from today (from tomorrow,
-if today has already started on the wrist; with **The smart schedule starts** set to *Always today*, in Settings, today is always day 1, and the 7-day schedule runs to 6 days from now). With **The smart schedule closes** set to *At the end of the week*, the period goes in whole weeks, by **The week starts**: a one-week schedule started on a Tuesday runs to Sunday (with the week starting on Monday), and on the last day of the week it builds the whole next week; with *At the end of the month*, in whole months (a one-month schedule runs to the last day of the month). When the period ends, the next one starts the day after its last day, with the mode's full days (7 by 7, without losing or repeating a day), with either choice. Changed the active mode's days, from 7 to 30 or from 30 to 7: the end of the
+if today has already started on the wrist; with **The smart schedule starts** set to *Always today*, in Rotation › Rotation settings, today is always day 1, and the 7-day schedule runs to 6 days from now). With **The smart schedule closes** set to *At the end of the week*, the period goes in whole weeks, by **The week starts**: a one-week schedule started on a Tuesday runs to Sunday (with the week starting on Monday), and on the last day of the week it builds the whole next week; with *At the end of the month*, in whole months (a one-month schedule runs to the last day of the month). When the period ends, the next one starts the day after its last day, with the mode's full days (7 by 7, without losing or repeating a day), with either choice. Changed the active mode's days, from 7 to 30 or from 30 to 7: the end of the
 schedule is dropped, and the next build (the Today page, the cron) already uses the new days (the schedule keeps how many days
 it was generated with: another number in the mode, it is rebuilt whole). **Draw again** and **Erase all** always start a new
 schedule with the mode's current days. **Erase a period** with only the start erases from it to the end of the plan and builds
@@ -738,33 +738,6 @@ autonomy, the decay rates, the service and the battery life come checked. A fiel
 so it can be removed. Through the API: `recurso=documentos` with `calibre=` (and `calibre_id` in `enviar`),
 `recurso=config` with `calibre_campos` and `recurso=campos` with `calibre`.
 
-**The options in three levels.** Each collection option that is not for the whole system (the times, the limits, the battery
-drain, the week and the schedule, the screens: 33 in all) follows the hierarchy **system → user → collection**, the same as
-the rotation: the **master** chooses the system default (in the **System defaults** card), each **owner** chooses the
-default of their collections (in the **My collections** tab of Settings) and each **collection** can choose its own. The
-most specific wins; the one above is only a default, never a block. An empty field **inherits** (the label says where the
-current value comes from: the user, the system or the factory default); in lists, the first choice is **Inherit (…)**; in
-time and number fields, the **Inherit** button empties the field. It also applies to members and to the cron, which follow
-the collection's owner. A new collection is born inheriting everything; the ones that already existed keep the value they
-had, and migration v58 turns to empty the ones that were equal to the factory default. Changing a default redoes what
-depends on it in every collection that inherits (the "closes at" of the wrist and the sun, the end of the smart schedule); a
-usage time that would leave any collection with the end before the start is refused and nothing changes. Through the API:
-`config/salvar` with the option key (the collection), `conta/alterar` with `opcoes[<chave>]` (the owner) and `config/salvar`
-with `padroes[<chave>]` (the system, master only); the `recurso=config` response brings `opcoes` with each level's choice,
-what it inherits and from where.
-
-**One level at a time.** Settings shows one level of the options at a time, through the tabs at the top: **This collection**
-(what applies to this collection: the cards **Daily routine**, **Limits and calculations**, **Screens**, **Draws** and
-**Alerts, reminders and messages**), **My collections** (only the owner of the open collection: their default for the
-collections they own, with the rotation, yesterday's watch and each option) and **System** (only the master: what belongs to
-the whole system, **Passwords**, **Cron**, **System**, **System defaults**, **Backup** and the **SQL**). This way each
-option appears only once on the screen, instead of the collection's, the owner's and the system's one below the other.
-Changing tabs does not lose what you typed, and **Save settings** writes all levels at once. Whoever is neither the owner
-nor the master sees everything on a single page. **My account** keeps only what belongs to the person (the e-mail, the
-language, the time zone, the password), with the path to the **My collections** tab.
-
-Left out on purpose: what belongs to the whole system by nature (the password strength, the system address, the cron rounds and the parameters of the **System** card), the language and the time zone (they follow the person looking: their own choice, then the collection's, then the system's), the rotation and yesterday's unused watch (they already have the three levels, with the user's own column) and what can only stay in `config.php` (the database, the keys, the folders and the e-mail).
-
 ### Brands
 
 The **brand** is who made the watch: Casio, Seiko, Orient. It is a registry, like the caliber: in the **Brands** tab of the
@@ -950,7 +923,7 @@ shipping documents.
 On saving, the watch is **in maintenance**: inactive until it comes back (with the *in maintenance* tag on
 the panel and the *In maintenance* state on the Today page), its open sessions close (on the wrist, in the sun, on the charger;
 in the winder, the position becomes free), its days in the plan from tomorrow on are removed and drawn again, and the charge,
-winding and battery alerts stop. If it was **today's watch**, today becomes free: with the Settings allowing today's watch to be
+winding and battery alerts stop. If it was **today's watch**, today becomes free: with the Rotation settings allowing today's watch to be
 changed on the day itself, you choose another; without it, today stays without a watch. Changing **Active watch** while it is at the workshop changes the one it comes back with.
 
 The **status** moves along from the table row (the menu and **Change**), and each change goes into the **history**. The
@@ -996,7 +969,7 @@ a watch's summary) and `recurso=servicos` with `acao=salvar` or `excluir`.
 A watch can have something wrong without anyone noticing: the battery running out, the cell leaking, the crystal cracked,
 the strap coming loose, moisture on the dial. The inspection is for that: from time to time, pick up each watch and check it.
 
-Turn it on in **Settings**, **Inspection: every how many days to check each watch** (0 turns it off; it comes off from the
+Turn it on in **Alerts › Alert settings**, **Inspection: every how many days to check each watch** (0 turns it off; it comes off from the
 factory). With a number of days, each active watch gets the **Inspection** alert, due that many days after its last
 inspection; with none, from the purchase date (the old ones already start overdue); without a purchase date, from the day it
 was registered. A watch in maintenance, inactive or out of the collection does not come due.
@@ -1150,7 +1123,7 @@ The user and password fields of an outside service (your own e-mail server, CalD
 it (in a user and password pair it ignores `autocomplete="off"`, and their login would end up saved in someone else's
 account).
 
-**The password** has the strength the master chooses in the **Settings**, in the **Passwords** card: the minimum length and
+**The password** has the strength the master chooses on the **System** page, in the **Passwords** card: the minimum length and
 how many uppercase letters, lowercase letters, digits and symbols it needs, at least (the default: 8 characters, with 1 of
 each). It applies to every new password: the account created, the change in **My account**, the new password by the
 **Forgot my password** link, the master's in **Users**; existing ones keep working (`senha.php`, on the server, changes it without the strength).
@@ -1562,8 +1535,8 @@ The alerts of the initial set, with the identifier (their name in the formulas, 
 | Set the time | `acertar_hora` | Traditional | the Time setting. Falls due when the estimated deviation passes *Set the time from* (default 60 s), by the measured rate; warns 2 days before. |
 | Rate outside the expected | `marcha_fora` | Traditional | a new deviation reading. Falls due at the reading whose rate left the *Expected rate* or, with 4 measurements or more, was far from the watch's own history (more than 3 times the variation, and at least 5 s/day). |
 | Warranty expiring | `garantia` | all | (nothing: it only alerts) |
-| Idle | `encostado` | all (those in the collection, active) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). It does not take the next service or **What to do**: the table has its own **Idle** column, with how long is left or how long it is overdue. |
-| Inspection | `vistoria` | all (the active ones, outside maintenance) | the Inspection. Only with the Settings option **Inspection: every how many days to check each watch** above 0 (factory default 0: off). It comes due that many days after the last inspection (with none, from the purchase date; without it, from the registration day). See [The periodic inspection](#the-periodic-inspection). |
+| Idle | `encostado` | all (those in the collection, active) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Alerts › Alert settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). It does not take the next service or **What to do**: the table has its own **Idle** column, with how long is left or how long it is overdue. |
+| Inspection | `vistoria` | all (the active ones, outside maintenance) | the Inspection. Only with **Inspection: every how many days to check each watch** (Alerts › Alert settings) above 0 (factory default 0: off). It comes due that many days after the last inspection (with none, from the purchase date; without it, from the registration day). See [The periodic inspection](#the-periodic-inspection). |
 
 The alerts go in the morning alert. An alert marked **right away** (on the **Alerts** page, the *right away* box) also goes
 via Telegram **in the minute it comes due**, only once, until it is resolved: that's how **Take off the charger** arrives when
@@ -1629,18 +1602,22 @@ The autonomies come out in seconds in the API (`recurso=autonomia`) and in words
 
 ## Settings, option by option
 
-The **Settings** page keeps the options **of the collection** (each collection has its own). In parentheses, each one's name in
-the API (`recurso=config`, under the `config` key), for those who automate; the default of a new collection comes at the end of
-each line.
+The options **of the collection** (each collection has its own) are on three pages, each with its own subject: **Settings** (the daily routine, the limits and calculations, the screens), **Rotation › Rotation settings** (the rotation, the week and the schedule, the draw) and **Alerts › Alert settings** (Idle and the inspection). What belongs to the whole system is on the **System** page (master only). In parentheses, each option's name in the API (`recurso=config`, under the `config` key), for those who automate; the default of a new collection comes at the end of each line.
 
-Cards fill the available spaces according to screen width and content height. The **System** panel spans the full width, with its options in columns; on phones, there is a single column. The layout adapts to font, width and content changes without changing field order or losing focus.
+**The options in three levels.** Each collection option that does not belong to the whole system (the times, the limits, the battery drain, the rotation, the week and the schedule, the alerts, the screens: 41 in all) follows the hierarchy **system → user → collection**: the **master** chooses the system default (in the **System** tab of each page), each **owner** chooses the default of their collections (in the **My collections** tab) and each **collection** can choose its own. The most specific wins; the one above is only a default, never a lock. An empty field **inherits** (the label says where the current value comes from: the user, the system or the factory default); in lists, the first choice is **Inherit (…)**; in time and number fields, the **Inherit** button empties the field. It also applies to members and to the cron, which follow the collection's owner. A new collection is born inheriting everything; existing ones keep the value they had, and migration v58 empties those that matched the factory default (v67 brings rotation on and yesterday's watch into the same hierarchy). Changing a default redoes what depends on it in each collection that inherits (the "closes at" of the wrist and the sun, the end of the smart schedule, the time the rotation came back); a usage time that would leave some collection with the end before the start is refused and nothing changes. Through the API: `config/salvar` with the option's key (the collection), `dono[<chave>]` (the owner; or `conta/alterar` with `opcoes[<chave>]`) and `padroes[<chave>]` (the system, master only); `recurso=opcoes&grupo=<grupo>` returns the options of one subject (`rotina`, `limites`, `telas`, `rodizio` or `avisos`) with each level's choice, what inherits and from where, and `recurso=config` returns those of the Settings.
 
-### General
+**One level at a time.** Each of the three pages shows one level at a time, through the tabs at the top: **This collection** (what applies in this collection), **My collections** (only the owner of the open collection: their default for the collections they own) and **System** (master only: the system default). This way each option appears only once on the screen, instead of the collection's, the owner's and the system's one below the other. Switching tabs does not lose what you typed, and the save button saves all levels at once. Whoever is neither owner nor master sees only the collection, without tabs. In the menu, **Settings › My collections** opens the owner's tab directly. **My account** keeps only what belongs to the person (the e-mail, the language, the time zone, the password, their own e-mail server), with the way to the **My collections** tab of each page.
+
+Left out on purpose: what belongs to the whole system by nature (the password strength, the system address, the cron rounds and the operation parameters, on the **System** page), the language and the time zone (they follow the person looking: their choice, then the collection's, then the system's) and what can only stay in `config.php` (the database, the keys, the folders and the e-mail).
+
+Cards fill the available spaces according to screen width and content height; on phones, there is a single column. The layout adapts to font, width and content changes without changing field order or losing focus.
+
+### The Settings page
+
+On the **Settings** page (in the **Settings** menu), the daily routine, the limits and calculations and the screens:
 
 | Option | What it does |
 |---|---|
-| **Collection rotation** (`rodizio_ativo`) | **Inherit from user** (empty, default), **On** (`1`) or **Off** (`0`). The hierarchy is **system → user → collection**: each level inherits or overrides the previous one. In the **My collections** tab of Settings, **Rotation: default for my collections** (`conta/alterar`, `rodizio_ativo` empty/1/0) applies to collections owned by that person, including for members and cron; it does not depend on who opens the page. An explicit collection choice overrides both the user and the system. Under **System**, only the master can change **Rotation: system default** (`parametros[rodizio_ativo]`, default `1`). The API reports the effective state and its source in `rodizio` in the `config`, `hoje`, `plano` and `ficha` resources. Turning it off pauses draws, automatic wrist starts, preparation and plan projections; registration, readings, maintenance alerts and manual entries keep working. The schedule and history are preserved: **Plan** shows the saved schedule without editing actions, and **Today** shows the pause or the watch on the wrist. Existing sessions still follow their closing rules. When enabled again, the plan takes effect; a new automatic session only counts from the time of resumption, without filling the paused interval. Calendars stop including the watch of the day and its eve at the next synchronization; other alerts and events continue. Migration **v56** adds the account preference; existing users start by inheriting, with the system default enabled. |
-| **Unused yesterday's watch moves to today** (`recupera_ontem`) | **Inherit from user** (empty, default), **On** (`1`) or **Off** (`0`). When on, if the watch in **yesterday's** plan was not on the wrist **at all** (you wore another one, or none), it **moves to today** and all the other days of the plan, from today on (free days too), **shift by one day**; if it was worn, even briefly, nothing changes. It does not move: the same watch two days in a row (the one that moved yesterday does not move again), a watch that is unavailable, in maintenance or outside the collection, a free today, nor when today's watch was already on the wrist. The check runs once a day, when today's plan is built (the Today page or the cron); today stays editable in the plan, with the reason *Moved from yesterday: it was not worn*. Three levels, like the rotation: **system** (master only, under **System**, `parametros[recupera_ontem]`, default off) → **user** (in the **My collections** tab of Settings, `conta/alterar`, `recupera_ontem` empty/1/0) → **collection** (here, `recupera_ontem`); the API reports the effective state and its source in `recupera_ontem` of `recurso=config`. |
 | **Wearing hours, start and end** (`uso_inicio`, `uso_fim`) | the period of the day when a watch is on the wrist. It applies to the plan, the forecasts and the "day of use" of the measured consumption (7 am to 10 pm, 15 hours). Default: 07:00 and 22:00. |
 | **Put on the wrist automatically** (`pulso_auto_inicio`) | the choice next to the start: on, the watch of the day goes on the wrist by itself at the start of the wearing hours; off, only via **Put on**. If at that time it is somewhere else (on the charger, in the sun, on the winder), it waits for it to leave, and the period on the wrist starts when it left. Default: on. |
 | **Take off the wrist automatically** (`pulso_auto_fim`) | the choice next to the end: on, it comes off the wrist by itself at the end of the wearing hours (it is the "closes at" of the On the wrist type); off, only via **Took off**. Default: on. |
@@ -1649,27 +1626,15 @@ Cards fill the available spaces according to screen width and content height. Th
 | **Evening round** (`horario_noite`) | the time of the eve's message: tomorrow's watch and what to prepare. Default: 20:00. |
 | **A forgotten sun session closes at** (`sol_fim`, which saves the "closes at" of the In the sun type) | whoever put it in the sun and forgot the **Took off** has the session closed at this time. Default: 18:00. |
 | **Take out of the sun automatically** (`sol_auto_fim`) | the choice next to the sun time: on, the solar leaves the sun on its own at that time; off, the sun session stays open until **Take out of the sun** (if forgotten, it keeps charging in the calculation), and the time stays saved for when it is turned on again. Default: on. |
-| **The week starts** (`semana_inicio`) | the first day of the rotation week: **On Monday** (`segunda`) or **On Sunday** (`domingo`). The plan of the [rotation modes](#the-rotation-modes) comes built up to the last day of the week (Sunday or Saturday), and the cycle, the next week and the watch for the whole week count from it; it applies to the next draws (what is already in the plan stays; **Draw again** rebuilds it). The `SEMANA_DO_ANO()` function of the formulas is still the ISO week. Default: Monday. |
-| **The smart schedule starts** (`escala_inicio`) | where the [smart schedule](#the-smart-schedule) counts the mode's days from: **Tomorrow, if today has already started on the wrist** (`amanha`, the default: today, once started, is left out of the count, and the 7-day schedule runs from tomorrow to 7 days from now, with today's weekday showing up again at the end) or **Always today** (`hoje`: today is day 1, and the 7-day schedule runs to 6 days from now). Today's watch that has already started on the wrist doesn't change in either case. Changed it: the end of the schedule is erased, and the next build (the Today page, the cron) redoes the schedule counting from the new first day. |
-| **The smart schedule closes** (`escala_periodo`) | where the [smart schedule](#the-smart-schedule)'s period ends: **On the period's consecutive days** (`corridos`, the default: the mode's days counted from its first day; a one-week schedule started on a Tuesday runs to the following Tuesday), **At the end of the week (whole weeks)** (`semana`: the days ÷ 7, rounded; a one-week schedule runs to the last day of the week, by **The week starts**, and on the last day of the week it builds the whole next week) or **At the end of the month (whole months)** (`mes`: the days ÷ 30.4, rounded; a one-month schedule runs to the last day of the month, a half-year one to the end of the 6th month counting the current one; on the last day of the month, to the end of the next month; with less than 4 weeks, as at the end of the week). When the period ends, the next one starts the day after the end, the same way. Changed it (or changed the week, closing at the week or the month): the end of the schedule is erased, and the next build redoes the schedule. |
-| **On the last day of the week, the weekly modes build** (`semana_ultimo_dia`) | in the modes that plan by week (outside the schedule): **Only the next day** (`dia_seguinte`, the default: on the last day of the week the plan brings tomorrow, and the next week comes in whole on the day it starts) or **The whole next week** (`semana_seguinte`: on the last day of the week, the mode's weeks count from next week, which comes fully built; with the week starting on Monday, on Sunday the plan brings Monday to Sunday). The list of weeks on the Rotation modes page follows the choice. |
-| **Days without a watch (day off)** (`dia_sem_relogio`) | on (the default), you can leave a day **without a watch**, a day off: **No watch (free day)** appears in each day's **change to…** (Next days and Plan) and in the Manual rotation, and **No watch today**, on today (with the same-day change turned on). Off, these options do not appear and the API refuses the day off (`sem_relogio`, `periodo_livre`, `trocar_dia` with `relogio_id=livre` and `manual` with `livre` on a new day); the days that are already free stay free, until you choose a watch for them or draw again. Default: on. |
-| **Change today's watch on the same day** (`trocar_hoje`) | off (the default), today's watch stays: the **change to…** and the **choose…** of today, **Wearing today**, **Draw again** *including today*, **No watch today** and the **Including today** of Delete everything don't show, in the Manual rotation today stays fixed, and **Draw again** applies from tomorrow even with the day not yet started (the API refuses what would change today's): tomorrow's watch is chosen by today. On, today's is also changed on the same day, and the new one becomes the one on the wrist from now on. The wrist markings (**Put on** and **Took off**) stay free in both cases. Default: off. |
 | **Charge limit** (`carga_limiar`) | the charge (%) at which the alerts say to charge or wind; a watch's **Charge limit** field takes its place. From 1 to 99. Default: 20. |
 | **Solar limit** (`sol_limiar`) | the charge (%) at which the solar should go into the sun. From 1 to 99. Default: 70. |
 | **Forecast limit** (`previsao_limite`) | the charge (%) that the smartwatch forecast uses for "reaches the limit in...". From 0 to 100. Default: 20. The Charge alert converts the rate per day of use into calendar days and does not predict dates beyond 366 days. The detailed forecast finds the time of the threshold to within one minute. `chega_limite_em` includes date and time as `AAAA-MM-DD HH:MM:SS`. |
-| **Decimal places for weights** (`sorteio_casas`) | 0 to 8, default 2, in Settings › Draws. Weights are rounded before drawing; if all positive weights become zero, the original weights are used. Zero weights do not participate. |
-| **Rotation guarantee** (`max_sem_uso`) | no watch goes more than these days without use: the one that does goes ahead of all. 0 turns it off. Default: 21. |
-| **Idle alert: days without going on the wrist** (`encostado_dias`) | after how many days without going on the wrist a watch in the collection gets the **Idle** alert (in **Today is the day for**: *Idle*, *"the limit of days without going on the wrist was due 2d ago, 10/11/2026 18:00"*). From 1 to 3650. Default: 30. The alert is turned off in **Definitions › Alerts**. |
-| **Inspection: every how many days to check each watch (0 turns it off)** (`vistoria_dias`) | the periodic inspection: with a number of days, each active watch gets the **Inspection** alert that many days after the last inspection (with none, from the purchase date; without it, from the registration). From 0 to 3650. Default: 0 (off). See [The periodic inspection](#the-periodic-inspection). |
 | **Battery drain: how to calculate (applies to every watch)** (`gasto_motor`) | which of the five engines of the [consumption measured by the readings](#consumption-measured-by-the-readings) does the calculation, for every watch in the collection: **1. By the recorded hours (the original engine)**, **2. ... (robust)**, **3. By the marking: two separate rates**, **4. Registration only** or **5. By the registration formulas**. Default: empty (*Individual (on the watch or the group)*: each watch's **How to calculate the battery drain** field, else its default, else engine 1). |
 | **Measured drain: count by** (`medicao_base`) | what enters the measured consumption's calculation: **Days** (`dias`, the measurements of the last so many days) or **Readings** (`leituras`, the last so many measurements of each kind, in use and at rest). Default: days. |
 | **Measured drain: average of the last (days)** (`medicao_janela_dias`) | the measured consumption's window, counting by days: older measurements leave the calculation. From 1 to 3650. Default: 90. |
 | **Measured drain: last readings (of each kind)** (`medicao_janela_leituras`) | the window counting by readings: how many measurements of each kind enter. From 2 to 1000. Default: 20. |
 | **Measured drain: data half-life (days; 0 disables)** (`medicao_meia_vida_dias`) | medicao_meia_vida_dias: 0 to 3650 days; data weight halves after N days; 0 disables it (default). |
 | **Copy of the documents in the database (applies to every watch)** (`documentos_copia`) | for the whole collection: **All files** (`todos`), **No file** (`nenhum`) or empty (*Individual (on the watch or the file)*). It is the first of the three levels of the copy (see [The watch's documents](#the-watchs-documents)). Default: empty. |
-| **System address** (`url_sistema`) | the address that the `{link}` placeholder puts in the messages and in the calendar, and the one of the links in the e-mails, the ICS and the Outlook return. It belongs to the whole system: only the master changes it. Default: empty (the address the page was opened from). |
-| **Cron rounds before killing the stuck one** (`cron_espera_rodadas`) | the cron runs one round at a time, and each one writes its process number in the lock file. Finding the previous one still running, the round leaves without running and counts the skip; after this number of skipped rounds in a row, the next one checks that the process is the cron's, kills the stuck one and runs in its place, with the error in the log. From 0 to 1440; 0 never kills (only waits). It is for the whole system: only the master changes it. Default: 10. |
 | **Next days: show up to** (`proximos_por_pagina`) and **Plan: show up to** (`plano_por_pagina`) | how many days the **Next days** on the Today page and the **Day by day** on the Plan page show at a time (from 1 to 366). Beyond that, the page navigator appears below: **<** (previous), the numbers (the first, the last and up to two on each side of the current one, with … in the gaps) and **>** (next); resting the mouse on it, the tip says *Previous*, *Next* or *Page N*. Default: 7 and 31. |
 | **Page refresh interval** (`atualizar_segundos`) | how often, in seconds, **Today** (with the watch open in the panel), the **Watch page**, the **Plan**, the **Totals** and the **History** read everything again by themselves, without reloading: from 1 to 86400; **0** turns it off; empty, 60. Negative or above that, Settings refuses it. See [The pages refresh by themselves](#the-pages-refresh-by-themselves). |
 | **Time zone (whoever has not chosen another in My account)** (`fuso`) | the collection's time zone: that of whoever has not chosen their own in **My account**, and that of its cron, messages and calendars (see [The time zone](#the-time-zone)). Empty: the system's (the `FUSO` of `config.php`). |
@@ -1682,9 +1647,33 @@ Cards fill the available spaces according to screen width and content height. Th
 | **Suggestion for now (Today page)** (`sugestao_agora`) | on: the Today page gets the **Suggestion for now** card, between today's alerts and the Next days: you choose the selection method and the watch types, and the system suggests one to wear now, outside the schedule (see [Suggestion for now](#suggestion-for-now)). Default: off. |
 | **Little watch in the bar** (`relojinho_modo`) | the little watch in the corner of the bar and in the tab has 24 models, one for each hour of the day. **Normal** (`hora`): each hour has its own (at 0 the Classic, at 16 the Digital, at 23 the Futuristic). **Random** (`aleatorio`): each hour draws one of the 24, and it may repeat. **Random without repetition** (`sem_repeticao`): the 24 shuffled, each appears once in the day. The draw is the day's: the same on every page and device, and another the next day. Default: normal. |
 
-On the page, each option is on one line, with the name on the left and the field on the right, in boxes (Daily routine,
-Limits and calculations, Screens, Cron, Draws and the summary **Alerts, reminders and messages**, with the way to the **Alerts** page); the **Save settings** button is on a bar fixed at the
-bottom of the screen.
+On the page, each option is on one line, with the name on the left and the field on the right, in boxes (Daily routine, Limits and calculations, Screens and the summary **Alerts, reminders and messages**, with the way to the **Alerts** page); the **Save settings** button is on a bar fixed at the bottom of the screen. The other two option pages are the same, with the **Save** button.
+
+### Rotation settings
+
+The **Rotation settings** page (in the **Rotation** menu) gathers the rotation options in three boxes, **The rotation**, **The week and the smart schedule** and **The draw and the guarantee**, with the same level tabs. Through the API, `recurso=opcoes&grupo=rodizio`.
+
+| Option | What it does |
+|---|---|
+| **Rotation on** (`rodizio_ativo`) | **Inherit** (empty, default), **On** (`1`) or **Off** (`0`), in the three levels, like the other options: in the **My collections** tab, the default for the collections the person owns (`dono[rodizio_ativo]`), which also applies to members and the cron and does not depend on who opened the page; in the **System** tab, the system default, master only (`padroes[rodizio_ativo]`, default `1`). An explicit collection choice overrides both the user and the system. The API reports the effective state and its source in `rodizio` in the `hoje`, `plano` and `ficha` resources. Turning it off pauses draws, automatic wrist starts, preparation and plan projections; registration, readings, maintenance alerts and manual entries keep working. The schedule and history are preserved: **Plan** shows the saved schedule without editing actions, and **Today** shows the pause or the watch on the wrist. Existing sessions still follow their closing rules. When enabled again, the plan takes effect; a new automatic session only counts from the time of resumption, without filling the paused interval. Calendars stop including the watch of the day and its eve at the next synchronization; other alerts and events continue. Migration **v67** moves the option into the options registry: the system default and each owner's preference go to their levels, and each collection keeps the time the rotation came back. |
+| **Unused yesterday's watch moves to today** (`recupera_ontem`) | **Inherit** (empty, default), **On** (`1`) or **Off** (`0`). When on, if the watch in **yesterday's** plan was not on the wrist **at all** (you wore another one, or none), it **moves to today** and all the other days of the plan, from today on (free days too), **shift by one day**; if it was worn, even briefly, nothing changes. It does not move: the same watch two days in a row (the one that moved yesterday does not move again), a watch that is unavailable, in maintenance or outside the collection, a free today, nor when today's watch was already on the wrist. The check runs once a day, when today's plan is built (the Today page or the cron); today stays editable in the plan, with the reason *Moved from yesterday: it was not worn*. Three levels, like the other options: **system** (master only, in the **System** tab, `padroes[recupera_ontem]`, default off) → **user** (in the **My collections** tab, `dono[recupera_ontem]`) → **collection** (`recupera_ontem`). |
+| **Days without a watch (day off)** (`dia_sem_relogio`) | on (the default), you can leave a day **without a watch**, a day off: **No watch (free day)** appears in each day's **change to…** (Next days and Plan) and in the Manual rotation, and **No watch today**, on today (with the same-day change turned on). Off, these options do not appear and the API refuses the day off (`sem_relogio`, `periodo_livre`, `trocar_dia` with `relogio_id=livre` and `manual` with `livre` on a new day); the days that are already free stay free, until you choose a watch for them or draw again. Default: on. |
+| **Change today's watch on the same day** (`trocar_hoje`) | off (the default), today's watch stays: the **change to…** and the **choose…** of today, **Wearing today**, **Draw again** *including today*, **No watch today** and the **Including today** of Delete everything don't show, in the Manual rotation today stays fixed, and **Draw again** applies from tomorrow even with the day not yet started (the API refuses what would change today's): tomorrow's watch is chosen by today. On, today's is also changed on the same day, and the new one becomes the one on the wrist from now on. The wrist markings (**Put on** and **Took off**) stay free in both cases. Default: off. |
+| **The week starts** (`semana_inicio`) | the first day of the rotation week: **On Monday** (`segunda`) or **On Sunday** (`domingo`). The plan of the [rotation modes](#the-rotation-modes) comes built up to the last day of the week (Sunday or Saturday), and the cycle, the next week and the watch for the whole week count from it; it applies to the next draws (what is already in the plan stays; **Draw again** rebuilds it). The `SEMANA_DO_ANO()` function of the formulas is still the ISO week. Default: Monday. |
+| **The smart schedule starts** (`escala_inicio`) | where the [smart schedule](#the-smart-schedule) counts the mode's days from: **Tomorrow, if today has already started on the wrist** (`amanha`, the default: today, once started, is left out of the count, and the 7-day schedule runs from tomorrow to 7 days from now, with today's weekday showing up again at the end) or **Always today** (`hoje`: today is day 1, and the 7-day schedule runs to 6 days from now). Today's watch that has already started on the wrist doesn't change in either case. Changed it: the end of the schedule is erased, and the next build (the Today page, the cron) redoes the schedule counting from the new first day. |
+| **The smart schedule closes** (`escala_periodo`) | where the [smart schedule](#the-smart-schedule)'s period ends: **On the period's consecutive days** (`corridos`, the default: the mode's days counted from its first day; a one-week schedule started on a Tuesday runs to the following Tuesday), **At the end of the week (whole weeks)** (`semana`: the days ÷ 7, rounded; a one-week schedule runs to the last day of the week, by **The week starts**, and on the last day of the week it builds the whole next week) or **At the end of the month (whole months)** (`mes`: the days ÷ 30.4, rounded; a one-month schedule runs to the last day of the month, a half-year one to the end of the 6th month counting the current one; on the last day of the month, to the end of the next month; with less than 4 weeks, as at the end of the week). When the period ends, the next one starts the day after the end, the same way. Changed it (or changed the week, closing at the week or the month): the end of the schedule is erased, and the next build redoes the schedule. |
+| **On the last day of the week, the weekly modes build** (`semana_ultimo_dia`) | in the modes that plan by week (outside the schedule): **Only the next day** (`dia_seguinte`, the default: on the last day of the week the plan brings tomorrow, and the next week comes in whole on the day it starts) or **The whole next week** (`semana_seguinte`: on the last day of the week, the mode's weeks count from next week, which comes fully built; with the week starting on Monday, on Sunday the plan brings Monday to Sunday). The list of weeks on the Rotation modes page follows the choice. |
+| **Decimal places for weights** (`sorteio_casas`) | 0 to 8, default 2. Weights are rounded before drawing; if all positive weights become zero, the original weights are used. Zero weights do not participate. |
+| **Rotation guarantee** (`max_sem_uso`) | no watch goes more than these days without use: the one that does goes ahead of all. 0 turns it off. Default: 21. |
+
+### Alert settings
+
+At the top of the **Alerts** page, the **Alert settings** box holds the alert options, with the same level tabs. Through the API, `recurso=opcoes&grupo=avisos`.
+
+| Option | What it does |
+|---|---|
+| **Idle alert: days without going on the wrist** (`encostado_dias`) | after how many days without going on the wrist a watch in the collection gets the **Idle** alert (in **Today is the day for**: *Idle*, *"the limit of days without going on the wrist was due 2d ago, 10/11/2026 18:00"*). From 1 to 3650. Default: 30. The alert is turned off in **Definitions › Alerts**. |
+| **Inspection: every how many days to check each watch (0 turns it off)** (`vistoria_dias`) | the periodic inspection: with a number of days, each active watch gets the **Inspection** alert that many days after the last inspection (with none, from the purchase date; without it, from the registration). From 0 to 3650. Default: 0 (off). See [The periodic inspection](#the-periodic-inspection). |
 
 ### Messages and calendars
 
@@ -1717,8 +1706,14 @@ each one with **Goes to** (the destinations and calendars that receive it); a ne
 
 ### System (master only)
 
-The **System** box holds what belongs to the whole system and used to change only in `config.php`. Each empty field follows
-the `config.php` line (or the default), and the label says where the current value comes from.
+The **System** page (in the **System** menu, master only) gathers what belongs to the whole system: **Address and cron**, **Passwords** (the password strength), the **Operation parameters**, the **Cron** status, the **Draws** (the source of the random numbers), the **E-mail server** (the one in `config.php`, with the test), the **Backup** and the **SQL**. Through the API, `recurso=sistema` reads all of it (master only), and saving goes through `config/salvar`.
+
+| Option | What it does |
+|---|---|
+| **System address** (`url_sistema`) | the address that the `{link}` placeholder puts in the messages and in the calendar, and the one of the links in the e-mails, the ICS and the Outlook return. It belongs to the whole system: only the master changes it. Default: empty (the address the page was opened from). |
+| **Cron rounds before killing the stuck one** (`cron_espera_rodadas`) | the cron runs one round at a time, and each one writes its process number in the lock file. Finding the previous one still running, the round leaves without running and counts the skip; after this number of skipped rounds in a row, the next one checks that the process is the cron's, kills the stuck one and runs in its place, with the error in the log. From 0 to 1440; 0 never kills (only waits). It is for the whole system: only the master changes it. Default: 10. |
+
+The **Operation parameters** hold what belongs to the whole system and used to change only in `config.php`; the box spans the full width, with the options in columns. Each empty field follows the `config.php` line (or the default), and the label says where the current value comes from.
 
 | Option | What it does | Default |
 |---|---|---|
@@ -1730,9 +1725,8 @@ the `config.php` line (or the default), and the label says where the current val
 | **Operations in a batch** | at most how many in one `recurso=lote` | 100 |
 | **Backup on**, **Backups kept**, **Documents in the backup** | the nightly backup, how many stay and whether it takes the documents' content | yes, 7, no |
 | **SQL: UPDATE and DELETE approved** | allows UPDATE and DELETE in [SQL through the API](#sql-through-the-api) | no |
-| **Move yesterday's watch to today: system default** | the default for collections that did not choose (see the collection option, under Daily routine) | no |
 
-**System defaults.** Right below the card, the master chooses the default of each collection option (the times, the limits, the battery drain and the screens: see **The options in three levels**, at the start of this section). Empty, the factory default applies; a collection or an owner that chose their own keeps the choice. Through the API, `padroes[<chave>]` in `config/salvar`.
+**System defaults.** The default of each collection option is in the **System** tab of each options page (the Settings, the Rotation settings and the Alert settings: see **The options in three levels**, at the start of this section). Empty, the factory default applies; a collection or an owner that chose its own keeps the choice. Through the API, `padroes[<chave>]` in `config/salvar`.
 
 ### What the system keeps by itself
 
@@ -1745,6 +1739,7 @@ table):
 | `escala_fim`, `escala_gerada` | until which day the smart schedule goes and when it was generated. |
 | `ultima_manha`, `ultima_noite` | the day of the last morning and evening round (so as not to run twice). |
 | `na_hora_enviados` | the "right away" alerts that already went and are still due (`relogio_id:aviso`): they don't go again; they leave the list when they stop being due. |
+| `rodizio_retomado_em` | when the collection's rotation was turned back on: the automatic session only counts from then, without filling the paused time. |
 
 And of the whole system (the `sistema` table):
 
@@ -1755,7 +1750,8 @@ And of the whole system (the `sistema` table):
 | `aleatorio_ultima`, `aleatorio_fora` | the source of the last batch of random numbers and since when the outside services have failed. |
 | `url_sistema`, `idioma` | the system address and the installation language. |
 | `cron_espera_rodadas` | the cron rounds skipped in a row before the next one kills the stuck one. |
-| `param_<chave>` | the operating parameters saved in the **System** box (empty: `config.php` applies). |
+| `param_<chave>` | the operation parameters saved on the **System** page (empty: `config.php` applies). |
+| `padrao_<chave>` | the system default of each collection option (empty: the factory one). |
 | `demo_avisos` | the demo account expiry notices already sent (so as not to send them twice). |
 | `migracao_v25` | the mark that migration v25 (the move to several people) was applied. |
 
@@ -1862,24 +1858,24 @@ closes the panel.</sub>
 **The same information on all of them.** The watch table always has the same columns (by default, all 14: code, watch, brand, type, state, charge, last
 worn, wear time, next service, in, what to do, idle, bought on and value, or the ones you choose: see **The table columns**), each one's filters and sorting by any column, on the computer, the tablet
 and the phone; nothing is hidden for lack of space (the only exception is on purpose: with the **Warn when a watch becomes
-idle** box unchecked in Settings, the Idle column and its filter disappear at every size). When the whole table fits the width it really has (with or without the
+idle** box unchecked in Alerts › Alert settings, the Idle column and its filter disappear at every size). When the whole table fits the width it really has (with or without the
 panel open next to it), it appears as a table, and a cell's text wraps only if it needs to. When it doesn't fit, each watch
 becomes a card with the same fields, in the same order, each with the column name above it (in two columns on the phone, in
 five on the tablet), the headings become the **Sort by** buttons and all the filters stay, with the name above. The switch is
 measured with the real data (a long name or a large value count), not by the width of the screen. The **Next days** also show
 all the days of the schedule on any screen.
 
-**The table columns.** The **Columns** button, at the top of the watches table on the Today page, opens a list with all the columns: tick the ones you want to see and put them in order with **▲** and **▼**; **Save columns** applies to the collection (header, filters, rows and footer follow the list, and a hidden column loses the sorting and filter it had), and **Inherit** goes back to the list of the level above. The **Watch** column cannot be hidden. The same choice exists on three levels, like the other options: the **system default** (Settings › System), the **user's preference** (My account, for the collections they own) and the **collection's choice** (Settings, or the Columns button); the most specific one wins, empty inherits, and with no choice at any level the usual ones appear, in the usual order, plus your own that you marked as **Appears in the table without anyone choosing** (see **Your own columns**). Through the API: the `colunas_hoje` option (the keys separated by commas, in the order you want, e.g. `nome,uso,marca`) in `config/salvar`, in `conta/alterar` (`opcoes[colunas_hoje]`) and in the master's `config/salvar` (`padroes[colunas_hoje]`); `recurso=hoje` brings `colunas` (all of them, the ones that apply first, with `chave`, `titulo`, `visivel`, `posicao` and `fixa`), `colunas_escolha`, `colunas_herdado` and `colunas_origem_herdado`.
+**The table columns.** The **Columns** button, at the top of the watches table on the Today page, opens a list with all the columns: tick the ones you want to see and put them in order with **▲** and **▼**; **Save columns** applies to the collection (header, filters, rows and footer follow the list, and a hidden column loses the sorting and filter it had), and **Inherit** goes back to the list of the level above. The **Watch** column cannot be hidden. The same choice exists on three levels, like the other options: the **system default** (the System tab of the Settings), the **user's preference** (the My collections tab of the Settings, for the collections they own) and the **collection's choice** (Settings, or the Columns button); the most specific one wins, empty inherits, and with no choice at any level the usual ones appear, in the usual order, plus your own that you marked as **Appears in the table without anyone choosing** (see **Your own columns**). Through the API: the `colunas_hoje` option (the keys separated by commas, in the order you want, e.g. `nome,uso,marca`) in `config/salvar`, in `conta/alterar` (`opcoes[colunas_hoje]`) and in the master's `config/salvar` (`padroes[colunas_hoje]`); `recurso=hoje` brings `colunas` (all of them, the ones that apply first, with `chave`, `titulo`, `visivel`, `posicao` and `fixa`), `colunas_escolha`, `colunas_herdado` and `colunas_origem_herdado`.
 
 **Wear time.** The **Wear time** column, right after **Last worn**, shows how long the watch has already been on the wrist, adding up all the wrist sessions (two open together count only once, the open one counts up to now, and what has not even started does not count), in words in days, hours, minutes and seconds, with only the parts that are not zero: *1d 4h 30m*, *13h 30m*, *30m*, *1m 5s* (24 hours become a day; one that never went to the wrist shows *—*). It sorts by the seconds (those with no use last) and filters by *Never worn*, *up to 1 hour*, *1 hour to 1 day*, *1 to 7 days* and *more than 7 days*. In the **Totals**, a total can go under that column, with the `tempo_de_uso` variable (in seconds: `SOMA(tempo_de_uso)`, `MEDIA(tempo_de_uso)`) and the **Time** format (`duracao`), which writes the seconds like this (*2d 9h 14m*). Through the API, each watch in `recurso=hoje` brings `uso` (seconds) and `uso_texto`.
 
 **Your own columns (the column builder).** Every column of the table lives in **Definitions › Columns**: the usual 14 are already there, as **system columns** (their drawing is ready, so they only change place, with the **↑** and **↓** arrows, and whether they appear from the start; they cannot be deleted, and **Watch** always appears), and nothing is born outside the list: a new collection already starts with them. Besides the usual ones, you build whatever columns you want right there (the **Columns** tab of **Definitions**), like writing a `SELECT`: you choose **where the value comes from**, **the function** that combines the watch's records and **how it appears**. In **guided** mode there are three choices: the **source** (the watches table itself, a **record field** of the watches, or a **database table tied to the watch**: the entries, the services, the maintenance jobs, the timegrapher measurements, the reserve tests, the documents, the plan and the photos), the **field** (each one shows a description of what it stores, and the system knows the type: integer, decimal, date...) and the **function**: **Sum**, **Average**, **Smallest** (or oldest), **Largest** (or most recent) and **Count** (only those the type accepts: for a date, only smallest, largest and count), like `SUM`, `AVG`, `MIN`, `MAX` and `COUNT` in a `SELECT ... GROUP BY watch`. Examples: the **sum of the labour** of each watch's services, the **average rate** of the timegrapher measurements, the **date of the last service**, **how many documents** the watch has. In **expert** mode you write the expression (the same as in reports and totals: the fields, the formulas, the table columns, `SE`, `DIAS_DESDE`..., and the variables `fonte_<table>_<field>_<function>`, such as `fonte_servico_mao_de_obra_soma / fonte_timegrapher_id_conta`), and you can mix sources. In both modes the expression stays saved and **Test on a watch** shows the value before you create it.
 
-The **format** is the translator of the value: **Number**, **Integer**, **2 decimals**, **Money**, **Percentage**, **Date**, **Days**, **Time** (*1d 4h 30m*) or **Text**; with **Decimal places** (0 to 6; empty, the format's default) and, for money, the **Currency symbol** (*R$*, *US$*, *€*...). Empty, the format is the one that fits the source (a date comes out as a date, a count as an integer, a sum of reais as money). The column gets the **name** you give it, and the key `c_<identifier>` (the identifier, up to 18 letters, comes from the name and does not change afterwards): it joins the **Columns** button, Settings, My account and System like any other, with a header, **text search** and **numeric sorting** (empty ones last). Only the columns that are shown are calculated. Tick **Appears in the table without anyone choosing** for it to apply from the start. The columns follow the order of the list (**↑** and **↓**), apply to the collections that use the tree, and leave the choice when you delete them. The **Columns** button's panel has the link **Create or edit columns**, which goes straight to this tab. Through the API: `recurso=colunas` (the list, the **source dictionary** and the test) and, for writing, `salvar`, `subir`, `descer` and `excluir`; `recurso=hoje` brings the value of each one in `relogios[].colunas_extras`.
+The **format** is the translator of the value: **Number**, **Integer**, **2 decimals**, **Money**, **Percentage**, **Date**, **Days**, **Time** (*1d 4h 30m*) or **Text**; with **Decimal places** (0 to 6; empty, the format's default) and, for money, the **Currency symbol** (*R$*, *US$*, *€*...). Empty, the format is the one that fits the source (a date comes out as a date, a count as an integer, a sum of reais as money). The column gets the **name** you give it, and the key `c_<identifier>` (the identifier, up to 18 letters, comes from the name and does not change afterwards): it joins the **Columns** button and the three tabs of the Settings like any other, with a header, **text search** and **numeric sorting** (empty ones last). Only the columns that are shown are calculated. Tick **Appears in the table without anyone choosing** for it to apply from the start. The columns follow the order of the list (**↑** and **↓**), apply to the collections that use the tree, and leave the choice when you delete them. The **Columns** button's panel has the link **Create or edit columns**, which goes straight to this tab. Through the API: `recurso=colunas` (the list, the **source dictionary** and the test) and, for writing, `salvar`, `subir`, `descer` and `excluir`; `recurso=hoje` brings the value of each one in `relogios[].colunas_extras`.
 
 **The menu** gathers the pages by subject: **Today**, **Alerts** and **Exact time** on their own (the everyday ones); **Rotation**
-(Plan, Rotation modes, Selection criteria), **Collection** (Gallery, Watch page, Accessories, Winders, Programs, Movements, Wishlist, Statistics, Totals, Groups), **System**
-(Settings, Definitions, Cron runs and, only for the master, Users) and **Account** (My account, Approvals), each group with the
+(Plan, Rotation modes, Selection criteria, Simulator, Rotation settings), **Collection** (Gallery, Watch page, Maintenance, Inspections, Accessories, Winders, Programs, Movements, Wishlist, Statistics, Totals, Groups), **Reports**, **Settings**
+(Settings, My collections, only for the owner, and Definitions), **System** (Cron runs and, only for the master, System and Users) and **Account** (My account, Approvals), each group with the
 little arrow that opens its list in one click (another click, a click outside or Esc closes it); and **Help**. The group of the
 open page is underlined. On the phone, the collapsed menu opens with the groups already open, each with its name on top. Open, it never goes past the height of the
 screen: it scrolls inside down to the last item (the language), and the page behind stays still. The menu has,
@@ -1930,15 +1926,17 @@ On a computer, every page uses the whole width of the window, with a minimum mar
 | **Exact time** (`hora.php`) | The server's time to set the watches, in your time zone: the clock chosen in Settings (**Exact time clock**): the analog (steel case, light dial with the indices, the numerals 12, 6 and 9, the date window at 3, lance hands with a lume strip and the red seconds hand with counterweight), the digital (a dark case with a liquid crystal display: the weekday and the date, the big time with the faded "88:88:88" behind, the UTC and the moon phase), the ana-digi (the digital display inside the analog dial) or both, side by side; they move second by second, set by the API (discounting the request time; below, how far the device's clock is fast or slow), with the date in words, the UTC time and the time zone (and where it came from); the **Time zone and UTC** boxes (the time zone, the offset, Zulu time, the military letter of the time zone, like *P (Papa)*, and the date-time group, *131433P OCT 26*), **Calendar** (day of the year, ISO week, quarter, Julian day, Unix) and **Moon** (the phase, the age, the illuminated part and the next full and new moons, by the mean cycle: it can be off by a day); and **How to set it**. It reads the API again every minute. Through the API: `recurso=hora_certa`. |
 | **Documents** (`documentos.php`) | The documents of a watch (or of all), opened from the watch page: uploading several files, one tab per category, the full-screen photo gallery with a slideshow, the videos in sequence in the chosen order, the PDF viewer, the summary of the NF-e from the XML, and download for the rest. See [The watch's documents](#the-watchs-documents). |
 | **History** (`historico.php`) | A watch's timeline: in use by the rotation, in use outside the plan (on the wrist without being the watch of the day), on the winder, in the sun, at rest, and each winding, charge and battery change. It shows how much time and what percentage it spent in each state, with a period and state filter. |
-| **Alerts** (`avisos.php`) | Everything the system reminds you of, in one place: the **watch alerts** (the definition: the date formula, the lead time, the text, the entry that resolves it, *right away*...), the **reminders** (the custom events, with a time and a repetition) and **Where they go** (the message destinations and the calendars, with the links to their pages). See [Messages and calendars](#messages-and-calendars). |
-| **Settings** (`configuracao.php`) | The collection's options (the times, the limits, the screens, the language), the cron status, the summary of the alerts, the reminders and the messages (with the way to the **Alerts** page), the **Backup** (master only: the folder's backups, with **Download** and **Restore**, and **Make a backup now**), the **System** box (master only: the operating parameters that used to change only in `config.php`, and the approval of UPDATE and DELETE through SQL), the **Database (SQL)** (master only: one command at a time, with the result and the log; see [SQL through the API](#sql-through-the-api)) and the button that applies the database migrations. See [Settings, option by option](#settings-option-by-option). |
+| **Alerts** (`avisos.php`) | Everything the system reminds you of, in one place: the **Alert settings** box (Idle and the inspection, in the level tabs), the **watch alerts** (the definition: the date formula, the lead time, the text, the entry that resolves it, *right away*...), the **reminders** (the custom events, with a time and a repetition) and **Where they go** (the message destinations and the calendars, with the links to their pages). See [Messages and calendars](#messages-and-calendars). |
+| **Settings** (`configuracao.php`) | The collection's options (the daily routine, the limits and calculations, the screens, the language), in the **This collection**, **My collections** (the owner) and **System** (the master) tabs, the summary of the alerts, the reminders and the messages (with the way to the **Alerts** page) and the button that applies the database migrations. See [Settings, option by option](#settings-option-by-option). |
 | **Destinations** (`destinos.php`, opened from the Alerts page) | Where the collection's messages go: each webhook, e-mail or Web Push, with the message, the language, what it receives, the tests and how it goes out today. See [Messages and calendars](#messages-and-calendars). |
 | **Calendars** (`agendas.php`, opened from the Alerts page) | The collection's calendars (Google, CalDAV, Outlook, ICS link), with the event template, what it receives, the sync, the test event and what has to be in it now. |
 | **Rotation modes** (`modos.php`, menu **Rotation**) | The rotation modes: the table (the active mode marked, the type, the criterion, the weeks and where it chooses from) with **Edit**, **Activate** and **Delete**, and a mode's form, with its type's screen: the name and the type; where to choose from (per stretch or per weekday), the schedule's period or the hand-written script with **Test on all watches**; the weeks ahead (with the list of weeks); the choice criterion and the cycle; and, in the ready-made types, the generated script (read-only, with **copy this script** to a Custom one). See [The rotation modes](#the-rotation-modes). |
 | **Simulator** (`simulador.php`, menu **Rotation**) | Compares scenarios (a mode with the way, the cycle, the weeks, the scale days, the guarantee and the watches in the draw you want) in the same period, without saving anything: the comparison with the best of each measure, the days side by side and each watch. **Apply this one** saves the chosen one exactly as simulated. See [The simulator](#the-simulator). |
+| **Rotation settings** (`rodizio.php`, menu **Rotation**) | The rotation options (rotation on, yesterday's watch, the day off, the same-day change, the week and the schedule, the draw and the guarantee), in the same three tabs as the Settings. See [Rotation settings](#rotation-settings). |
 | **Criteria** (`criterios.php`) | The criteria sets per place (all watches, a group or a watch), with parameters, subparameters, ranges and each watch's score with the calculation open. It has **Restore the initial criteria**. |
 | **Groups** (`grupos.php`) | The tree: create, rename, move, sort, delete (what belonged to the group goes to the one above) and choose each watch's group. |
 | **Definitions** (`cadastros.php`) | Fields, entry types, formulas (with **Test**), the totals (the **Totals** tab: see [Totals](#totals)), the columns of the watches table (the **Columns** tab: see **Your own columns**), the calibers (the **Calibers** tab: see [Calibers](#calibers)), the brands (the **Brands** tab: see [Brands](#brands)), the saved reports (the **Reports** tab: see [Saved reports](#saved-reports)), the record sections (the **Sections** tab: see [Record sections](#record-sections)), the units (the **Units** tab: see [Units](#units)) and the document categories: everything the system uses that isn't code (the alerts are on the **Alerts** page, and the rotation modes on **Rotation modes**). |
+| **System** (`sistema.php`, master only) | What belongs to the whole system: the address and the cron, the passwords, the **Operation parameters** (what used to change only in `config.php`, and the approval of UPDATE and DELETE through SQL), the cron status, the draws, the e-mail server (with the test), the **Backup** (the folder's backups, with **Download** and **Restore**, and **Make a backup now**) and the **Database (SQL)** (one command at a time, with the result and the log; see [SQL through the API](#sql-through-the-api)). See [System (master only)](#system-master-only). |
 | **Cron runs** (`execucoes.php`) | What the cron did in each round, how long it took and the errors, with filters. |
 | **My account** (`conta.php`, menu **Account › My account**) | The collections you see (open, create, rename, delete, leave), your group trees (copy, rename, delete), asking for access to someone's collection (by the code the owner gave), your data (your code, the e-mail, the language, the interface mode, the password), the **app on the phone** (remember this device, install, the remembered devices), the **API tokens** (for your scripts), the **notifications on this device** (Web Push), the **sending of your e-mails** (through the system's server or your own: Gmail, Outlook) and deleting the account. See [Several people](#several-people-accounts-collections-and-access) and [The app on the phone](#the-app-on-the-phone). |
 | **Approvals** (`aprovacoes.php`) | The access requests to your collections (approve, decline), the invitations members made that wait for you, **Invite** (by e-mail), the invitations you made and who sees your collections (remove access). The menu shows **Approvals (N)** when something is waiting. |
@@ -2042,7 +2040,7 @@ next round.
 The screens speak six languages: **Portuguese** (the original), **English**, **Chinese** (simplified), **Hindi**, **Spanish**
 and **French**. Each person chooses theirs in the selector at the end of the menu (PT, EN, 中文, हिं, ES, FR); the choice stays
 in their browser (the `lingua` cookie, for a year) and doesn't change anyone else's. Whoever has never chosen follows the default, and follows it when it changes (the cookie written automatically is marked as automatic); only a choice in the selector pins the language. Saving another language in **Settings** (the default) or in **My account** (the account's) releases the selector's choice: the page opens again in the language that now applies. Whoever hasn't chosen yet sees the
-installation's **default language** (Settings › General); without a default, the browser's (if it is one of the six),
+installation's **default language** (Settings); without a default, the browser's (if it is one of the six),
 otherwise Portuguese. Dates and numbers follow the language: 13/10/2026 and 1.234,56 in Portuguese, 10/13/2026 and 1,234.56
 in English, 2026-10-13 in Chinese.
 
@@ -2197,6 +2195,8 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `eventos`, `destinos`, `agendas` | the custom events; the message destinations, with what each one receives and today's preview; the calendars, with what has to be in each one |
 | `ics` | the calendar of an ICS link calendar (without login, by the link's key) |
 | `config`, `cron` | the collection's settings (with the summary of the destinations and calendars and the cron status: never ran, stopped or running); the cron runs, with the period's summary. In `cron`: `de=` and `ate=` (date, or date and time), `situacao=` (`atividade`, the default; `erro`, `nada` or `todas`), `busca=` (text in the log), `limite=` (default 100, maximum 1000) and `pagina=`; each also works with `cron_` in front (`cron_de`...) |
+| `opcoes` | the collection options of one subject (`grupo=`: `rotina`, `limites`, `telas`, `rodizio` or `avisos`; one or more, separated by commas) in the three levels: the collection, the owner's default and the system's (each level with `pode_mudar`), and in each option the choice, what applies and where it comes from. It is what the Rotation settings and Alerts pages read |
+| `sistema` | master only: what belongs to the whole system (the address, the cron rounds, the operation parameters, the password strength, the cron status, the source of the draws and the `config.php` e-mail server). It is what the System page reads |
 | `arvore`, `cadastros` | the groups; everything the Definitions page shows |
 | `unidades` | the tree's units (the **Units** tab of Definitions), in the order of the quantities, each one with the conversion as text and how many fields, types and formulas use it |
 | `marcas` | the tree's brands (the **Brands** tab of Definitions), each with the country, the website, the note and its watches |
@@ -2261,7 +2261,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (and `ordem` in the fields; the field with the value rules: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar` (the master also `parametros[<chave>]`: the system's operating parameters), `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (the owner also `dono[<chave>]`: the default of their collections; the master also `padroes[<chave>]`: the system default, and `parametros[<chave>]`: the system's operating parameters), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, e-mail or Web Push, with what it receives), `testar` (`qual=`: text, morning or night), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook or ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (with the `senha`, or with another system's `senha_hash`; the first user, with the token, is the master) and, master only: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
@@ -2293,7 +2293,7 @@ per reason) in a refused write:
 ### SQL through the API
 
 Everything the screens do, the API does; and what no screen does, the master does through SQL (`recurso=sql`, or the
-**Database (SQL)** box in Settings): one command at a time, in MySQL's SQL (the system translates it for the database in use,
+**Database (SQL)** box on the System page): one command at a time, in MySQL's SQL (the system translates it for the database in use,
 as in the migrations), without the collections' scope.
 
 | Command | When it is allowed |
@@ -2301,7 +2301,7 @@ as in the migrations), without the collections' scope.
 | `SELECT` | always (without `INTO`); the database already returns at most `limite` rows (default 200, up to 5000), and the response says whether it cut |
 | `INSERT` | always, except one that updates (`ON DUPLICATE KEY`, `ON CONFLICT`, `OR REPLACE`: it would be an `UPDATE` without the approval) and except on the `sistema` and `sql_execucao` tables |
 | `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | always: a new field (`NULL`, or `NOT NULL` with `DEFAULT`; no key, index or position) in an existing table that is not a system one (accounts, tokens, access, `sistema`, `colecao`, `no`), one at a time |
-| `UPDATE`, `DELETE` | only with the approval turned on in the **System** box of Settings (`parametros[sql_alteracoes]=1`) |
+| `UPDATE`, `DELETE` | only with the approval turned on in the **Operation parameters** of the System page (`parametros[sql_alteracoes]=1`) |
 | the rest (`DROP`, `TRUNCATE`, `CREATE`, another `ALTER`, more than one command, the `?` parameter, a comment in the command) | never: refused before reaching the database |
 
 Each request, the refused one, the one with an error and the one that worked, goes into the log (the `sql_execucao` table,
@@ -2423,7 +2423,7 @@ once, without touching the database, and records the skip in a file next to the 
 the lock records, as an error, how many left this way and how long it took.
 
 The round that takes the lock writes its process number in it; after **Cron rounds before killing the stuck one**
-(Settings; default 10) skipped rounds in a row, the next one checks that the process is the cron's, kills the stuck one
+(the System page; default 10) skipped rounds in a row, the next one checks that the process is the cron's, kills the stuck one
 and runs in its place, with the error in the log.
 
 On SQLite, put the database file (`DB_ARQUIVO`) **outside the folder the web server publishes**, in a folder the PHP user can
@@ -2476,7 +2476,7 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | the application registered with Microsoft, for the Outlook calendars (see below) |
 | `DOCUMENTOS_PASTA` | the folder of the documents' files (the manual, the invoice, photos, videos), **outside the published folder**, writable by the PHP user. Without it, the Documents page says it is missing and doesn't accept uploads. E.g.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | optional: the database backup (see [Backup](#backup)). The folder, **outside the published folder** (without it, there is no automatic backup); how many are kept (default 7); and whether it takes the content of the documents stored in the database (default: no). |
-| `BACKUP_ATIVO` | optional: `false` turns the backup off: no automatic copy, no **Make a backup now** and no **Backup** box in Settings (not even the warning that the folder is missing). Without it: on |
+| `BACKUP_ATIVO` | optional: `false` turns the backup off: no automatic copy, no **Make a backup now** and no **Backup** box on the System page. Without it: on |
 | `DOCUMENTOS_LIMITE` | optional: the largest document accepted, in bytes. Without it, 100 MB (`104857600`); `0` or `-1`, no system limit. `MANUAL_LIMITE`, the old name, still works when it doesn't exist. PHP's and nginx's limits still apply (see [The size of uploads](#the-size-of-uploads-the-documents)). E.g.: `define("DOCUMENTOS_LIMITE", 524288000);` for 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | optional, only for `importar.php` with this system on Postgres, SQLite or Firebird: where the previous system's MySQL is |
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | optional, only for tests: the addresses of the random number sources (`https://www.random.org/integers/` and `https://qrng.anu.edu.au/API/jsonI.php`). Changed, the draws ask a test server for the numbers |
@@ -2487,7 +2487,7 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `LOTE_MAXIMO` | optional: how many operations fit in a batch (`recurso=lote`). Without it, 100 |
 
 The operating parameters (`CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS`, `DOCUMENTOS_LIMITE`, `API_ESPERA`, `LOTE_MAXIMO`,
-`BACKUP_ATIVO`, `BACKUP_MANTER` and `BACKUP_DOCUMENTOS`) the master also changes in the **System** box of Settings (or through
+`BACKUP_ATIVO`, `BACKUP_MANTER` and `BACKUP_DOCUMENTOS`) the master also changes in the **Operation parameters** of the System page (or through
 the API: `recurso=config`, `parametros[<chave>]`): the value saved there applies over the `config.php` line, and empty goes
 back to the line. Credentials, keys, folders and server addresses stay only in `config.php`.
 
@@ -2512,7 +2512,7 @@ on the server:
   them, and considers it sent if the response is 2xx. Long messages are split into parts.
 - **E-mail:** the SMTP server in `config.php` (`SMTP_HOST`, the port, the security, the user and the password; on Gmail and
   Outlook, an app password) and the `EMAIL_REMETENTE`; or `EMAIL_METODO = "mail"`, with a sendmail on the server. With
-  `IMAP_*`, each e-mail sent gets a copy in Sent. The master tests it in **My account › E-mail server**: the box shows what the system read from `config.php` (the method, the sender, SMTP, IMAP and POP; the passwords only as *set* or not) and points out what is wrong or missing (no `EMAIL_METODO`, a port that does not match the security, an empty password, PHP without `openssl`...). **Test the connections** signs in to SMTP, to IMAP (and checks the Sent folder) and to POP without sending anything; **Send a test e-mail** really sends one to the address you type. Then come the result of each part and the **conversation with the servers**, line by line (without the password), to find where it stopped.
+  `IMAP_*`, each e-mail sent gets a copy in Sent. The master tests it on the **System** page, under **E-mail server**: the box shows what the system read from `config.php` (the method, the sender, SMTP, IMAP and POP; the passwords only as *set* or not) and points out what is wrong or missing (no `EMAIL_METODO`, a port that does not match the security, an empty password, PHP without `openssl`...). **Test the connections** signs in to SMTP, to IMAP (and checks the Sent folder) and to POP without sending anything; **Send a test e-mail** really sends one to the address you type. Then come the result of each part and the **conversation with the servers**, line by line (without the password), to find where it stopped.
 - **Your own e-mail server:** by default, the e-mails each person sends (the e-mail destinations of their collections, the
   invitations, the access requests and the answers to them) go out through the system's server. Whoever prefers uses their
   own, in **My account › Sending my e-mails**: **My server (SMTP)**, the server, the port, the security, the user, the
@@ -2675,7 +2675,7 @@ days adjust). On a day chosen by hand, the same list has **draw again**. You can
 tomorrow, or build **next week** on any day; with **Overwrite everything** checked, the days chosen by hand and the free
 ones also go away and are drawn again.
 
-**Today isn't changed on the same day**, unless the Settings allow it (**Change today's watch on the same day**, unticked by
+**Today isn't changed on the same day**, unless the Rotation settings allow it (**Change today's watch on the same day**, unticked by
 default): on today, instead of **change to…**, it shows *today stays (change from tomorrow)*, and what you change applies from
 tomorrow on. Want to wear another watch today anyway? Mark its **Put on the wrist**: the use is recorded, and the plan doesn't
 change.
@@ -2694,7 +2694,7 @@ In the watch of the day box, at the top of the Today page, **No watch today** (i
 rotation, it comes off now (the time it was already worn counts as use; what hadn't even started doesn't count), and no watch
 goes on the wrist by itself today. The other days don't change. Changed your mind? The box now shows **Watch-free today** with
 **choose…**: the chosen watch goes on the wrist from now on; or **Draw again** *including today*, in the rotation mode. Through
-the API: `recurso=rodizio`, `acao=sem_relogio`. Only with the same-day change turned on in the Settings (**Change today's watch on the same day**).
+the API: `recurso=rodizio`, `acao=sem_relogio`. Only with the same-day change turned on in Rotation › Rotation settings (**Change today's watch on the same day**).
 
 **And a coming day: can I leave it with no watch (a day off)?**
 Yes. In that day's **change to…** (in **Next days** or on the **Plan** page), choose **No watch (free day)** and click
@@ -2704,7 +2704,7 @@ Manual rotation. On today, the same option does what **No watch today** does (an
 turned on). Through the API: `recurso=rodizio`, `acao=trocar_dia`, `relogio_id=livre`.
 
 **What if I don't want any day without a watch?**
-In **Settings**, under **Daily routine**, turn off **Days without a watch (day off)**. **No watch (free day)** disappears
+In **Rotation › Rotation settings**, in the **The rotation** box, turn off **Days without a watch (day off)**. **No watch (free day)** disappears
 from **change to…** and from the Manual rotation, **No watch today** disappears from the Today page, and the API refuses the
 day off. The days that were already free stay free, until you choose a watch for them or draw again. The option comes turned
 on, and works at the three levels (the system, your account and the collection).
@@ -2716,7 +2716,7 @@ alerts, and you wear it whenever you want (**Put on the wrist**, **Wearing today
 drawn, from tomorrow on, are drawn again. To take it out of everything, even the alerts, untick **Active watch**.
 
 **What if a watch is forgotten with the battery running out, or with something wrong?**
-Turn on the periodic inspection in **Settings** (**Inspection: every how many days to check each watch**): each active
+Turn on the periodic inspection in **Alerts › Alert settings** (**Inspection: every how many days to check each watch**): each active
 watch gets the **Inspection** alert every so many days, in **Today is the day for**, and the **Collection › Inspections**
 page records several at once. See [The periodic inspection](#the-periodic-inspection).
 
@@ -2843,7 +2843,7 @@ browser).
 - **The documents:** the files are already in their folder, and their copy inside the database (which can be large) only goes
   into the backup with `BACKUP_DOCUMENTOS = true`. Without it, when restoring, the documents come back without the copy in the
   database and the cron redoes the requested one.
-- **In Settings**, under **Backup**: the folder's copies (when, the size, with or without documents), **Download** (keep one
+- **On the System page**, under **Backup**: the folder's copies (when, the size, with or without documents), **Download** (keep one
   off the server now and then), **Restore** and **Make a backup now**.
 - **Restore** brings the whole database back to that copy: before, the system keeps a copy of what is there now (you can go
   back); then, in a single step, it replaces all the records with the copy's. If something fails halfway, nothing changes.
@@ -2855,8 +2855,7 @@ browser).
   the database and the files from the folder at once, but the backups made before keep what was there, until they leave by
   the `BACKUP_MANTER` rule (7 days, without the line). To remove it for good, also delete the old backups from the folder.
 - **To turn it off** (another routine already copies the database, or it is a test installation): `define("BACKUP_ATIVO", false);`
-  in `config.php`. The cron makes no copy, the `fazer` write is refused and the **Backup** box disappears from Settings, along
-  with the warning that the folder is missing.
+  in `config.php`. The cron makes no copy, the `fazer` write is refused and the **Backup** box disappears from the System page.
 
 Before restoring, the system checks the entire gzip stream, JSON, tables, columns and binary values. For new backups, it also checks the record count of each table; valid older backups are still accepted. A backup rejected by these checks changes neither the database nor the backup list. The new backup header contains `verificacao=1`, and each table contains `registros`.
 

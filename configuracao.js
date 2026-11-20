@@ -190,18 +190,18 @@ document.addEventListener("toggle", function (ev) {
 }, true);
 if (document.fonts) { document.fonts.ready.then(agendarQuadrosConfig); }
 
-// Os níveis da página: as opções das três hierarquias existem na coleção (os quadros Rotina do dia, Limites e contas, Telas
-// e Sorteios), no dono (o padrão dele para as coleções de que é dono) e no sistema (Padrões do sistema e Sistema); lado a
-// lado, cada opção apareceria três vezes. A página mostra um nível por vez, pelas abas do alto: "colecao" (o que vale nesta
-// coleção), "dono" (Minhas coleções: só o dono da coleção aberta tem) ou "sistema" (o que é do sistema inteiro: os padrões,
-// os parâmetros, as senhas, o cron, a cópia de segurança e o SQL: só o master tem). Quem não é dono nem master não tem outro
-// nível para mudar: vê tudo numa página só, como sempre. O nível vai no endereço (nivel=colecao, dono ou sistema), para a
-// página voltar no mesmo depois de recarregar (ao trocar o idioma); sem ele, a âncora de um quadro do sistema (#copia, #sql)
-// abre no do sistema, e o resto, no da coleção
-var NIVEIS_CONFIG = ["colecao", "dono", "sistema"];
+// Os níveis da página: as opções das três hierarquias desta página (a Rotina do dia, os Limites e contas e as Telas; as do
+// rodízio ficam em Rodízio › Ajustes do rodízio, e as dos avisos, na página Avisos) existem na coleção, no dono (o padrão dele
+// para as coleções de que é dono) e no sistema (os Padrões do sistema); lado a lado, cada opção apareceria três vezes. A página
+// mostra um nível por vez, pelas abas do alto (as do api.js: abasNiveis): "colecao" (o que vale nesta coleção), "dono" (Minhas
+// coleções: só o dono da coleção aberta tem) ou "sistema" (o padrão do sistema: só o master tem). Quem não é dono nem master
+// não tem outro nível para mudar: vê tudo numa página só. O nível vai no endereço (nivel=colecao, dono ou sistema), para a
+// página voltar no mesmo depois de recarregar (ao trocar o idioma). O que é do sistema inteiro (as senhas, o cron, os
+// parâmetros, a cópia de segurança, o SQL) fica na página Sistema
+var NIVEIS_CONFIG = NIVEIS_OPCOES;
 var nivelConfig = (function () {
   var pedido = (/(?:^|[?&])nivel=(sistema|dono|colecao)(?:&|$)/.exec(window.location.search) || [])[1];
-  return pedido || (/^#(copia|sql)$/.test(window.location.hash) ? "sistema" : "colecao");
+  return pedido || "colecao";
 }());
 function noNivel(html, nivel) {
   if (!html) { return html; }
@@ -241,48 +241,6 @@ function cartao(titulo, corpo, pe, explica) {
 }
 
 
-// O SQL pela API (só o master; recurso=sql): o comando, o limite de linhas e Executar (a escrita recurso=sql, acao=executar);
-// o resultado embaixo (a tabela do SELECT, ou as linhas mudadas) e o registro das últimas execuções
-function tabelaSql(r) {
-  if (!r) {
-    return "";
-  }
-  if (r.tipo === "select" && r.colunas) {
-    return el("p", {"class": "nota"}, t("{1} linha(s) lidas em {2} ms", {1: r.total, 2: r.duracao_ms}) + (r.cortado ? " · " + t("mostrando as {1} primeiras", {1: r.linhas.length}) : ""))
-      + el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, r.colunas.map(function (c) { return el("th", {}, h(c)); }).join("")))
-        + el("tbody", {}, r.linhas.map(function (l) { return el("tr", {}, l.map(function (v) { return el("td", {}, v === null ? el("span", {"class": "nota"}, fixo("NULL")) : h(String(v))); }).join("")); }).join(""))));
-  }
-  return el("p", {"class": r.ok ? "nota" : "acao"}, r.ok ? (r.afetadas === null ? t("Executado em {1} ms.", {1: r.duracao_ms}) : t("{1} linha(s) mudadas em {2} ms.", {1: r.afetadas, 2: r.duracao_ms})) : h(r.erro || ""));
-}
-function quadroSql(s, resultado) {
-  var execucoes = s.execucoes || [];
-  return el("h2", {}, t("Banco de dados (SQL)"))
-    + el("p", {"class": "nota"}, t("Um comando por vez, no SQL do MySQL (o sistema traduz para o banco {1}). Valem SELECT, INSERT e ALTER TABLE … ADD COLUMN (um campo novo numa tabela); UPDATE e DELETE só com a aprovação ligada no quadro Sistema. Tudo fica no registro abaixo.", {1: el("code", {}, h(s.banco))}))
-    + el("form", {"data-recurso": "sql", "id": "form-sql", "class": "form-grade"}, el("input", {"type": "hidden", "name": "acao", "value": "executar"})
-      + el("label", {"style": "grid-column: 1 / -1"}, t("Comando {1}", {1: el("textarea", {"name": "comando", "class": "formula", "rows": "4", "required": true, "placeholder": fixo("SELECT id, nome FROM relogio ORDER BY nome")}, "")}))
-      + el("label", {}, t("Linhas na resposta {1}", {1: el("input", {"type": "number", "name": "limite", "min": "1", "max": String(s.limite_maximo || 5000), "value": String(s.limite_padrao || 200)})}))
-      + el("div", {"class": "botoes"}, el("button", {}, t("Executar"))))
-    + el("div", {"id": "sql-resultado", "aria-live": "polite"}, tabelaSql(resultado))
-    + el("details", {}, el("summary", {}, t("As últimas execuções")) + (execucoes.length === 0 ? el("p", {"class": "nota"}, t("Nenhuma ainda."))
-      : el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Quando"), t("Quem"), t("Comando"), t("Resultado")].map(function (x) { return el("th", {}, x); }).join("")))
-        + el("tbody", {}, execucoes.map(function (x) {
-          return el("tr", {}, el("td", {}, dataBr(x.quando) + " " + horaBr(x.quando)) + el("td", {}, h(x.usuario || "—")) + el("td", {}, el("code", {}, h(x.comando)))
-            // o erro fica como foi gravado, no idioma de quem rodou (um registro, como o do cron)
-            + el("td", {"class": x.ok ? "nota" : "acao"}, x.ok ? (x.linhas === null ? t("ok") : t("{1} linha(s)", {1: x.linhas})) : (x.erro ? el("samp", {}, h(x.erro)) : t("erro"))));
-        }).join(""))))));
-}
-function montarSql(resultado) {
-  var alvo = document.getElementById("sql");
-  if (!alvo) {
-    return Promise.resolve();
-  }
-  return api({recurso: "sql", limite: 20}).then(function (s) {
-    alvo.innerHTML = quadroSql(s, resultado);
-  }).catch(function (e) {
-    alvo.innerHTML = el("p", {"class": "acao"}, t("Não consegui ler o SQL: {1}", {1: h(e.message)}));
-  });
-}
-
 // lê e monta a página: primeiro confere as migrações (com alguma pendente, só o aviso)
 function recarregarConfig(aplicadas, manterPosicao) {
   return api({recurso: "migracoes"}).then(function (m) {
@@ -306,10 +264,7 @@ function recarregarConfig(aplicadas, manterPosicao) {
       document.getElementById("configuracao").innerHTML = el("section", {"class": "cartao-config aviso-banco"}, res);
       organizarQuadrosConfig();
     } else {
-      // a cópia de segurança é do sistema inteiro: só o master vê (os outros recebem 403, e o quadro não aparece)
-      return Promise.all([api({recurso: "config"}), api({recurso: "backup"}).catch(function () { return null; })]).then(function (rs) {
-        var d = rs[0];
-        var bk = rs[1];
+      return api({recurso: "config"}).then(function (d) {
         var c = d.config;
         idiomaConfig = c.idioma || "pt-BR";
         var cfg = function (k) { return c[k] === undefined ? "" : c[k]; };
@@ -326,49 +281,11 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var comNiveis = temDono || temSistema;
         if ((nivelConfig === "dono" && !temDono) || (nivelConfig === "sistema" && !temSistema)) { nivelConfig = "colecao"; }
         if (comNiveis) {
-          var abaNivel = function (nivel, href, texto) {
-            return el("a", {"href": href, "data-nivel-ir": nivel, "class": nivelConfig === nivel ? "ativa" : null, "aria-current": nivelConfig === nivel ? "page" : null}, texto);
-          };
-          res += el("nav", {"class": "abas abas-nivel", "aria-label": t("Nível das opções")},
-              abaNivel("colecao", "configuracao.php", t("Esta coleção"))
-              + (temDono ? abaNivel("dono", "configuracao.php?nivel=dono", t("Minhas coleções")) : "")
-              + (temSistema ? abaNivel("sistema", "configuracao.php?nivel=sistema", t("Sistema")) : ""))
-            + el("p", {"class": "nota nota-nivel", "data-nivel": "colecao"}, t("O que vale nesta coleção. A opção vazia (Herdar) segue o padrão do dono (a aba Minhas coleções) e, sem ele, o do sistema."))
-            + (temDono ? el("p", {"class": "nota nota-nivel", "data-nivel": "dono"}, t("Valem nas coleções de que você é dono que não escolheram a sua (na Configuração da coleção), inclusive para os membros e o cron. Vazio, vale o padrão do sistema.")) : "")
-            + (temSistema ? el("p", {"class": "nota nota-nivel", "data-nivel": "sistema"}, t("O que é do sistema inteiro (só o master muda): o padrão de cada opção para todas as coleções, os parâmetros, as senhas, o cron, a cópia de segurança e o SQL.")) : "");
-        }
-        // ---------- Geral ----------
-        // a situação do cron vem da API (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando
-        var ce = d.cron_estado;
-        var cron = ce.situacao === "rodando" ? el("p", {"class": "nota"}, h(ce.texto))
-          : el("p", {"class": "alerta-cron"}, h(ce.texto.replace(ce.crontab, "")) + el("code", {}, h(ce.crontab)));
-        if (ce.erro) {
-          cron += el("div", {"class": "erro-cron"}, el("strong", {}, t("O cron está com erro")) + el("pre", {}, h(ce.erro)) + el("span", {"class": "nota"}, t("Some sozinho na primeira execução sem erro.")));
-        }
-        cron += el("p", {"class": "nota"}, t("{1}, com filtro de datas e busca.", {1: el("a", {"href": "execucoes.php", "target": "_blank", "rel": "noopener"}, t("Ver todas as execuções do cron"))}));
-        if (ce.registro) {
-          cron += el("details", {"class": "registro-cron"}, el("summary", {}, t("Registro da última rodada")) + el("pre", {}, h(ce.registro)));
+          res += abasNiveis(nivelConfig, temDono, temSistema);
         }
         // ---------- os quadros do alto: cada opção numa linha, o rótulo à esquerda e o campo à direita, todos alinhados ----------
-        var numero = function (nome, valor, min, max) { return el("input", {"type": "number", "min": min, "max": max, "name": nome, "value": valor}); };
-        var marca = function (nome, ligado) {
-          return el("input", {"type": "hidden", "name": nome, "value": "0"}) + el("input", {"type": "checkbox", "name": nome, "value": "1", "checked": ligado});
-        };
-        var rodizio = d.rodizio || {ativo: true, sistema: true, colecao: null, usuario: null, origem: "padrao"};
-        var recupera = d.recupera_ontem || {ativo: false, sistema: false, colecao: null, usuario: null, origem: "sistema"};
         var rotina = cartao(t("Rotina do dia"), el("div", {"class": "campos"},
-          parCampo(t("Rodízio da coleção"), el("select", {"name": "rodizio_ativo"},
-            el("option", {"value": "", "selected": cfg("rodizio_ativo") === ""}, t("Herdar do usuário ({1})", {1: (rodizio.usuario === null || rodizio.usuario === undefined ? rodizio.sistema : rodizio.usuario) ? t("ligado") : t("desligado")}))
-            + el("option", {"value": "1", "selected": cfg("rodizio_ativo") === "1"}, t("Ligado"))
-            + el("option", {"value": "0", "selected": cfg("rodizio_ativo") === "0"}, t("Desligado"))), null,
-            ex("rodizio-ativo", t("Rodízio da coleção"), t("Desligado, o rodízio pausa os sorteios, o uso automático e os lembretes do plano. O plano e o histórico ficam guardados; cadastro, avisos e marcações manuais continuam disponíveis.")))
-          + parCampo(t("Relógio de ontem sem uso passa para hoje"), el("select", {"name": "recupera_ontem"},
-            el("option", {"value": "", "selected": cfg("recupera_ontem") === ""}, t("Herdar do usuário ({1})", {1: (recupera.usuario === null || recupera.usuario === undefined ? recupera.sistema : recupera.usuario) ? t("ligado") : t("desligado")}))
-            + el("option", {"value": "1", "selected": cfg("recupera_ontem") === "1"}, t("Ligado"))
-            + el("option", {"value": "0", "selected": cfg("recupera_ontem") === "0"}, t("Desligado"))), null,
-            ex("recupera-ontem", t("Relógio de ontem sem uso passa para hoje"), t("Ligado, se o relógio do plano de ontem não foi ao pulso nem um pouquinho (você usou outro, ou nenhum), ele passa para hoje e todos os outros dias do plano andam um dia. Se ele foi usado, mesmo que pouco, nada muda. Não passa o mesmo relógio dois dias seguidos, nem um indisponível, na manutenção ou fora da coleção, nem quando hoje é um dia livre ou o relógio de hoje já foi ao pulso. A conta é feita uma vez por dia, quando o plano de hoje é montado. Vale o da coleção; vazio herda o do usuário (Minha conta) e depois o do sistema (Configuração › Sistema).")))
-          + parCampo(t("Rodízio efetivo"), h(rodizio.ativo ? t("Ligado") : t("Desligado")) + " · " + h(rodizio.colecao !== null ? t("definido na coleção") : (rodizio.origem === "usuario" ? t("herdado do usuário") : t("herdado do sistema"))))
-          + campoOpcao(oc.horario_manha, "horario_manha", null)
+          campoOpcao(oc.horario_manha, "horario_manha", null)
           + campoOpcao(oc.horario_noite, "horario_noite", null)
           + campoOpcao(oc.uso_inicio, "uso_inicio", null)
           + campoOpcao(oc.pulso_auto_inicio, "pulso_auto_inicio", null, ex("pulso-auto", t("Pôr e tirar do pulso sozinho"), t("Sem <strong>pôr sozinho</strong>, o relógio do dia só entra no pulso pelo <strong>Pôs no pulso</strong>; sem <strong>tirar sozinho</strong>, só sai pelo ")
@@ -378,29 +295,11 @@ function recarregarConfig(aplicadas, manterPosicao) {
           + campoOpcao(oc.pulso_um_so, "pulso_um_so", null, ex("pulso-um-so", t("Um relógio só no pulso"), t("Ligado, ao marcar <strong>Pôs no pulso</strong> num relógio (na tela, no atalho ou pela API), os outros que estão no pulso saem no mesmo instante: ")
               + t("não fica um esquecido contando horas. Desligado, cada relógio só sai pelo <strong>Tirou do pulso</strong> dele (dá para ter dois no pulso). O relógio do dia que o sistema põe sozinho não tira ninguém.")))
           + campoOpcao(oc.sol_fim, "sol_fim", null)
-          + campoOpcao(oc.sol_auto_fim, "sol_auto_fim", null, ex("sol-auto", t("Tirar do sol sozinho"), t("Sem <strong>tirar do sol sozinho</strong>, o solar só sai do sol pelo <strong>Tirar do sol</strong> (esquecido, continua carregando na conta).")))
-          // a semana do rodízio: o horizonte do plano, o ciclo, a próxima semana e os blocos contam dela
-          + campoOpcao(oc.semana_inicio, "semana_inicio", null, ex("semana", t("A semana começa"), t("A semana do rodízio começa no dia escolhido: o plano vem montado até o último dia da semana, e o ciclo, a próxima semana e o relógio para a semana inteira contam dela.")))
-          // o primeiro dia da escala inteligente: amanhã quando o de hoje já começou no pulso (o padrão) ou sempre hoje
-          + campoOpcao(oc.escala_inicio, "escala_inicio", null, ex("escala-inicio", t("A escala inteligente começa"), t("De onde a escala conta os dias do modo (o período dela). <strong>Amanhã, se o dia de hoje já começou no pulso</strong> (o padrão): o dia de hoje que já começou fica de fora da conta, e a escala de 7 dias vai de amanhã até daqui a 7 dias (o mesmo dia da semana aparece duas vezes, hoje e no fim). ")
-              + t("<strong>Sempre hoje</strong>: hoje é o 1º dia, e a escala de 7 dias vai até daqui a 6 (uma semana certa). O relógio de hoje que já começou no pulso não muda nos dois casos. Mudou: a escala é refeita na próxima vez que o plano é montado (a página Hoje, o cron).")))
-          // onde a escala fecha: nos dias corridos do período (o padrão), no fim da semana ou no fim do mês
-          + campoOpcao(oc.escala_periodo, "escala_periodo", null, ex("escala-periodo", t("A escala inteligente fecha"), t("Onde termina o período da escala (o do modo: uma semana, um mês...). <strong>Nos dias corridos do período</strong> (o padrão): os dias contados do primeiro dia dela; a de uma semana, numa terça, vai até a terça seguinte. ")
-              + t("<strong>No fim da semana</strong>: semanas inteiras, pela \"A semana começa\": a de uma semana vai do primeiro dia dela até o último dia da semana (numa terça, com a semana começando na segunda, até o domingo); no último dia da semana, a semana seguinte inteira. ")
-              + t("<strong>No fim do mês</strong>: meses inteiros (a de um mês vai até o último dia do mês; a de meio ano, até o fim do 6º mês contando o de agora; no último dia do mês, até o fim do mês seguinte); com menos de 4 semanas, como no fim da semana. Quando o período acaba, o seguinte começa no dia depois do fim, do mesmo jeito. Mudou: a escala é refeita na próxima vez que o plano é montado.")))
-          // no último dia da semana, os modos por semana montam só o dia seguinte (o padrão) ou a semana seguinte inteira
-          + campoOpcao(oc.semana_ultimo_dia, "semana_ultimo_dia", null, ex("semana-ultimo-dia", t("No último dia da semana"), t("Nos modos que planejam por semana (fora da escala). <strong>Só o dia seguinte</strong> (o padrão): no último dia da semana o plano traz o dia de amanhã, e a semana seguinte entra inteira no dia em que ela começa. ")
-              + t("<strong>A semana seguinte inteira</strong>: no último dia da semana, as semanas do modo já contam da semana que vem, e ela vem montada inteira (com a semana começando na segunda, no domingo o plano traz de segunda a domingo).")))
-          // trocar o relógio de hoje no próprio dia: desligado (o padrão), a troca vale a partir de amanhã
-          + campoOpcao(oc.dia_sem_relogio, "dia_sem_relogio", null, ex("dia-sem-relogio", t("Dias sem relógio (folga)"), t("Ligado (o padrão), dá para deixar um dia <strong>sem relógio</strong>, a folga: no <strong>trocar por…</strong> de cada dia (Próximos dias e Plano) e no Rodízio manual aparece <strong>Sem relógio (dia livre)</strong>, ")
-              + t("e no dia de hoje, <strong>Sem relógio hoje</strong> (com a troca no próprio dia ligada). O dia livre fica sem relógio e sem sorteio até você escolher um ou voltar a sortear. Desligado, essas opções somem; os dias que já estão livres continuam livres.")))
-          + campoOpcao(oc.trocar_hoje, "trocar_hoje", null, ex("trocar-hoje", t("Trocar o relógio de hoje no próprio dia"), t("Desligado (o padrão), o relógio de hoje fica: o <strong>trocar por…</strong>, o <strong>Usando hoje</strong>, o <strong>Sortear de novo</strong>, o <strong>Sem relógio hoje</strong>, o período e o Rodízio manual valem a partir de amanhã, e o relógio de amanhã se escolhe até hoje. ")
-              + t("Ligado, o relógio de hoje também se troca no próprio dia, e passa a ser o do pulso a partir de agora. As marcações do pulso (Pôs e Tirou) continuam livres nos dois casos.")))));
+          + campoOpcao(oc.sol_auto_fim, "sol_auto_fim", null, ex("sol-auto", t("Tirar do sol sozinho"), t("Sem <strong>tirar do sol sozinho</strong>, o solar só sai do sol pelo <strong>Tirar do sol</strong> (esquecido, continua carregando na conta).")))));
         var limites = cartao(t("Limites e contas"), el("div", {"class": "campos"},
           campoOpcao(oc.carga_limiar, "carga_limiar", null, ex("limite", t("O limite de carga"), t("O limite de carga de um relógio (no cadastro dele) vale no lugar do geral.")))
           + campoOpcao(oc.sol_limiar, "sol_limiar", null)
           + campoOpcao(oc.previsao_limite, "previsao_limite", null)
-          + campoOpcao(oc.max_sem_uso, "max_sem_uso", null)
           // como calcular o gasto da bateria: a escolha da coleção vale por todos os relógios; vazia, valem o relógio e o grupo
           // (o campo do cadastro "Como calcular o gasto da bateria")
           + avancado("config.gasto", campoOpcao(oc.gasto_motor, "gasto_motor", null, ex("motor", t("O gasto da bateria"), t("O gasto da bateria tem cinco motores (veja a Ajuda); a escolha aqui vale para todos os relógios da coleção, e vazia valem a do relógio e a do grupo (o campo \"Como calcular o gasto da bateria\" do cadastro)."))))
@@ -409,12 +308,6 @@ function recarregarConfig(aplicadas, manterPosicao) {
           + avancado("config.gasto", campoOpcao(oc.medicao_janela_dias, "medicao_janela_dias", null))
           + avancado("config.gasto", campoOpcao(oc.medicao_janela_leituras, "medicao_janela_leituras", null))
           + avancado("config.gasto", campoOpcao(oc.medicao_meia_vida_dias, "medicao_meia_vida_dias", null, ex("idade", t("O gasto medido"), t("Com meia-vida de N dias, uma leitura de N dias atrás pesa metade de uma atual. A janela continua limitando a idade dos dados; 0 mantém pesos iguais por idade. Os cinco motores continuam disponíveis."))))
-          // o Encostado: a caixa liga ou desliga o aviso inteiro (o aviso do cadastro, a coluna da Hoje, o filtro); os dias, o limite
-          + parCampo(t("Avisar quando um relógio fica encostado"), marca("encostado_ativo", cfg("encostado_ativo") !== "0"), "check",
-            ex("encostado", t("O aviso Encostado"), t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong>; a caixa desliga tudo (o aviso, a coluna da Hoje e o filtro: é o mesmo aviso Encostado da página Avisos).")))
-          + campoOpcao(oc.encostado_dias, "encostado_dias", null)
-          // a vistoria periódica: cada relógio ativo ganha o aviso Vistoria a cada tantos dias (0 desliga)
-          + campoOpcao(oc.vistoria_dias, "vistoria_dias", null, ex("vistoria", t("A vistoria periódica"), t("Com um número de dias, cada relógio ativo ganha o aviso <strong>Vistoria</strong> esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro): é para olhar o relógio (a bateria, a pilha, o vidro, a pulseira) e nenhum ficar esquecido com algo errado. Registre pelo botão em Hoje é dia de ou várias de uma vez na página Vistorias. 0 desliga.")))
           // a cópia dos documentos no banco: a escolha da coleção vale sobre o relógio e o arquivo (antes era o config.php)
           + campoOpcao(oc.documentos_copia, "documentos_copia", null, ex("copia", t("A cópia dos documentos no banco"), t("A cópia dos documentos no banco escolhida aqui vale sobre o relógio e o arquivo.")))),
           // o aviso que precisa ficar à vista: o config.php com a opção que não vale mais
@@ -448,90 +341,26 @@ function recarregarConfig(aplicadas, manterPosicao) {
               + t("De 1 a 86400; 0 desliga; padrão 60. Nunca por cima de quem está digitando ou tem algo mudado e não gravado.")))
           // as colunas da tabela dos relógios da página Hoje (o motor de colunas): quais e em que ordem
           + campoOpcao(oc.colunas_hoje, "colunas_hoje", "largo", ex("colunas", t("Colunas da tabela dos relógios"), t("Quais colunas a tabela da página Hoje mostra e em que ordem: marque as que quer ver e ponha na ordem com ▲ e ▼ (a Relógio sempre aparece). ")
-              + t("Herdar volta a valer a lista do nível acima (a de Minha conta ou a do sistema; sem nenhuma, todas, na ordem de sempre). Na própria página Hoje, o botão Colunas faz a mesma escolha.")))
-          + parCampo(t("Endereço do sistema (a âncora {link})"), d.sistema.pode_mudar ? el("input", {"name": "url_sistema", "value": d.sistema.url_sistema, "placeholder": t("http://servidor/relogios")})
-            : el("span", {}, d.sistema.url_sistema !== "" ? h(d.sistema.url_sistema) : t("(o do pedido; só o master muda)")), "largo")
-          + parCampo(t("Rodadas do cron antes de matar a travada (0 nunca mata)"), d.sistema.pode_mudar ? numero("cron_espera_rodadas", String(d.sistema.cron_espera_rodadas), "0", "1440")
-            : el("span", {}, h(String(d.sistema.cron_espera_rodadas))), null,
-            ex("cron-espera", t("Rodadas do cron antes de matar a travada"), t("O cron roda a cada minuto, uma rodada por vez: cada uma grava o número do processo dela no arquivo de trava. Achando a anterior ainda rodando, a rodada sai sem rodar e conta o pulo; depois deste número de rodadas puladas seguidas, a próxima mata a travada e roda no lugar dela, com o erro no registro. ")
-              + t("De 0 a 1440; 0 nunca mata (só espera); padrão 10. É do sistema inteiro: só o master muda.")))));
-        // a força da senha (do sistema inteiro: só o master muda; os outros veem a regra)
-        var sp = d.senha_politica;
-        var senhas = cartao(t("Senhas"), el("div", {"class": "campos"},
-          [["tamanho", t("Tamanho mínimo (caracteres)"), "4", "128"], ["maiusculas", t("Letras maiúsculas, no mínimo"), "0", "32"], ["minusculas", t("Letras minúsculas, no mínimo"), "0", "32"],
-            ["numeros", t("Números, no mínimo"), "0", "32"], ["simbolos", t("Símbolos, no mínimo (como ! @ # -)"), "0", "32"]].map(function (x) {
-            return parCampo(x[1], d.sistema.pode_mudar ? numero("senha_" + x[0], String(sp.regras[x[0]]), x[2], x[3]) : el("span", {}, String(sp.regras[x[0]])));
-          }).join("")),
-          el("p", {"class": "nota"}, h(sp.texto)),
-          ex("senhas", t("Senhas"), t("Vale para toda senha nova: a conta criada, a troca em Minha conta, a senha nova pelo link do Esqueci a senha e a do master em Usuários; as que já existem continuam valendo. É do sistema inteiro: só o master muda.")));
-        // os parâmetros de operação do sistema inteiro (só o master): o que estava só no config.php; vazio volta ao config.php
-        var parametros = d.sistema.pode_mudar && Array.isArray(d.sistema.parametros) ? cartao(t("Sistema"), el("div", {"class": "campos parametros-sistema"}, d.sistema.parametros.map(function (p) {
-          var de = p.origem === "sistema" ? "" : (p.config_valor !== null ? p.config_valor : p.padrao);
-          var origem = p.origem === "sistema" ? t("gravado aqui") : (p.origem === "config" ? t("do config.php ({1})", {1: p.config_php}) : t("o padrão"));
-          var campo = p.tipo === "sim_nao"
-            ? el("select", {"name": "parametros[" + p.chave + "]"}, el("option", {"value": "", "selected": p.origem !== "sistema"}, p.config_php === null ? t("Padrão: {1}", {1: p.padrao === 1 ? t("sim") : t("não")}) : t("Como o config.php: {1}", {1: de === 1 ? t("sim") : t("não")}))
-              + el("option", {"value": "1", "selected": p.origem === "sistema" && p.valor === 1}, t("Sim")) + el("option", {"value": "0", "selected": p.origem === "sistema" && p.valor === 0}, t("Não")))
-            : el("input", {"type": "number", "name": "parametros[" + p.chave + "]", "min": String(p.minimo), "max": String(p.maximo), "value": p.origem === "sistema" ? String(p.valor) : "", "placeholder": String(de)});
-          // o rótulo com a descrição em cima e o campo embaixo (largo): a descrição não cabe ao lado do campo no celular
-          return parCampo(p.nome, campo, "largo", el("small", {"class": "nota", "style": "display:block; overflow-wrap: anywhere"}, h(p.descricao) + " · " + origem));
-        }).join("")), null, ex("parametros", t("Sistema"), t("Os parâmetros de operação do sistema inteiro, que antes só mudavam no config.php: o gravado aqui vale; vazio volta a valer a linha do config.php (ou o padrão). As credenciais, as chaves e as pastas continuam só no config.php. Só o master muda."))) : "";
+              + t("Herdar volta a valer a lista do nível acima (a de Minha conta ou a do sistema; sem nenhuma, todas, na ordem de sempre). Na própria página Hoje, o botão Colunas faz a mesma escolha.")))));
         // o padrão do sistema de cada opção da coleção (só o master): cada usuário e cada coleção herda, e pode escolher a sua
         var padroes = d.sistema.pode_mudar && d.sistema.padroes ? cartao(t("Padrões do sistema"), el("div", {"class": "campos parametros-sistema"}, camposOpcoes(d.sistema.padroes, "padroes")), null,
-          ex("padroes", t("Padrões do sistema"), t("O padrão de cada opção da coleção: horários, limites, gasto da bateria e telas. Vale em toda coleção que não escolheu a sua e cujo dono não escolheu o dele (em Minha conta); vazio, vale o padrão de fábrica. O mais específico prevalece: a coleção, depois o dono, depois o sistema."))) : "";
-        var quadroCron = cartao(t("Cron"), cron);
-        // de onde vêm os números dos sorteios (a API diz o último lote e se os dois serviços estão fora)
-        var al = d.aleatorio;
-        var sorteios = cartao(t("Sorteios"), el("div", {"class": "campos"},
-          parCampo(t("Os números vêm de"), el("span", {}, t("1. RANDOM.ORG (ruído atmosférico) · 2. fora do ar, ANU QRNG (quântico) · 3. sem os dois, o gerador seguro do PHP")))
-          + campoOpcao(oc.sorteio_casas, "sorteio_casas", null)
-          + parCampo(t("Último lote"), el("span", {}, al.ultimo_lote ? h(al.ultimo_lote.replace(/ em (\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, " em $3/$2/$1 $4")) : t("nenhum ainda")))
-          + (al.fora_desde ? parCampo(t("Serviços fora"), el("span", {"class": "acao"}, t("os dois sem responder desde {1} {2}; o sistema tenta de novo depois de 10 minutos", {1: dataBr(al.fora_desde), 2: horaBr(al.fora_desde)}))) : "")),
-          "", ex("sorteios", t("Sorteios"), t("Todo sorteio do sistema (o rodízio totalmente aleatório, o sorteio pela nota e o desempate de notas iguais na escala) usa estes números. Eles chegam num lote, e cada sorteio usa só o que precisa, sem viés.")));
+          ex("padroes", t("Padrões do sistema"), t("O padrão de cada opção desta página: horários, limites, gasto da bateria e telas. Vale em toda coleção que não escolheu a sua e cujo dono não escolheu o dele (na aba Minhas coleções); vazio, vale o padrão de fábrica. O mais específico prevalece: a coleção, depois o dono, depois o sistema."))) : "";
         // os avisos, os lembretes e para onde vão (os destinos e das agendas) moram na página Avisos: aqui, o resumo e o caminho
         var alertas = cartao(t("Avisos, lembretes e mensagens"), el("div", {"class": "campos"},
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
-        // o padrão do dono para as coleções dele (só o dono desta coleção): o rodízio, o relógio de ontem e cada opção das três
-        // hierarquias, gravados em dono[<chave>] pelo config/salvar
-        var simNaoDono = function (nome, valor, sistemaLigado) {
-          return el("select", {"name": "dono[" + nome + "]"},
-            el("option", {"value": "", "selected": valor == null}, t("Herdar do sistema ({1})", {1: sistemaLigado ? t("ligado") : t("desligado")}))
-            + el("option", {"value": "1", "selected": valor === true}, t("Ligado"))
-            + el("option", {"value": "0", "selected": valor === false}, t("Desligado")));
-        };
-        var meus = temDono ? cartao(t("Minhas coleções"), el("div", {"class": "campos parametros-sistema"},
-          parCampo(t("Rodízio: padrão das minhas coleções"), simNaoDono("rodizio_ativo", d.dono.rodizio_ativo, d.dono.rodizio_sistema), "largo",
-            ex("rodizio-usuario", t("Rodízio: padrão das minhas coleções"), t("Vale nas coleções de que você é dono, inclusive para os membros e o cron. Cada coleção pode herdar este valor ou substituí-lo na Configuração.")))
-          + parCampo(t("Relógio de ontem sem uso passa para hoje: padrão das minhas coleções"), simNaoDono("recupera_ontem", d.dono.recupera_ontem, d.dono.recupera_ontem_sistema), "largo",
-            ex("recupera-ontem-usuario", t("Relógio de ontem sem uso passa para hoje: padrão das minhas coleções"), t("Vale nas coleções de que você é dono, inclusive para os membros e o cron. Se o relógio do plano de ontem não foi ao pulso nem um pouquinho, ele passa para hoje e os outros dias do plano andam um dia. Cada coleção pode herdar este valor ou substituí-lo na Configuração.")))
-          + camposOpcoes(d.dono.opcoes, "dono"))) : "";
+        // o padrão do dono para as coleções dele (só o dono desta coleção): cada opção desta página, gravada em dono[<chave>] pelo
+        // config/salvar
+        var meus = temDono ? cartao(t("Minhas coleções"), el("div", {"class": "campos parametros-sistema"}, camposOpcoes(d.dono.opcoes, "dono"))) : "";
         if (comNiveis) {
-          rotina = noNivel(rotina, "colecao"); limites = noNivel(limites, "colecao"); tela = noNivel(tela, "colecao"); sorteios = noNivel(sorteios, "colecao"); alertas = noNivel(alertas, "colecao");
-          meus = noNivel(meus, "dono");
-          // as senhas e o cron são do sistema: o master os tem na aba Sistema; quem não é master só os vê, junto com a coleção
-          senhas = noNivel(senhas, temSistema ? "sistema" : "colecao"); quadroCron = noNivel(quadroCron, temSistema ? "sistema" : "colecao");
-          parametros = noNivel(parametros, "sistema"); padroes = noNivel(padroes, "sistema");
+          rotina = noNivel(rotina, "colecao"); limites = noNivel(limites, "colecao"); tela = noNivel(tela, "colecao"); alertas = noNivel(alertas, "colecao");
+          meus = noNivel(meus, "dono"); padroes = noNivel(padroes, "sistema");
         }
         res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-          + el("div", {"class": "config-grade"}, rotina + limites + tela + senhas + quadroCron + sorteios + alertas)
-          + meus + parametros + padroes
+          + el("div", {"class": "config-grade"}, rotina + limites + tela + alertas)
+          + meus + padroes
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));
-        // ---------- Cópia de segurança (desligada no config.php, BACKUP_ATIVO = false: o quadro nem aparece) ----------
-        res += bk === null || bk.ativo === false ? "" : el("section", {"id": "copia", "class": "cartao-config", "data-nivel": comNiveis ? (temSistema ? "sistema" : "colecao") : null}, el("h2", {}, t("Cópia de segurança"))
-          + (bk.pasta_ok
-            ? el("p", {"class": "nota"}, t("Uma cópia do banco inteiro por dia, na rodada da noite, guardando as {1} mais novas, {2} o conteúdo dos documentos (os arquivos já ficam na pasta deles). A cópia volta em qualquer um dos três bancos, na mesma versão do sistema. {3}", {1: bk.manter, 2: bk.documentos ? t("com") : t("sem"), 3: bk.ultima ? t("Última: {1} {2}.", {1: dataBr(bk.ultima), 2: horaBr(bk.ultima)}) : t("Nenhuma feita ainda.")}))
-            : el("p", {"class": "alerta-cron"}, t("A cópia automática está desligada: {1}. Ponha no config.php a BACKUP_PASTA, uma pasta do servidor fora da pasta publicada.", {1: h(bk.pasta_erro)})))
-          + (bk.copias.length > 0 ? el("div", {"class": "rolagem"}, el("table", {"class": "compacta"}, el("thead", {}, el("tr", {}, [t("Cópia"), t("Feita em"), t("Tamanho"), t("Documentos"), ""].map(function (item) { return el("th", {}, item); }).join("")), "largo")
-            + el("tbody", {}, bk.copias.map(function (x) {
-              return el("tr", {}, el("td", {}, el("code", {}, h(x.arquivo))) + el("td", {}, x.criada ? dataBr(x.criada) + " " + horaBr(x.criada) : "—") + el("td", {}, h(x.tamanho))
-                + el("td", {}, x.documentos ? t("com") : t("sem")) + el("td", {"class": "acoes-linha"}, el("a", {"href": "api.php?recurso=backup&arquivo=" + encodeURIComponent(x.arquivo), "class": "botao leve"}, t("Baixar")) + " "
-                + el("form", {"data-recurso": "backup", "onsubmit": "return confirm(" + JSON.stringify(t("Voltar o banco para a cópia de {1}? Tudo o que foi feito depois some. Antes, o sistema guarda uma cópia do que está agora.", {1: x.criada ? dataBr(x.criada) + " " + horaBr(x.criada) : x.arquivo})) + ")"}, el("input", {"type": "hidden", "name": "acao", "value": "restaurar"})
-                  + el("input", {"type": "hidden", "name": "arquivo", "value": x.arquivo}) + el("button", {"class": "discreto"}, t("Restaurar")))));
-            }).join("")), "largo")) : "")
-          + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Fazer uma cópia agora")))) : ""));
-        // ---------- o SQL pela API (só o master): montado depois, pelo recurso=sql ----------
-        res += d.sistema.pode_mudar ? el("section", {"id": "sql", "class": "cartao-config", "data-nivel": comNiveis ? "sistema" : null}, el("p", {"class": "nota"}, t("Lendo…"))) : "";
         document.getElementById("configuracao").innerHTML = res;
         if (comNiveis) {
           document.getElementById("configuracao").setAttribute("data-nivel-visto", nivelConfig);
@@ -539,7 +368,6 @@ function recarregarConfig(aplicadas, manterPosicao) {
           document.getElementById("configuracao").removeAttribute("data-nivel-visto");
         }
         organizarQuadrosConfig();
-        montarSql(null);
         if (!manterPosicao && !retornoConfig && window.location.hash) {
           var alvo = document.getElementById(window.location.hash.slice(1));
           if (alvo) {
@@ -558,16 +386,6 @@ aoGravar = function (form, res, dados) {
   var posicaoIdioma = posicaoAntesDoIdioma || posicaoConfig();
   posicaoAntesDoIdioma = null;
   form.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
-  // o SQL: o resultado embaixo do formulário (o comando continua escrito) e o registro de novo, sem remontar a página
-  if (dados.get("recurso") === "sql") {
-    return montarSql(res.resultado || null).then(function () {
-      var caixa = document.querySelector("#form-sql textarea[name=comando]");
-      if (caixa) {
-        caixa.value = dados.get("comando") || "";
-      }
-      avisoConfig(textoResposta(res), !res.ok);
-    });
-  }
   if (!res.ok) {
     avisoConfig(textoResposta(res), true);
     return posicaoSalvar ? restaurarPosicaoDaGravacao(posicaoSalvar) : null;
@@ -600,8 +418,13 @@ aoGravar = function (form, res, dados) {
       avisoConfig(textoResposta(res) + " " + t("Não consegui ler a configuração: {1}", {1: e.message}), true);
     });
 };
-// os lembretes saíram daqui: moram na página Avisos (o endereço antigo de um lembrete leva para lá)
+// os lembretes saíram daqui: moram na página Avisos (o endereço antigo de um lembrete leva para lá); a cópia de segurança e o
+// SQL também: moram na página Sistema
 (function () {
+  if (/^#(copia|sql)$/.test(window.location.hash)) {
+    window.location.replace("sistema.php" + window.location.hash);
+    return;
+  }
   var q = new URLSearchParams(window.location.search);
   if (q.get("evento") || window.location.hash === "#personalizados") {
     window.location.replace("avisos.php" + (q.get("evento") ? "?evento=" + encodeURIComponent(q.get("evento")) : "") + "#lembretes");

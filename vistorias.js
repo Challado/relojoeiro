@@ -18,9 +18,9 @@ function linhaVistoria(x) {
 
 function montar() {
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Vistorias")));
-  res += ajudaNota("vistorias", t("Como a vistoria funciona"), t("Com a vistoria ligada em Configuração (a cada quantos dias conferir cada relógio), cada relógio ativo ganha o aviso Vistoria esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro). É para pegar o relógio e conferir (se funciona, a hora, a bateria ou a pilha, o vidro, a pulseira) antes que algo errado passe despercebido. Registre uma por uma pelo botão em Hoje é dia de, ou aqui, várias de uma vez: os atrasados e os de hoje já vêm marcados."));
+  res += ajudaNota("vistorias", t("Como a vistoria funciona"), t("Com a vistoria ligada em Avisos › Ajustes dos avisos (a cada quantos dias conferir cada relógio), cada relógio ativo ganha o aviso Vistoria esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro). É para pegar o relógio e conferir (se funciona, a hora, a bateria ou a pilha, o vidro, a pulseira) antes que algo errado passe despercebido. Registre uma por uma pelo botão em Hoje é dia de, ou aqui, várias de uma vez: os atrasados e os de hoje já vêm marcados."));
   if (!dados.ativa) {
-    res += el("p", {"class": "aviso"}, h(dados.motivo)) + el("p", {}, el("a", {"href": "configuracao.php", "class": "botao leve"}, t("Configuração")));
+    res += el("p", {"class": "aviso"}, h(dados.motivo)) + el("p", {}, el("a", {"href": "avisos.php#ajustes-avisos", "class": "botao leve"}, t("Ajustes dos avisos")));
     porHtml(document.getElementById("vistorias"), res);
     return;
   }

@@ -5,7 +5,7 @@
 // pode. A API (recurso=conta, colecoes, acessos, convites, pedidos, cadastro e usuarios) chama estas funções.
 
 // ---------------------------------------------------------------------------------------------------------------------
-// As regras do config.php (todas opcionais; o master as muda também em Configuração › Sistema: parametro_gravado)
+// As regras do config.php (todas opcionais; o master as muda também na página Sistema, em Parâmetros de operação: parametro_gravado)
 // ---------------------------------------------------------------------------------------------------------------------
 
 // O cadastro aberto (a página cadastro.php): CADASTRO_ABERTO (sem ela, aberto). Fechado, só entra quem o master cria ou quem
@@ -272,8 +272,6 @@ function usuario_publico($u)
     $exp = $u["expira_em"] ?? null;
     return ["id" => (int)$u["id"], "login" => $u["login"], "email" => $u["email"] ?? null, "papel" => $u["papel"], "idioma" => $u["idioma"] ?? null, "fuso" => $u["fuso"] ?? null,
         "nivel" => ($u["nivel"] ?? "avancado") === "basico" ? "basico" : "avancado",
-        "rodizio_ativo" => ($u["rodizio_ativo"] ?? null) === null ? null : (int)$u["rodizio_ativo"] === 1,
-        "recupera_ontem" => ($u["recupera_ontem"] ?? null) === null ? null : (int)$u["recupera_ontem"] === 1,
         "criado" => $u["criado"], "ultimo_acesso" => $u["ultimo_acesso"] ?? null, "expira_em" => $exp, "demo" => $exp !== null,
         "dias_restantes" => $exp !== null ? max(0, (int)ceil((strtotime((string)$exp) - time()) / 86400)) : null, "bloqueado" => (int)($u["bloqueado"] ?? 0) === 1];
 }
@@ -655,7 +653,7 @@ function conta_consulta()
         $real = $GLOBALS["USUARIO_REAL"] ?? null;
         return ["usuario" => usuario_publico($u), "vendo_como" => $real !== null ? ["login" => $u["login"], "master" => $real["login"]] : null,
             "colecoes" => colecoes_visiveis($u), "colecao" => colecao_atual(), "papel" => papel_na_colecao(),
-            "arvores" => arvores_do_dono($uid), "rodizio_sistema" => parametro_gravado("rodizio_ativo") !== 0, "recupera_ontem_sistema" => parametro_gravado("recupera_ontem") === 1,
+            "arvores" => arvores_do_dono($uid),
             "opcoes" => opcoes_lista("usuario", $uid),
             "pedidos" => array_map(function ($p) { return ["id" => (int)$p["id"], "colecao_id" => $p["colecao_id"] !== null ? (int)$p["colecao_id"] : null,
                 "dono_id" => $p["dono_id"] !== null ? (int)$p["dono_id"] : null, "alvo" => alvo_codigo($p["colecao_id"], $p["dono_id"]), "criado" => $p["criado"], "expira" => $p["expira"]]; },
@@ -674,8 +672,6 @@ function conta_consulta()
             "email_configurado" => email_conta($uid)["metodo"] !== null, "senha_politica" => senha_politica_api(),
             // o SMTP próprio da pessoa (os e-mails dela saem por ele; sem ele, pelo do sistema), sem a senha
             "smtp" => smtp_proprio_api($uid),
-            // a configuração do e-mail lida do config.php, para o master testar (as senhas só como definida ou não)
-            "email" => usuario_master() ? email_config_resumo() : null,
             "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
             // os modos da interface, para a escolha em Minha conta
             "niveis" => array_map(function ($k) { return ["codigo" => $k, "nome" => t(NIVEIS[$k])]; }, array_keys(NIVEIS)),
@@ -949,33 +945,6 @@ function op_conta($acao, $d)
     $extra = [];
     if ($acao === "alterar") {
         $campos = [];
-        if (array_key_exists("rodizio_ativo", $d)) {
-            if (is_array($d["rodizio_ativo"]) || !in_array((string)$d["rodizio_ativo"], ["", "0", "1"], true)) {
-                $erros[] = t("Rodízio: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
-            } else {
-                $campos["rodizio_ativo"] = (string)$d["rodizio_ativo"] === "" ? null : (int)$d["rodizio_ativo"];
-                // O login foi lido antes de escolher o fuso do pedido. Releia a preferência já no fuso atual.
-                $preferencia = sem_escopo(function () use ($uid) {
-                    return linha("SELECT rodizio_ativo, rodizio_retomado_em FROM usuario WHERE id = ?", [$uid]);
-                });
-                $geral = parametro_gravado("rodizio_ativo") !== 0;
-                $antes = ($preferencia["rodizio_ativo"] ?? null) === null ? $geral : (int)$preferencia["rodizio_ativo"] === 1;
-                $depois = $campos["rodizio_ativo"] === null ? $geral : $campos["rodizio_ativo"] === 1;
-                if ($depois) {
-                    $retomada = max((int)strtotime((string)($preferencia["rodizio_retomado_em"] ?? "")),
-                        ($preferencia["rodizio_ativo"] ?? null) === null ? (int)sis("rodizio_retomado_em") : 0);
-                    $campos["rodizio_retomado_em"] = $antes && $retomada === 0 ? null : date("Y-m-d H:i:s", $antes ? $retomada : time());
-                }
-            }
-        }
-        // passar o relógio de ontem para hoje: o padrão do dono (vazio herda o sistema)
-        if (array_key_exists("recupera_ontem", $d)) {
-            if (is_array($d["recupera_ontem"]) || !in_array((string)$d["recupera_ontem"], ["", "0", "1"], true)) {
-                $erros[] = t("Passar o relógio de ontem: 1 (ligado), 0 (desligado) ou vazio (herdar do nível anterior).");
-            } else {
-                $campos["recupera_ontem"] = (string)$d["recupera_ontem"] === "" ? null : (int)$d["recupera_ontem"];
-            }
-        }
         // as opções da coleção: o padrão do dono (opcoes[<chave>]; vazio herda o sistema); vale nas coleções de que é dono que não
         // escolheram a sua
         $opcoes_u = [];
@@ -1045,7 +1014,6 @@ function op_conta($acao, $d)
                 }
             });
             usuario_definir(array_merge($u, $campos));
-            $GLOBALS["RODIZIO_USUARIO_VERSAO"] = ($GLOBALS["RODIZIO_USUARIO_VERSAO"] ?? 0) + 1;
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             if (isset($campos["senha_hash"]) && aparelho_atual() !== null) {
                 aparelho_cookie("", true);
@@ -1054,7 +1022,7 @@ function op_conta($acao, $d)
         } elseif (count($erros) === 0 && count($opcoes_u) > 0) {
             $msg = t("Conta atualizada.");
         } elseif (count($erros) === 0) {
-            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel, rodizio_ativo, recupera_ontem, opcoes ou senha (com senha_atual).");
+            $erros[] = t("Nada para mudar: mande email, idioma, fuso, nivel, opcoes ou senha (com senha_atual).");
         }
     } elseif ($acao === "excluir") {
         if ($u["papel"] === "master" && (int)sem_escopo(function () { return valor("SELECT COUNT(*) FROM usuario WHERE papel = 'master'"); }) <= 1) {

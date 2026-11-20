@@ -7,13 +7,15 @@
 //
 // Fora daqui, de propósito: o que é do sistema inteiro por natureza (a força da senha, o endereço do sistema, as rodadas
 // do cron e os parâmetros de operação do sistema: cadastro aberto, cópia de segurança, limites da API, o SQL), que só o
-// master muda; o idioma e o fuso, que seguem a pessoa que olha (a escolha dela, depois a da coleção, depois a do sistema); o
-// rodízio e o passar o relógio de ontem para hoje, que têm a coluna própria no usuário (lib.php); e o que só pode ficar no
-// config.php (o banco, as chaves, as pastas, o e-mail).
+// master muda, na página Sistema; o idioma e o fuso, que seguem a pessoa que olha (a escolha dela, depois a da coleção,
+// depois a do sistema); e o que só pode ficar no config.php (o banco, as chaves, as pastas, o e-mail). O rodízio ligado e o
+// passar o relógio de ontem para hoje eram feitos à mão (colunas no usuário, parâmetros do sistema) e entraram aqui na v67.
 // chave => [grupo, tipo, padrão de fábrica, mínimo, máximo, valores (enum)]
 //   tipo: hora (HH:MM), sim_nao (1 ou 0), inteiro (min a max), decimal (min a max), enum (um dos valores), lista (várias chaves dos
 //   valores, separadas por vírgula, na ordem que a pessoa quer, sem repetir: as colunas de uma tabela, colunas.php)
-//   grupo: rotina (Rotina do dia), limites (Limites e contas), telas (Telas)
+//   grupo: rotina (Rotina do dia), rodizio (Rodízio), limites (Limites e contas), avisos (Avisos), telas (Telas). A página de
+//   cada grupo: a Configuração (rotina, limites e telas), Rodízio › Ajustes do rodízio (rodizio) e Avisos (avisos), sempre
+//   nos três níveis (as abas Esta coleção, Minhas coleções e Sistema)
 // O padrão de fábrica é o que vale quando nenhum nível escolheu. gasto_motor e documentos_copia têm o valor "individual"
 // (conforme o relógio, o grupo e o arquivo): o cfg() o devolve como vazio, o que o código sempre entendeu assim
 const OPCOES = [
@@ -26,14 +28,16 @@ const OPCOES = [
     "pulso_um_so" => ["rotina", "sim_nao", "0", null, null, null],
     "sol_fim" => ["rotina", "hora", "", null, null, null],
     "sol_auto_fim" => ["rotina", "sim_nao", "1", null, null, null],
-    "semana_inicio" => ["rotina", "enum", "segunda", null, null, ["segunda", "domingo"]],
-    "escala_inicio" => ["rotina", "enum", "amanha", null, null, ["amanha", "hoje"]],
-    "escala_periodo" => ["rotina", "enum", "corridos", null, null, ["corridos", "semana", "mes"]],
-    "semana_ultimo_dia" => ["rotina", "enum", "dia_seguinte", null, null, ["dia_seguinte", "semana_seguinte"]],
-    "trocar_hoje" => ["rotina", "sim_nao", "0", null, null, null],
-    "dia_sem_relogio" => ["rotina", "sim_nao", "1", null, null, null],
-    "max_sem_uso" => ["limites", "inteiro", "21", 0, 365, null],
-    "sorteio_casas" => ["limites", "inteiro", "2", 0, 8, null],
+    "rodizio_ativo" => ["rodizio", "sim_nao", "1", null, null, null],
+    "recupera_ontem" => ["rodizio", "sim_nao", "0", null, null, null],
+    "semana_inicio" => ["rodizio", "enum", "segunda", null, null, ["segunda", "domingo"]],
+    "escala_inicio" => ["rodizio", "enum", "amanha", null, null, ["amanha", "hoje"]],
+    "escala_periodo" => ["rodizio", "enum", "corridos", null, null, ["corridos", "semana", "mes"]],
+    "semana_ultimo_dia" => ["rodizio", "enum", "dia_seguinte", null, null, ["dia_seguinte", "semana_seguinte"]],
+    "trocar_hoje" => ["rodizio", "sim_nao", "0", null, null, null],
+    "dia_sem_relogio" => ["rodizio", "sim_nao", "1", null, null, null],
+    "max_sem_uso" => ["rodizio", "inteiro", "21", 0, 365, null],
+    "sorteio_casas" => ["rodizio", "inteiro", "2", 0, 8, null],
     "carga_limiar" => ["limites", "inteiro", "20", 1, 99, null],
     "sol_limiar" => ["limites", "inteiro", "70", 1, 99, null],
     "previsao_limite" => ["limites", "decimal", "20", 0, 100, null],
@@ -42,8 +46,8 @@ const OPCOES = [
     "medicao_janela_dias" => ["limites", "inteiro", "90", 1, 3650, null],
     "medicao_janela_leituras" => ["limites", "inteiro", "20", 2, 1000, null],
     "medicao_meia_vida_dias" => ["limites", "inteiro", "0", 0, 3650, null],
-    "encostado_dias" => ["limites", "inteiro", "30", 1, 3650, null],
-    "vistoria_dias" => ["limites", "inteiro", "0", 0, 3650, null],
+    "encostado_dias" => ["avisos", "inteiro", "30", 1, 3650, null],
+    "vistoria_dias" => ["avisos", "inteiro", "0", 0, 3650, null],
     "documentos_copia" => ["limites", "enum", "individual", null, null, ["individual", "todos", "nenhum"]],
     "painel_modo" => ["telas", "enum", "lado", null, null, ["lado", "flutuante"]],
     "destaque_hoje" => ["telas", "enum", "dia", null, null, ["dia", "pulso"]],
@@ -65,7 +69,7 @@ const OPCOES_SAIDA = ["gasto_motor" => ["individual" => ""], "documentos_copia" 
 function opcoes_textos()
 {
     return [
-        "grupos" => ["rotina" => t("Rotina do dia"), "limites" => t("Limites e contas"), "telas" => t("Telas")],
+        "grupos" => ["rotina" => t("Rotina do dia"), "rodizio" => t("Rodízio"), "limites" => t("Limites e contas"), "avisos" => t("Avisos"), "telas" => t("Telas")],
         "titulos" => [
             "horario_manha" => t("Manhã: relógio do dia e avisos"),
             "horario_noite" => t("Noite: preparar o de amanhã"),
@@ -76,6 +80,8 @@ function opcoes_textos()
             "pulso_um_so" => t("Ao pôr um relógio no pulso, tirar os outros"),
             "sol_fim" => t("Sessão no sol esquecida fecha às"),
             "sol_auto_fim" => t("Tirar do sol sozinho"),
+            "rodizio_ativo" => t("Rodízio ligado"),
+            "recupera_ontem" => t("Relógio de ontem sem uso passa para hoje"),
             "semana_inicio" => t("A semana começa"),
             "escala_inicio" => t("A escala inteligente começa"),
             "escala_periodo" => t("A escala inteligente fecha"),
@@ -274,12 +280,15 @@ function opcoes_conferir_horario($nivel, $uid, $ok)
 
 // A lista que a API entrega de um nível (colecao, usuario ou sistema): cada opção com o texto, os valores possíveis, o que o
 // nível escolheu ("" herda), o que herda e de onde, e o que vale (efetivo, com a origem). Para a coleção do pedido, o usuário
-// do pedido ou o sistema
-function opcoes_lista($nivel, $uid = null)
+// do pedido ou o sistema. $grupos: só as opções destes assuntos (a página de cada um: OPCOES_PAGINAS); null, todas
+function opcoes_lista($nivel, $uid = null, $grupos = null)
 {
     $tx = opcoes_textos();
     $lista = [];
     foreach (OPCOES as $chave => [$grupo, $tipo, $padrao, $min, $max, $valores]) {
+        if ($grupos !== null && !in_array($grupo, $grupos, true)) {
+            continue;
+        }
         // a lista de colunas: as do catálogo (as fixas e as cadastradas da árvore) e, sem escolha em nenhum nível, as que aparecem de início
         $padrao_lista = null;
         if ($tipo === "lista") {
@@ -310,7 +319,24 @@ function opcoes_lista($nivel, $uid = null)
             "padrao" => $padrao, "escolha" => $proprio, "herdado" => $herdado, "origem_herdado" => $origem_h,
             "efetivo" => $proprio !== "" ? $proprio : $herdado, "origem" => $proprio !== "" ? $nivel : $origem_h];
     }
-    return ["grupos" => array_map(function ($g) use ($tx) { return ["chave" => $g, "texto" => $tx["grupos"][$g]]; }, array_keys($tx["grupos"])), "opcoes" => $lista];
+    $chaves_g = array_values(array_filter(array_keys($tx["grupos"]), function ($g) use ($grupos) { return $grupos === null || in_array($g, $grupos, true); }));
+    return ["grupos" => array_map(function ($g) use ($tx) { return ["chave" => $g, "texto" => $tx["grupos"][$g]]; }, $chaves_g), "opcoes" => $lista];
+}
+
+// A página de cada assunto das opções: a Configuração (rotina, limites e telas), Rodízio › Ajustes do rodízio (rodizio) e
+// Avisos (avisos). Cada opção aparece numa página só, nos três níveis
+const OPCOES_PAGINAS = ["configuracao.php" => ["rotina", "limites", "telas"], "rodizio.php" => ["rodizio"], "avisos.php" => ["avisos"]];
+
+// As opções de um conjunto de assuntos nos três níveis, como a API (recurso=opcoes) as entrega para a página deles: a coleção
+// do pedido, o dono dela (só o dono vê e muda as escolhas dele) e o sistema (só o master)
+function opcoes_niveis($grupos)
+{
+    $u = usuario_atual();
+    $uid = (int)($u["id"] ?? 0);
+    $dono = $uid > 0 && $uid === opcoes_dono_id();
+    return ["colecao" => opcoes_lista("colecao", null, $grupos),
+        "dono" => ["pode_mudar" => $dono, "opcoes" => $dono ? opcoes_lista("usuario", $uid, $grupos) : null],
+        "sistema" => ["pode_mudar" => usuario_master(), "opcoes" => usuario_master() ? opcoes_lista("sistema", null, $grupos) : null]];
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -334,12 +360,13 @@ function opcoes_na_colecao($c, $f)
 function opcoes_foto()
 {
     return ["uso_fim" => cfg("uso_fim"), "pulso_auto_fim" => cfg("pulso_auto_fim"), "sol_fim" => cfg("sol_fim"), "sol_auto_fim" => cfg("sol_auto_fim"),
-        "escala_inicio" => cfg("escala_inicio"), "escala_periodo" => cfg("escala_periodo"), "semana_inicio" => cfg("semana_inicio")];
+        "escala_inicio" => cfg("escala_inicio"), "escala_periodo" => cfg("escala_periodo"), "semana_inicio" => cfg("semana_inicio"),
+        "rodizio_ativo" => cfg("rodizio_ativo")];
 }
 
 // O que muda além do valor quando uma opção muda (na coleção do escopo): o "fecha às" dos tipos No pulso e No sol segue o fim do
 // horário de uso e a hora do sol; a escala inteligente é refeita na próxima montagem quando o primeiro dia, onde ela fecha ou
-// a semana mudam; e as contas guardadas das fórmulas saem. $antes: a foto de antes; $forcar: as chaves que o pedido trouxe (o
+// a semana mudam; o rodízio que volta a valer marca a retomada; e as contas guardadas das fórmulas saem. $antes: a foto de antes; $forcar: as chaves que o pedido trouxe (o
 // "fecha às" se acerta mesmo sem a mudança)
 function opcoes_efeitos($antes, $forcar = [])
 {
@@ -365,6 +392,11 @@ function opcoes_efeitos($antes, $forcar = [])
     $semana_conta = in_array($agora["escala_periodo"], ["semana", "mes"], true) && ($antes["semana_inicio"] ?? null) !== $agora["semana_inicio"];
     if (($antes["escala_inicio"] ?? null) !== $agora["escala_inicio"] || ($antes["escala_periodo"] ?? null) !== $agora["escala_periodo"] || $semana_conta) {
         cfg_set("escala_fim", "");
+    }
+    // o rodízio voltou a valer (desligado → ligado, em qualquer nível: a coleção, o dono ou o sistema): o uso automático de hoje
+    // só conta a partir de agora (rodizio_retomado_em), sem preencher as horas em que ele ficou pausado
+    if (($antes["rodizio_ativo"] ?? null) === "0" && $agora["rodizio_ativo"] !== "0") {
+        cfg_set("rodizio_retomado_em", (string)time());
     }
     $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
 }

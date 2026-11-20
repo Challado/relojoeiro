@@ -7,8 +7,10 @@ if (!defined("RELOJOEIRO_API")) {
     exit;
 }
 
-// tudo o que a página Configuração mostra: os valores da coleção, os eventos personalizados, a situação do cron, o sorteio e
-// os resumos dos destinos e das agendas (que têm as páginas deles)
+// tudo o que a página Configuração mostra (as opções da Rotina do dia, dos Limites e contas e das Telas, nos três níveis; o idioma
+// e o fuso da coleção), os eventos personalizados, os relógios, e os resumos dos destinos e das agendas (que têm as páginas
+// deles). As opções do rodízio e dos avisos ficam nas páginas deles (recurso=opcoes); o que é do sistema inteiro, na página
+// Sistema (recurso=sistema)
 $hoje = hoje_da_colecao();
 garantir_plano($hoje);
 $valores_c = [];
@@ -17,15 +19,12 @@ foreach (linhas("SELECT chave, valor FROM config ORDER BY chave") as $c) {
 }
 // o aviso Encostado ligado ou não (a caixa da Configuração liga e desliga o aviso do cadastro, o mesmo que a página Avisos)
 $valores_c["encostado_ativo"] = encostado_ativo() ? "1" : "0";
-$valores_c["rodizio_ativo"] = cfg("rodizio_ativo");
-$valores_c["recupera_ontem"] = cfg("recupera_ontem");
+$grupos_c = OPCOES_PAGINAS["configuracao.php"];
+$niveis_c = opcoes_niveis($grupos_c);
 $saida = ["config" => (object)$valores_c,
-    "rodizio" => rodizio_configuracao(),
-    // as opções das três hierarquias (sistema → usuário → coleção): cada uma com o que a coleção escolheu (vazio herda), o que
-    // herda e de onde, e o que vale
-    "opcoes" => opcoes_lista("colecao"),
-    // passar o relógio de ontem para hoje: o valor que vale, a escolha de cada nível e a origem
-    "recupera_ontem" => recupera_ontem_configuracao(),
+    // as opções das três hierarquias (sistema → usuário → coleção) dos assuntos desta página: cada uma com o que a coleção
+    // escolheu (vazio herda), o que herda e de onde, e o que vale
+    "opcoes" => $niveis_c["colecao"],
     // os idiomas (o menu Idioma padrão)
     "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
     // os fusos (o campo Fuso horário: vazio é o do sistema) e o do sistema
@@ -34,29 +33,14 @@ $saida = ["config" => (object)$valores_c,
     "atualizar_segundos" => atualizar_segundos(),
     // o reloginho da barra: o modo (hora, aleatorio ou sem_repeticao) e quantos modelos ele tem
     "relojinho" => ["modo" => relojinho_modo(), "modelos" => RELOJINHO_MODELOS],
-    "aleatorio" => ["fontes" => ["RANDOM.ORG", "ANU QRNG", t("gerador seguro do PHP (random_int)")], "ultimo_lote" => sis("aleatorio_ultima") !== "" ? sis("aleatorio_ultima") : null,
-        "fora_desde" => sis("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)sis("aleatorio_fora")) : null], "sol_fim" => isset(lancamento_tipos()["sol"]) ? sol_fim_hora() : "", "sol_auto_fim" => sol_tira_sozinho(),
+    "sol_fim" => isset(lancamento_tipos()["sol"]) ? sol_fim_hora() : "", "sol_auto_fim" => sol_tira_sozinho(),
     // trocar o relógio de hoje no próprio dia (a caixa da Configuração; desligado, o padrão: a troca vale a partir de amanhã)
     "trocar_hoje" => trocar_hoje_permitido(),
-    // o que é do sistema inteiro (só o master muda): o endereço do sistema
-    "sistema" => ["url_sistema" => sis("url_sistema"), "cron_espera_rodadas" => cron_espera_rodadas(), "pode_mudar" => usuario_master(),
-        // os parâmetros de operação (o que estava só no config.php), cada um com o valor que vale e de onde vem: só para o master
-        "parametros" => usuario_master() ? parametros_sistema_lista() : null,
-        // o padrão do sistema de cada opção da coleção (o que o master escolhe; os outros não veem)
-        "padroes" => usuario_master() ? opcoes_lista("sistema") : null],
-    // o nível do dono (a aba Minhas coleções da Configuração): o padrão dele para as coleções de que é dono. Só o dono da coleção
-    // do pedido o vê e muda (pode_mudar); para os outros, as escolhas vêm null
-    "dono" => (function () {
-        $u = usuario_atual();
-        $uid = (int)($u["id"] ?? 0);
-        $pode = $uid > 0 && $uid === opcoes_dono_id();
-        $pub = $pode ? usuario_publico($u) : null;
-        return ["pode_mudar" => $pode, "rodizio_ativo" => $pode ? $pub["rodizio_ativo"] : null, "recupera_ontem" => $pode ? $pub["recupera_ontem"] : null,
-            "rodizio_sistema" => parametro_gravado("rodizio_ativo") !== 0, "recupera_ontem_sistema" => parametro_gravado("recupera_ontem") === 1,
-            "opcoes" => $pode ? opcoes_lista("usuario", $uid) : null];
-    })(),
-    // a força da senha (do sistema: só o master muda): o mínimo de cada regra e o texto
-    "senha_politica" => senha_politica_api(),
+    // o padrão do sistema de cada opção destes assuntos (a aba Sistema: só o master vê e muda; os outros, null)
+    "sistema" => ["pode_mudar" => $niveis_c["sistema"]["pode_mudar"], "padroes" => $niveis_c["sistema"]["opcoes"]],
+    // o nível do dono (a aba Minhas coleções): o padrão dele para as coleções de que é dono. Só o dono da coleção do pedido o vê
+    // e muda (pode_mudar); para os outros, opcoes vem null
+    "dono" => $niveis_c["dono"],
     // o DOCUMENTOS_COPIA_BANCO do config.php não vale mais (a cópia é escolhida aqui, por coleção): definido, a página avisa
     "config_php_copia" => defined("DOCUMENTOS_COPIA_BANCO") ? (bool)DOCUMENTOS_COPIA_BANCO : null,
     "repeticoes" => $REPETICOES,
@@ -67,5 +51,4 @@ $saida = ["config" => (object)$valores_c,
     "relogios" => array_map(function ($r) { return ["id" => (int)$r["id"], "nome" => $r["nome"], "disponivel" => (int)$r["disponivel"] === 1]; },
         linhas("SELECT id, nome, disponivel FROM relogio ORDER BY nome")),
     "destinos" => array_values(array_map(function ($x) { return ["id" => $x["id"], "nome" => $x["nome"], "tipo" => $x["tipo"], "tipo_nome" => t(DESTINO_TIPOS[$x["tipo"]] ?? $x["tipo"]), "ativo" => $x["ativo"]]; }, destinos())),
-    "agendas" => array_values(array_map(function ($x) { return ["id" => $x["id"], "nome" => $x["nome"], "tipo" => $x["tipo"], "tipo_nome" => t(AGENDA_TIPOS[$x["tipo"]] ?? $x["tipo"]), "ativa" => $x["ativa"]]; }, agendas())),
-    "cron_estado" => cron_estado()];
+    "agendas" => array_values(array_map(function ($x) { return ["id" => $x["id"], "nome" => $x["nome"], "tipo" => $x["tipo"], "tipo_nome" => t(AGENDA_TIPOS[$x["tipo"]] ?? $x["tipo"]), "ativa" => $x["ativa"]]; }, agendas()))];

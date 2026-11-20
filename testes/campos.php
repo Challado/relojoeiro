@@ -109,6 +109,8 @@ $consultas = [
     "simulador" => ["recurso=simulador", "recurso=simulador&" . http_build_query(["cenarios" => json_encode(array_map(function ($id) { return ["modo" => $id]; }, array_slice($modos_sim, 0, 2))), "semente" => "7"]),
         "recurso=simulador&" . http_build_query(["cenarios" => json_encode([["modo" => $modos_sim[0] ?? 0]]), "variar" => json_encode(["parametro" => "max_sem_uso", "de" => 0, "ate" => 14, "passo" => 7])]), "recurso=simulador&cenarios=[]"],
     "vistorias" => ["recurso=vistorias", "recurso=vistorias&todos=1", "recurso=vistorias&ate=2099-12-31"],
+    "opcoes" => ["recurso=opcoes&grupo=rodizio", "recurso=opcoes&grupo=avisos", "recurso=opcoes&grupo=rotina,limites,telas"],
+    "sistema" => ["recurso=sistema"],
     "sugestao" => ["recurso=sugestao", "recurso=sugestao&forma=menos_usado", "recurso=sugestao&forma=aleatorio&pular=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"],
     "estatisticas" => ["recurso=estatisticas", "recurso=estatisticas&de=tudo"],
     "precisao" => array_merge(["recurso=precisao"], $para_cada("recurso=precisao&relogio=%d")),

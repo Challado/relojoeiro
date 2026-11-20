@@ -61,17 +61,17 @@ try {
     $dia = function ($n) use ($hoje) { return $hoje->modify(($n >= 0 ? "+" : "") . $n . " day")->format("Y-m-d"); };
 
     // ---- a herança: padrão desligado; sistema, usuário e coleção
-    exigir_recupera(recupera_ontem_configuracao() === ["ativo" => false, "colecao" => null, "usuario" => null, "sistema" => false, "origem" => "sistema"], "O padrão deixou de ser desligado e herdado.");
+    exigir_recupera(recupera_ontem_configuracao() === ["ativo" => false, "colecao" => null, "usuario" => null, "sistema" => false, "origem" => "padrao"], "O padrão deixou de ser desligado e herdado (do padrão de fábrica).");
     foreach ([["recupera_ontem" => "talvez"], ["recupera_ontem" => []]] as $ruim) {
         exigir_recupera(!op_config("salvar", $ruim)["ok"], "A coleção aceitou uma escolha inválida.");
-        exigir_recupera(!op_conta("alterar", $ruim)["ok"], "A conta aceitou uma escolha inválida.");
+        exigir_recupera(!op_conta("alterar", ["opcoes" => $ruim])["ok"], "A conta aceitou uma escolha inválida.");
     }
-    exigir_recupera(op_config("salvar", ["parametros" => ["recupera_ontem" => "1"]])["ok"] && recupera_ontem_ativo() && recupera_ontem_configuracao()["origem"] === "sistema", "A coleção não herdou o sistema ligado.");
-    exigir_recupera(op_conta("alterar", ["recupera_ontem" => "0"])["ok"] && !recupera_ontem_ativo() && recupera_ontem_configuracao()["origem"] === "usuario", "O usuário desligado não valeu sobre o sistema.");
+    exigir_recupera(op_config("salvar", ["padroes" => ["recupera_ontem" => "1"]])["ok"] && recupera_ontem_ativo() && recupera_ontem_configuracao()["origem"] === "sistema", "A coleção não herdou o sistema ligado.");
+    exigir_recupera(op_conta("alterar", ["opcoes" => ["recupera_ontem" => "0"]])["ok"] && !recupera_ontem_ativo() && recupera_ontem_configuracao()["origem"] === "usuario", "O usuário desligado não valeu sobre o sistema.");
     exigir_recupera(op_config("salvar", ["recupera_ontem" => "1"])["ok"] && recupera_ontem_ativo() && recupera_ontem_configuracao()["origem"] === "colecao", "A coleção ligada não valeu sobre o usuário.");
     exigir_recupera(op_config("salvar", ["recupera_ontem" => ""])["ok"] && !recupera_ontem_ativo(), "A coleção não voltou a herdar o usuário.");
-    exigir_recupera(op_conta("alterar", ["recupera_ontem" => ""])["ok"] && recupera_ontem_ativo(), "O usuário não voltou a herdar o sistema.");
-    exigir_recupera(op_config("salvar", ["parametros" => ["recupera_ontem" => "0"]])["ok"] && !recupera_ontem_ativo(), "O sistema desligado não valeu.");
+    exigir_recupera(op_conta("alterar", ["opcoes" => ["recupera_ontem" => ""]])["ok"] && recupera_ontem_ativo(), "O usuário não voltou a herdar o sistema.");
+    exigir_recupera(op_config("salvar", ["padroes" => ["recupera_ontem" => "0"]])["ok"] && !recupera_ontem_ativo(), "O sistema desligado não valeu.");
 
     // ---- desligado: nada muda
     montar_plano($ids, $hoje);

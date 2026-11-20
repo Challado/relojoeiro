@@ -4667,20 +4667,6 @@
  *                                    e cada arquivo decidem
  *     relogio.documentos.total       quantos documentos ele tem
  *   recurso=config
- *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
- *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
- *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
- *     rodizio.usuario                a escolha do dono da coleção: true ligado, false desligado, null herda o sistema; é a mesma para
- *                                    membros e cron
- *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
- *     rodizio.origem                 de onde vem a escolha efetiva: colecao, usuario, sistema ou padrao
- *     recupera_ontem                 passar o relógio de ontem sem uso para hoje: o estado efetivo e a escolha em cada nível
- *     recupera_ontem.ativo           verdadeiro: o relógio do plano de ontem que não foi ao pulso nem um pouquinho passa para hoje, e os
- *                                    outros dias do plano andam um dia
- *     recupera_ontem.colecao         a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
- *     recupera_ontem.usuario         a escolha do dono da coleção: true ligado, false desligado, null herda o sistema
- *     recupera_ontem.sistema         o padrão geral (desligado quando o master não ligou)
- *     recupera_ontem.origem          de onde vem a escolha efetiva: colecao, usuario ou sistema
  *     opcoes                         as opções da coleção em três níveis (sistema → usuário → coleção), da coleção do pedido (escolha: o
  *                                    que a coleção escolheu; herdado: o do dono, senão o do sistema, senão o padrão de fábrica): os grupos
  *                                    (as telas agrupam por eles) e cada opção com o que este nível escolheu, o que herda e o que vale
@@ -4716,20 +4702,6 @@
  *     relojinho.modelos              quantos modelos o reloginho tem (24, um para cada hora do dia)
  *     mostrar_ate.proximos           os Próximos dias da página Hoje (proximos_por_pagina; padrão 7)
  *     mostrar_ate.plano              o dia a dia da página Plano (plano_por_pagina; padrão 31)
- *     aleatorio                      de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico);
- *                                    sem os dois, o gerador seguro do PHP (random_int)
- *     aleatorio.fontes[]             as fontes, na ordem em que o sistema tenta: RANDOM.ORG, ANU QRNG, gerador seguro do PHP (random_int)
- *     aleatorio.ultimo_lote          a fonte do último lote de números e quando ("RANDOM.ORG em AAAA-MM-DD HH:MM:SS"); null: nenhum ainda
- *     aleatorio.fora_desde           desde quando os dois serviços estão sem responder (AAAA-MM-DD HH:MM:SS): por 10 minutos o sistema nem
- *                                    tenta e usa o gerador do PHP; null: no ar (ou não se sabe)
- *     cron_estado                    a situação do cron, como a Configuração mostra (o cron roda a cada minuto)
- *     cron_estado.crontab            a linha do crontab que roda o sistema (com a pasta dele)
- *     cron_estado.erro               o erro guardado da última execução com erro (null: sem erro; some na primeira execução sem erro)
- *     cron_estado.minutos            há quantos minutos ele rodou pela última vez (null: nunca rodou)
- *     cron_estado.situacao           nunca (ainda não rodou), parado (mais de 10 minutos sem rodar) ou rodando
- *     cron_estado.texto              a frase da Configuração ("Cron rodando: última execução às 10:41."; parado e nunca trazem a linha do
- *                                    crontab)
- *     cron_estado.ultima             quando rodou pela última vez (AAAA-MM-DD HH:MM:SS, no fuso do sistema; null: nunca rodou)
  *     config.sorteio_casas           sorteio_casas: de 0 a 8 casas decimais nos pesos dos sorteios; padrão 2. Se todos os pesos positivos
  *                                    arredondarem para zero, usa os pesos originais.
  *     config.carga_limiar            o limite de carga geral (%): carregar quando a carga chega a ele (o campo carga_minima do relógio, se
@@ -4877,26 +4849,9 @@
  *                                    só a partir de amanhã, e as telas não mostram as trocas de hoje (o trocar por… do dia de hoje, o
  *                                    Usando hoje, o inclusive hoje, o Sem relógio hoje, o Excluindo hoje do Apagar tudo; no Rodízio manual,
  *                                    hoje fica parado)
- *     sistema                        o que é do sistema inteiro (não da coleção)
- *     sistema.url_sistema            o endereço do sistema, para os links das mensagens ({link}), do ICS e do Outlook (vazio: o do pedido)
- *     sistema.cron_espera_rodadas    quantas rodadas do cron saem sem rodar, com a anterior travada, antes de a próxima matá-la (0 a 1440;
- *                                    0, nunca mata; padrão 10; só o master muda)
+ *     sistema                        o padrão do sistema das opções desta página (a aba Sistema; o que é do sistema inteiro:
+ *                                    recurso=sistema)
  *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)
- *     sistema.parametros             só para o master (null para os outros): os parâmetros de operação do sistema inteiro, o que antes só
- *                                    mudava no config.php; cada um vale o gravado aqui, senão a linha do config.php, senão o padrão
- *     sistema.parametros[].chave     o nome do parâmetro no pedido (parametros[<chave>])
- *     sistema.parametros[].nome      o nome
- *     sistema.parametros[].descricao o que ele faz
- *     sistema.parametros[].tipo      sim_nao (1 ou 0) ou inteiro (de minimo a maximo)
- *     sistema.parametros[].valor     o valor que vale agora
- *     sistema.parametros[].origem    de onde o valor vem: sistema (gravado aqui), config (a linha do config.php) ou padrao
- *     sistema.parametros[].config_php
- *                                    o nome da linha do config.php que ele substitui; null: nenhuma (só existe aqui)
- *     sistema.parametros[].config_valor
- *                                    o valor da linha do config.php; null: a linha não existe
- *     sistema.parametros[].padrao    o valor sem o gravado e sem o config.php
- *     sistema.parametros[].minimo    o menor valor aceito
- *     sistema.parametros[].maximo    o maior valor aceito
  *     sistema.padroes                só para o master (null para os outros): o padrão do sistema de cada opção da coleção, na mesma forma
  *                                    de opcoes (escolha: o que o master escolheu; herdado: o padrão de fábrica)
  *     sistema.padroes.grupos         os grupos das opções, na ordem das telas
@@ -4939,11 +4894,6 @@
  *                                    pelo conta/alterar)
  *     dono.pode_mudar                verdadeiro: quem pede é o dono da coleção do pedido (a tela mostra a aba Minhas coleções); falso: não
  *                                    é, e as escolhas abaixo vêm null
- *     dono.rodizio_ativo             o rodízio como padrão das coleções do dono: true, false ou null (herda o do sistema)
- *     dono.recupera_ontem            passar o relógio de ontem para hoje como padrão das coleções do dono: true, false ou null (herda o do
- *                                    sistema)
- *     dono.rodizio_sistema           o que o rodízio herda do sistema quando o dono não escolhe: true (ligado) ou false
- *     dono.recupera_ontem_sistema    o que o passar o relógio de ontem herda do sistema quando o dono não escolhe: true (ligado) ou false
  *     dono.opcoes                    só para o dono da coleção (null para os outros): o padrão dele de cada opção da coleção, na mesma
  *                                    forma de opcoes (escolha: o que o dono escolheu; herdado: o do sistema, senão o padrão de fábrica)
  *     dono.opcoes.grupos             os grupos das opções, na ordem das telas
@@ -4971,16 +4921,6 @@
  *                                    de onde vem o herdado: usuario, sistema ou padrao
  *     dono.opcoes.opcoes[].efetivo   o que vale neste nível (a escolha, senão o herdado)
  *     dono.opcoes.opcoes[].origem    de onde vem o que vale: colecao, usuario, sistema ou padrao
- *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
- *     senha_politica.regras          o mínimo de cada regra (0: não exige)
- *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
- *     senha_politica.regras.maiusculas
- *                                    quantas letras maiúsculas, no mínimo
- *     senha_politica.regras.minusculas
- *                                    quantas letras minúsculas, no mínimo
- *     senha_politica.regras.numeros  quantos números, no mínimo
- *     senha_politica.regras.simbolos quantos símbolos (o que não é letra, número nem espaço), no mínimo
- *     senha_politica.texto           a regra por extenso, para a tela ("A senha precisa ter: 8 caracteres ou mais, 1 letra maiúscula...")
  *     destinos[]                     o resumo dos destinos da coleção (a página Destinos tem o resto)
  *     destinos[].id                  o id
  *     destinos[].nome                o nome
@@ -4993,10 +4933,172 @@
  *     agendas[].tipo                 google, caldav, outlook ou ics
  *     agendas[].tipo_nome            o nome do tipo, por extenso
  *     agendas[].ativa                verdadeiro ou falso: o sistema mantém os eventos nela
- *     cron_estado.registro           o registro da última rodada com atividade (o master vê o do sistema inteiro; os outros, o da coleção);
- *                                    null: nenhum
  *     eventos[].destinos[]           os nomes dos destinos que recebem o evento
  *     eventos[].agendas[]            os nomes das agendas que recebem o evento
+ *   recurso=opcoes
+ *     colecao                        as opções do assunto na coleção do pedido (a aba Esta coleção): o que ela escolheu (vazio herda), o
+ *                                    que herda e de onde, e o que vale
+ *     colecao.grupos                 os grupos das opções, na ordem das telas
+ *     colecao.grupos[].chave         o identificador do grupo: rotina, rodizio, limites, avisos ou telas
+ *     colecao.grupos[].texto         o nome do grupo, no idioma do pedido
+ *     colecao.opcoes                 as opções, uma por linha
+ *     colecao.opcoes[].chave         o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
+ *     colecao.opcoes[].grupo         o grupo da opção
+ *     colecao.opcoes[].tipo          hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     colecao.opcoes[].titulo        o nome da opção, no idioma do pedido
+ *     colecao.opcoes[].minimo        o menor valor aceito (inteiro e decimal; null nos outros tipos)
+ *     colecao.opcoes[].maximo        o maior valor aceito (inteiro e decimal; null nos outros tipos)
+ *     colecao.opcoes[].valores       os valores possíveis de um enum (null nos outros tipos)
+ *     colecao.opcoes[].valores[].valor
+ *                                    o valor, como se manda
+ *     colecao.opcoes[].valores[].texto
+ *                                    o nome do valor, no idioma do pedido
+ *     colecao.opcoes[].padrao        o padrão de fábrica: o que vale quando nenhum nível escolheu
+ *     colecao.opcoes[].escolha       o que este nível escolheu (vazio: não escolheu, herda)
+ *     colecao.opcoes[].herdado       o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     colecao.opcoes[].fixos         o que não se desmarca nem se esconde numa opção do tipo lista (as chaves; null nos outros tipos): na
+ *                                    colunas_hoje, a Relógio
+ *     colecao.opcoes[].fixos[]       uma chave que não se esconde
+ *     colecao.opcoes[].origem_herdado
+ *                                    de onde vem o herdado: usuario, sistema ou padrao
+ *     colecao.opcoes[].efetivo       o que vale neste nível (a escolha, senão o herdado)
+ *     colecao.opcoes[].origem        de onde vem o que vale: colecao, usuario, sistema ou padrao
+ *     dono                           o nível do dono (a aba Minhas coleções): o padrão de quem é dono para as coleções dele
+ *     dono.pode_mudar                verdadeiro: quem pede é o dono da coleção do pedido (a tela mostra a aba Minhas coleções); falso: não
+ *                                    é
+ *     dono.opcoes                    só para o dono da coleção (null para os outros): o padrão dele de cada opção do assunto, na mesma
+ *                                    forma de colecao
+ *     dono.opcoes.grupos             os grupos das opções, na ordem das telas
+ *     dono.opcoes.grupos[].chave     o identificador do grupo: rotina, rodizio, limites, avisos ou telas
+ *     dono.opcoes.grupos[].texto     o nome do grupo, no idioma do pedido
+ *     dono.opcoes.opcoes             as opções, uma por linha
+ *     dono.opcoes.opcoes[].chave     o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
+ *     dono.opcoes.opcoes[].grupo     o grupo da opção
+ *     dono.opcoes.opcoes[].tipo      hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     dono.opcoes.opcoes[].titulo    o nome da opção, no idioma do pedido
+ *     dono.opcoes.opcoes[].minimo    o menor valor aceito (inteiro e decimal; null nos outros tipos)
+ *     dono.opcoes.opcoes[].maximo    o maior valor aceito (inteiro e decimal; null nos outros tipos)
+ *     dono.opcoes.opcoes[].valores   os valores possíveis de um enum (null nos outros tipos)
+ *     dono.opcoes.opcoes[].valores[].valor
+ *                                    o valor, como se manda
+ *     dono.opcoes.opcoes[].valores[].texto
+ *                                    o nome do valor, no idioma do pedido
+ *     dono.opcoes.opcoes[].padrao    o padrão de fábrica: o que vale quando nenhum nível escolheu
+ *     dono.opcoes.opcoes[].escolha   o que este nível escolheu (vazio: não escolheu, herda)
+ *     dono.opcoes.opcoes[].herdado   o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     dono.opcoes.opcoes[].fixos     o que não se desmarca nem se esconde numa opção do tipo lista (as chaves; null nos outros tipos): na
+ *                                    colunas_hoje, a Relógio
+ *     dono.opcoes.opcoes[].fixos[]   uma chave que não se esconde
+ *     dono.opcoes.opcoes[].origem_herdado
+ *                                    de onde vem o herdado: usuario, sistema ou padrao
+ *     dono.opcoes.opcoes[].efetivo   o que vale neste nível (a escolha, senão o herdado)
+ *     dono.opcoes.opcoes[].origem    de onde vem o que vale: colecao, usuario, sistema ou padrao
+ *     sistema                        o nível do sistema (a aba Sistema): o padrão do sistema inteiro
+ *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)
+ *     sistema.opcoes                 só para o master (null para os outros): o padrão do sistema de cada opção do assunto, na mesma forma
+ *                                    de colecao
+ *     sistema.opcoes.grupos          os grupos das opções, na ordem das telas
+ *     sistema.opcoes.grupos[].chave  o identificador do grupo: rotina, rodizio, limites, avisos ou telas
+ *     sistema.opcoes.grupos[].texto  o nome do grupo, no idioma do pedido
+ *     sistema.opcoes.opcoes          as opções, uma por linha
+ *     sistema.opcoes.opcoes[].chave  o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
+ *     sistema.opcoes.opcoes[].grupo  o grupo da opção
+ *     sistema.opcoes.opcoes[].tipo   hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     sistema.opcoes.opcoes[].titulo o nome da opção, no idioma do pedido
+ *     sistema.opcoes.opcoes[].minimo o menor valor aceito (inteiro e decimal; null nos outros tipos)
+ *     sistema.opcoes.opcoes[].maximo o maior valor aceito (inteiro e decimal; null nos outros tipos)
+ *     sistema.opcoes.opcoes[].valores
+ *                                    os valores possíveis de um enum (null nos outros tipos)
+ *     sistema.opcoes.opcoes[].valores[].valor
+ *                                    o valor, como se manda
+ *     sistema.opcoes.opcoes[].valores[].texto
+ *                                    o nome do valor, no idioma do pedido
+ *     sistema.opcoes.opcoes[].padrao o padrão de fábrica: o que vale quando nenhum nível escolheu
+ *     sistema.opcoes.opcoes[].escolha
+ *                                    o que este nível escolheu (vazio: não escolheu, herda)
+ *     sistema.opcoes.opcoes[].herdado
+ *                                    o que este nível herda quando não escolhe: o do nível de cima que escolheu, senão o padrão de fábrica
+ *     sistema.opcoes.opcoes[].fixos  o que não se desmarca nem se esconde numa opção do tipo lista (as chaves; null nos outros tipos): na
+ *                                    colunas_hoje, a Relógio
+ *     sistema.opcoes.opcoes[].fixos[]
+ *                                    uma chave que não se esconde
+ *     sistema.opcoes.opcoes[].origem_herdado
+ *                                    de onde vem o herdado: usuario, sistema ou padrao
+ *     sistema.opcoes.opcoes[].efetivo
+ *                                    o que vale neste nível (a escolha, senão o herdado)
+ *     sistema.opcoes.opcoes[].origem de onde vem o que vale: colecao, usuario, sistema ou padrao
+ *   recurso=sistema
+ *     aleatorio                      de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico);
+ *                                    sem os dois, o gerador seguro do PHP (random_int)
+ *     aleatorio.fontes[]             as fontes, na ordem em que o sistema tenta: RANDOM.ORG, ANU QRNG, gerador seguro do PHP (random_int)
+ *     aleatorio.ultimo_lote          a fonte do último lote de números e quando ("RANDOM.ORG em AAAA-MM-DD HH:MM:SS"); null: nenhum ainda
+ *     aleatorio.fora_desde           desde quando os dois serviços estão sem responder (AAAA-MM-DD HH:MM:SS): por 10 minutos o sistema nem
+ *                                    tenta e usa o gerador do PHP; null: no ar (ou não se sabe)
+ *     cron_estado                    a situação do cron, como a Configuração mostra (o cron roda a cada minuto)
+ *     cron_estado.crontab            a linha do crontab que roda o sistema (com a pasta dele)
+ *     cron_estado.erro               o erro guardado da última execução com erro (null: sem erro; some na primeira execução sem erro)
+ *     cron_estado.minutos            há quantos minutos ele rodou pela última vez (null: nunca rodou)
+ *     cron_estado.situacao           nunca (ainda não rodou), parado (mais de 10 minutos sem rodar) ou rodando
+ *     cron_estado.texto              a frase da Configuração ("Cron rodando: última execução às 10:41."; parado e nunca trazem a linha do
+ *                                    crontab)
+ *     cron_estado.ultima             quando rodou pela última vez (AAAA-MM-DD HH:MM:SS, no fuso do sistema; null: nunca rodou)
+ *     url_sistema                    o endereço do sistema, para os links das mensagens ({link}), do ICS e do Outlook (vazio: o do pedido)
+ *     cron_espera_rodadas            quantas rodadas do cron saem sem rodar, com a anterior travada, antes de a próxima matá-la (0 a 1440;
+ *                                    0, nunca mata; padrão 10; só o master muda)
+ *     parametros                     os parâmetros de operação do sistema inteiro, o que antes só mudava no config.php; cada um vale o
+ *                                    gravado aqui, senão a linha do config.php, senão o padrão
+ *     parametros[].chave             o nome do parâmetro no pedido (parametros[<chave>])
+ *     parametros[].nome              o nome
+ *     parametros[].descricao         o que ele faz
+ *     parametros[].tipo              sim_nao (1 ou 0) ou inteiro (de minimo a maximo)
+ *     parametros[].valor             o valor que vale agora
+ *     parametros[].origem            de onde o valor vem: sistema (gravado aqui), config (a linha do config.php) ou padrao
+ *     parametros[].config_php        o nome da linha do config.php que ele substitui; null: nenhuma (só existe aqui)
+ *     parametros[].config_valor      o valor da linha do config.php; null: a linha não existe
+ *     parametros[].padrao            o valor sem o gravado e sem o config.php
+ *     parametros[].minimo            o menor valor aceito
+ *     parametros[].maximo            o maior valor aceito
+ *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
+ *     senha_politica.regras          o mínimo de cada regra (0: não exige)
+ *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
+ *     senha_politica.regras.maiusculas
+ *                                    quantas letras maiúsculas, no mínimo
+ *     senha_politica.regras.minusculas
+ *                                    quantas letras minúsculas, no mínimo
+ *     senha_politica.regras.numeros  quantos números, no mínimo
+ *     senha_politica.regras.simbolos quantos símbolos (o que não é letra, número nem espaço), no mínimo
+ *     senha_politica.texto           a regra por extenso, para a tela ("A senha precisa ter: 8 caracteres ou mais, 1 letra maiúscula...")
+ *     cron_estado.registro           o registro da última rodada com atividade (o master vê o do sistema inteiro; os outros, o da coleção);
+ *                                    null: nenhum
+ *     email                          a configuração do e-mail que o sistema leu do config.php, para o quadro Servidor de e-mail
+ *     email.metodo                   smtp, mail ou null (o envio está desligado)
+ *     email.email_metodo             o EMAIL_METODO como está no config.php; null: não está lá
+ *     email.remetente                o remetente (EMAIL_REMETENTE, senão o SMTP_USUARIO); vazio: falta
+ *     email.smtp                     o SMTP: host, porta, seguranca (ssl, tls ou nada), usuario e senha (verdadeiro ou falso: se está
+ *                                    definida; a senha mesma nunca sai)
+ *     email.smtp.host                o servidor (SMTP_HOST)
+ *     email.smtp.porta               a porta (SMTP_PORTA; sem ela, 465 no ssl e 587 no resto)
+ *     email.smtp.seguranca           ssl, tls ou nada (SMTP_SEGURANCA)
+ *     email.smtp.usuario             o usuário (SMTP_USUARIO)
+ *     email.smtp.senha               verdadeiro ou falso: a SMTP_SENHA está definida
+ *     email.imap                     o IMAP da cópia em Enviados (host, porta, seguranca, usuario, senha e pasta); null: não configurado
+ *     email.imap.host                o servidor (IMAP_HOST)
+ *     email.imap.porta               a porta (IMAP_PORTA; sem ela, 993 no ssl e 143 no resto)
+ *     email.imap.seguranca           ssl, tls ou nada (IMAP_SEGURANCA)
+ *     email.imap.usuario             o usuário (IMAP_USUARIO, senão o SMTP_USUARIO)
+ *     email.imap.senha               verdadeiro ou falso: a senha do IMAP está definida
+ *     email.imap.pasta               a pasta Enviados (IMAP_PASTA_ENVIADOS, padrão Sent)
+ *     email.pop                      o POP, só para testar a conta (host, porta, seguranca, usuario e senha); null: não configurado
+ *     email.pop.host                 o servidor (POP_HOST)
+ *     email.pop.porta                a porta (POP_PORTA; sem ela, 995 no ssl e 110 no resto)
+ *     email.pop.seguranca            ssl, tls ou nada (POP_SEGURANCA)
+ *     email.pop.usuario              o usuário (POP_USUARIO)
+ *     email.pop.senha                verdadeiro ou falso: a POP_SENHA está definida
+ *     email.openssl                  verdadeiro ou falso: o PHP do servidor tem a extensão openssl (o ssl e o tls precisam dela)
+ *     email.mail                     verdadeiro ou falso: o mail() do PHP está ligado neste servidor
+ *     email.problemas[]              o que está errado ou faltando na configuração, achado sem conectar em nada (cada um, uma frase dizendo
+ *                                    o que corrigir no config.php)
+ *     email_para                     para quem vai o e-mail de teste, de início (o e-mail do master; vazio: ele não tem)
  *   recurso=cron
  *     execucoes[]                    as execuções do cron guardadas (sem atividade: 7 dias; com atividade ou erro: 1 ano), da mais recente
  *     execucoes[].duracao_ms         quanto durou, em milissegundos (número inteiro)
@@ -7063,7 +7165,7 @@
  *   recurso=sql
  *     banco                          o banco em uso: mysql, pgsql, sqlite ou firebird (o comando vai no dialeto do MySQL e o sistema
  *                                    traduz)
- *     aprovado_alterar               true: UPDATE e DELETE estão aprovados (a Configuração do sistema, sql_alteracoes)
+ *     aprovado_alterar               true: UPDATE e DELETE estão aprovados (os parâmetros de operação da página Sistema, sql_alteracoes)
  *     aceitos                        os tipos de comando aceitos agora
  *     aceitos[]                      um tipo: select, insert, alter, update ou delete
  *     limite_padrao                  as linhas do SELECT na resposta, sem o limite
@@ -7907,9 +8009,6 @@
  *     usuario.idioma                 o idioma; null: o da coleção
  *     usuario.fuso                   o fuso horário da pessoa ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão
  *                                    o do sistema
- *     rodizio_sistema                o padrão geral do rodízio, para a opção Herdar do sistema em Minha conta
- *     recupera_ontem_sistema         o padrão geral de passar o relógio de ontem sem uso para hoje (verdadeiro quando o master ligou), para
- *                                    a opção Herdar do sistema em Minha conta
  *     opcoes                         as opções da coleção em três níveis (sistema → usuário → coleção), o padrão do usuário (escolha: o que
  *                                    ele escolheu como padrão das coleções de que é dono; herdado: o do sistema): os grupos (as telas
  *                                    agrupam por eles) e cada opção com o que este nível escolheu, o que herda e o que vale
@@ -7937,9 +8036,6 @@
  *     opcoes.opcoes[].origem_herdado de onde vem o herdado: usuario, sistema ou padrao
  *     opcoes.opcoes[].efetivo        o que vale neste nível (a escolha, senão o herdado)
  *     opcoes.opcoes[].origem         de onde vem o que vale: colecao, usuario, sistema ou padrao
- *     usuario.rodizio_ativo          o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
- *     usuario.recupera_ontem         o padrão do usuário para passar o relógio de ontem sem uso para hoje, nas coleções de que é dono: true
- *                                    ligado, false desligado, null herda o sistema
  *     usuario.nivel                  o modo da interface: basico (o dia a dia: as telas deixam de fora as páginas e as partes do avançado)
  *                                    ou avancado (tudo); o motor é o mesmo
  *     niveis[]                       os modos da interface, para a escolha em Minha conta
@@ -8029,35 +8125,6 @@
  *     senha_politica.regras.numeros  quantos números, no mínimo
  *     senha_politica.regras.simbolos quantos símbolos (o que não é letra, número nem espaço), no mínimo
  *     senha_politica.texto           a regra por extenso, para a tela ("A senha precisa ter: 8 caracteres ou mais, 1 letra maiúscula...")
- *     email                          (só o master; null para os outros) a configuração do e-mail que o sistema leu do config.php, para o
- *                                    quadro Servidor de e-mail
- *     email.metodo                   smtp, mail ou null (o envio está desligado)
- *     email.email_metodo             o EMAIL_METODO como está no config.php; null: não está lá
- *     email.remetente                o remetente (EMAIL_REMETENTE, senão o SMTP_USUARIO); vazio: falta
- *     email.smtp                     o SMTP: host, porta, seguranca (ssl, tls ou nada), usuario e senha (verdadeiro ou falso: se está
- *                                    definida; a senha mesma nunca sai)
- *     email.smtp.host                o servidor (SMTP_HOST)
- *     email.smtp.porta               a porta (SMTP_PORTA; sem ela, 465 no ssl e 587 no resto)
- *     email.smtp.seguranca           ssl, tls ou nada (SMTP_SEGURANCA)
- *     email.smtp.usuario             o usuário (SMTP_USUARIO)
- *     email.smtp.senha               verdadeiro ou falso: a SMTP_SENHA está definida
- *     email.imap                     o IMAP da cópia em Enviados (host, porta, seguranca, usuario, senha e pasta); null: não configurado
- *     email.imap.host                o servidor (IMAP_HOST)
- *     email.imap.porta               a porta (IMAP_PORTA; sem ela, 993 no ssl e 143 no resto)
- *     email.imap.seguranca           ssl, tls ou nada (IMAP_SEGURANCA)
- *     email.imap.usuario             o usuário (IMAP_USUARIO, senão o SMTP_USUARIO)
- *     email.imap.senha               verdadeiro ou falso: a senha do IMAP está definida
- *     email.imap.pasta               a pasta Enviados (IMAP_PASTA_ENVIADOS, padrão Sent)
- *     email.pop                      o POP, só para testar a conta (host, porta, seguranca, usuario e senha); null: não configurado
- *     email.pop.host                 o servidor (POP_HOST)
- *     email.pop.porta                a porta (POP_PORTA; sem ela, 995 no ssl e 110 no resto)
- *     email.pop.seguranca            ssl, tls ou nada (POP_SEGURANCA)
- *     email.pop.usuario              o usuário (POP_USUARIO)
- *     email.pop.senha                verdadeiro ou falso: a POP_SENHA está definida
- *     email.openssl                  verdadeiro ou falso: o PHP do servidor tem a extensão openssl (o ssl e o tls precisam dela)
- *     email.mail                     verdadeiro ou falso: o mail() do PHP está ligado neste servidor
- *     email.problemas[]              o que está errado ou faltando na configuração, achado sem conectar em nada (cada um, uma frase dizendo
- *                                    o que corrigir no config.php)
  *     demo_dias                      os dias da conta de demonstração
  *     master                         (parte=menu) verdadeiro ou falso: quem pede é o master (ou o master vendo como outro)
  *     espera_segundos                (parte=menu) quantos segundos a tela espera a resposta da API antes de cancelar o pedido e dizer que o
@@ -8214,9 +8281,6 @@
  *     usuarios[].email               o e-mail (para recuperar a senha, os convites e os avisos)
  *     usuarios[].papel               master (cuida do sistema inteiro) ou comum
  *     usuarios[].idioma              o idioma dele; null: o da coleção
- *     usuarios[].rodizio_ativo       o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
- *     usuarios[].recupera_ontem      o padrão do usuário para passar o relógio de ontem sem uso para hoje, nas coleções de que é dono: true
- *                                    ligado, false desligado, null herda o sistema
  *     usuarios[].nivel               o modo da interface dele: basico ou avancado
  *     usuarios[].fuso                o fuso horário dele ("America/Sao_Paulo"; "navegador": o do aparelho); null: o da coleção, senão o do
  *                                    sistema
@@ -8890,11 +8954,11 @@ if ($recurso === "textos") {
         header("Location: " . $volta);
     }
     $saida = ["usuario" => $quem !== "" ? $quem : null, "por" => $quem !== "" ? "login" : "token", "volta" => $volta !== "" ? $volta : null];
-} elseif (($recurso === "backup" || ($recurso === "migracoes" && $escrita)) && !$token_ok && !usuario_master() && banco_tem_coluna("usuario", "papel")) {
+} elseif (($recurso === "backup" || $recurso === "sistema" || ($recurso === "migracoes" && $escrita)) && !$token_ok && !usuario_master() && banco_tem_coluna("usuario", "papel")) {
     // o banco inteiro (a cópia de segurança, as migrações) é do sistema: só o master (num banco de antes da v25, sem papéis,
     // qualquer um que entra, como antes)
     $codigo = 403;
-    $saida = ["erro" => t("só o master cuida da cópia de segurança e das migrações do banco")];
+    $saida = ["erro" => $recurso === "sistema" ? t("o que é do sistema inteiro é só do master") : t("só o master cuida da cópia de segurança e das migrações do banco")];
 } elseif ($recurso === "migracoes" && $banco_vazio) {
     $codigo = 503;
     $saida = ["erro" => t("o banco está vazio: instale (POST recurso=instalacao, acao=instalar)"), "proximo_passo" => instalacao_situacao()["proximo_passo"]];
@@ -9061,6 +9125,10 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/simulador.php";
 } elseif ($recurso === "vistorias") {
     require __DIR__ . "/api/vistorias.php";
+} elseif ($recurso === "opcoes") {
+    require __DIR__ . "/api/opcoes.php";
+} elseif ($recurso === "sistema") {
+    require __DIR__ . "/api/sistema.php";
 } elseif ($recurso === "unidades") {
     require __DIR__ . "/api/unidades.php";
 } elseif ($recurso === "servicos") {
@@ -9160,7 +9228,7 @@ if ($recurso === "textos") {
 } else {
     $codigo = 404;
     $saida = ["erro" => t("recurso desconhecido"), "recursos" => ["(nenhum)", "autonomia", "hoje", "ficha", "config", "cron", "arvore", "cadastros", "calcular", "avisos", "criterios",
-        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "saidas", "sugestao", "colunas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
+        "historico", "previsao", "plano", "proximos", "rodizio_manual", "desejos", "estatisticas", "totais", "precisao", "calibres", "marcas", "saidas", "sugestao", "simulador", "vistorias", "opcoes", "sistema", "colunas", "unidades", "servicos", "manutencao", "oficinas", "listas", "reserva", "timegrapher", "relatorios", "sql", "hora_certa", "acessorios", "winders", "programas", "passaporte", "galeria", "textos", "eventos", "destinos", "agendas", "ics", "foto", "documentos", "documento", "usuarios", "conta", "colecoes", "aprovacoes", "cadastro", "migracoes", "instalacao", "importacao", "entrar", "backup", "ajuda", "manual", "reconstrucao", "codigo"]];
 }
 // Os filtros de qualquer consulta (GET): incluir e excluir (as partes da resposta), e por lista (o caminho entre os colchetes):
 // f[lista][campo] (igual; ou [de], [ate], [contem], [diferente], [vazio]), busca[lista], ordem[lista], limite[lista],

@@ -103,7 +103,7 @@ function formManutencao(d, m, docs) {
       + (docs.length === 0 ? el("p", {"class": "nota"}, t("Nenhum documento no relógio ainda (a OS, o orçamento, as fotos da entrega vão em Documentos)."))
         : docs.map(function (x) { return el("label", {"class": "check"}, el("input", {"type": "checkbox", "name": "documentos[]", "value": x.id, "checked": docsJunto.indexOf(x.id) >= 0}) + " " + h(x.titulo)); }).join(""))) : "")
     + (m ? "" : el("p", {"class": "nota largo"}, d.trocar_hoje ? t("Ao cadastrar, o relógio fica em manutenção: sai do rodízio, das sessões e dos avisos até voltar; se ele é o relógio de hoje, hoje fica livre para você escolher outro.")
-      : t("Ao cadastrar, o relógio fica em manutenção: sai do rodízio, das sessões e dos avisos até voltar; se ele é o relógio de hoje, hoje fica sem relógio (a Configuração não deixa trocar o de hoje no próprio dia).")))
+      : t("Ao cadastrar, o relógio fica em manutenção: sai do rodízio, das sessões e dos avisos até voltar; se ele é o relógio de hoje, hoje fica sem relógio (os Ajustes do rodízio não deixam trocar o de hoje no próprio dia).")))
     + el("div", {"class": "botoes largo"}, el("button", {}, m ? t("Salvar a manutenção") : t("Cadastrar a manutenção"))
       + (m ? " " + el("a", {"href": "manutencao.php?aba=" + aba}, t("cancelar")) : "")));
 }

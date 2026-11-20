@@ -132,18 +132,18 @@ function recarregarHoje() {
         + (d.dia.acao ? el("p", {"class": "acao"}, h(d.dia.acao)) : "")
         + (d.dia.motivo ? el("p", {"class": "motivo"}, el("strong", {}, t("Por que ele: ")) + h(d.dia.motivo)) : "")
         // sem relógio hoje: o dia fica livre e a sessão do rodízio termina agora (só com a troca no próprio dia ligada, e com os
-        // dias sem relógio ligados na Configuração)
+        // dias sem relógio ligados em Rodízio › Ajustes do rodízio)
         + (!d.trocar_hoje || !d.dia_sem_relogio ? "" : el("form", {"data-recurso": "rodizio", "class": "sem-relogio", "onsubmit": "return confirm(" + JSON.stringify(t("Hoje sem relógio? O dia fica livre: o {1} sai do rodízio de hoje (se já está no pulso pelo rodízio, sai agora; o tempo que ficou conta). Os outros dias não mudam.", {1: d.dia.relogio})) + ")"},
           el("input", {"type": "hidden", "name": "acao", "value": "sem_relogio"}) + el("button", {"class": "leve"}, t("Sem relógio hoje"))));
     } else if (!rodizioAtivo) {
       texto += el("h1", {}, t("Rodízio desligado")) + el("p", {}, t("O plano está pausado. As marcações manuais continuam disponíveis."))
-        + el("a", {"href": "configuracao.php"}, t("Configuração"));
+        + el("a", {"href": "rodizio.php"}, t("Ajustes do rodízio"));
     } else if (d.hoje_livre) {
       // o dia livre: escolher um relógio para hoje (o mesmo "escolher…" dos dias livres), ou deixar assim
       texto += el("h1", {}, t("Hoje sem relógio"))
         + el("p", {"class": "periodo"}, el("span", {"class": "janela"}, t("dia livre")))
         + el("p", {}, d.trocar_hoje ? t("Nenhum relógio vai ao pulso pelo rodízio hoje. Quer usar um? Escolha abaixo, ou sorteie de novo (inclusive hoje) no quadro do modo de rodízio.")
-          : t("Nenhum relógio vai ao pulso pelo rodízio hoje. O relógio de hoje não se troca no próprio dia (Configuração): escolha o de amanhã nos Próximos dias."))
+          : t("Nenhum relógio vai ao pulso pelo rodízio hoje. O relógio de hoje não se troca no próprio dia (Rodízio › Ajustes do rodízio): escolha o de amanhã nos Próximos dias."))
         + formTrocarDia({data: d.data, relogio_id: null, origem: "livre"}, d.relogios, d.data, d.trocar_hoje, d.dia_sem_relogio, d.formas);
     } else {
       texto += el("h1", {}, t("Nenhum relógio para hoje"))
@@ -243,7 +243,7 @@ function recarregarHoje() {
     d.modos.forEach(function (m) {
       escolhas[m.id] = m.escolha;
     });
-    // a semana do rodízio começa no dia da Configuração (semana_inicio): a segunda ou o domingo
+    // a semana do rodízio começa no dia de Rodízio › Ajustes do rodízio (semana_inicio): a segunda ou o domingo
     var semIni = d.semana_inicio === "domingo" ? t("domingo") : t("segunda");
     var semFim = d.semana_inicio === "domingo" ? t("sábado") : t("domingo");
     // o "Rodízio manual" no fim da lista: não é um modo; escolhe o relógio de cada dia de um período (o modo de sempre continua)
@@ -278,7 +278,7 @@ function recarregarHoje() {
     // Todas as opções ficam na lista; a que não vale agora fica desabilitada, com o motivo no próprio texto (e no title): [valor, texto,
     // explicação, confirmação, motivo ("" quando vale agora)]
     var semModo = t("sem modo de rodízio ativo");
-    var desligado = t("desligado na Configuração (Trocar o relógio de hoje no próprio dia)");
+    var desligado = t("desligado em Rodízio › Ajustes do rodízio (Trocar o relógio de hoje no próprio dia)");
     var sorteios = [];
     var hojeJa = d.comecou;
     sorteios.push(["resortear", t("a partir de hoje"), t("Refaz o plano de hoje até {1} pelo modo atual (o dia ainda não começou no pulso).", {1: ateQuando}), t("Sortear de novo a partir de hoje?"),
@@ -349,7 +349,7 @@ function recarregarHoje() {
     marcas.sort(function (a, b) { return a.localeCompare(b); });
     opcoesDoFiltro("marca", marcas.concat(lista.some(function (x) { return x.marca === null; }) ? [t("(sem marca)")] : []), t("Todas"));
     opcoesDoFiltro("estado", d.estados);
-    // o Encostado desligado na Configuração: a coluna e o filtro somem (estilo.css, .sem-encostado; tabela.js ignora o filtro)
+    // o Encostado desligado em Avisos › Ajustes dos avisos: a coluna e o filtro somem (estilo.css, .sem-encostado; tabela.js ignora o filtro)
     document.getElementById("tabela-relogios").classList.toggle("sem-encostado", !d.encostado_ativo);
     opcoesDoFiltro("fazer", d.avisos_nomes);
     var ano = String(new Date().getFullYear());
@@ -557,14 +557,14 @@ function manualHtml(r) {
         return el("option", {"value": String(x.id), "selected": atual === String(x.id)}, h(x.nome));
       }).join(""))
       + opcoesSortearDia(atual, r.formas)
-      // (com os dias sem relógio desligados na Configuração, só o dia que já está livre mostra a opção, para ficar como está)
+      // (com os dias sem relógio desligados em Rodízio › Ajustes do rodízio, só o dia que já está livre mostra a opção, para ficar como está)
       + (dia.hoje || (!r.dia_sem_relogio && atual !== "livre") ? "" : el("option", {"value": "livre", "selected": atual === "livre"}, t("Sem relógio (dia livre)")));
     // hoje, sem trocar o relógio no próprio dia (a Configuração): o seletor fica parado no que hoje já tem
     var fixo = dia.hoje && !r.trocar_hoje;
     var agora = dia.livre ? el("span", {"class": "nota"}, t("dia livre")) : (dia.relogio !== null ? h(dia.relogio) + " " + el("small", {"class": "a-mao"}, dia.origem === "manual" ? t("à mão") : t("sorteado")) : el("span", {"class": "nota"}, "—"));
     return el("tr", {"class": dia.dia_semana >= 6 ? "fds" : ""}, el("td", {"data-rotulo": t("Dia")}, dataBr(dia.data, true) + " " + el("small", {}, dia.dia_semana_nome + (dia.hoje ? t(" · hoje") : "")))
       + el("td", {"data-rotulo": t("No plano agora")}, agora)
-      + el("td", {"data-rotulo": t("Relógio do dia")}, el("select", {"data-dia": dia.data, "disabled": fixo, "title": fixo ? t("Hoje fica: o relógio de hoje não se troca no próprio dia (Configuração).") : null, "aria-label": t("Relógio de {1}", {1: dataBr(dia.data)})}, opcoes)));
+      + el("td", {"data-rotulo": t("Relógio do dia")}, el("select", {"data-dia": dia.data, "disabled": fixo, "title": fixo ? t("Hoje fica: o relógio de hoje não se troca no próprio dia (Rodízio › Ajustes do rodízio).") : null, "aria-label": t("Relógio de {1}", {1: dataBr(dia.data)})}, opcoes)));
   }).join("");
   var nav = navPaginas(r.pagina, r.paginas, "manual-pagina");
   return el("table", {"class": "compacta manual-tabela"}, el("thead", {}, el("tr", {}, el("th", {}, t("Dia")) + el("th", {}, t("No plano agora")) + el("th", {}, t("Relógio do dia")))) + el("tbody", {}, linhas))

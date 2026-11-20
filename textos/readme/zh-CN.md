@@ -1,4 +1,4 @@
-<!-- origem: 7410b6b66d7810e3c5129639c5f53ffc5b74efd5 -->
+<!-- origem: a40413b72a85465d6b778080b45633eee4044944 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -126,6 +126,8 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `eventos`、`destinos`、`agendas` | 自定义事件；消息推送目标，含每个接收的内容和今天的预览；日历，含每个日历中应有的内容 |
 | `ics` | ICS 链接类型日历的日历内容（无需登录，凭链接的密钥） |
 | `config`、`cron` | 收藏的设置（含推送目标和日历的摘要以及 cron 状态：从未运行、已停止或运行中）；cron 的执行记录，含时段摘要。在 `cron` 中：`de=` 和 `ate=`（日期，或日期和时间）、`situacao=`（`atividade`，默认；`erro`、`nada` 或 `todas`）、`busca=`（日志中的文本）、`limite=`（默认 100，最多 1000）和 `pagina=`；每个参数也可以加 `cron_` 前缀（`cron_de`……） |
+| `opcoes` | 一个主题的收藏选项（`grupo=`：`rotina`、`limites`、`telas`、`rodizio` 或 `avisos`；一个或多个，用逗号分隔），分三级：收藏、所有者的默认值和系统的默认值（每一级带 `pode_mudar`），每个选项带选择、生效的值及其来源。轮换设置和提醒页面读取的就是它 |
+| `sistema` | 仅限 master：属于整个系统的内容（地址、cron 轮数、运行参数、密码强度、cron 状态、抽选的来源以及 `config.php` 的邮件服务器）。系统页面读取的就是它 |
 | `arvore`、`cadastros` | 分组；定义页面显示的一切 |
 | `unidades` | 树的单位（定义里的**单位**标签），按物理量排序，每个单位附换算的文字说明，以及有多少字段、类型和公式在用它 |
 | `marcas` | 树的品牌（定义的**品牌**标签），每个都带国家、网站、备注和它的手表 |
@@ -190,7 +192,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`；带取值规则的字段：`opcoes`、`minimo`、`maximo`、`multiplo`） |
 | `formulas` | `nova`、`alterar`、`excluir` |
 | `criterios` | `conjunto_criar`、`conjunto_excluir`、`param_novo`、`param_excluir`、`param_pesos`、`sub_novo`、`sub_excluir`、`sub_medida`、`sub_mover`、`sub_pesos`、`faixas`、`ordem`、`restaurar` |
-| `config` | `salvar`（master 还可以用 `parametros[<chave>]`：系统的运行参数）、`evento_salvar`、`evento_excluir` |
+| `config` | `salvar`（所有者还可以用 `dono[<chave>]`：自己收藏的默认值；master 还可以用 `padroes[<chave>]`：系统默认值，以及 `parametros[<chave>]`：系统的运行参数）、`evento_salvar`、`evento_excluir` |
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
@@ -220,7 +222,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 
 ### 通过 API 执行 SQL {#o-sql-pela-api}
 
-界面能做的，API 都能做；没有界面做的，master 通过 SQL 来做（`recurso=sql`，或设置中的**数据库（SQL）**框）：每次一条命令，
+界面能做的，API 都能做；没有界面做的，master 通过 SQL 来做（`recurso=sql`，或系统页面中的**数据库（SQL）**框）：每次一条命令，
 使用 MySQL 的 SQL（系统会像迁移时一样翻译成正在使用的数据库的写法），不受收藏范围的限制。
 
 | 命令 | 何时可用 |
@@ -228,7 +230,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `SELECT` | 始终可用（不带 `INTO`）；数据库本身最多返回 `limite` 行（默认 200，最多 5000），响应会说明是否截断 |
 | `INSERT` | 始终可用，但会更新的除外（`ON DUPLICATE KEY`、`ON CONFLICT`、`OR REPLACE`：那等于未经批准的 `UPDATE`），对 `sistema` 和 `sql_execucao` 表也除外 |
 | `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | 始终可用：在已有的、不属于系统的表（账户、令牌、访问、`sistema`、`colecao`、`no`）中新增字段（`NULL`，或带 `DEFAULT` 的 `NOT NULL`；不能有键、索引或位置），每次一个 |
-| `UPDATE`、`DELETE` | 只有在设置的**系统**框中开启批准后（`parametros[sql_alteracoes]=1`） |
+| `UPDATE`、`DELETE` | 只有在系统页面的**运行参数**中开启批准后（`parametros[sql_alteracoes]=1`） |
 | 其余（`DROP`、`TRUNCATE`、`CREATE`、其他 `ALTER`、多条命令、`?` 参数、命令中的注释） | 从不：在到达数据库之前就被拒绝 |
 
 每次请求，无论被拒绝、出错还是成功，都记入日志（`sql_execucao` 表，在 `recurso=sql` 中读取）：时间、请求者、命令、行数和错误。命令记入日志时，引号内的文本换成 `?`：
@@ -327,7 +329,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 
 每次只运行一轮：`cron.php` 运行时持有一个锁文件（`config.php` 中的 `CRON_TRAVA`；没有它时，每个安装在系统临时文件夹中各有一个）。如果上一轮仍在运行，下一分钟的那一轮会立即退出，不触碰数据库，并在锁旁边的文件（`<锁>.pulos`）中记下跳过。持有锁的那一轮会把这样退出的轮数和它自己用了多长时间记录为错误。
 
-取得锁的那一轮在锁中写入自己的进程号；连续跳过达到 **终止卡住的那一轮前的 cron 轮数**（设置；默认 10）后，下一轮确认该进程属于 cron，终止卡住的那一轮并代替它运行，错误记入日志。
+取得锁的那一轮在锁中写入自己的进程号；连续跳过达到 **终止卡住的那一轮前的 cron 轮数**（系统页面；默认 10）后，下一轮确认该进程属于 cron，终止卡住的那一轮并代替它运行，错误记入日志。
 
 使用 SQLite 时，把数据库文件（`DB_ARQUIVO`）放在 **Web 服务器发布的文件夹之外**，放在 PHP 用户可写的文件夹中（SQLite 会在旁边创建 `-wal` 和 `-shm` 文件）。
 
@@ -362,7 +364,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | `OUTLOOK_CLIENTE_ID`、`OUTLOOK_CLIENTE_SEGREDO` | 在 Microsoft 注册的应用，用于 Outlook 日历（见下文） |
 | `DOCUMENTOS_PASTA` | 文档文件（说明书、发票、照片、视频）的文件夹，**位于发布文件夹之外**，PHP 用户可写。没有它，文档页面会提示缺少并且不接受上传。例如：`define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `BACKUP_PASTA`、`BACKUP_MANTER`、`BACKUP_DOCUMENTOS` | 可选：数据库备份（参见[备份](#cópia-de-segurança)）。文件夹，**位于发布文件夹之外**（没有它就没有自动备份）；保留多少份（默认 7）；以及是否包含存放在数据库中的文档内容（默认：不包含）。 |
-| `BACKUP_ATIVO` | 可选：`false` 关闭备份：没有自动备份，没有**立即备份**，设置中也没有**备份**框（连缺少文件夹的警告也没有）。没有它：开启 |
+| `BACKUP_ATIVO` | 可选：`false` 关闭备份：没有自动备份，没有**立即备份**，系统页面中也没有**备份**框。没有它：开启 |
 | `DOCUMENTOS_LIMITE` | 可选：接受的最大文档大小，以字节为单位。没有它为 100 MB（`104857600`）；`0` 或 `-1` 表示系统不设限制。旧名称 `MANUAL_LIMITE` 在它不存在时仍然有效。PHP 和 nginx 的限制仍然生效（参见[上传大小](#o-tamanho-dos-envios-os-documentos)）。例如：`define("DOCUMENTOS_LIMITE", 524288000);` 表示 500 MB |
 | `ANTIGO_HOST`、`ANTIGO_PORTA`、`ANTIGO_USUARIO`、`ANTIGO_SENHA` | 可选，仅在本系统使用 Postgres、SQLite 或 Firebird 时供 `importar.php` 使用：旧系统的 MySQL 在哪里 |
 | `ALEATORIO_RANDOMORG_URL`、`ALEATORIO_ANU_URL` | 可选，仅用于测试：随机数来源的地址（`https://www.random.org/integers/` 和 `https://qrng.anu.edu.au/API/jsonI.php`）。更改后，抽选会向测试服务器索取数字 |
@@ -373,7 +375,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | `LOTE_MAXIMO` | 可选：一个批次（`recurso=lote`）最多包含多少个操作。没有它时为 100 |
 
 运行参数（`CADASTRO_ABERTO`、`DEMO_DIAS`、`CONVITE_DIAS`、`DOCUMENTOS_LIMITE`、`API_ESPERA`、`LOTE_MAXIMO`、`BACKUP_ATIVO`、
-`BACKUP_MANTER` 和 `BACKUP_DOCUMENTOS`）master 也可以在设置的**系统**框中修改（或通过 API：`recurso=config`、
+`BACKUP_MANTER` 和 `BACKUP_DOCUMENTOS`）master 也可以在系统页面的**运行参数**中修改（或通过 API：`recurso=config`、
 `parametros[<chave>]`）：在那里保存的值优先于 `config.php` 中的那一行，留空则恢复使用那一行。凭据、密钥、文件夹和服务器地址
 仍只在 `config.php` 中。
 
@@ -384,7 +386,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 每个收藏在**推送目标**和**日历**页面中创建自己的推送目标和日历。需要在服务器上配置的内容：
 
 - **Telegram（一个 webhook）：**用 @BotFather 创建一个机器人（它会给出令牌），并找到你的 `chat_id`（给机器人发一条消息，然后打开 `https://api.telegram.org/bot<token>/getUpdates`）。在**推送目标**中新建一个 webhook：方法 `GET` 或 `POST`，地址 `https://api.telegram.org/bot<token>/sendMessage`，字段 `chat_id` = 该数字，`text` = `{mensagem}`。任何其他桥接服务（n8n、Home Assistant、你自己的地址）都一样：系统把 `{titulo}` 和 `{mensagem}` 放到你指定的位置，响应为 2xx 即视为发送成功。长消息会分段发送。
-- **电子邮件：**在 `config.php` 中配置 SMTP 服务器（`SMTP_HOST`、端口、安全方式、用户名和密码；Gmail 和 Outlook 需要应用专用密码）和 `EMAIL_REMETENTE`；或使用 `EMAIL_METODO = "mail"`，服务器上需有 sendmail。配置 `IMAP_*` 后，每封已发送的邮件都会在“已发送”中保存一份副本。master 可在**我的账户 › 邮件服务器**中测试：该框显示系统从 `config.php` 读到的内容（发送方式、发件人、SMTP、IMAP 和 POP；密码只显示是否*已设置*），并指出错误或缺少的地方（没有 `EMAIL_METODO`、端口与安全方式不匹配、密码为空、PHP 没有 `openssl`……）。**测试连接**会登录 SMTP、IMAP（并检查“已发送”文件夹）和 POP，但不发送任何内容；**发送一封测试邮件**会真正发到你填写的地址。之后会显示每个部分的结果以及**与服务器的对话**（逐行显示，不含密码），方便找到在哪一步停下。
+- **电子邮件：**在 `config.php` 中配置 SMTP 服务器（`SMTP_HOST`、端口、安全方式、用户名和密码；Gmail 和 Outlook 需要应用专用密码）和 `EMAIL_REMETENTE`；或使用 `EMAIL_METODO = "mail"`，服务器上需有 sendmail。配置 `IMAP_*` 后，每封已发送的邮件都会在“已发送”中保存一份副本。master 可在**系统**页面的**邮件服务器**中测试：该框显示系统从 `config.php` 读到的内容（发送方式、发件人、SMTP、IMAP 和 POP；密码只显示是否*已设置*），并指出错误或缺少的地方（没有 `EMAIL_METODO`、端口与安全方式不匹配、密码为空、PHP 没有 `openssl`……）。**测试连接**会登录 SMTP、IMAP（并检查“已发送”文件夹）和 POP，但不发送任何内容；**发送一封测试邮件**会真正发到你填写的地址。之后会显示每个部分的结果以及**与服务器的对话**（逐行显示，不含密码），方便找到在哪一步停下。
 - **你自己的邮件服务器：**默认情况下，每个人发送的邮件（其收藏的邮件推送目标、邀请、访问申请及其答复）都通过系统的服务器发出。愿意的人可以在**我的账户 › 发送我的邮件**中使用自己的服务器：**我的服务器（SMTP）**、服务器、端口、安全、用户名、密码和发件人（Gmail：`smtp.gmail.com`、587、TLS、你的邮箱和一个应用专用密码；Outlook：`smtp-mail.outlook.com`、587、TLS）。密码加密保存在数据库中，不会再次显示（留空则保留已保存的）；**发送测试邮件**可以检查。**系统的服务器**恢复默认。非 master 用户只能使用互联网上的服务器，不能使用服务器所在网络中的任何地址；“已发送”中的副本（`IMAP_*`）只适用于系统的服务器。
 - **Web Push：**网站必须通过 **https** 打开。master 在**我的账户 › Web Push 密钥**中生成密钥，并把两行复制到 `config.php`。之后，每个人在**我的账户**中为自己的设备打开通知（在 iPhone 上，先把网站添加到主屏幕），Web Push 推送目标会发往它所指向的人的设备。
 - **Google 日历：**在 Google Cloud 中创建一个**服务账号**并下载 JSON 密钥；把你的日历共享给服务账号的电子邮件，并授予修改事件的权限；在**日历**中粘贴密钥的 JSON（它会加密保存在数据库中）和日历 ID。只有 master 可以不粘贴 JSON，而是填写服务器上某个文件的路径。
@@ -531,7 +533,7 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 | `migracao_v2.sql` … `migracao_v24.sql` | 迁移，通过设置页面应用 |
 | [`config.exemplo.php`](config.exemplo.php) | `config.php` 的模板 |
 | [`instalar.php`](instalar.php) | 把 `schema.sql` 安装到 `config.php` 指定的数据库中，任何一种都可以（与 `recurso=instalacao` 相同） |
-| [`senha.php`](senha.php) | 在服务器的命令行中更改账户的密码，不受“配置”强度限制：`php senha.php <login> <密码>`；两者都没有时，显示用户菜单，并隐藏地询问两次密码（创建账户通过 API 或界面） |
+| [`senha.php`](senha.php) | 在服务器的命令行中更改账户的密码，不受密码强度规则限制：`php senha.php <login> <密码>`；两者都没有时，显示用户菜单，并隐藏地询问两次密码（创建账户通过 API 或界面） |
 | [`importar.php`](importar.php) | 导入旧系统的数据（与 `recurso=importacao` 相同） |
 | [`reconstrucao.php`](reconstrucao.php) | 从零重写系统的指南（API 的 `recurso=reconstrucao`） |
 | [`.htaccess`](.htaccess) | Apache 上对内部文件的保护（以及 PHP 以 FastCGI 运行时的网站登录） |

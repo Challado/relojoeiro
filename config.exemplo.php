@@ -32,7 +32,7 @@ define("MSG_TITULO", "Relógios");
 // define("MSG_DESTINATARIO", "");
 
 // Os parâmetros de operação (CADASTRO_ABERTO, DEMO_DIAS, CONVITE_DIAS, DOCUMENTOS_LIMITE, API_ESPERA, LOTE_MAXIMO,
-// BACKUP_ATIVO, BACKUP_MANTER e BACKUP_DOCUMENTOS) o master muda também em Configuração › Sistema (ou pela API: recurso=config,
+// BACKUP_ATIVO, BACKUP_MANTER e BACKUP_DOCUMENTOS) o master muda também na página Sistema, em Parâmetros de operação (ou pela API: recurso=config,
 // parametros[<chave>]): o gravado lá vale por cima da linha daqui, e esta linha vira o padrão.
 // as contas: o cadastro aberto (a página cadastro.php, sem login). false: fechado, só entra quem o master cria ou quem tem
 // um convite. Sem a linha: aberto
@@ -103,7 +103,7 @@ define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");
 // define("BACKUP_MANTER", 7);
 // define("BACKUP_DOCUMENTOS", false);
 // Para não usar a cópia de segurança (outra rotina já copia o banco, ou é uma instalação de teste): false desliga a cópia
-// automática e a ação de fazer uma, e tira o quadro Cópia de segurança da Configuração (com o aviso de que falta a pasta).
+// automática e a ação de fazer uma, e tira o quadro Cópia de segurança da página Sistema.
 // Sem a linha: ligada
 // define("BACKUP_ATIVO", false);
 

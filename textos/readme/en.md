@@ -1,4 +1,4 @@
-<!-- origem: 7410b6b66d7810e3c5129639c5f53ffc5b74efd5 -->
+<!-- origem: a40413b72a85465d6b778080b45633eee4044944 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -155,6 +155,8 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `eventos`, `destinos`, `agendas` | the custom events; the message destinations, with what each one receives and today's preview; the calendars, with what has to be in each one |
 | `ics` | the calendar of an ICS link calendar (without login, by the link's key) |
 | `config`, `cron` | the collection's settings (with the summary of the destinations and calendars and the cron status: never ran, stopped or running); the cron runs, with the period's summary. In `cron`: `de=` and `ate=` (date, or date and time), `situacao=` (`atividade`, the default; `erro`, `nada` or `todas`), `busca=` (text in the log), `limite=` (default 100, maximum 1000) and `pagina=`; each also works with `cron_` in front (`cron_de`...) |
+| `opcoes` | the collection options of one subject (`grupo=`: `rotina`, `limites`, `telas`, `rodizio` or `avisos`; one or more, separated by commas) in the three levels: the collection, the owner's default and the system's (each level with `pode_mudar`), and in each option the choice, what applies and where it comes from. It is what the Rotation settings and Alerts pages read |
+| `sistema` | master only: what belongs to the whole system (the address, the cron rounds, the operation parameters, the password strength, the cron status, the source of the draws and the `config.php` e-mail server). It is what the System page reads |
 | `arvore`, `cadastros` | the groups; everything the Definitions page shows |
 | `unidades` | the tree's units (the **Units** tab of Definitions), in the order of the quantities, each one with the conversion as text and how many fields, types and formulas use it |
 | `marcas` | the tree's brands (the **Brands** tab of Definitions), each with the country, the website, the note and its watches |
@@ -219,7 +221,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (and `ordem` in the fields; the field with the value rules: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar` (the master also `parametros[<chave>]`: the system's operating parameters), `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (the owner also `dono[<chave>]`: the default of their collections; the master also `padroes[<chave>]`: the system default, and `parametros[<chave>]`: the system's operating parameters), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, e-mail or Web Push, with what it receives), `testar` (`qual=`: text, morning or night), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook or ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (with the `senha`, or with another system's `senha_hash`; the first user, with the token, is the master) and, master only: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
@@ -251,7 +253,7 @@ per reason) in a refused write:
 ### SQL through the API {#o-sql-pela-api}
 
 Everything the screens do, the API does; and what no screen does, the master does through SQL (`recurso=sql`, or the
-**Database (SQL)** box in Settings): one command at a time, in MySQL's SQL (the system translates it for the database in use,
+**Database (SQL)** box on the System page): one command at a time, in MySQL's SQL (the system translates it for the database in use,
 as in the migrations), without the collections' scope.
 
 | Command | When it is allowed |
@@ -259,7 +261,7 @@ as in the migrations), without the collections' scope.
 | `SELECT` | always (without `INTO`); the database already returns at most `limite` rows (default 200, up to 5000), and the response says whether it cut |
 | `INSERT` | always, except one that updates (`ON DUPLICATE KEY`, `ON CONFLICT`, `OR REPLACE`: it would be an `UPDATE` without the approval) and except on the `sistema` and `sql_execucao` tables |
 | `ALTER TABLE <tabela> ADD [COLUMN] <coluna> <tipo>` | always: a new field (`NULL`, or `NOT NULL` with `DEFAULT`; no key, index or position) in an existing table that is not a system one (accounts, tokens, access, `sistema`, `colecao`, `no`), one at a time |
-| `UPDATE`, `DELETE` | only with the approval turned on in the **System** box of Settings (`parametros[sql_alteracoes]=1`) |
+| `UPDATE`, `DELETE` | only with the approval turned on in the **Operation parameters** of the System page (`parametros[sql_alteracoes]=1`) |
 | the rest (`DROP`, `TRUNCATE`, `CREATE`, another `ALTER`, more than one command, the `?` parameter, a comment in the command) | never: refused before reaching the database |
 
 Each request, the refused one, the one with an error and the one that worked, goes into the log (the `sql_execucao` table,
@@ -381,7 +383,7 @@ once, without touching the database, and records the skip in a file next to the 
 the lock records, as an error, how many left this way and how long it took.
 
 The round that takes the lock writes its process number in it; after **Cron rounds before killing the stuck one**
-(Settings; default 10) skipped rounds in a row, the next one checks that the process is the cron's, kills the stuck one
+(the System page; default 10) skipped rounds in a row, the next one checks that the process is the cron's, kills the stuck one
 and runs in its place, with the error in the log.
 
 On SQLite, put the database file (`DB_ARQUIVO`) **outside the folder the web server publishes**, in a folder the PHP user can
@@ -434,7 +436,7 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `OUTLOOK_CLIENTE_ID`, `OUTLOOK_CLIENTE_SEGREDO` | the application registered with Microsoft, for the Outlook calendars (see below) |
 | `DOCUMENTOS_PASTA` | the folder of the documents' files (the manual, the invoice, photos, videos), **outside the published folder**, writable by the PHP user. Without it, the Documents page says it is missing and doesn't accept uploads. E.g.: `define("DOCUMENTOS_PASTA", "/var/lib/relogios2/documentos");` |
 | `BACKUP_PASTA`, `BACKUP_MANTER`, `BACKUP_DOCUMENTOS` | optional: the database backup (see [Backup](#cópia-de-segurança)). The folder, **outside the published folder** (without it, there is no automatic backup); how many are kept (default 7); and whether it takes the content of the documents stored in the database (default: no). |
-| `BACKUP_ATIVO` | optional: `false` turns the backup off: no automatic copy, no **Make a backup now** and no **Backup** box in Settings (not even the warning that the folder is missing). Without it: on |
+| `BACKUP_ATIVO` | optional: `false` turns the backup off: no automatic copy, no **Make a backup now** and no **Backup** box on the System page. Without it: on |
 | `DOCUMENTOS_LIMITE` | optional: the largest document accepted, in bytes. Without it, 100 MB (`104857600`); `0` or `-1`, no system limit. `MANUAL_LIMITE`, the old name, still works when it doesn't exist. PHP's and nginx's limits still apply (see [The size of uploads](#o-tamanho-dos-envios-os-documentos)). E.g.: `define("DOCUMENTOS_LIMITE", 524288000);` for 500 MB |
 | `ANTIGO_HOST`, `ANTIGO_PORTA`, `ANTIGO_USUARIO`, `ANTIGO_SENHA` | optional, only for `importar.php` with this system on Postgres, SQLite or Firebird: where the previous system's MySQL is |
 | `ALEATORIO_RANDOMORG_URL`, `ALEATORIO_ANU_URL` | optional, only for tests: the addresses of the random number sources (`https://www.random.org/integers/` and `https://qrng.anu.edu.au/API/jsonI.php`). Changed, the draws ask a test server for the numbers |
@@ -445,7 +447,7 @@ get in through **Create account** (`cadastro.php`), through an invitation of you
 | `LOTE_MAXIMO` | optional: how many operations fit in a batch (`recurso=lote`). Without it, 100 |
 
 The operating parameters (`CADASTRO_ABERTO`, `DEMO_DIAS`, `CONVITE_DIAS`, `DOCUMENTOS_LIMITE`, `API_ESPERA`, `LOTE_MAXIMO`,
-`BACKUP_ATIVO`, `BACKUP_MANTER` and `BACKUP_DOCUMENTOS`) the master also changes in the **System** box of Settings (or through
+`BACKUP_ATIVO`, `BACKUP_MANTER` and `BACKUP_DOCUMENTOS`) the master also changes in the **Operation parameters** of the System page (or through
 the API: `recurso=config`, `parametros[<chave>]`): the value saved there applies over the `config.php` line, and empty goes
 back to the line. Credentials, keys, folders and server addresses stay only in `config.php`.
 
@@ -470,7 +472,7 @@ on the server:
   them, and considers it sent if the response is 2xx. Long messages are split into parts.
 - **E-mail:** the SMTP server in `config.php` (`SMTP_HOST`, the port, the security, the user and the password; on Gmail and
   Outlook, an app password) and the `EMAIL_REMETENTE`; or `EMAIL_METODO = "mail"`, with a sendmail on the server. With
-  `IMAP_*`, each e-mail sent gets a copy in Sent. The master tests it in **My account › E-mail server**: the box shows what the system read from `config.php` (the method, the sender, SMTP, IMAP and POP; the passwords only as *set* or not) and points out what is wrong or missing (no `EMAIL_METODO`, a port that does not match the security, an empty password, PHP without `openssl`...). **Test the connections** signs in to SMTP, to IMAP (and checks the Sent folder) and to POP without sending anything; **Send a test e-mail** really sends one to the address you type. Then come the result of each part and the **conversation with the servers**, line by line (without the password), to find where it stopped.
+  `IMAP_*`, each e-mail sent gets a copy in Sent. The master tests it on the **System** page, under **E-mail server**: the box shows what the system read from `config.php` (the method, the sender, SMTP, IMAP and POP; the passwords only as *set* or not) and points out what is wrong or missing (no `EMAIL_METODO`, a port that does not match the security, an empty password, PHP without `openssl`...). **Test the connections** signs in to SMTP, to IMAP (and checks the Sent folder) and to POP without sending anything; **Send a test e-mail** really sends one to the address you type. Then come the result of each part and the **conversation with the servers**, line by line (without the password), to find where it stopped.
 - **Your own e-mail server:** by default, the e-mails each person sends (the e-mail destinations of their collections, the
   invitations, the access requests and the answers to them) go out through the system's server. Whoever prefers uses their
   own, in **My account › Sending my e-mails**: **My server (SMTP)**, the server, the port, the security, the user, the
