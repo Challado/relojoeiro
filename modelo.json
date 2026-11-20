@@ -1352,6 +1352,20 @@
             "winder": 0
         },
         {
+            "identificador": "vistoria",
+            "nome": "Vistoria",
+            "formato": "instantaneo",
+            "unidade": "",
+            "fecha_as": null,
+            "grupo": "raiz",
+            "ordem": 10,
+            "exclusiva": 0,
+            "mede_gasto": 0,
+            "condicao": null,
+            "marcha": null,
+            "winder": 0
+        },
+        {
             "identificador": "pulso_antigo",
             "nome": "No pulso (marcação antiga, sem duração)",
             "formato": "instantaneo",
@@ -1869,6 +1883,22 @@
             "agenda": "janela",
             "condicao": null,
             "resolve": "pulso",
+            "na_hora": 0
+        },
+        {
+            "identificador": "vistoria",
+            "nome": "Vistoria",
+            "expressao": "SE(CONFIG(\"vistoria_dias\") > 0; PADRAO(ULTIMA_DATA(\"vistoria\"); PADRAO(data_compra; DATA_CADASTRO())) + CONFIG(\"vistoria_dias\"); NADA())",
+            "antecedencia_dias": 0,
+            "texto": "vence {quando}, {data}",
+            "ativo": 1,
+            "grupo": "raiz",
+            "escala": "nao",
+            "simula_valor": null,
+            "simula_horas": null,
+            "agenda": "sempre",
+            "condicao": null,
+            "resolve": "vistoria",
             "na_hora": 0
         },
         {
@@ -4066,6 +4096,7 @@
         "medicao_janela_leituras": "",
         "carga_limiar": "",
         "encostado_dias": "",
+        "vistoria_dias": "",
         "gasto_motor": "",
         "documentos_copia": "",
         "fuso": "",

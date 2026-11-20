@@ -1,4 +1,4 @@
-<!-- origem: 0294a74a993d3589d0f405bf12fef052aa64a527 -->
+<!-- origem: 62a336131ff5a65b51c916b2abade0aad27431a6 -->
 
 ## L'idée centrale : le système ne sait rien des montres {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -95,6 +95,7 @@ Et celles qui lisent l'historique de chaque montre :
 | `CONTAR("pulso"; 30)` | combien de jours portés sur les 30 derniers jours |
 | `DIAS_DESDE_ULTIMO("pulso")` | jours depuis la dernière fois au poignet |
 | `ULTIMO_VALOR("carga")` / `ULTIMA_DATA("pilha")` | le dernier relevé / la date de la dernière saisie |
+| `DATA_CADASTRO()` | le jour où la montre a été enregistrée dans le système : `PADRAO(data_compra; DATA_CADASTRO())` est l'achat et, sans lui, l'enregistrement |
 | `HORAS_APOS("pulso"; "carga")` | heures au poignet depuis le dernier relevé de charge |
 | `ACUMULA(début; max; perte/h; "type"; effet; ...)` | un solde qui parcourt l'historique : il baisse avec le temps et monte à chaque saisie |
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | la consommation réelle de la batterie, mesurée par vos relevés de charge |
@@ -968,6 +969,36 @@ et `custo_servicos` (le total prêt **Coût des services** fait la somme de la c
 services. Par l'API : `recurso=servicos` (la liste, avec le résumé d'une montre) et `recurso=servicos` avec `acao=salvar` ou
 `excluir`.
 
+### L'inspection périodique {#a-vistoria-periódica}
+
+Une montre peut avoir un problème sans que personne ne le voie : la batterie en fin de vie, la pile qui coule, le verre
+fendu, le bracelet qui se détache, l'humidité sur le cadran. L'inspection sert à cela : de temps en temps, prendre chaque
+montre et la vérifier.
+
+Activez-la dans **Configuration**, **Inspection : tous les combien de jours vérifier chaque montre** (0 la désactive ; elle
+arrive désactivée). Avec un nombre de jours, chaque montre active reçoit l'alerte **Inspection**, qui expire ces jours-là
+après sa dernière inspection ; sans aucune, depuis la date d'achat (les anciennes commencent déjà en retard) ; sans date
+d'achat, depuis le jour où elle a été enregistrée. La montre en entretien, inactive ou hors de la collection n'expire pas.
+
+L'alerte apparaît dans **Aujourd'hui, c'est le jour de**, avec le remontage et la charge, avec le bouton **Inspection** : un
+clic enregistre que vous l'avez vérifiée, et le décompte recommence. Pour en faire plusieurs à la fois, ouvrez **Collection ›
+Inspections** : la liste donne les montres dont l'inspection expire jusqu'au jour que vous choisissez (au départ, la semaine
+prochaine ; celles en retard toujours ; **Tous** les montre toutes), de la plus en retard à la plus lointaine, avec la
+dernière inspection de chacune. Celles en retard et celles d'aujourd'hui arrivent déjà cochées ; décochez ce que vous n'avez
+pas vérifié, mettez le jour (vide : maintenant) et cliquez sur **Enregistrer les inspections**.
+
+Un service à l'atelier ne compte **pas** tout seul comme inspection : l'horloger peut avoir fait le service sans regarder le
+reste (la batterie, le bracelet). En enregistrant un service (le cadre **Services et diagnostics**) ou en clôturant un
+entretien (la situation qui le clôt, comme **Récupéré**), la case **Compter aussi comme inspection de la montre** arrive
+décochée : ne la cochez que si la montre a vraiment été vérifiée. Avec l'inspection désactivée, la case apparaît désactivée,
+avec le motif.
+
+Tout cela est de la définition : l'alerte **Inspection** est sur la page **Alertes** (la formule
+`SE(CONFIG("vistoria_dias") > 0; PADRAO(ULTIMA_DATA("vistoria"); PADRAO(data_compra; DATA_CADASTRO())) + CONFIG("vistoria_dias"); NADA())`,
+que vous pouvez changer, par exemple, pour un seul groupe), et la saisie **Inspection**, dans Définitions › Types de saisie.
+Désactiver l'alerte sur la page Alertes désactive aussi l'inspection. Par l'API : `recurso=vistorias` (la liste),
+`recurso=vistorias`, `acao=registrar` (plusieurs à la fois) et le `vistoria=1` des services et de l'entretien.
+
 ### Déclaré, mesuré et estimé {#declarado-medido-e-estimado}
 
 Chaque information technique de la montre a trois valeurs, et le panneau montre les trois ensemble, dans un petit tableau :
@@ -1531,6 +1562,7 @@ Les alertes de l'ensemble initial, avec l'identifiant (leur nom dans les formule
 | Marche hors de l'attendu | `marcha_fora` | Traditionnelle | une nouvelle lecture de l'écart. Échoit à la lecture dont la marche est sortie de la *Marche attendue* ou, avec 4 mesures ou plus, s'est éloignée de l'historique de la montre elle-même (plus de 3 fois la variation, et au moins 5 s/jour). |
 | Garantie qui expire | `garantia` | toutes | (rien : elle alerte seulement) |
 | Délaissée | `encostado` | toutes (celles de la collection, actives) | Au poignet. Elle arrive à échéance quand la montre dépasse la limite de jours sans aller au poignet (Configuration, **Alerte Délaissée : jours sans aller au poignet**, 30 par défaut), comptés depuis la dernière fois au poignet (jamais portée, depuis la date d'achat ; sans les deux, pas d'alerte). Elle n'entre pas dans le prochain entretien ni dans **Quoi faire** : le tableau a la colonne **Délaissée**, avec combien il reste ou depuis combien c'est dépassé. |
+| Inspection | `vistoria` | toutes (les actives, hors entretien) | l'Inspection. Seulement avec la Configuration **Inspection : tous les combien de jours vérifier chaque montre** au-dessus de 0 (par défaut, 0 : désactivée). Elle expire ces jours-là après la dernière inspection (sans aucune, depuis la date d'achat ; sans elle, depuis le jour de l'enregistrement). Voir [L'inspection périodique](#a-vistoria-periódica). |
 
 Les alertes partent dans l'alerte du matin. Une alerte marquée **immédiate** (dans la page **Alertes**, la case
 *immédiate*) part aussi par Telegram **dans la minute où elle arrive à échéance**, une seule fois, jusqu'à ce qu'elle soit
@@ -1630,6 +1662,7 @@ Les cartes remplissent les espaces disponibles selon la largeur de l’écran et
 | **Décimales des poids** (`sorteio_casas`) | de 0 à 8, 2 par défaut, dans Configuration › Tirages. Les poids sont arrondis avant le tirage ; si tous les poids positifs deviennent nuls, les poids initiaux sont utilisés. Les poids nuls ne participent pas. |
 | **Garantie de rotation** (`max_sem_uso`) | aucune montre ne reste plus de ces jours sans usage : celle qui les dépasse passe devant toutes. 0 la désactive. Par défaut : 21. |
 | **Alerte Délaissée : jours sans aller au poignet** (`encostado_dias`) | après combien de jours sans aller au poignet une montre de la collection reçoit l'alerte **Délaissée** (dans **Aujourd'hui, c'est le jour de** : *Délaissée*, *« la limite de jours sans aller au poignet a expiré il y a 2j, 10/11/2026 18:00 »*). De 1 à 3650. Par défaut : 30. L'alerte se désactive dans **Définitions › Alertes**. |
+| **Inspection : tous les combien de jours vérifier chaque montre (0 la désactive)** (`vistoria_dias`) | l'inspection périodique : avec un nombre de jours, chaque montre active reçoit l'alerte **Inspection** ces jours-là après la dernière inspection (sans aucune, depuis la date d'achat ; sans elle, depuis l'enregistrement). De 0 à 3650. Par défaut : 0 (désactivée). Voir [L'inspection périodique](#a-vistoria-periódica). |
 | **Consommation de la batterie : comment calculer (valable pour toutes les montres)** (`gasto_motor`) | lequel des cinq moteurs de la [consommation mesurée par les relevés](#gasto-medido-pelas-leituras) fait le calcul, pour toutes les montres de la collection : **1. Par les heures enregistrées (le moteur d'origine)**, **2. ... (robuste)**, **3. Par le marquage : deux taux séparés**, **4. La fiche seulement** ou **5. Par les formules de la fiche**. Par défaut : vide (*Individuelle (sur la montre ou le groupe)* : le champ **Comment calculer la consommation de la batterie** de chaque montre, sinon sa valeur par défaut, sinon le moteur 1). |
 | **Consommation mesurée : compter par** (`medicao_base`) | ce qui entre dans le calcul de la consommation mesurée : **Jours** (`dias`, les mesures des tant derniers jours) ou **Relevés** (`leituras`, les tant dernières mesures de chaque type, en usage et au repos). Par défaut : jours. |
 | **Consommation mesurée : moyenne des derniers (jours)** (`medicao_janela_dias`) | la fenêtre de la consommation mesurée, en comptant par jours : les mesures plus anciennes sortent du calcul. De 1 à 3650. Par défaut : 90. |
@@ -1864,6 +1897,7 @@ milieu.
 | **Totaux** (`totais.php`, menu **Collection**) | La page des totaux : les totaux cochés pour elle (l'onglet **Totaux** des Définitions), chacun dans un cadre, étroit ou large, dans l'ordre des définitions : le petit tableau avec la ligne de total, le nombre, ou la montre avec la valeur. Elle s'ouvre par **Voir tous les totaux** sous le tableau de la page Aujourd'hui, avec le même filtre (*12 montres sur 17 sont comptées*, avec **Tout compter**), ou par le menu, avec toutes. Par l'API : `recurso=totais&parte=pagina`. Voir [Les totaux](#os-totais). |
 | **Accessoires** (`acessorios.php`) | Les bracelets, boîtes, étuis, outils, chargeurs, pièces et tout le reste : la liste (le nom, le type, la montre à laquelle il appartient, ou *indépendant*, et l'observation), avec le filtre **Montre** (tous, les indépendants ou ceux d'une montre ; le cadre **Accessoires** du panneau l'ouvre déjà filtrée), **Modifier** et **Supprimer** sur chacun, et en dessous le formulaire (**Nouvel accessoire** : nom, type, montre ou *indépendant (sert à plusieurs)* et observation). Supprimer une montre rend ses accessoires indépendants. Par l'API : `recurso=acessorios` (la liste) et l'écriture `acessorios` (`salvar`, `excluir`). Chacun montre les **Données** (les champs de son type) et où il **Va** (voir [La construction et les accessoires](#a-construção-e-os-acessórios)) ; le formulaire demande les champs du type choisi. |
 | **Entretien** (`manutencao.php`, menu **Collection**) | La montre à l'atelier, de l'aller au retour, en quatre onglets : **En entretien** (celles qui sont à l'atelier maintenant, avec le statut, la date prévue et l'alerte ; le menu pour changer le statut ; **Enregistrer un entretien**, qui envoie la montre, et, en en modifiant un, l'historique), **Entretiens** (tous, avec les filtres et le coût), **Ateliers** (avec les contacts) et **Listes** (les statuts, les types de service, les résultats d'étanchéité, les types d'atelier et de contact). Voir [L'entretien](#a-manutenção). |
+| **Inspections** (`vistorias.php`, menu **Collection**) | Les montres dont l'inspection périodique expire jusqu'à un jour (celles en retard toujours ; **Tous** les montre toutes), avec l'échéance et la dernière inspection : celles en retard et celles d'aujourd'hui arrivent cochées, et **Enregistrer les inspections** les enregistre toutes d'un coup (le jour est facultatif ; vide, maintenant). Désactivée, elle dit pourquoi. Voir [L'inspection périodique](#a-vistoria-periódica). |
 | **Remontoirs** (`winders.php`) | Les remontoirs et les positions de chacun : une carte par remontoir, avec son **dessin** (un berceau par position, avec la photo de la montre qui s'y trouve et l'anneau de la charge), les données et le tableau des positions, modifiable dans la ligne (le **programme**, un champ par colonne ; la **Montre**, avec **— aucune —** pour retirer et les montres pour mettre ou échanger ; la **charge**, **ce que donne chaque heure** et quand elle est **pleine** ; l'**Enregistrer**), **Modifier** la position (le nom, l'ordre, allumée), **Nouvelle position**, **Modifier le remontoir** et **Supprimer le remontoir** ; en dessous, la fiche (**Nouveau remontoir** : le nom, le nombre de positions qu'il reçoit, les champs du remontoir et l'observation) et celle de la position (le nom, l'ordre, allumée, le programme). Voir [Les remontoirs](#os-winders). Par l'API : `recurso=winders` et les écritures `winders` et `winder_posicoes`. |
 | **Galerie** (`galeria.php`) | La collection en photos, par groupe : chaque montre avec la photo (le lien vers la fiche), le nom, la marque et la référence, l'année et le prix d'achat et les jours d'usage ; en haut, combien, la valeur totale et combien ont une photo. En haut, les **onglets** par statut (les mêmes que sur la page Aujourd'hui) et, à la fin, **Tous** (avec la marque du statut de celles qui ne sont pas dans la collection). **Imprimer** : sur papier, quatre par ligne, sans le menu ni les onglets. Par l'API : `recurso=galeria` (`aba=` le statut, `principal` ou `todos`). |
 | **Passeport** (`passaporte.php`) | La fiche d'une montre à imprimer ou à enregistrer en PDF (le bouton **Passeport** du cadre Documents du panneau) : la photo, le nom, la marque et la référence, le groupe et la situation ; l'**Achat** ; l'**Usage** (la première et la dernière fois au poignet, les heures au poignet, les jours d'usage et le coût par port) ; la **Fiche** remplie ; les **Entretiens** (chaque type de marquage, combien de fois et le dernier ; les révisions et les changements de pile) ; les **Accessoires** ; les **Documents** ; et les **Prochaines alertes**. **Imprimer** : seules les données sortent sur le papier. Par l'API : `recurso=passaporte`. Avec un service, aussi les **Services et diagnostics** (l'atelier, le coût, l'étanchéité et la marche avant et après). |
@@ -2166,6 +2200,11 @@ Dans sa fiche (**Modifier la fiche**), décochez **Participe au tirage de la rot
 **remplacer par…** d'un jour), mais le tirage (le plan, l'échelle, **Tirer ce jour au sort par**, **Décider pour moi**, la
 **Suggestion pour maintenant**) ne la choisit plus. Ses jours déjà tirés au sort, à partir de demain, sont tirés à nouveau.
 Pour la sortir de tout, même des alertes, décochez **Montre active**.
+
+**Et si une montre reste oubliée avec la batterie en fin de vie, ou avec un problème ?**
+Activez l'inspection périodique dans **Configuration** (**Inspection : tous les combien de jours vérifier chaque montre**) :
+chaque montre active reçoit l'alerte **Inspection** tous les tant de jours, dans **Aujourd'hui, c'est le jour de**, et la
+page **Collection › Inspections** en enregistre plusieurs à la fois. Voir [L'inspection périodique](#a-vistoria-periódica).
 
 **Et si je veux comparer des modes avant d'en choisir un ?**
 Dans le menu **Rotation › Simulateur** : montez deux scénarios ou plus (le mode, la façon de choisir, la garantie, les

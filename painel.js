@@ -506,6 +506,8 @@ function abrirNoPainel(id) {
           }).join("\n")) : ""), 2: el("small", {}, t("uma por linha; o custo, se houver, depois do ponto e vírgula"))}))
           + el("label", {"class": "largo"}, t("Observação {1}", {1: el("textarea", {"name": "observacao", "rows": 3}, h(v("observacao")))}))
           + el("fieldset", {"class": "largo servico-docs"}, el("legend", {}, t("Documentos do serviço")) + docs)
+          // contar também como vistoria: só no registro (desmarcada; desligada, desabilitada com o motivo)
+          + (s ? "" : caixaVistoria(r.servico_vistoria, "largo"))
           + el("div", {"class": "botoes largo"}, el("button", {}, s ? t("Salvar o serviço") : t("Registrar o serviço"))));
       };
       var linhaServico = function (s) {

@@ -2321,6 +2321,25 @@ escrever(array_merge($sim_apl, ["impressao" => str_repeat("0", 40)]), false);
 escrever(array_merge($sim_apl, ["impressao" => $sim["simulacao"]["cenarios"][0]["resultado"]["impressao"] ?? ""]));
 ler("o plano depois do simulador aplicado", ["recurso" => "plano"]);
 
+// ---------- a vistoria periódica ----------
+// desligada (a lista vazia, com o motivo); ligada (30 dias): todas, até hoje e o ate inválido; o registrar (as recusas: sem
+// relógio e um dia que não chegou) e o de dois relógios anteontem (ao meio-dia: o mesmo em todo banco); o serviço que conta como
+// vistoria e o valor inválido. Fica ligada no fim: as conferências das telas (o layout, a rolagem, os ⓘ, os textos fixos e a
+// vistoria-interface) veem a página Vistorias com a tabela e a Hoje com os avisos de vistoria
+ler("vistorias, desligada", ["recurso" => "vistorias"]);
+escrever(["recurso" => "config", "acao" => "salvar", "vistoria_dias" => "30"]);
+$vist = ler("vistorias, todas", ["recurso" => "vistorias", "todos" => "1"]);
+ler("vistorias, ate hoje", ["recurso" => "vistorias", "ate" => date("Y-m-d")]);
+ler("vistorias, ate invalido", ["recurso" => "vistorias", "ate" => "amanha"]);
+$vist_ids = array_slice(array_column($vist["relogios"] ?? [], "relogio_id"), 0, 2);
+escrever(["recurso" => "vistorias", "acao" => "registrar", "relogio_ids" => ""], false);
+escrever(["recurso" => "vistorias", "acao" => "registrar", "relogio_ids" => implode(",", $vist_ids), "quando" => date("Y-m-d", strtotime("+1 day"))], false);
+escrever(["recurso" => "vistorias", "acao" => "registrar", "relogio_ids" => implode(",", $vist_ids), "quando" => date("Y-m-d", strtotime("-2 days"))]);
+ler("vistorias, depois do registro", ["recurso" => "vistorias", "todos" => "1"]);
+escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $vist_ids[1] ?? 0, "data" => date("Y-m-d", strtotime("-1 day")), "tipo" => "revisao", "vistoria" => "talvez"], false);
+escrever(["recurso" => "servicos", "acao" => "salvar", "relogio_id" => $vist_ids[1] ?? 0, "data" => date("Y-m-d", strtotime("-1 day")), "tipo" => "revisao", "vistoria" => "1"]);
+ler("vistorias, depois do servico", ["recurso" => "vistorias", "todos" => "1"]);
+
 $texto = json_encode($foto, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
 if ($texto === false) {
     fwrite(STDERR, "Não consegui gravar a fotografia: " . json_last_error_msg() . "\n");

@@ -87,7 +87,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
         // os serviços e diagnósticos (o quadro Serviços e diagnósticos): a lista, o resumo, os tipos e os documentos dele que um
         // serviço pode citar (o formulário)
         "servicos" => ($srv_f = servicos_lista($id)), "servicos_resumo" => servicos_resumo($id, $srv_f),
-        "servico_tipos" => servico_tipos_opcoes(), "estanqueidades" => lista_opcoes("estanqueidade"),
+        "servico_tipos" => servico_tipos_opcoes(), "servico_vistoria" => vistoria_opcao(), "estanqueidades" => lista_opcoes("estanqueidade"),
         // a manutenção (o quadro Manutenção): a aberta (o relógio na oficina agora; null sem) e todas, da mais nova para a mais
         // velha; cadastrar, mudar a situação e encerrar ficam na página Manutenção
         "manutencoes_oficina" => ($mn_f = manutencao_lista(["relogio" => $id])),

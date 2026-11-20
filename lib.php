@@ -1321,6 +1321,7 @@ $MIGRACOES = [
     "v58" => ["migracao_v58.sql", tk("as opções da coleção em três níveis: o padrão de cada uma no sistema (Configuração › Sistema) e no usuário (Minha conta), e a escolha da coleção (vazio herda)"), "usuario_opcao"],
     "v64" => ["migracao_v64.sql", tk("as saídas da coleção: cada vez que um relógio é emprestado ou sai (vendido, presenteado, arquivado e os motivos do seu cadastro), ficam a data, o valor recebido, para quem foi e a observação, e a volta fecha a saída sem apagar o histórico; e as abas por situação em cima da tabela dos relógios e da galeria (na coleção, emprestado, desejado, vendido...), cada uma com o que é dela"), "sistema.chave=migracao_v64", "migracao_v64_dados"],
     "v65" => ["migracao_v65.sql", tk("o relógio fora do sorteio do rodízio: a marca Entra no sorteio do rodízio, no cadastro do relógio. Desmarcada, o rodízio nunca escolhe o relógio sozinho (o plano, a escala, o Decida por mim, o Sortear este dia por e a Sugestão para agora), mas ele continua na coleção: a carga, os avisos, o Pôs no pulso, o Usando hoje e a escolha à mão de um dia. O Relógio ativo desmarcado continua tirando o relógio de tudo"), "relogio.sorteio"],
+    "v66" => ["migracao_v66.sql", tk("a vistoria periódica: a Configuração ganha \"Vistoria: a cada quantos dias conferir cada relógio\" (0 desliga, e vem desligada); ligada, cada relógio ativo ganha o aviso Vistoria, que vence esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro) e se resolve com o lançamento Vistoria, pelo botão em Hoje é dia de ou pela página Vistorias, várias de uma vez; um serviço ou o fim de uma manutenção só contam como vistoria se você marcar"), "sistema.chave=migracao_v66", "migracao_v66_dados"],
 ];
 
 // O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
@@ -1359,6 +1360,47 @@ function migracao_v63_dados($nova = false)
         });
     }
     sis_set("migracao_v63", "1");
+}
+
+// O passo em PHP da v66: em cada árvore, o tipo de lançamento Vistoria e o aviso Vistoria (modelo.json), na raiz, no idioma
+// da coleção; cada um só onde o identificador ainda não existe. Numa instalação nova a árvore já nasce com os dois
+function migracao_v66_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            $m = modelo_ler();
+            $do_modelo = function ($lista) use ($m) {
+                return array_values(array_filter($m[$lista], function ($x) { return $x["identificador"] === "vistoria"; }));
+            };
+            foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+                $rid = (int)$raiz["id"];
+                $arvore = [$rid];
+                $nivel = $arvore;
+                while (count($nivel) > 0) {
+                    $nivel = array_map("intval", array_column(linhas("SELECT id FROM no WHERE pai_id IN (" . implode(", ", $nivel) . ")"), "id"));
+                    $arvore = array_merge($arvore, $nivel);
+                }
+                $em = " AND no_id IN (" . implode(", ", $arvore) . ")";
+                $lingua = lingua_valida((string)valor("SELECT valor FROM config WHERE chave = 'idioma' AND colecao_id IN (SELECT id FROM colecao WHERE no_id = ?) ORDER BY colecao_id", [$rid])) ?? "pt-BR";
+                $tr = modelo_tradutor($lingua);
+                foreach ($do_modelo("tipos") as $x) {
+                    if ((int)valor("SELECT COUNT(*) FROM lancamento_tipo WHERE identificador = ?" . $em, [$x["identificador"]]) === 0) {
+                        sql("INSERT INTO lancamento_tipo (identificador, nome, formato, unidade, fecha_as, no_id, ordem, exclusiva, mede_gasto, marcha, condicao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            [$x["identificador"], $tr($x["nome"]), $x["formato"], $x["unidade"], $x["fecha_as"], $rid, (int)$x["ordem"], (int)$x["exclusiva"], (int)$x["mede_gasto"], $x["marcha"], $x["condicao"]]);
+                    }
+                }
+                foreach ($do_modelo("avisos") as $a) {
+                    if ((int)valor("SELECT COUNT(*) FROM aviso WHERE identificador = ?" . $em, [$a["identificador"]]) === 0) {
+                        $resolve = valor("SELECT id FROM lancamento_tipo WHERE identificador = ?" . $em, [$a["resolve"]]);
+                        sql("INSERT INTO aviso (identificador, nome, expressao, antecedencia_dias, texto, ativo, no_id, escala, simula_valor, simula_horas, agenda, condicao, resolve_tipo_id, na_hora)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [$a["identificador"], $tr($a["nome"]), $a["expressao"], $a["antecedencia_dias"], $tr($a["texto"]), (int)$a["ativo"],
+                            $rid, $a["escala"], $a["simula_valor"], $a["simula_horas"], $a["agenda"], $a["condicao"], $resolve === null ? null : (int)$resolve, (int)$a["na_hora"]]);
+                    }
+                }
+            }
+        });
+    }
+    sis_set("migracao_v66", "1");
 }
 
 function migracao_v62_dados($nova = false)
@@ -2436,6 +2478,7 @@ $FUNCOES = [
     "SEMANA_DO_ANO" => [0, 0, tk("o número da semana do ano (ISO) do dia que está sendo montado"), false],
     "NO_GRUPO" => [1, 1, tk("NO_GRUPO(\"grupo\"): 1 se o relógio está nesse ponto da árvore ou abaixo (o nome, o caminho \"Tradicional › Quartzo\" ou #id; \"todos\": 1 para todos)"), false],
     "RELOGIO" => [1, 1, tk("RELOGIO(\"nome\" ou id): 1 se é esse relógio"), false],
+    "DATA_CADASTRO" => [0, 0, tk("DATA_CADASTRO(): o dia em que o relógio foi cadastrado no sistema (ex.: PADRAO(data_compra; DATA_CADASTRO()), a compra e, sem ela, o cadastro)"), false],
     "CALIBRE" => [1, 1, tk("CALIBRE(\"nome\" ou id): 1 se o relógio tem esse calibre (o movimento)"), false],
     // o winder: os campos da posição em que o relógio está (Cadastros › Campos, para a posição do winder) e os do winder dela
     "WINDER_POSICAO" => [1, 1, tk("WINDER_POSICAO(\"campo\"): o valor de um campo livre da posição do winder em que o relógio está (Cadastros › Campos, para a posição: o gravado na posição, senão o padrão do campo); dentro do ACUMULA, o da posição de cada sessão no winder; fora de uma posição, vazio. O programa da posição (as voltas por dia, os sentidos) vem de WINDER_PROGRAMA"), false],
@@ -3465,6 +3508,9 @@ function formula_calcular($no, &$ctx)
             } elseif ($nome === "NO_GRUPO") {
                 $no = no_por_nome($v[0]);
                 $res = $no === 0 ? 1 : ($no === null ? 0 : (in_array($no, no_cadeia($ctx["r"]["no_id"] ?? 0), true) ? 1 : 0));
+            } elseif ($nome === "DATA_CADASTRO") {
+                $criado = (string)($ctx["r"]["criado"] ?? "");
+                $res = $criado === "" ? null : floor(dias_de((int)strtotime($criado)));
             } elseif ($nome === "RELOGIO") {
                 $res = $v[0] === null ? 0 : ((is_numeric($v[0]) ? (int)$v[0] === (int)$ctx["r"]["id"] : mb_strtolower(trim((string)$v[0]), "UTF-8") === mb_strtolower((string)$ctx["r"]["nome"], "UTF-8")) ? 1 : 0);
             } elseif ($nome === "CALIBRE") {
@@ -3808,7 +3854,7 @@ $FUNCOES_TOTAIS = [
 // as que dão uma tabelinha ou um relógio: só como a expressão inteira
 const TOTAIS_DO_TOPO = ["AGRUPADO", "FAIXAS", "QUEM_MENOR", "QUEM_MAIOR"];
 // as funções do motor que precisam de um relógio: nos totais, só dentro de uma função de total
-const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "CALIBRE", "WINDER_POSICAO", "WINDER", "WINDER_PROGRAMA", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "TIMEGRAPHER", "TIMEGRAPHER_DATA", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
+const FUNCOES_DO_RELOGIO = ["NO_GRUPO", "RELOGIO", "DATA_CADASTRO", "CALIBRE", "WINDER_POSICAO", "WINDER", "WINDER_PROGRAMA", "ULTIMO_SERVICO", "CUSTO_SERVICOS", "RESERVA_MEDIDA", "RESERVA_TESTES", "TIMEGRAPHER", "TIMEGRAPHER_DATA", "ESCOLHIDO_HA", "VEZES_NO_PLANO", "MEDIDO", "MEDIA_COLECAO", "LEITURAS", "QUEDA", "DIAS_MEDIDOS", "MEDIA_TAXA",
     "MEDIANA_TAXA", "ULTIMA_TAXA", "QUANDO_ENERGIA", "MARCHA", "MARCHA_DP", "MARCHA_N", "MARCHA_ULTIMA", "DESVIO_AGORA", "DIA_SEMANA", "SEMANA_DO_ANO", "SORTEIO"];
 
 // As variáveis da tabela, que os totais têm em cada relógio além dos campos e das fórmulas: nome => [o que é, unidade]
@@ -4572,6 +4618,123 @@ function duracao_texto($dias)
         }
     }
     return implode(" ", $partes);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// A vistoria periódica (a Configuração, vistoria_dias; 0 desliga): cada relógio ativo ganha o aviso Vistoria esses dias
+// depois da última vistoria (a fórmula é do cadastro: sem nenhuma, da data da compra; sem ela, do dia do cadastro), e o
+// lançamento Vistoria resolve. A página Vistorias registra várias de uma vez, e o serviço (também o do fim de uma
+// manutenção) conta como vistoria só se a pessoa marcar.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// Por que a vistoria não vale agora (null: vale): a opção em 0, o aviso desligado ou fora do cadastro
+function vistoria_motivo_desligada()
+{
+    if ((int)cfg("vistoria_dias") <= 0) {
+        return t("A vistoria está desligada: em Configuração, \"Vistoria: a cada quantos dias conferir cada relógio\" está em 0.");
+    }
+    $ativo = false;
+    foreach (avisos_todos()["vistoria"] ?? [] as $v) {
+        $ativo = $ativo || (int)$v["ativo"] === 1;
+    }
+    return $ativo ? null : t("O aviso Vistoria está desligado (ou não existe) na página Avisos: sem ele, nenhum relógio vence.");
+}
+
+// A caixa "contar também como vistoria" do serviço e do fim de uma manutenção, como a API a manda para as telas: ligada só
+// com a vistoria valendo (desligada, a caixa aparece desabilitada, com o motivo); a pessoa marca: o relojoeiro pode não ter
+// conferido tudo (a bateria, a pulseira)
+function vistoria_opcao()
+{
+    $motivo = vistoria_motivo_desligada();
+    return ["ativa" => $motivo === null, "motivo" => $motivo, "dias" => (int)cfg("vistoria_dias"),
+        "rotulo" => t("Contar também como vistoria do relógio"),
+        "explicacao" => t("Marcada, o serviço vale como a vistoria periódica do relógio, na data do serviço, e a contagem dos dias recomeça. Só marque se o relógio foi mesmo conferido: o relojoeiro pode não ter olhado tudo (a bateria, a pulseira, o vidro).")];
+}
+
+// A recusa do vistoria fora de 1, 0 ou vazio (no serviço e na manutenção)
+function vistoria_recusa_marca()
+{
+    return t("Vistoria: 1 (o serviço conta também como vistoria do relógio), 0 ou vazio (não conta).");
+}
+
+// Quanto falta (ou passou) para a vistoria, em dias do calendário (os dois AAAA-MM-DD): "hoje", "em 3 dias", "há 2 dias"
+function vistoria_quando($vence, $hoje)
+{
+    $n = (int)round((strtotime($vence . " 12:00:00") - strtotime($hoje . " 12:00:00")) / 86400);
+    if ($n === 0) {
+        return t("hoje");
+    }
+    $dias = abs($n) === 1 ? t("1 dia") : t("{1} dias", [1 => abs($n)]);
+    return $n > 0 ? t("em {1}", [1 => $dias]) : t("há {1}", [1 => $dias]);
+}
+
+// A última vistoria de cada relógio: [relogio_id => AAAA-MM-DD HH:MM:SS], numa consulta só
+function vistorias_ultimas()
+{
+    $res = [];
+    foreach (linhas("SELECT l.relogio_id, MAX(l.inicio) AS ultima FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id
+        WHERE t.identificador = 'vistoria' GROUP BY l.relogio_id") as $x) {
+        $res[(int)$x["relogio_id"]] = (string)$x["ultima"];
+    }
+    return $res;
+}
+
+// As vistorias: cada relógio ativo da coleção com o aviso Vistoria (o vencimento dele, pela fórmula do cadastro), do mais
+// atrasado ao mais distante; $ate (AAAA-MM-DD): só os que vencem até esse dia (os atrasados sempre); null: todos.
+// Devolve {ativa, motivo, dias, ate, relogios[], resumo}
+function vistorias_lista($ate)
+{
+    $motivo = vistoria_motivo_desligada();
+    $res = ["ativa" => $motivo === null, "motivo" => $motivo, "dias" => (int)cfg("vistoria_dias"), "ate" => $ate, "hoje" => hoje_da_colecao()->format("Y-m-d"), "relogios" => [],
+        "resumo" => ["atrasadas" => 0, "no_periodo" => 0, "com_vistoria" => 0]];
+    if ($motivo !== null) {
+        return $res;
+    }
+    $agora = time();
+    $hoje = hoje_da_colecao()->format("Y-m-d");
+    $ultimas = vistorias_ultimas();
+    foreach (linhas("SELECT * FROM relogio WHERE disponivel = 1 ORDER BY nome, id") as $r) {
+        $av = avisos_do_relogio($r, $agora, ["vistoria"]);
+        if (count($av) === 0) {
+            continue;
+        }
+        $a = $av[0];
+        $vence = substr($a["data"], 0, 10);
+        // pelo dia do calendário: atrasada é a de um dia que já passou; a de hoje é de hoje
+        $estado = $vence < $hoje ? "atrasado" : ($vence === $hoje ? "hoje" : "proxima");
+        $res["resumo"]["com_vistoria"]++;
+        if ($estado === "atrasado") {
+            $res["resumo"]["atrasadas"]++;
+        }
+        if ($ate !== null && $vence > $ate && $estado !== "atrasado") {
+            continue;
+        }
+        $res["resumo"]["no_periodo"]++;
+        $ultima = $ultimas[(int)$r["id"]] ?? null;
+        $res["relogios"][] = ["relogio_id" => (int)$r["id"], "relogio" => $r["nome"], "vence" => $a["data"], "vence_dia" => $vence,
+            "vence_texto" => data_txt(strtotime($vence . " 00:00:00")), "quando" => vistoria_quando($vence, $hoje), "estado" => $estado,
+            "falta_dias" => $a["falta_dias"], "ultima" => $ultima, "ultima_texto" => $ultima === null ? t("nunca") : data_txt(strtotime($ultima))];
+    }
+    usort($res["relogios"], function ($x, $y) { return [$x["vence"], $x["relogio"]] <=> [$y["vence"], $y["relogio"]]; });
+    return $res;
+}
+
+// Registra a vistoria de um relógio (o lançamento Vistoria) no instante $quando (segundos, até agora), se o tipo vale para o
+// relógio; no mesmo dia, uma só (a segunda não duplica). Devolve [ok, a frase ou o erro]
+function vistoria_registrar($r, $quando)
+{
+    $tl = lancamento_tipos_do_relogio($r)["vistoria"] ?? null;
+    if ($tl === null || $tl["formato"] !== "instantaneo") {
+        return [false, t("{1}: o tipo de lançamento Vistoria não vale para ele (Cadastros › Tipos de lançamento).", [1 => $r["nome"]])];
+    }
+    $quando = min($quando, time());
+    $dia = date("Y-m-d", $quando);
+    if (valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio >= ? AND inicio <= ?", [(int)$r["id"], (int)$tl["id"], $dia . " 00:00:00", $dia . " 23:59:59"]) !== null) {
+        return [true, t("{1}: já tinha a vistoria de {2}.", [1 => $r["nome"], 2 => data_txt($quando)])];
+    }
+    sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, 'manual', NOW())", [(int)$r["id"], (int)$tl["id"], date("Y-m-d H:i:s", $quando)]);
+    $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+    return [true, t("{1}: vistoria de {2} registrada.", [1 => $r["nome"], 2 => data_txt($quando)])];
 }
 
 // Todos os avisos: [identificador => [versões]]

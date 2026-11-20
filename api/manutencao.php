@@ -40,7 +40,7 @@ $saida = ["filtro" => $filtro_m, "hoje" => hoje_da_colecao()->format("Y-m-d"),
         "por_oficina" => array_values(array_map(function ($o) use ($por_oficina_m) {
             return ["oficina_id" => $o["id"], "oficina" => $o["nome"], "abertas" => $por_oficina_m[$o["id"]] ?? 0, "manutencoes" => $o["manutencoes"], "gasto" => $o["gasto"]];
         }, array_filter($oficinas_m, function ($o) { return $o["manutencoes"] > 0; })))],
-    "situacoes" => lista_opcoes("manutencao_situacao"), "tipos" => servico_tipos_opcoes(),
+    "situacoes" => lista_opcoes("manutencao_situacao"), "tipos" => servico_tipos_opcoes(), "vistoria" => vistoria_opcao(),
     "tipos_oficina" => lista_opcoes("oficina_tipo"), "tipos_contato" => lista_opcoes("contato_tipo"),
     "relogios" => array_values(array_map(function ($r) use ($abertas_rel) {
         $m = $abertas_rel[(int)$r["id"]] ?? null;

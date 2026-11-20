@@ -1,4 +1,4 @@
-<!-- origem: 0294a74a993d3589d0f405bf12fef052aa64a527 -->
+<!-- origem: 62a336131ff5a65b51c916b2abade0aad27431a6 -->
 
 ## La idea central: el sistema no sabe nada de relojes {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -93,6 +93,7 @@ Y las que leen el historial de cada reloj:
 | `CONTAR("pulso"; 30)` | cuántos días con uso en los últimos 30 días |
 | `DIAS_DESDE_ULTIMO("pulso")` | días desde la última vez en la muñeca |
 | `ULTIMO_VALOR("carga")` / `ULTIMA_DATA("pilha")` | la última lectura / la fecha del último registro |
+| `DATA_CADASTRO()` | el día en que el reloj se registró en el sistema: `PADRAO(data_compra; DATA_CADASTRO())` es la compra y, sin ella, el registro |
 | `HORAS_APOS("pulso"; "carga")` | horas en la muñeca desde la última lectura de carga |
 | `ACUMULA(inicio; máx; pérdida/h; "tipo"; efecto; ...)` | un saldo que recorre el historial: pierde con el tiempo y gana con cada registro |
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | el consumo real de la batería, medido por sus lecturas de carga |
@@ -939,6 +940,33 @@ una revisión) y `CUSTO_SERVICOS(365)` cuánto costaron los servicios en el últ
 servicios. Por la API: `recurso=servicos` (la lista, con el resumen de un reloj) y `recurso=servicos` con `acao=salvar` o
 `excluir`.
 
+### La inspección periódica {#a-vistoria-periódica}
+
+Un reloj puede tener algo mal sin que nadie lo vea: la batería al final, la pila que se sulfata, el cristal rajado, la
+correa que se suelta, la humedad en la esfera. La inspección es para eso: de vez en cuando, tomar cada reloj y revisarlo.
+
+Actívela en **Configuración**, **Inspección: cada cuántos días revisar cada reloj** (0 la desactiva; de fábrica viene
+desactivada). Con un número de días, cada reloj activo recibe el aviso **Inspección**, que vence esos días después de su
+última inspección; sin ninguna, desde la fecha de compra (los antiguos ya empiezan vencidos); sin fecha de compra, desde el
+día en que se registró. El reloj en mantenimiento, inactivo o fuera de la colección no vence.
+
+El aviso aparece en **Hoy toca**, junto con dar cuerda y cargar, con el botón **Inspección**: un clic registra que lo
+revisó, y la cuenta vuelve a empezar. Para hacer varias a la vez, abra **Colección › Inspecciones**: la lista trae los
+relojes con la inspección que vence hasta el día que usted elija (al principio, la próxima semana; los atrasados siempre;
+**Todos** los muestra todos), del más atrasado al más lejano, con la última inspección de cada uno. Los atrasados y los de
+hoy ya vienen marcados; desmarque lo que no revisó, ponga el día (vacío: ahora) y haga clic en **Registrar inspecciones**.
+
+Un servicio en el taller **no** cuenta solo como inspección: el relojero puede haber hecho el servicio sin mirar el resto
+(la batería, la correa). Al registrar un servicio (el cuadro **Servicios y diagnósticos**) o al cerrar un mantenimiento (la
+situación que lo cierra, como **Retirado**), la casilla **Contar también como inspección del reloj** viene desmarcada:
+márquela solo si el reloj se revisó de verdad. Con la inspección desactivada, la casilla aparece deshabilitada, con el motivo.
+
+Todo esto es definición: el aviso **Inspección** está en la página **Avisos** (la fórmula
+`SE(CONFIG("vistoria_dias") > 0; PADRAO(ULTIMA_DATA("vistoria"); PADRAO(data_compra; DATA_CADASTRO())) + CONFIG("vistoria_dias"); NADA())`,
+que puede cambiar, por ejemplo, para un solo grupo), y el registro **Inspección**, en Definiciones › Tipos de registro.
+Desactivar el aviso en la página Avisos también desactiva la inspección. Por la API: `recurso=vistorias` (la lista),
+`recurso=vistorias`, `acao=registrar` (varias a la vez) y el `vistoria=1` de los servicios y del mantenimiento.
+
 ### Declarado, medido y estimado {#declarado-medido-e-estimado}
 
 Cada información técnica del reloj tiene tres valores, y el panel muestra los tres juntos, en una tablita: el **declarado**
@@ -1481,6 +1509,7 @@ Los avisos del conjunto inicial, con el identificador (su nombre en las fórmula
 | Marcha fuera de lo esperado | `marcha_fora` | Tradicional | una nueva lectura del desvío. Vence en la lectura cuya marcha salió de la *Marcha esperada* o, con 4 mediciones o más, quedó lejos del historial del propio reloj (más de 3 veces la variación, y como mínimo 5 s/día). |
 | Garantía venciendo | `garantia` | todos | (nada: solo avisa) |
 | Arrinconado | `encostado` | todos (los de la colección, activos) | En la muñeca. Vence cuando el reloj pasa el límite de días sin ir a la muñeca (Configuración, **Aviso Arrinconado: días sin ir a la muñeca**, predeterminado 30), contados desde la última vez en la muñeca (nunca usado, desde la fecha de compra; sin ambas, sin aviso). No entra en el próximo mantenimiento ni en **Qué hacer**: la tabla tiene la columna **Arrinconado**, con cuánto falta o cuánto pasó. |
+| Inspección | `vistoria` | todos (los activos, fuera del mantenimiento) | la Inspección. Solo con la Configuración **Inspección: cada cuántos días revisar cada reloj** por encima de 0 (de fábrica, 0: desactivada). Vence esos días después de la última inspección (sin ninguna, desde la fecha de compra; sin ella, desde el día del registro). Vea [La inspección periódica](#a-vistoria-periódica). |
 
 Los avisos van en el aviso de la mañana. Un aviso marcado **en el acto** (en la página **Avisos**, la casilla *en el
 acto*) también sale por Telegram **en el minuto en que vence**, una sola vez, hasta que se resuelve: así llega el **Quitar del
@@ -1578,6 +1607,7 @@ Los cuadros ocupan los espacios disponibles según la anchura de la pantalla y l
 | **Decimales de los pesos** (`sorteio_casas`) | de 0 a 8, predeterminado 2, en Configuración › Sorteos. Los pesos se redondean antes del sorteo; si todos los positivos se vuelven cero, se usan los pesos originales. El peso cero no participa. |
 | **Garantía de rotación** (`max_sem_uso`) | ningún reloj pasa más de estos días sin uso: el que pasa va delante de todos. 0 la desactiva. Predeterminado: 21. |
 | **Aviso Arrinconado: días sin ir a la muñeca** (`encostado_dias`) | tras cuántos días sin ir a la muñeca un reloj de la colección recibe el aviso **Arrinconado** (en **Hoy toca**: *Arrinconado*, *"el límite de días sin ir a la muñeca venció hace 2d, 10/11/2026 18:00"*). De 1 a 3650. Predeterminado: 30. El aviso se desactiva en **Definiciones › Avisos**. |
+| **Inspección: cada cuántos días revisar cada reloj (0 la desactiva)** (`vistoria_dias`) | la inspección periódica: con un número de días, cada reloj activo recibe el aviso **Inspección** esos días después de la última inspección (sin ninguna, desde la fecha de compra; sin ella, desde el registro). De 0 a 3650. Por defecto: 0 (desactivada). Vea [La inspección periódica](#a-vistoria-periódica). |
 | **Gasto de batería: cómo calcular (válido para todos los relojes)** (`gasto_motor`) | cuál de los cinco motores del [consumo medido por las lecturas](#gasto-medido-pelas-leituras) hace la cuenta, para todos los relojes de la colección: **1. Por las horas registradas (el motor original)**, **2. ... (robusto)**, **3. Por la marcación: dos tasas separadas**, **4. Solo el registro** o **5. Por las fórmulas del registro**. Predeterminado: vacío (*Individual (en el reloj o en el grupo)*: el campo **Cómo calcular el gasto de batería** de cada reloj, si no su predeterminado, si no el motor 1). |
 | **Gasto medido: contar por** (`medicao_base`) | lo que entra en la cuenta del consumo medido: **Días** (`dias`, las mediciones de los últimos tantos días) o **Lecturas** (`leituras`, las últimas tantas mediciones de cada tipo, en uso y en reposo). Predeterminado: días. |
 | **Gasto medido: media de los últimos (días)** (`medicao_janela_dias`) | la ventana del consumo medido, contando por días: las mediciones más antiguas salen de la cuenta. De 1 a 3650. Predeterminado: 90. |
@@ -1805,6 +1835,7 @@ solo la **Ayuda** y el **Pasaporte**, que son hojas de lectura, quedan en una co
 | **Totales** (`totais.php`, menú **Colección**) | La página de totales: los totales marcados para ella (la pestaña **Totales** de las Definiciones), cada uno en un cuadro, estrecho o ancho, en el orden de las definiciones: la tablita con la fila de total, el número, o el reloj con el valor. Se abre desde **Ver todos los totales** debajo de la tabla de la página Hoy, con el mismo filtro (*Contando 12 de 17 relojes*, con **Contar todos**), o desde el menú, con todos. Por la API: `recurso=totais&parte=pagina`. Ver [Los totales](#os-totais). |
 | **Accesorios** (`acessorios.php`) | Las correas, cajas, estuches, herramientas, cargadores, piezas y lo que sea: la lista (el nombre, el tipo, el reloj al que pertenece, o *suelto*, y la observación), con el filtro **Reloj** (todos, los sueltos o los de un reloj; el cuadro **Accesorios** del panel la abre ya filtrada), **Editar** y **Eliminar** en cada uno, y debajo el formulario (**Nuevo accesorio**: nombre, tipo, reloj o *suelto (sirve a varios)* y observación). Eliminar un reloj deja sus accesorios sueltos. Por la API: `recurso=acessorios` (la lista) y la escritura `acessorios` (`salvar`, `excluir`). Cada uno muestra los **Datos** (los campos de su tipo) y dónde **Sirve** (vea [La construcción y los accesorios](#a-construção-e-os-acessórios)); el formulario pide los campos del tipo elegido. |
 | **Mantenimiento** (`manutencao.php`, menú **Colección**) | El reloj en el taller, de la ida a la vuelta, en cuatro pestañas: **En mantenimiento** (los que están en el taller ahora, con la situación, la previsión y el aviso; el menú para cambiar la situación; **Registrar un mantenimiento**, que manda el reloj, y, editando uno, la historia), **Mantenimientos** (todos, con los filtros y el costo), **Talleres** (con los contactos) y **Listas** (las situaciones, los tipos de servicio, los resultados de la estanqueidad, los tipos de taller y de contacto). Ver [El mantenimiento](#a-manutenção). |
+| **Inspecciones** (`vistorias.php`, menú **Colección**) | Los relojes con la inspección periódica que vence hasta un día (los atrasados siempre; **Todos** los muestra todos), con el vencimiento y la última inspección: los atrasados y los de hoy vienen marcados, y **Registrar inspecciones** los guarda todos de una vez (el día es opcional; vacío, ahora). Desactivada, dice por qué. Vea [La inspección periódica](#a-vistoria-periódica). |
 | **Winders** (`winders.php`) | Los winders y las posiciones de cada uno: una tarjeta por winder, con su **dibujo** (una cuna por posición, con la foto del reloj que está en ella y el anillo de la carga), los datos y la tabla de las posiciones, editable en la fila (el **programa**, un campo por columna; el **Reloj**, con **— ninguno —** para quitar y los relojes para poner o cambiar; la **carga**, **cuánto da cada hora** y cuándo se **llena**; el **Guardar**), **Editar** la posición (el nombre, el orden, encendida), **Nueva posición**, **Editar el winder** y **Eliminar el winder**; abajo, el registro (**Nuevo winder**: el nombre, cuántas posiciones ya trae, los campos del winder y la observación) y el de la posición (el nombre, el orden, encendida, el programa). Vea [Los winders](#os-winders). Por la API: `recurso=winders` y las escrituras `winders` y `winder_posicoes`. |
 | **Galería** (`galeria.php`) | La colección en fotos, por grupo: cada reloj con la foto (el enlace a la ficha), el nombre, la marca y la referencia, el año y el valor de compra y los días de uso; arriba, cuántos, el valor total y cuántos tienen foto. Arriba, las **pestañas** por situación (las mismas de la página Hoy) y, al final, **Todos** (con la marca de la situación de quien no está en la colección). **Imprimir**: en papel, cuatro por fila, sin el menú ni las pestañas. Por la API: `recurso=galeria` (`aba=` la situación, `principal` o `todos`). |
 | **Pasaporte** (`passaporte.php`) | La hoja de un reloj para imprimir o guardar en PDF (el botón **Pasaporte** del cuadro Documentos del panel): la foto, el nombre, la marca y la referencia, el grupo y la situación; la **Compra**; el **Uso** (la primera y la última vez en la muñeca, las horas en la muñeca, los días de uso y el costo por uso); la **Ficha** rellenada; los **Mantenimientos** (cada tipo de marca, cuántas veces y la última; las revisiones y los cambios de pila); los **Accesorios**; los **Documentos**; y los **Próximos avisos**. **Imprimir**: en el papel salen solo los datos. Por la API: `recurso=passaporte`. Con algún servicio, también los **Servicios y diagnósticos** (el taller, el costo, la estanqueidad y la marcha antes y después). |
@@ -2095,6 +2126,11 @@ En su ficha (**Editar ficha**), desmarque **Entra en el sorteo de la rotación**
 los avisos, y usted lo usa cuando quiera (**Me lo puse**, **Usando hoy**, el **cambiar por…** de un día), pero el sorteo (el
 plan, la escala, **Sortear este día por**, **Decide por mí**, la **Sugerencia para ahora**) ya no lo elige. Sus días ya
 sorteados, de mañana en adelante, se sortean de nuevo. Para sacarlo de todo, incluso de los avisos, desmarque **Reloj activo**.
+
+**¿Y si un reloj queda olvidado con la batería al final, o con algo mal?**
+Active la inspección periódica en **Configuración** (**Inspección: cada cuántos días revisar cada reloj**): cada reloj
+activo recibe el aviso **Inspección** cada tantos días, en **Hoy toca**, y la página **Colección › Inspecciones** registra
+varias a la vez. Vea [La inspección periódica](#a-vistoria-periódica).
 
 **¿Y si quiero comparar modos antes de elegir uno?**
 En el menú **Rotación › Simulador**: arme dos o más escenarios (el modo, la forma de elección, la garantía, los relojes del

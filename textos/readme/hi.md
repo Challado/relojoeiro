@@ -1,4 +1,4 @@
-<!-- origem: fde1fe180ffe05e2ba3043dd271cd25d0e01fd29 -->
+<!-- origem: 7410b6b66d7810e3c5129639c5f53ffc5b74efd5 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -157,6 +157,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `saidas` | संग्रह से निकास (उधार पर दी गई और निकल चुकी घड़ियाँ): हर एक में घड़ी, स्थिति, तारीख़ें, प्राप्त रक़म, किसे, ख़रीद, सर्विसें, परिणाम और संग्रह में समय; और अभी वालों के जोड़, स्थिति के अनुसार। `relogio=` (किसी एक का इतिहास), `situacao=`, `abertas=1` (केवल अभी वाले) |
 | `sugestao` | अभी के लिए सुझाव ("आज" पेज का कार्ड): अभी पहनने के लिए एक घड़ी, शेड्यूल से बाहर, माँगे गए चुनने के तरीके (`forma`) और प्रकारों (`tipos`) से, कारण के साथ; `pular` पहले सुझाई गई को नहीं दोहराता। जो कलाई पर है और जिसका चार्ज सीमा पर या उससे नीचे है, वे बाहर रहती हैं (`fora[]` कारण बताता है)। कुछ दर्ज नहीं करता। |
 | `simulador` | रोटेशन सिम्युलेटर: `cenarios` के बिना, क्या चुना जा सकता है (मोड और हर एक क्या बदलने देता है, तरीके, सक्रिय घड़ियाँ, डिफ़ॉल्ट अवधि); `cenarios` (मोड और, चाहें तो, `forma`, `ciclo`, `semanas`, `escala_dias`, `max_sem_uso` और `relogios`), `de`, `ate`, `semente` और `variar` के साथ, हर एक का सिम्युलेशन, कुछ सहेजे बिना, और तुलना |
+| `vistorias` | आवधिक निरीक्षण: **निरीक्षण** अलर्ट वाली सक्रिय घड़ियाँ जो `ate` तक देय हैं (YYYY-MM-DD; डिफ़ॉल्ट: आज से 7 दिन बाद; देरी वाली हमेशा) या सभी (`todos=1`), हर एक देय तारीख़, स्थिति (`atrasado`, `hoje`, `proxima`) और आख़िरी निरीक्षण के साथ, और सारांश; बंद होने पर `ativa` false और कारण |
 | `calcular` | घड़ियों पर किसी सूत्र (`expressao=`) का नतीजा (`relogio=` एक id या कई; इसके बिना, सभी), बिना सहेजे, गणना के हिस्सों के साथ; ग़लत लिखा सूत्र: त्रुटियों के साथ 400 |
 | `foto` | एक घड़ी की फ़ोटो (`relogio=<id>`): छवि, JSON नहीं |
 | `documentos` | एक घड़ी के दस्तावेज़ (`relogio=<id>`; इसके बिना, सबके), श्रेणियों, हर XML के NF-e सारांश, फ़ोल्डर और सीमा के साथ |
@@ -191,7 +192,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `relogio` | `salvar` (बनाना या बदलना), `excluir` (दस्तावेज़ों के साथ), `foto`, `remover_foto`; ब्रांड, `marca_id` से या `marca` में नाम से; स्थिति, `posse` से, निकास (`saida_data`, `saida_valor`, `saida_destino`, `saida_observacao`) और वापसी (`volta_data`) के साथ |
 | `documentos` | `enviar` (एक या कई फ़ाइलें, श्रेणी, शीर्षक, तारीख़, विवरण और, फ़ोटो में, थंबनेल के साथ), `alterar`, `excluir` |
 | `servicos` | `salvar` (तारीख़, प्रकार, रखरखाव या वर्कशॉप, मज़दूरी, पुर्ज़े, जल-रोधकता, पहले व बाद की गति, वारंटी और दस्तावेज़; जो प्रकार कोई प्रविष्टि चिह्नित करता है वह प्रविष्टि भी बन जाता है), `excluir` |
-| `manutencao` | `salvar` (दर्ज करना घड़ी को वर्कशॉप भेजता है), `situacao` (बंद करने वाली सेवा बन जाती है), `excluir` |
+| `manutencao` | `salvar` (दर्ज करना घड़ी को वर्कशॉप भेजता है), `situacao` (बंद करने वाली सेवा बन जाती है; `vistoria=1` के साथ सेवा निरीक्षण भी गिनी जाती है), `excluir` |
 | `oficinas` | `salvar` (संपर्कों के साथ), `excluir` (सिर्फ़ बिना रखरखाव वाला) |
 | `listas` | `salvar` (एक आइटम: पहचानकर्ता, नाम, क्रम, वह क्या करता है, पाठ, रंग), `excluir` (सिर्फ़ उपयोग से बाहर) |
 | `reserva` | `iniciar` (कब पूरी भरी और कैसे), `parou`, `observar` (रुक गई, कम चार्ज, नोट; सोलर में भी), `salvar`, `usar` (माध्यिका घड़ी के रिकॉर्ड में जाती है), `excluir` |
@@ -209,6 +210,7 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `rodizio` | `usando` (आज मैं यह पहन रहा हूँ), `trocar_dia` (किसी दिन की घड़ी), `periodo` (किसी अवधि की घड़ियाँ, क्रम से: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (अवधि के दिन हटाता है और मोड उन्हें फिर से बनाता है; केवल `de`: योजना के अंत तक; केवल `ate`: कल से उस तक), `periodo_livre` (मिटाकर दिनों को बिना ड्रॉ ख़ाली छोड़ता है; वही तारीख़ें), `manual` (मैनुअल रोटेशन: `de`, `ate`, `dias[YYYY-MM-DD]` = घड़ी का id, `auto` या `livre`), `apagar_tudo` (कल से आगे का पूरा कार्यक्रम हटता है; `hoje=1`: आज से आगे; मोड योजना दोबारा बनाता है), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (मोड बदलना) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `simulador` | `aplicar` (परिदृश्य जैसा सिम्युलेट हुआ, `de`, `ate`, `semente` और `impressao`: सिर्फ़ तब सहेजता है जब योजना सिम्युलेट जैसी निकले) |
+| `vistorias` | `registrar` (`relogio_ids`, अल्पविराम से अलग, और `quando`, YYYY-MM-DD या YYYY-MM-DD HH:MM, अब तक; खाली: अभी): हर एक का निरीक्षण, सब या कुछ नहीं, दिन में हर घड़ी का एक |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (समूह) और `relogios` (हर घड़ी का समूह) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (और फ़ील्ड में `ordem`; मान के नियमों वाला फ़ील्ड: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |

@@ -1,4 +1,4 @@
-<!-- origem: 0294a74a993d3589d0f405bf12fef052aa64a527 -->
+<!-- origem: 62a336131ff5a65b51c916b2abade0aad27431a6 -->
 
 ## The central idea: the system knows nothing about watches {#a-ideia-central-o-sistema-não-sabe-nada-de-relógios}
 
@@ -93,6 +93,7 @@ And the ones that read each watch's history:
 | `CONTAR("pulso"; 30)` | how many days with use in the last 30 days |
 | `DIAS_DESDE_ULTIMO("pulso")` | days since the last time on the wrist |
 | `ULTIMO_VALOR("carga")` / `ULTIMA_DATA("pilha")` | the last reading / the date of the last entry |
+| `DATA_CADASTRO()` | the day the watch was registered in the system: `PADRAO(data_compra; DATA_CADASTRO())` is the purchase and, without it, the registration |
 | `HORAS_APOS("pulso"; "carga")` | hours on the wrist since the last charge reading |
 | `ACUMULA(start; max; loss/h; "type"; effect; ...)` | a balance that runs through the history: loses with time and gains with each entry |
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | the real battery drain, measured by your charge readings |
@@ -942,6 +943,33 @@ the services cost in the last year; in totals, the variables `servicos` and `cus
 services** adds up the collection's). The **Passport** lists the services. Through the API: `recurso=servicos` (the list, with
 a watch's summary) and `recurso=servicos` with `acao=salvar` or `excluir`.
 
+### The periodic inspection {#a-vistoria-periódica}
+
+A watch can have something wrong without anyone noticing: the battery running out, the cell leaking, the crystal cracked,
+the strap coming loose, moisture on the dial. The inspection is for that: from time to time, pick up each watch and check it.
+
+Turn it on in **Settings**, **Inspection: every how many days to check each watch** (0 turns it off; it comes off from the
+factory). With a number of days, each active watch gets the **Inspection** alert, due that many days after its last
+inspection; with none, from the purchase date (the old ones already start overdue); without a purchase date, from the day it
+was registered. A watch in maintenance, inactive or out of the collection does not come due.
+
+The alert appears in **Today is the day for**, together with winding and charging, with the **Inspection** button: one click
+records that you checked it, and the count starts over. To do several at once, open **Collection › Inspections**: the list
+brings the watches with the inspection due until the day you choose (initially, the next week; the overdue ones always;
+**All** shows all of them), from the most overdue to the furthest, with each one's last inspection. The overdue ones and
+today's come already ticked; untick what you did not check, set the day (empty: now) and click **Record inspections**.
+
+A service at the workshop does **not** count as an inspection by itself: the watchmaker may have done the service without
+looking at the rest (the battery, the strap). When recording a service (the **Services and diagnostics** box) or closing a
+maintenance (the status that closes it, such as **Picked up**), the **Also count as an inspection of the watch** box comes
+unticked: tick it only if the watch was really checked. With the inspection off, the box appears disabled, with the reason.
+
+It is all definitions: the **Inspection** alert is on the **Alerts** page (the formula
+`SE(CONFIG("vistoria_dias") > 0; PADRAO(ULTIMA_DATA("vistoria"); PADRAO(data_compra; DATA_CADASTRO())) + CONFIG("vistoria_dias"); NADA())`,
+which you can change, for example, to only one group), and the **Inspection** entry, in Definitions › Entry types. Turning
+the alert off on the Alerts page also turns the inspection off. Through the API: `recurso=vistorias` (the list),
+`recurso=vistorias`, `acao=registrar` (several at once) and the `vistoria=1` of services and maintenance.
+
 ### Declared, measured and estimated {#declarado-medido-e-estimado}
 
 Each technical item of the watch has three values, and the panel shows the three together, in a small table: the
@@ -1487,6 +1515,7 @@ The alerts of the initial set, with the identifier (their name in the formulas, 
 | Rate outside the expected | `marcha_fora` | Traditional | a new deviation reading. Falls due at the reading whose rate left the *Expected rate* or, with 4 measurements or more, was far from the watch's own history (more than 3 times the variation, and at least 5 s/day). |
 | Warranty expiring | `garantia` | all | (nothing: it only alerts) |
 | Idle | `encostado` | all (those in the collection, active) | Put on the wrist. It comes due when the watch passes the limit of days without going on the wrist (Settings, **Idle alert: days without going on the wrist**, default 30), counted from the last time on the wrist (never worn, from the purchase date; without both, no alert). It does not take the next service or **What to do**: the table has its own **Idle** column, with how long is left or how long it is overdue. |
+| Inspection | `vistoria` | all (the active ones, outside maintenance) | the Inspection. Only with the Settings option **Inspection: every how many days to check each watch** above 0 (factory default 0: off). It comes due that many days after the last inspection (with none, from the purchase date; without it, from the registration day). See [The periodic inspection](#a-vistoria-periódica). |
 
 The alerts go in the morning alert. An alert marked **right away** (on the **Alerts** page, the *right away* box) also goes
 via Telegram **in the minute it comes due**, only once, until it is resolved: that's how **Take off the charger** arrives when
@@ -1584,6 +1613,7 @@ Cards fill the available spaces according to screen width and content height. Th
 | **Decimal places for weights** (`sorteio_casas`) | 0 to 8, default 2, in Settings › Draws. Weights are rounded before drawing; if all positive weights become zero, the original weights are used. Zero weights do not participate. |
 | **Rotation guarantee** (`max_sem_uso`) | no watch goes more than these days without use: the one that does goes ahead of all. 0 turns it off. Default: 21. |
 | **Idle alert: days without going on the wrist** (`encostado_dias`) | after how many days without going on the wrist a watch in the collection gets the **Idle** alert (in **Today is the day for**: *Idle*, *"the limit of days without going on the wrist was due 2d ago, 10/11/2026 18:00"*). From 1 to 3650. Default: 30. The alert is turned off in **Definitions › Alerts**. |
+| **Inspection: every how many days to check each watch (0 turns it off)** (`vistoria_dias`) | the periodic inspection: with a number of days, each active watch gets the **Inspection** alert that many days after the last inspection (with none, from the purchase date; without it, from the registration). From 0 to 3650. Default: 0 (off). See [The periodic inspection](#a-vistoria-periódica). |
 | **Battery drain: how to calculate (applies to every watch)** (`gasto_motor`) | which of the five engines of the [consumption measured by the readings](#gasto-medido-pelas-leituras) does the calculation, for every watch in the collection: **1. By the recorded hours (the original engine)**, **2. ... (robust)**, **3. By the marking: two separate rates**, **4. Registration only** or **5. By the registration formulas**. Default: empty (*Individual (on the watch or the group)*: each watch's **How to calculate the battery drain** field, else its default, else engine 1). |
 | **Measured drain: count by** (`medicao_base`) | what enters the measured consumption's calculation: **Days** (`dias`, the measurements of the last so many days) or **Readings** (`leituras`, the last so many measurements of each kind, in use and at rest). Default: days. |
 | **Measured drain: average of the last (days)** (`medicao_janela_dias`) | the measured consumption's window, counting by days: older measurements leave the calculation. From 1 to 3650. Default: 90. |
@@ -1810,6 +1840,7 @@ On a computer, every page uses the whole width of the window, with a minimum mar
 | **Totals** (`totais.php`, menu **Collection**) | The totals page: the totals marked for it (the **Totals** tab of Definitions), each in a box, narrow or wide, in the order of the definitions: the small table with the total row, the number, or the watch with the value. It opens from **See all totals** under the table on the Today page, with the same filter (*Counting 12 of 17 watches*, with **Count all**), or from the menu, with all of them. Through the API: `recurso=totais&parte=pagina`. See [Totals](#os-totais). |
 | **Accessories** (`acessorios.php`) | The straps, boxes, cases, tools, chargers, parts and anything else: the list (the name, the type, the watch it belongs to, or *loose*, and the note), with the **Watch** filter (all, the loose ones or those of a watch; the panel's **Accessories** box opens it already filtered), **Edit** and **Delete** on each one, and below the form (**New accessory**: name, type, watch or *loose (serves several)* and note). Deleting a watch leaves its accessories loose. Through the API: `recurso=acessorios` (the list) and the `acessorios` write (`salvar`, `excluir`). Each one shows the **Data** (the fields of its type) and where it **Fits** (see [The construction and the accessories](#a-construção-e-os-acessórios)); the form asks for the fields of the chosen type. |
 | **Maintenance** (`manutencao.php`, **Collection** menu) | The watch at the workshop, from going to coming back, in four tabs: **In maintenance** (the ones at the workshop now, with the status, the expected date and the alert; the menu to change the status; **Register a maintenance**, which sends the watch, and, when editing one, the history), **Maintenances** (all of them, with the filters and the cost), **Workshops** (with the contacts) and **Lists** (the statuses, the service types, the water-resistance results, the workshop and contact types). See [Maintenance](#a-manutenção). |
+| **Inspections** (`vistorias.php`, **Collection** menu) | The watches with the periodic inspection due until a day (the overdue ones always; **All** shows all of them), with the due date and the last inspection: the overdue ones and today's come ticked, and **Record inspections** saves them all at once (the day is optional; empty, now). When off, it says why. See [The periodic inspection](#a-vistoria-periódica). |
 | **Winders** (`winders.php`) | The winders and the positions of each one: one card per winder, with its **drawing** (one cradle per position, with the photo of the watch in it and the charge ring), the data and the table of positions, editable in the row (the **program**, one field per column; the **Watch**, with **— none —** to take off and the watches to put on or swap; the **charge**, **what each hour gives** and when it **fills up**; the **Save**), **Edit** the position (the name, the order, on), **New position**, **Edit the winder** and **Delete the winder**; below, the forms (**New winder**: the name, how many positions it starts with, the winder's fields and the note) and the position's (the name, the order, on, the program). See [Winders](#os-winders). Through the API: `recurso=winders` and the writes `winders` and `winder_posicoes`. |
 | **Gallery** (`galeria.php`) | The collection in photos, by group: each watch with the photo (the link to its page), the name, the brand and the reference, the purchase year and price and the days of use; at the top, how many, the total value and how many have a photo. At the top, the **tabs** by status (the same as on the Today page) and, at the end, **All** (with the status mark of those not in the collection). **Print**: on paper, four per row, without the menu or the tabs. Through the API: `recurso=galeria` (`aba=` the status, `principal` or `todos`). |
 | **Passport** (`passaporte.php`) | A watch's sheet to print or save as PDF (the **Passport** button in the panel's Documents box): the photo, the name, the brand and the reference, the group and the status; the **Purchase**; the **Use** (the first and the last time on the wrist, the hours on the wrist, the days of use and the cost per use); the filled-in **Record**; the **Services** (each type of mark, how many times and the last one; the services and battery changes); the **Accessories**; the **Documents**; and the **Upcoming alerts**. **Print**: only the data comes out on paper. Through the API: `recurso=passaporte`. With any service, also the **Services and diagnostics** (the workshop, the cost, the water resistance and the rate before and after). |
@@ -2101,6 +2132,11 @@ In its record (**Edit record**), untick **Enters the rotation draw** and save. I
 alerts, and you wear it whenever you want (**Put on the wrist**, **Wearing today**, a day's **change to…**), but the draw
 (the plan, the scale, **Draw this day by**, **Decide for me**, **Suggestion for now**) no longer chooses it. Its days already
 drawn, from tomorrow on, are drawn again. To take it out of everything, even the alerts, untick **Active watch**.
+
+**What if a watch is forgotten with the battery running out, or with something wrong?**
+Turn on the periodic inspection in **Settings** (**Inspection: every how many days to check each watch**): each active
+watch gets the **Inspection** alert every so many days, in **Today is the day for**, and the **Collection › Inspections**
+page records several at once. See [The periodic inspection](#a-vistoria-periódica).
 
 **What if I want to compare modes before choosing one?**
 In the menu **Rotation › Simulator**: build two or more scenarios (the mode, the way of choosing, the guarantee, the watches

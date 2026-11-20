@@ -1,4 +1,4 @@
-<!-- origem: fde1fe180ffe05e2ba3043dd271cd25d0e01fd29 -->
+<!-- origem: 7410b6b66d7810e3c5129639c5f53ffc5b74efd5 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -161,6 +161,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `saidas` | the exits from the collection (the ones on loan and the ones that left): for each one, the watch, the status, the dates, the amount received, to whom, the purchase, the services, the result and the time in the collection; and the sums of the current ones by status. `relogio=` (one watch's history), `situacao=`, `abertas=1` (only the current ones) |
 | `sugestao` | the Suggestion for now (the card on the Today page): a watch to wear now, outside the schedule, by the selection method (`forma`) and the types (`tipos`) requested, with the reason; `pular` does not repeat the ones already suggested. Left out: the one on the wrist and any whose charge is at or below its limit (`fora[]` says why). It records nothing. |
 | `simulador` | the rotation simulator: without `cenarios`, what can be chosen (the modes and what each one lets change, the ways, the active watches, the default period); with `cenarios` (the mode and, if you want, `forma`, `ciclo`, `semanas`, `escala_dias`, `max_sem_uso` and `relogios`), `de`, `ate`, `semente` and `variar`, the simulation of each one, without saving anything, and the comparison |
+| `vistorias` | the periodic inspection: the active watches with the **Inspection** alert due until `ate` (YYYY-MM-DD; default: 7 days from now; the overdue ones always) or all (`todos=1`), each with the due date, the state (`atrasado`, `hoje`, `proxima`) and the last inspection, and the summary; off, `ativa` false and the reason |
 | `calcular` | the result of a formula (`expressao=`) on the watches (`relogio=` one id or several; without it, all), without saving, with the parts of the calculation; a badly written formula: 400 with the errors |
 | `foto` | a watch's photo (`relogio=<id>`): the image, not JSON |
 | `documentos` | a watch's documents (`relogio=<id>`; without it, all of them), with the categories, the NF-e summary of each XML, the folder and the limit |
@@ -195,7 +196,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `relogio` | `salvar` (create or change), `excluir` (with the documents), `foto`, `remover_foto`; the brand, by `marca_id` or by name in `marca`; the status, by `posse`, with the exit (`saida_data`, `saida_valor`, `saida_destino`, `saida_observacao`) and the return (`volta_data`) |
 | `documentos` | `enviar` (one or several files, with the category, the title, the date, the description and, for a photo, the thumbnail), `alterar`, `excluir` |
 | `servicos` | `salvar` (the date, the type, the maintenance or the workshop, the labour, the parts, the water resistance, the rate before and after, the warranty and the documents; the type that marks an entry also becomes the entry), `excluir` |
-| `manutencao` | `salvar` (registering sends the watch to the workshop), `situacao` (the one that closes becomes a service), `excluir` |
+| `manutencao` | `salvar` (registering sends the watch to the workshop), `situacao` (the one that closes becomes a service; with `vistoria=1`, the service also counts as an inspection), `excluir` |
 | `oficinas` | `salvar` (with the contacts), `excluir` (only the one without maintenances) |
 | `listas` | `salvar` (an item: the identifier, the name, the order, what it does, the text, the color), `excluir` (only when not in use) |
 | `reserva` | `iniciar` (when it was full and how), `parou`, `observar` (stopped, low charge, note; also on the solar), `salvar`, `usar` (the median goes to the watch's record), `excluir` |
@@ -213,6 +214,7 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `simulador` | `aplicar` (the scenario as it was simulated, `de`, `ate`, `semente` and `impressao`: saves only if the plan comes out the same as simulated) |
+| `vistorias` | `registrar` (`relogio_ids`, separated by commas, and `quando`, YYYY-MM-DD or YYYY-MM-DD HH:MM, up to now; empty: now): the inspection of each one, all or nothing, one per watch on the day |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groups) and `relogios` (each watch's group) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (and `ordem` in the fields; the field with the value rules: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |

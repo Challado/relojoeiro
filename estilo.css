@@ -2249,3 +2249,14 @@ form.marcar-pulso button { white-space: nowrap; }
 .simulador table.sim-dias td.sim-mao { font-style: italic; }
 .simulador table.sim-por-relogio td.sim-zero { color: var(--ambar); }
 .simulador .rolagem { margin: 0 0 1rem; }
+/* a página Vistorias: o atrasado em vermelho, a coluna da caixa estreita e o dia da vistoria separado da tabela */
+.vistorias .em.atrasado { color: #9b2c22; font-weight: 600; }
+.vistorias .em.hoje { color: var(--safira); font-weight: 600; }
+.vistorias table.vistorias-tabela th:first-child, .vistorias table.vistorias-tabela td:first-child { width: 2.5rem; }
+.vistorias #form-vistorias > .form-grade { margin-top: 1rem; }
+.vistorias .filtro { margin: 0 0 .6rem; }
+/* a caixa "contar também como vistoria" (o serviço e o fim de uma manutenção): a linha inteira da grade, a explicação embaixo */
+.form-grade > .vistoria-encerra, .form-grade > .caixa-vistoria, .servico-form > .caixa-vistoria { grid-column: 1 / -1; }
+.caixa-vistoria { display: flex; flex-direction: column; gap: .2rem; }
+.caixa-vistoria > small.nota { margin: 0; }
+form.inline > .vistoria-encerra { flex-basis: 100%; margin-top: .4rem; }

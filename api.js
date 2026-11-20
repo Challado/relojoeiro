@@ -175,6 +175,16 @@ function ajuda(chave, titulo, html) {
   var k = ajudaItem(chave, titulo, html);
   return el("button", {"type": "button", "class": "ajuda-i", "data-ajuda": k, "aria-label": t("Explicação: {1}", {1: titulo}), "title": t("O que é isto?")}, t("ⓘ"));
 }
+// a caixa "contar também como vistoria do relógio" (o registro de um serviço e o fim de uma manutenção), pelo que a API manda
+// em vistoria ({ativa, motivo, rotulo, explicacao}): desmarcada; com a vistoria desligada, desabilitada, com o motivo embaixo
+function caixaVistoria(v, classe) {
+  if (!v) {
+    return "";
+  }
+  return el("div", {"class": "caixa-vistoria" + (classe ? " " + classe : "")}, el("label", {"class": "check" + (v.ativa ? "" : " desabilitado")},
+    el("input", {"type": "checkbox", "name": "vistoria", "value": "1", "disabled": !v.ativa}) + " " + h(v.rotulo))
+    + el("small", {"class": "nota"}, h(v.ativa ? v.explicacao : v.motivo)));
+}
 // a explicação que era um parágrafo no meio da página: uma linha curta "ⓘ título" no mesmo lugar, que abre a gaveta nela
 function ajudaNota(chave, titulo, html) {
   var k = ajudaItem(chave, titulo, el("p", {}, html));

@@ -2355,6 +2355,8 @@ function op_servicos($acao, $d)
     $atual = $id > 0 ? linha("SELECT * FROM servico WHERE id = ?", [$id]) : null;
     if ($id > 0 && !$atual) {
         $erros[] = t("Serviço não encontrado.");
+    } elseif (!in_array((string)($d["vistoria"] ?? ""), ["", "0", "1"], true)) {
+        $erros[] = vistoria_recusa_marca();
     } elseif ($acao === "salvar") {
         $tem = function ($k) use ($d) { return array_key_exists($k, $d); };
         $texto = function ($k) use ($d, $atual) { return array_key_exists($k, $d) ? trim((string)$d[$k]) : trim((string)($atual[$k] ?? "")); };
@@ -2527,6 +2529,11 @@ function op_servicos($acao, $d)
                 sql("DELETE FROM lancamento WHERE id = ?", [(int)$lan["id"]]);
                 sql("UPDATE servico SET lancamento_id = NULL WHERE id = ?", [$id]);
             }
+            // vistoria=1 (só no registro): o serviço conta também como vistoria (o lançamento Vistoria na data do serviço); só se
+            // pedido, porque o relojoeiro pode não ter conferido tudo
+            if (!$atual && (string)($d["vistoria"] ?? "") === "1") {
+                $marcou .= " " . vistoria_registrar($r, strtotime($data . " 12:00:00"))[1];
+            }
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             $msg = t("Serviço {1} de {2}{3}, do {4}.", [1 => mb_strtolower(lista_nome("servico_tipo", $tipo), "UTF-8"), 2 => data_txt(strtotime($data . " 00:00:00")),
                 3 => $atual ? t(" salvo") : t(" registrado"), 4 => $r["nome"]]) . $marcou;
@@ -2578,6 +2585,9 @@ function op_manutencao($acao, $d)
     $extra = [];
     $id = (int)($d["id"] ?? 0);
     $atual = $id > 0 ? linha("SELECT * FROM manutencao WHERE id = ?", [$id]) : null;
+    if (!in_array((string)($d["vistoria"] ?? ""), ["", "0", "1"], true)) {
+        return resultado([vistoria_recusa_marca()], "");
+    }
     $data_ok = function ($v) { return preg_match("/^\\d{4}-\\d{2}-\\d{2}$/", $v) === 1 && checkdate((int)substr($v, 5, 2), (int)substr($v, 8, 2), (int)substr($v, 0, 4)); };
     $hoje = hoje_da_colecao()->format("Y-m-d");
     if ($id > 0 && !$atual) {
@@ -2697,7 +2707,7 @@ function op_manutencao($acao, $d)
             }
             if ((int)$atual["situacao_id"] !== (int)$sit["id"]) {
                 $mud = manutencao_situacao_mudar($atual, $sit, time(), null, $texto("encerrado") !== "" ? substr($texto("encerrado"), 0, 10) : (!empty($registro) ? $enviado : null),
-                    empty($registro));
+                    empty($registro), (string)($d["vistoria"] ?? "") === "1");
                 $erros = $mud["erros"];
                 $nota .= $mud["nota"];
                 $extra["servico_id"] = $mud["servico_id"];
@@ -2722,7 +2732,7 @@ function op_manutencao($acao, $d)
         }
         if (count($erros) === 0) {
             $enc = trim((string)($d["encerrado"] ?? ""));
-            $mud = manutencao_situacao_mudar($atual, $sit, (int)$quando, $obs !== "" ? $obs : null, $enc !== "" ? substr($enc, 0, 10) : null);
+            $mud = manutencao_situacao_mudar($atual, $sit, (int)$quando, $obs !== "" ? $obs : null, $enc !== "" ? substr($enc, 0, 10) : null, true, (string)($d["vistoria"] ?? "") === "1");
             $erros = $mud["erros"];
             $extra["servico_id"] = $mud["servico_id"];
             $msg = t("Manutenção do {1}: {2}.", [1 => (string)valor("SELECT nome FROM relogio WHERE id = ?", [(int)$atual["relogio_id"]]), 2 => mb_strtolower($sit["nome"], "UTF-8")]) . $mud["nota"];
@@ -2749,7 +2759,7 @@ function op_manutencao($acao, $d)
 // o dia da mudança): a história ganha a mudança e, conforme o que a situação faz, o relógio volta (encerra, cancela) ou vai
 // de novo (reabrir), e a que encerra vira um serviço. $mexe_no_relogio false: o registro de uma manutenção passada (o relógio
 // não foi a lugar nenhum agora). Devolve {erros, nota, servico_id}
-function manutencao_situacao_mudar($m, $sit, $quando, $obs, $encerrado, $mexe_no_relogio = true)
+function manutencao_situacao_mudar($m, $sit, $quando, $obs, $encerrado, $mexe_no_relogio = true, $vistoria = false)
 {
     $de = lista_item_por_id("manutencao_situacao", (int)$m["situacao_id"])["comportamento"] ?? "aberta";
     $para = $sit["comportamento"];
@@ -2788,7 +2798,7 @@ function manutencao_situacao_mudar($m, $sit, $quando, $obs, $encerrado, $mexe_no
         $docs = array_column(linhas("SELECT documento_id FROM manutencao_documento WHERE manutencao_id = ?", [$id]), "documento_id");
         $fim = (string)(valor("SELECT encerrado FROM manutencao WHERE id = ?", [$id]) ?? $enc);
         $sv = op_servicos("salvar", ["relogio_id" => $rid, "manutencao_id" => $id, "data" => substr($fim, 0, 10), "tipo" => $tipo["identificador"] ?? "",
-            "mao_de_obra" => $m["orcamento"] === null ? "" : (string)$m["orcamento"], "estanqueidade" => "", "documentos" => implode(",", $docs)]);
+            "mao_de_obra" => $m["orcamento"] === null ? "" : (string)$m["orcamento"], "estanqueidade" => "", "documentos" => implode(",", $docs), "vistoria" => $vistoria ? "1" : ""]);
         if ($sv["ok"]) {
             $servico_id = (int)$sv["id"];
             $nota .= t(" Virou o serviço de {1}: complete o que foi feito, as peças e o custo no serviço.", [1 => data_txt(strtotime(substr($fim, 0, 10) . " 00:00:00"))]);
@@ -4936,6 +4946,55 @@ function op_simulador($acao, $d)
         return resultado([t("Ação desconhecida: use aplicar.")], "");
     }
     return simulador_aplicar($d);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// As vistorias (a página Vistorias; a Configuração, vistoria_dias). Ação: registrar (relogio_ids: os ids dos relógios,
+// separados por vírgula ou numa lista; quando: AAAA-MM-DD ou AAAA-MM-DD HH:MM, até agora; vazio, agora; num dia sem hora,
+// meio-dia, ou agora se for hoje e ainda não for meio-dia): a vistoria de cada um (o lançamento Vistoria, que resolve o
+// aviso Vistoria), tudo ou nada; no mesmo dia, uma só por relógio. A lista: recurso=vistorias (api/vistorias.php).
+// ---------------------------------------------------------------------------------------------------------------------
+function op_vistorias($acao, $d)
+{
+    if ($acao !== "registrar") {
+        return resultado([t("Ação desconhecida: use registrar.")], "");
+    }
+    $bruto = $d["relogio_ids"] ?? "";
+    $ids = array_values(array_unique(array_filter(array_map("trim", is_array($bruto) ? array_map("strval", $bruto) : explode(",", (string)$bruto)), "strlen")));
+    $erros = [];
+    if (count($ids) === 0 || count(array_filter($ids, function ($x) { return !ctype_digit($x); })) > 0) {
+        $erros[] = t("relogio_ids: os ids dos relógios da vistoria, separados por vírgula.");
+    }
+    $q = trim(str_replace("T", " ", (string)($d["quando"] ?? "")));
+    $quando = time();
+    if ($q !== "") {
+        $dt = DateTimeImmutable::createFromFormat("!Y-m-d H:i", $q) ?: DateTimeImmutable::createFromFormat("!Y-m-d", $q);
+        $ok = $dt && ($dt->format("Y-m-d H:i") === $q || $dt->format("Y-m-d") === $q);
+        // o dia sem hora: meio-dia, ou agora se for hoje antes do meio-dia; um dia que ainda não chegou é recusado
+        $quando = !$ok || $dt->getTimestamp() > time() + 60 ? false : ($dt->format("Y-m-d") === $q ? min(time(), $dt->getTimestamp() + 12 * 3600) : $dt->getTimestamp());
+        if ($quando === false) {
+            $erros[] = t("Quando: AAAA-MM-DD ou AAAA-MM-DD HH:MM, até agora (vazio: agora).");
+        }
+    }
+    $rels = [];
+    // todos conferidos antes de gravar o primeiro: tudo ou nada
+    foreach (count($erros) === 0 ? $ids : [] as $x) {
+        $r = linha("SELECT * FROM relogio WHERE id = ?", [(int)$x]);
+        if (!$r) {
+            $erros[] = t("Relógio {1} não encontrado.", [1 => $x]);
+        } elseif ((lancamento_tipos_do_relogio($r)["vistoria"]["formato"] ?? "") !== "instantaneo") {
+            $erros[] = t("{1}: o tipo de lançamento Vistoria não vale para ele (Cadastros › Tipos de lançamento).", [1 => $r["nome"]]);
+        } else {
+            $rels[] = $r;
+        }
+    }
+    if (count($erros) > 0) {
+        return resultado($erros, "");
+    }
+    return banco_atomico(function () use ($rels, $quando) {
+        $frases = array_map(function ($r) use ($quando) { return vistoria_registrar($r, (int)$quando)[1]; }, $rels);
+        return resultado([], count($rels) === 1 ? $frases[0] : t("{1} vistorias registradas: {2}", [1 => count($rels), 2 => implode(" ", $frases)]), ["registradas" => count($rels)]);
+    });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

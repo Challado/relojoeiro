@@ -43,7 +43,7 @@ function topo($titulo, $ativo, $publica = false)
         "avisos.php" => t("Avisos"),
         "hora.php" => t("Hora certa"),
         t("Rodízio") => ["plano.php" => t("Plano"), "modos.php" => t("Modos de rodízio"), "criterios.php" => t("Critérios de escolha"), "simulador.php" => t("Simulador")],
-        t("Coleção") => ["galeria.php" => t("Galeria"), "ficha.php" => t("Ficha"), "manutencao.php" => t("Manutenção"), "acessorios.php" => t("Acessórios"), "winders.php" => t("Winders"), "programas.php" => t("Programas"), "movimentos.php" => t("Movimentos"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "totais.php" => t("Totais"),
+        t("Coleção") => ["galeria.php" => t("Galeria"), "ficha.php" => t("Ficha"), "manutencao.php" => t("Manutenção"), "vistorias.php" => t("Vistorias"), "acessorios.php" => t("Acessórios"), "winders.php" => t("Winders"), "programas.php" => t("Programas"), "movimentos.php" => t("Movimentos"), "desejos.php" => t("Desejos"), "estatisticas.php" => t("Estatísticas"), "totais.php" => t("Totais"),
             "grupos.php" => t("Grupos")],
         "relatorios.php" => t("Relatórios"),
         t("Sistema") => ["configuracao.php" => t("Configuração"), "cadastros.php" => t("Cadastros"), "execucoes.php" => t("Execuções do cron"), "usuarios.php" => t("Usuários")],

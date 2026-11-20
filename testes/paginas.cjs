@@ -70,6 +70,9 @@ module.exports = [
   // o simulador: o formulário (dois cenários do modo ativo) e a comparação de uma variação das formas, já simulada
   { nome: 'simulador', url: 'simulador.php' },
   { nome: 'simulador-comparacao', url: 'simulador.php?simular=1&semente=7&variar=' + encodeURIComponent(JSON.stringify({ parametro: 'forma' })) },
+  // as vistorias (o cenário termina com a vistoria ligada): as que vencem na semana (os atrasados marcados) e todas
+  { nome: 'vistorias', url: 'vistorias.php' },
+  { nome: 'vistorias-todos', url: 'vistorias.php?todos=1' },
   { nome: 'modos-editar', url: 'modos.php?editar=2' },
   { nome: 'configuracao', url: 'configuracao.php' },
   // a Configuração mostra um nível por vez (as abas do alto): o do dono (Minhas coleções: o padrão dele para as coleções de

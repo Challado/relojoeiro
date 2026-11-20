@@ -63,6 +63,8 @@ jobs:
         run: php testes/fora_do_sorteio.php
       - name: Simulador de rodízio (cenários sem gravar nada, a semente, a variação, a comparação, as recusas e o Aplicar igual ao simulado)
         run: php testes/simulador.php
+      - name: Vistoria periódica (desligada não avisa; da última vistoria, da compra ou do cadastro; a lista, o registrar de várias, o serviço e a manutenção só com vistoria=1, o passo da v66)
+        run: php testes/vistoria.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

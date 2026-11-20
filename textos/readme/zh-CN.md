@@ -1,4 +1,4 @@
-<!-- origem: fde1fe180ffe05e2ba3043dd271cd25d0e01fd29 -->
+<!-- origem: 7410b6b66d7810e3c5129639c5f53ffc5b74efd5 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -132,6 +132,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `saidas` | 离开收藏的记录（借出的和已离开的）：每条含手表、状态、日期、收到的金额、去向、购买、保养、结果和在收藏中的时间；以及当前记录按状态的合计。`relogio=`（某块手表的历史）、`situacao=`、`abertas=1`（只返回当前的） |
 | `sugestao` | 当下推荐（“今天”页面的卡片）：一块现在佩戴、排班之外的手表，按所请求的选择方式（`forma`）和类型（`tipos`），并附原因；`pular` 不重复已推荐过的。正在手腕上的和电量在下限或以下的不参与（`fora[]` 说明原因）。不记录任何内容。 |
 | `simulador` | 轮换模拟器：没有 `cenarios` 时，返回可以选择的内容（模式及其可改变的内容、方式、已启用的手表、默认时段）；带 `cenarios`（模式，以及可选的 `forma`、`ciclo`、`semanas`、`escala_dias`、`max_sem_uso` 和 `relogios`）、`de`、`ate`、`semente` 和 `variar` 时，返回每个方案的模拟（什么都不保存）以及比较 |
+| `vistorias` | 定期检查：**检查** 提醒截至 `ate` 到期的在用手表（YYYY-MM-DD；默认：7 天后；逾期的总会列出）或全部（`todos=1`），每只附到期日、状态（`atrasado`、`hoje`、`proxima`）和上次检查，以及汇总；关闭时 `ativa` 为 false 并附原因 |
 | `calcular` | 一个公式（`expressao=`）在手表上的结果（`relogio=` 一个或多个 id；没有时为全部），不保存，并给出计算的各部分；公式写错：返回 400 和错误 |
 | `foto` | 一块手表的照片（`relogio=<id>`）：图片本身，不是 JSON |
 | `documentos` | 一块手表的文档（`relogio=<id>`；没有时为全部），含类别、每个 XML 的 NF-e 摘要、文件夹和大小限制 |
@@ -166,7 +167,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `relogio` | `salvar`（创建或修改）、`excluir`（连同文档）、`foto`、`remover_foto`；品牌，用 `marca_id` 或在 `marca` 中按名称；状态，用 `posse`，带离开（`saida_data`、`saida_valor`、`saida_destino`、`saida_observacao`）和回归（`volta_data`） |
 | `documentos` | `enviar`（一个或多个文件，带类别、标题、日期、描述，照片还带缩略图）、`alterar`、`excluir` |
 | `servicos` | `salvar`（日期、类型、保养或维修店、工时费、零件、防水、前后走时、保修和文档；会标记记录的类型也会生成记录），`excluir` |
-| `manutencao` | `salvar`（登记即把表送到维修店）、`situacao`（结束类状态会变成服务）、`excluir` |
+| `manutencao` | `salvar`（登记即把表送到维修店）、`situacao`（结束类状态会变成服务；带 `vistoria=1` 时，该服务同时算作检查）、`excluir` |
 | `oficinas` | `salvar`（带联系方式）、`excluir`（只能删除没有保养的） |
 | `listas` | `salvar`（一个条目：标识符、名称、顺序、作用、文本、颜色）、`excluir`（只能删除未使用的） |
 | `reserva` | `iniciar`（何时充满、如何充满）、`parou`、`observar`（停止、低电量、记录；太阳能表也可以）、`salvar`、`usar`（中位数写入表的档案）、`excluir` |
@@ -184,6 +185,7 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
 | `simulador` | `aplicar`（按模拟时的方案，以及 `de`、`ate`、`semente` 和 `impressao`：只有计划与模拟一致时才保存） |
+| `vistorias` | `registrar`（`relogio_ids`，用逗号分隔，以及 `quando`，YYYY-MM-DD 或 YYYY-MM-DD HH:MM，最晚为现在；留空：现在）：每只的检查，全部或全不，同一天每只手表一次 |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
 | `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`；带取值规则的字段：`opcoes`、`minimo`、`maximo`、`multiplo`） |
 | `formulas` | `nova`、`alterar`、`excluir` |

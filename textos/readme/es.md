@@ -1,4 +1,4 @@
-<!-- origem: fde1fe180ffe05e2ba3043dd271cd25d0e01fd29 -->
+<!-- origem: 7410b6b66d7810e3c5129639c5f53ffc5b74efd5 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -162,6 +162,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `saidas` | las salidas de la colección (los prestados y los que salieron): de cada una, el reloj, la situación, las fechas, el valor recibido, a quién, la compra, los servicios, el resultado y el tiempo en la colección; y las sumas de las de ahora por situación. `relogio=` (el historial de uno), `situacao=`, `abertas=1` (solo las de ahora) |
 | `sugestao` | la Sugerencia para ahora (la tarjeta de la página Hoy): un reloj para usar ahora, fuera de la escala, por la forma de elección (`forma`) y los tipos (`tipos`) pedidos, con el motivo; `pular` no repite los ya sugeridos. Quedan fuera el que está en la muñeca y el que tiene la carga en el límite o por debajo de él (`fora[]` dice por qué). No graba nada. |
 | `simulador` | el simulador de rotación: sin `cenarios`, lo que se puede elegir (los modos y lo que cada uno deja cambiar, las formas, los relojes activos, el período por defecto); con `cenarios` (el modo y, si quiere, `forma`, `ciclo`, `semanas`, `escala_dias`, `max_sem_uso` y `relogios`), `de`, `ate`, `semente` y `variar`, la simulación de cada uno, sin guardar nada, y la comparación |
+| `vistorias` | la inspección periódica: los relojes activos con el aviso **Inspección** que vence hasta `ate` (AAAA-MM-DD; por defecto: dentro de 7 días; los atrasados siempre) o todos (`todos=1`), cada uno con el vencimiento, el estado (`atrasado`, `hoje`, `proxima`) y la última inspección, y el resumen; desactivada, `ativa` falso y el motivo |
 | `calcular` | el resultado de una fórmula (`expressao=`) en los relojes (`relogio=` un id o varios; sin él, todos), sin guardar, con las partes de la cuenta; fórmula mal escrita: 400 con los errores |
 | `foto` | la foto de un reloj (`relogio=<id>`): la imagen, no JSON |
 | `documentos` | los documentos de un reloj (`relogio=<id>`; sin él, de todos), con las categorías, el resumen de la NF-e de cada XML, la carpeta y el límite |
@@ -196,7 +197,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `relogio` | `salvar` (crear o cambiar), `excluir` (con los documentos), `foto`, `remover_foto`; la marca, por `marca_id` o por el nombre en `marca`; la situación, por `posse`, con la salida (`saida_data`, `saida_valor`, `saida_destino`, `saida_observacao`) y la vuelta (`volta_data`) |
 | `documentos` | `enviar` (uno o varios archivos, con la categoría, el título, la fecha, la descripción y, en una foto, la miniatura), `alterar`, `excluir` |
 | `servicos` | `salvar` (la fecha, el tipo, el mantenimiento o el taller, la mano de obra, las piezas, la estanqueidad, la marcha antes y después, la garantía y los documentos; el tipo que marca un registro se convierte también en el registro), `excluir` |
-| `manutencao` | `salvar` (registrar manda el reloj al taller), `situacao` (la que cierra se convierte en servicio), `excluir` |
+| `manutencao` | `salvar` (registrar manda el reloj al taller), `situacao` (la que cierra se convierte en servicio; con `vistoria=1`, el servicio cuenta también como inspección), `excluir` |
 | `oficinas` | `salvar` (con los contactos), `excluir` (solo el que no tiene mantenimientos) |
 | `listas` | `salvar` (un ítem: el identificador, el nombre, el orden, lo que hace, el texto, el color), `excluir` (solo fuera de uso) |
 | `reserva` | `iniciar` (cuándo quedó lleno y cómo), `parou`, `observar` (se detuvo, carga baja, nota; también en el solar), `salvar`, `usar` (la mediana va al registro del reloj), `excluir` |
@@ -214,6 +215,7 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `simulador` | `aplicar` (el escenario como se simuló, `de`, `ate`, `semente` e `impressao`: guarda solo si el plan sale igual al simulado) |
+| `vistorias` | `registrar` (`relogio_ids`, separados por comas, y `quando`, AAAA-MM-DD o AAAA-MM-DD HH:MM, hasta ahora; vacío: ahora): la inspección de cada uno, todo o nada, una por reloj en el día |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) y `relogios` (el grupo de cada reloj) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (y `ordem` en los campos; el campo con las reglas del valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |

@@ -413,6 +413,8 @@ function recarregarConfig(aplicadas, manterPosicao) {
           + parCampo(t("Avisar quando um relógio fica encostado"), marca("encostado_ativo", cfg("encostado_ativo") !== "0"), "check",
             ex("encostado", t("O aviso Encostado"), t("Um relógio da coleção que passa do limite de dias sem ir ao pulso ganha o aviso <strong>Encostado</strong>; a caixa desliga tudo (o aviso, a coluna da Hoje e o filtro: é o mesmo aviso Encostado da página Avisos).")))
           + campoOpcao(oc.encostado_dias, "encostado_dias", null)
+          // a vistoria periódica: cada relógio ativo ganha o aviso Vistoria a cada tantos dias (0 desliga)
+          + campoOpcao(oc.vistoria_dias, "vistoria_dias", null, ex("vistoria", t("A vistoria periódica"), t("Com um número de dias, cada relógio ativo ganha o aviso <strong>Vistoria</strong> esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro): é para olhar o relógio (a bateria, a pilha, o vidro, a pulseira) e nenhum ficar esquecido com algo errado. Registre pelo botão em Hoje é dia de ou várias de uma vez na página Vistorias. 0 desliga.")))
           // a cópia dos documentos no banco: a escolha da coleção vale sobre o relógio e o arquivo (antes era o config.php)
           + campoOpcao(oc.documentos_copia, "documentos_copia", null, ex("copia", t("A cópia dos documentos no banco"), t("A cópia dos documentos no banco escolhida aqui vale sobre o relógio e o arquivo.")))),
           // o aviso que precisa ficar à vista: o config.php com a opção que não vale mais

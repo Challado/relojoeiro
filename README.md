@@ -140,6 +140,7 @@ E as que leem o histórico de cada relógio:
 | `CONTAR("pulso"; 30)` | quantos dias com uso nos últimos 30 dias |
 | `DIAS_DESDE_ULTIMO("pulso")` | dias desde a última vez no pulso |
 | `ULTIMO_VALOR("carga")` / `ULTIMA_DATA("pilha")` | a última leitura / a data do último lançamento |
+| `DATA_CADASTRO()` | o dia em que o relógio foi cadastrado no sistema: `PADRAO(data_compra; DATA_CADASTRO())` é a compra e, sem ela, o cadastro |
 | `HORAS_APOS("pulso"; "carga")` | horas no pulso desde a última leitura de carga |
 | `ACUMULA(início; máx; perda/h; "tipo"; efeito; ...)` | um saldo que percorre o histórico: perde com o tempo e ganha com cada lançamento |
 | `MEDIDO("uso")` / `MEDIDO("repouso")` | o gasto real de bateria, medido pelas suas leituras de carga |
@@ -965,6 +966,33 @@ serviços custaram no último ano; nos totais, as variáveis `servicos` e `custo
 soma o da coleção). O **Passaporte** traz os serviços. Pela API: `recurso=servicos` (a lista, com o resumo de um relógio) e
 `recurso=servicos` com `acao=salvar` ou `excluir`.
 
+### A vistoria periódica
+
+Um relógio pode ficar com algo errado sem ninguém ver: a bateria no fim, a pilha vazando, o vidro trincado, a pulseira
+soltando, a umidade no mostrador. A vistoria é para isso: de tempos em tempos, pegar cada relógio e conferir.
+
+Ligue em **Configuração**, **Vistoria: a cada quantos dias conferir cada relógio** (0 desliga; de fábrica vem desligada). Com
+um número de dias, cada relógio ativo ganha o aviso **Vistoria**, que vence esses dias depois da última vistoria dele; sem
+nenhuma, da data da compra (os antigos já começam vencidos); sem data da compra, do dia em que ele foi cadastrado. O relógio
+na manutenção, inativo ou fora da coleção não vence.
+
+O aviso aparece em **Hoje é dia de**, junto com o dar corda e o carregar, com o botão **Vistoria**: um clique registra que
+você conferiu, e a contagem recomeça. Para fazer várias de uma vez, abra **Coleção › Vistorias**: a lista traz os relógios
+com a vistoria vencendo até o dia que você escolher (de partida, a próxima semana; os atrasados sempre; **Todos** mostra
+todos), do mais atrasado ao mais distante, com a última vistoria de cada um. Os atrasados e os de hoje já vêm marcados;
+desmarque o que não conferiu, ponha o dia (vazio: agora) e clique em **Registrar as vistorias**.
+
+Um serviço na oficina **não** conta sozinho como vistoria: o relojoeiro pode ter feito o serviço sem olhar o resto (a
+bateria, a pulseira). Ao registrar um serviço (o quadro **Serviços e diagnósticos**) ou ao encerrar uma manutenção (a
+situação que encerra, como **Retirado**), a caixa **Contar também como vistoria do relógio** vem desmarcada: marque só se
+o relógio foi mesmo conferido. Com a vistoria desligada, a caixa aparece desabilitada, com o motivo.
+
+Tudo isso é cadastro: o aviso **Vistoria** está na página **Avisos** (a fórmula
+`SE(CONFIG("vistoria_dias") > 0; PADRAO(ULTIMA_DATA("vistoria"); PADRAO(data_compra; DATA_CADASTRO())) + CONFIG("vistoria_dias"); NADA())`,
+que você pode mudar, por exemplo, para só um grupo), e o lançamento **Vistoria**, em Cadastros › Tipos de lançamento.
+Desligar o aviso na página Avisos também desliga a vistoria. Pela API: `recurso=vistorias` (a lista), `recurso=vistorias`,
+`acao=registrar` (várias de uma vez) e o `vistoria=1` dos serviços e da manutenção.
+
 ### Declarado, medido e estimado
 
 Cada informação técnica do relógio tem três valores, e o painel mostra os três juntos, numa tabelinha: o **declarado** (o que
@@ -1492,6 +1520,7 @@ Os avisos do cadastro inicial, com o identificador (o nome deles nas fórmulas, 
 | Marcha fora do esperado | `marcha_fora` | Tradicional | uma nova leitura do desvio. Vence na leitura cuja marcha saiu da *Marcha esperada* ou, com 4 medições ou mais, ficou longe do histórico do próprio relógio (mais que 3 vezes a variação, e no mínimo 5 s/dia). |
 | Garantia vencendo | `garantia` | todos | (nada: só avisa) |
 | Encostado | `encostado` | todos (os da coleção, ativos) | o Pôs no pulso. Vence quando o relógio passa do limite de dias sem ir ao pulso (a Configuração, **Aviso Encostado: dias sem ir ao pulso**, padrão 30), contados da última vez no pulso (sem nunca ter ido, da data da compra; sem as duas, não avisa). Não entra na próxima manutenção nem no **O que fazer**: a tabela tem a coluna **Encostado**, com quanto falta ou quanto passou. |
+| Vistoria | `vistoria` | todos (os ativos, fora da manutenção) | a Vistoria. Só com a Configuração **Vistoria: a cada quantos dias conferir cada relógio** acima de 0 (de fábrica, 0: desligada). Vence esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do dia do cadastro). Veja [A vistoria periódica](#a-vistoria-periódica). |
 
 Os avisos vão no alerta da manhã. Um aviso marcado **na hora** (na página **Avisos**, a caixa *na hora*) vai também pelo
 Telegram **no minuto em que vence**, uma vez só, até ser resolvido: é assim que o **Tirar do carregador** chega quando a bateria
@@ -1619,6 +1648,7 @@ de fonte, largura e conteúdo sem alterar a ordem dos campos nem perder o foco.
 | **Garantia de rodízio** (`max_sem_uso`) | nenhum relógio passa mais que esses dias sem uso: o que passa entra na frente de todos. 0 desliga. Padrão: 21. |
 | **Avisar quando um relógio fica encostado** (`encostado_ativo`) | marcada, o aviso **Encostado** funciona; desmarcada, ele some inteiro (o aviso, a coluna da página Hoje e o filtro). É o mesmo que ligar ou desligar o aviso `encostado` na página **Avisos**. Padrão: marcada. |
 | **Aviso Encostado: dias sem ir ao pulso** (`encostado_dias`) | depois de quantos dias sem ir ao pulso um relógio da coleção ganha o aviso **Encostado** (em **Hoje é dia de**: *Encostado*, *"o limite de dias sem ir ao pulso vence há 2d, 11/10/2026 18:00"*). De 1 a 3650. Padrão: 30. A caixa acima liga e desliga o aviso. |
+| **Vistoria: a cada quantos dias conferir cada relógio (0 desliga)** (`vistoria_dias`) | a vistoria periódica: com um número de dias, cada relógio ativo ganha o aviso **Vistoria** esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro). De 0 a 3650. Padrão: 0 (desligada). Veja [A vistoria periódica](#a-vistoria-periódica). |
 | **Gasto da bateria: como calcular (válido para todos os relógios)** (`gasto_motor`) | qual dos cinco motores do [gasto medido pelas leituras](#gasto-medido-pelas-leituras) faz a conta, para todos os relógios da coleção: **1. Pelas horas registradas (o motor original)**, **2. ... (robusto)**, **3. Pela marcação: duas taxas separadas**, **4. Só o cadastro** ou **5. Pelas fórmulas do cadastro**. Padrão: vazio (*Individual (no relógio ou no grupo)*: o campo **Como calcular o gasto da bateria** de cada relógio, senão o padrão dele, senão o motor 1). |
 | **Gasto medido: contar por** (`medicao_base`) | o que entra na conta do gasto medido: **Dias** (`dias`, as medições dos últimos tantos dias) ou **Leituras** (`leituras`, as últimas tantas medições de cada tipo, em uso e em repouso). Padrão: dias. |
 | **Gasto medido: média dos últimos (dias)** (`medicao_janela_dias`) | a janela do gasto medido, contando por dias: as medições mais velhas saem da conta. De 1 a 3650. Padrão: 90. |
@@ -1910,6 +1940,7 @@ No computador, todas as páginas usam a largura toda da janela, com uma margem m
 | **Totais** (`totais.php`, menu **Coleção**) | A página de totais: os totais marcados para ela (a aba **Totais** dos Cadastros), cada um num quadro, estreito ou largo, na ordem do cadastro: a tabelinha com a linha de total, o número, ou o relógio com o valor. Abre pelo **Ver todos os totais** embaixo da tabela da página Hoje, com o mesmo filtro (*Contando 12 de 17 relógios*, com **Contar todos**), ou pelo menu, com todos. Pela API: `recurso=totais&parte=pagina`. Veja [Os totais](#os-totais). |
 | **Acessórios** (`acessorios.php`) | As pulseiras, caixas, estojos, ferramentas, carregadores, peças e o que mais for: a lista (o nome, o tipo, o relógio de que ele é, ou *solto*, e a observação), com o filtro **Relógio** (todos, os soltos ou os de um relógio; o quadro **Acessórios** do painel abre já filtrada), **Editar** e **Excluir** em cada um, e embaixo o cadastro (**Novo acessório**: nome, tipo, relógio ou *solto (serve a vários)*, os campos do tipo e observação). Cada um mostra os **Dados** (os campos do tipo dele) e onde ele **Serve** (veja [A construção e os acessórios](#a-construção-e-os-acessórios)). Excluir um relógio deixa os acessórios dele soltos. Pela API: `recurso=acessorios` (a lista) e a escrita `acessorios` (`salvar`, `excluir`). |
 | **Manutenção** (`manutencao.php`, menu **Coleção**) | O relógio na oficina, da ida à volta, em quatro abas: **Em manutenção** (os que estão na oficina agora, com a situação, a previsão e o aviso; o menu para mudar a situação; **Cadastrar uma manutenção**, que manda o relógio, e, editando uma, a história), **Manutenções** (todas, com os filtros e o custo), **Oficinas** (com os contatos) e **Listas** (as situações, os tipos de serviço, os resultados da estanqueidade, os tipos de oficina e de contato). Veja [A manutenção](#a-manutenção). |
+| **Vistorias** (`vistorias.php`, menu **Coleção**) | Os relógios com a vistoria periódica vencendo até um dia (os atrasados sempre; **Todos** mostra todos), com o vencimento e a última vistoria: os atrasados e os de hoje vêm marcados, e **Registrar as vistorias** grava todos de uma vez (o dia é opcional; vazio, agora). Desligada, diz por quê. Veja [A vistoria periódica](#a-vistoria-periódica). |
 | **Winders** (`winders.php`) | Os winders e as posições de cada um: um cartão por winder, com o **desenho** dele (um berço por posição, com a foto do relógio que está nela e o anel da carga), os dados e a tabela das posições, editável na linha (o **programa**, um campo por coluna; o **Relógio**, com **— nenhum —** para tirar e os relógios para pôr ou trocar; a **carga**, **quanto cada hora dá** e quando **enche**; o **Salvar**), **Editar** a posição (o nome, a ordem, ligada), **Nova posição**, **Editar o winder** e **Excluir o winder**; embaixo, o cadastro (**Novo winder**: o nome, quantas posições ele já ganha, os campos do winder e a observação) e o da posição (o nome, a ordem, ligada, o programa). Veja [Os winders](#os-winders). Pela API: `recurso=winders` e as escritas `winders` e `winder_posicoes`. |
 | **Galeria** (`galeria.php`) | A coleção em fotos, por grupo: cada relógio com a foto (o link da ficha), o nome, a marca e a referência, o ano e o valor da compra e os dias de uso; no alto, quantos, o valor somado e quantos têm foto. Em cima, as **abas** por situação (as mesmas da página Hoje) e, no fim, **Todos** (com a marca da situação de quem não está na coleção). **Imprimir**: no papel, quatro por linha, sem o menu nem as abas. Pela API: `recurso=galeria` (`aba=` a situação, `principal` ou `todos`). |
 | **Passaporte** (`passaporte.php`) | A ficha de um relógio para imprimir ou guardar em PDF (o botão **Passaporte** no quadro Documentos do painel): a foto, o nome, a marca e a referência, o grupo e a situação; a **Compra**; o **Uso** (a primeira e a última vez no pulso, as horas no pulso, os dias de uso e o custo por uso); o **Cadastro** preenchido; as **Manutenções** (cada tipo de marcação, quantas vezes e a última; as revisões e trocas de pilha); os **Acessórios**; os **Documentos**; e os **Próximos avisos**. **Imprimir**: no papel saem só os dados. Pela API: `recurso=passaporte`. Com algum serviço, também os **Serviços e diagnósticos** (a oficina, o custo, a estanqueidade e a marcha antes e depois). |
@@ -2183,6 +2214,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `saidas` | as saídas da coleção (os emprestados e os que saíram): de cada uma, o relógio, a situação, as datas, o valor recebido, para quem, a compra, os serviços, o resultado e o tempo na coleção; e as somas das de agora por situação. `relogio=` (o histórico de um), `situacao=`, `abertas=1` (só as de agora) |
 | `sugestao` | a Sugestão para agora (o cartão da página Hoje): um relógio para usar agora, fora da escala, pela forma de escolha (`forma`) e pelos tipos (`tipos`) pedidos, com o motivo; `pular` não repete os já sugeridos. Ficam de fora o que está no pulso e o que está com a carga no limite ou abaixo dele (`fora[]` diz por quê). Não grava nada. |
 | `simulador` | o simulador de rodízio: sem `cenarios`, o que dá para escolher (os modos e o que cada um deixa mudar, as formas, os relógios ativos, o período padrão); com `cenarios` (o modo e, se quiser, `forma`, `ciclo`, `semanas`, `escala_dias`, `max_sem_uso` e `relogios`), `de`, `ate`, `semente` e `variar`, a simulação de cada um, sem gravar nada, e a comparação |
+| `vistorias` | a vistoria periódica: os relógios ativos com o aviso **Vistoria** vencendo até `ate` (AAAA-MM-DD; padrão: daqui a 7 dias; os atrasados sempre) ou todos (`todos=1`), cada um com o vencimento, o estado (`atrasado`, `hoje`, `proxima`) e a última vistoria, e o resumo; desligada, `ativa` falso e o motivo |
 | `calcular` | o resultado de uma fórmula (`expressao=`) nos relógios (`relogio=` um id ou vários; sem ele, todos), sem gravar, com as partes da conta; fórmula mal escrita: 400 com os erros |
 | `foto` | a foto de um relógio (`relogio=<id>`): a imagem, não JSON |
 | `documentos` | os documentos de um relógio (`relogio=<id>`; sem ele, de todos), com as categorias, o resumo da NF-e de cada XML, a pasta e o limite |
@@ -2217,7 +2249,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `relogio` | `salvar` (criar ou alterar), `excluir` (com os documentos), `foto`, `remover_foto`; a marca, por `marca_id` ou pelo nome em `marca`; a situação, por `posse`, com a saída (`saida_data`, `saida_valor`, `saida_destino`, `saida_observacao`) e a volta (`volta_data`) |
 | `documentos` | `enviar` (um ou vários arquivos, com a categoria, o título, a data, a descrição e, numa foto, a miniatura), `alterar`, `excluir` |
 | `servicos` | `salvar` (a data, o tipo, a manutenção ou a oficina, a mão de obra, as peças, a estanqueidade, a marcha antes e depois, a garantia e os documentos; o tipo que marca um lançamento vira também a marcação), `excluir` |
-| `manutencao` | `salvar` (cadastrar manda o relógio para a oficina), `situacao` (a que encerra vira serviço), `excluir` |
+| `manutencao` | `salvar` (cadastrar manda o relógio para a oficina), `situacao` (a que encerra vira serviço; com `vistoria=1`, o serviço conta também como vistoria), `excluir` |
 | `oficinas` | `salvar` (com os contatos), `excluir` (só a sem manutenções) |
 | `listas` | `salvar` (um item: o identificador, o nome, a ordem, o que faz, o texto, a cor), `excluir` (só fora de uso) |
 | `reserva` | `iniciar` (quando ficou cheio e como), `parou`, `observar` (parou, carga baixa, nota; também no solar), `salvar`, `usar` (a mediana vai para o cadastro do relógio), `excluir` |
@@ -2235,6 +2267,7 @@ curl -u usuario:senha -G "http://servidor/relojoeiro/api.php" -d recurso=calcula
 | `rodizio` | `usando` (estou usando este hoje), `trocar_dia` (o relógio de um dia), `periodo` (os relógios de um período, na ordem: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (apaga os dias do período e o modo monta de novo; só `de`: até o fim do plano; só `ate`: de amanhã até ele), `periodo_livre` (apaga e deixa os dias livres, sem sorteio; as mesmas datas), `manual` (o Rodízio manual: `de`, `ate`, `dias[AAAA-MM-DD]` = o id do relógio, `auto` ou `livre`), `apagar_tudo` (toda a programação de amanhã em diante sai; `hoje=1`: de hoje em diante; o modo monta o plano de novo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (trocar o modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `simulador` | `aplicar` (o cenário como foi simulado, `de`, `ate`, `semente` e `impressao`: grava só se o plano sair igual ao simulado) |
+| `vistorias` | `registrar` (`relogio_ids`, separados por vírgula, e `quando`, AAAA-MM-DD ou AAAA-MM-DD HH:MM, até agora; vazio: agora): a vistoria de cada um, tudo ou nada, uma por relógio no dia |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) e `relogios` (o grupo de cada relógio) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (e `ordem` nos campos; o campo com as regras do valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
@@ -2692,6 +2725,11 @@ No cadastro dele (**Editar cadastro**), desmarque **Entra no sorteio do rodízio
 os avisos, e você o usa quando quiser (o **Pôs no pulso**, o **Usando hoje**, o **trocar por…** de um dia), mas o sorteio
 (o plano, a escala, o **Sortear este dia por**, o **Decida por mim**, a **Sugestão para agora**) não o escolhe mais. Os dias
 já sorteados dele, de amanhã em diante, são sorteados de novo. Para tirá-lo de tudo, até dos avisos, desmarque **Relógio ativo**.
+
+**E se um relógio ficar esquecido com a bateria no fim, ou com algo errado?**
+Ligue a vistoria periódica em **Configuração** (**Vistoria: a cada quantos dias conferir cada relógio**): cada relógio
+ativo ganha o aviso **Vistoria** a cada tantos dias, em **Hoje é dia de**, e a página **Coleção › Vistorias** registra
+várias de uma vez. Veja [A vistoria periódica](#a-vistoria-periódica).
 
 **E se eu quiser comparar modos antes de escolher um?**
 No menu **Rodízio › Simulador**: monte dois ou mais cenários (o modo, a forma de escolha, a garantia, os relógios no

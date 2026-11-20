@@ -259,6 +259,12 @@ if [ $LAYOUT -eq 1 ]; then
   else
     FALHOU=1; sed 's/^/    /' "$PASTA/simulador.txt" | tail -30
   fi
+  echo "Conferência da vistoria na tela no $REF:"
+  if BASE="http://127.0.0.1:$PORTA0/" node testes/vistoria-interface.cjs > "$PASTA/vistoria.txt" 2>&1; then
+    echo "    $(tail -1 "$PASTA/vistoria.txt")"
+  else
+    FALHOU=1; sed 's/^/    /' "$PASTA/vistoria.txt" | tail -30
+  fi
 fi
 
 if [ $ROLAGEM -eq 1 ]; then

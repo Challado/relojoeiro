@@ -40,6 +40,23 @@ function diasTexto(n) {
   return n === 1 ? t("1 dia") : t("{1} dias", {1: n});
 }
 
+// a situação que encerra a manutenção (o relógio volta e ela vira um serviço): só nela aparece o "contar também como vistoria"
+function situacaoEncerra(d, valor) {
+  return d.situacoes.some(function (s) { return s.valor === valor && s.comportamento === "encerra"; });
+}
+// a caixa da vistoria de um formulário da manutenção: à vista só com a situação escolhida encerrando (o select muda: a troca
+// abaixo); valor null: escondida de início (a manutenção que já existe: a caixa aparece quando a pessoa escolhe encerrar)
+function vistoriaEncerra(d, valor, classe) {
+  return el("div", {"class": "vistoria-encerra" + (classe ? " " + classe : ""), "hidden": !situacaoEncerra(d, valor)}, caixaVistoria(d.vistoria));
+}
+document.addEventListener("change", function (ev) {
+  var f = ev.target.form;
+  var caixa = f && ev.target.name === "situacao" ? f.querySelector(".vistoria-encerra") : null;
+  if (caixa && window.DADOS_MANUTENCAO) {
+    caixa.hidden = !situacaoEncerra(window.DADOS_MANUTENCAO, ev.target.value);
+  }
+});
+
 // o menu "mudar a situação" de uma manutenção (numa linha da tabela): a situação, quando e a observação
 function formSituacao(d, m) {
   return el("form", {"data-recurso": "manutencao", "class": "inline situacao-manutencao"}, el("input", {"type": "hidden", "name": "acao", "value": "situacao"})
@@ -47,7 +64,8 @@ function formSituacao(d, m) {
     + el("select", {"name": "situacao", "aria-label": t("Nova situação")}, d.situacoes.map(function (s) {
       return el("option", {"value": s.valor, "selected": s.valor === m.situacao}, h(s.nome));
     }).join(""))
-    + " " + el("button", {"class": "leve"}, t("Mudar")));
+    + " " + el("button", {"class": "leve"}, t("Mudar"))
+    + vistoriaEncerra(d, null));
 }
 
 // o formulário da manutenção: nova (o relógio, a oficina, o tipo, o problema...) ou a que se edita (com a situação e a história)
@@ -67,6 +85,7 @@ function formManutencao(d, m, docs) {
     + el("label", {}, t("Situação {1}", {1: el("select", {"name": "situacao"}, d.situacoes.map(function (s, i) {
       return el("option", {"value": s.valor, "selected": m ? s.valor === m.situacao : i === 0}, h(s.nome));
     }).join(""))}))
+    + vistoriaEncerra(d, m ? null : (d.situacoes[0] || {}).valor, "largo")
     + el("label", {}, t("Tipo de serviço {1}", {1: el("select", {"name": "tipo"}, d.tipos.map(function (x, i) {
       return el("option", {"value": x.valor, "selected": m ? x.valor === m.tipo : i === 0}, h(x.nome));
     }).join(""))}))

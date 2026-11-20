@@ -231,6 +231,13 @@
  *                            "valores", "melhores"}]}. Cada cenário roda as regras do rodízio numa transação desfeita, com os
  *                            sorteios pela semente. Aplicar: POST recurso=simulador, acao=aplicar.
  *                            Ex.: curl -u lucas:senha -G "http://servidor/relojoeiro/api.php" --data-urlencode "recurso=simulador" --data-urlencode "cenarios=[{\"modo\":2},{\"modo\":2,\"forma\":\"fifo\"}]"
+ *   recurso=vistorias        a vistoria periódica (a página Vistorias; a Configuração vistoria_dias, 0 desliga): os relógios
+ *                            ativos com o aviso Vistoria vencendo até ate (AAAA-MM-DD; padrão: daqui a 7 dias; os atrasados
+ *                            sempre) ou todos (todos=1), do mais atrasado ao mais distante. {"ativa", "motivo", "dias", "ate",
+ *                            "hoje", "relogios": [{"relogio_id", "relogio", "vence", "vence_dia", "vence_texto", "quando",
+ *                            "estado" (atrasado, hoje, proxima), "falta_dias", "ultima", "ultima_texto"}], "resumo": {"atrasadas",
+ *                            "no_periodo", "com_vistoria"}}. Registrar: POST recurso=vistorias, acao=registrar.
+ *                            Ex.: curl -u lucas:senha "http://servidor/relojoeiro/api.php?recurso=vistorias&ate=2026-12-31"
  *   recurso=colunas          as colunas cadastradas da tabela dos relógios (Cadastros › Colunas) e o que o construtor delas precisa:
  *                            {"colunas": [{"id", "chave" (c_<identificador>), "identificador", "nome", "modo" (guiado ou expert), "tabela",
  *                            "campo", "funcao", "expressao" (a conta de cada relógio, gravada nos dois modos), "formato", "formato_nome",
@@ -747,6 +754,11 @@
  *                            relógios do sorteio, o modo, a garantia, o modo ativo e o plano de de em diante (os dias à mão e os
  *                            livres ficam). Resposta: ok, mensagem, erros, mudancas, resumo.
  *                            Ex.: curl -u lucas:senha -d recurso=simulador -d acao=aplicar -d modo=2 -d forma=fifo -d de=2026-12-01 -d ate=2026-12-28 -d semente=12345 -d impressao=<a da simulação> http://servidor/relojoeiro/api.php
+ *   recurso=vistorias         registrar (relogio_ids: os ids, separados por vírgula; quando: AAAA-MM-DD ou AAAA-MM-DD HH:MM,
+ *                            até agora; vazio, agora): a vistoria de cada um (o lançamento Vistoria, que resolve o aviso
+ *                            Vistoria), tudo ou nada; no mesmo dia, uma só por relógio. O serviço (servicos salvar) e a
+ *                            manutenção que encerra (manutencao salvar ou situacao) contam também como vistoria com vistoria=1.
+ *                            Ex.: curl -u lucas:senha -d recurso=vistorias -d acao=registrar -d relogio_ids=1,3,7 http://servidor/relojoeiro/api.php
  *   recurso=config            salvar (horario_manha, horario_noite, uso_inicio, uso_fim, sol_fim (a sessão no sol esquecida fecha
  *                             a essa hora): HH:MM; pulso_auto_inicio e pulso_auto_fim (1 ou 0: pôr no pulso sozinho no
  *                             início do horário de uso, tirar sozinho no fim; 0: só pelo Pôs, só pelo Tirou); carga_limiar (1 a 99: carregar nessa carga, o geral); sol_limiar (1 a 99: o
@@ -1226,6 +1238,8 @@
  *                                    leituras (2 a 1000)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
+ *     config.vistoria_dias           a vistoria periódica: a cada quantos dias conferir cada relógio ativo (o aviso Vistoria; 0 a 3650; 0
+ *                                    desliga, e de fábrica é 0)
  *     config.encostado_ativo         1 ou 0: o aviso Encostado está ligado (a caixa Avisar quando um relógio fica encostado, da
  *                                    Configuração: liga e desliga o aviso encostado do cadastro, o mesmo que a página Avisos; desligado,
  *                                    somem o aviso, a coluna Encostado da Hoje e o filtro)
@@ -2890,6 +2904,29 @@
  *     sugestao.motivo                por que ele: o motivo da escolha, escrito como o dos dias do plano ("A maior nota (57,8), entre 4
  *                                    candidatos.")
  *     aviso                          por que não há sugestão (nenhum disponível, todos de fora, todos já vistos); null: há sugestão
+ *   recurso=vistorias
+ *     ativa                          verdadeiro: a vistoria periódica vale; falso: desligada (a lista vem vazia, com o motivo)
+ *     motivo                         por que não vale (null quando vale)
+ *     dias                           a cada quantos dias (a Configuração, vistoria_dias)
+ *     ate                            o último dia do vencimento pedido (AAAA-MM-DD; null: todos)
+ *     hoje                           o dia de hoje na coleção (AAAA-MM-DD)
+ *     relogios                       os relógios com a vistoria vencendo até o dia (os atrasados sempre), do vencimento mais antigo ao mais
+ *                                    novo
+ *     relogios[]                     um relógio
+ *     relogios[].relogio_id          o id do relógio (o que vai em relogio_ids no registrar)
+ *     relogios[].relogio             o nome
+ *     relogios[].vence               quando vence (AAAA-MM-DD HH:MM:SS), pela fórmula do aviso Vistoria
+ *     relogios[].vence_dia           o dia em que vence (AAAA-MM-DD)
+ *     relogios[].vence_texto         o dia em que vence, no formato do idioma
+ *     relogios[].quando              quanto falta ou passou, em dias do calendário ("em 3 dias", "hoje", "há 2 dias")
+ *     relogios[].estado              atrasado (venceu num dia que passou), hoje ou proxima
+ *     relogios[].falta_dias          quanto falta, em dias com a fração (negativo: passou)
+ *     relogios[].ultima              a última vistoria (AAAA-MM-DD HH:MM:SS; null: nunca)
+ *     relogios[].ultima_texto        a última vistoria por extenso (nunca, sem nenhuma)
+ *     resumo                         as contagens
+ *     resumo.atrasadas               quantos relógios com a vistoria atrasada
+ *     resumo.no_periodo              quantos vêm na lista
+ *     resumo.com_vistoria            quantos relógios ativos têm o aviso Vistoria
  *   recurso=simulador
  *     opcoes                         o que dá para escolher na simulação
  *     opcoes.rodizio_ativo           verdadeiro: o rodízio está ligado (desligado, não há o que simular)
@@ -3880,6 +3917,16 @@
  *                                    o serviço do teste
  *     relogio.servicos_resumo.testes_estanqueidade
  *                                    quantos serviços tiveram o teste de estanqueidade
+ *     relogio.servico_vistoria       a caixa "contar também como vistoria do relógio" do registro de um serviço e do fim de uma manutenção
+ *     relogio.servico_vistoria.ativa verdadeiro: a vistoria periódica vale (a Configuração acima de 0 e o aviso Vistoria ligado); falso: a
+ *                                    caixa aparece desabilitada, com o motivo
+ *     relogio.servico_vistoria.motivo
+ *                                    por que a vistoria não vale (null quando vale)
+ *     relogio.servico_vistoria.dias  a cada quantos dias (a Configuração; 0: desligada)
+ *     relogio.servico_vistoria.rotulo
+ *                                    o rótulo da caixa
+ *     relogio.servico_vistoria.explicacao
+ *                                    o que marcar a caixa faz
  *     relogio.servico_tipos[].marca  true se o serviço desse tipo vira também a marcação de mesmo nome (revisao, pilha)
  *     relogio.servico_documentos     os documentos do relógio que um serviço pode citar (o formulário)
  *     relogio.servico_documentos[]   um documento
@@ -4721,6 +4768,8 @@
  *                                    leituras (2 a 1000)
  *     config.encostado_dias          o aviso Encostado: depois de quantos dias sem ir ao pulso um relógio da coleção é avisado (1 a 3650;
  *                                    padrão 30)
+ *     config.vistoria_dias           a vistoria periódica: a cada quantos dias conferir cada relógio ativo (o aviso Vistoria; 0 a 3650; 0
+ *                                    desliga, e de fábrica é 0)
  *     config.encostado_ativo         1 ou 0: o aviso Encostado está ligado (a caixa Avisar quando um relógio fica encostado, da
  *                                    Configuração: liga e desliga o aviso encostado do cadastro, o mesmo que a página Avisos; desligado,
  *                                    somem o aviso, a coluna Encostado da Hoje e o filtro)
@@ -6327,6 +6376,13 @@
  *     sequencia                      com previa=1: os códigos dos movimentos da sequência do pedido, na ordem
  *     sequencia[]                    o código de um movimento
  *   recurso=manutencao
+ *     vistoria                       a caixa "contar também como vistoria do relógio" do registro de um serviço e do fim de uma manutenção
+ *     vistoria.ativa                 verdadeiro: a vistoria periódica vale (a Configuração acima de 0 e o aviso Vistoria ligado); falso: a
+ *                                    caixa aparece desabilitada, com o motivo
+ *     vistoria.motivo                por que a vistoria não vale (null quando vale)
+ *     vistoria.dias                  a cada quantos dias (a Configuração; 0: desligada)
+ *     vistoria.rotulo                o rótulo da caixa
+ *     vistoria.explicacao            o que marcar a caixa faz
  *     filtro                         os filtros do pedido
  *     filtro.relogio                 o relógio (0: todos)
  *     filtro.oficina                 a oficina (0: todas)
@@ -6670,6 +6726,13 @@
  *     tipos[].texto                  o texto do item, nas listas que têm (o tipo de lançamento que o tipo de serviço marca, a unidade do
  *                                    jeito de carregar, o aviso da situação da manutenção); null: sem
  *     tipos[].cor                    a cor do item (#rrggbb), nas listas que têm (as situações da manutenção); null: sem
+ *     vistoria                       a caixa "contar também como vistoria do relógio" do registro de um serviço e do fim de uma manutenção
+ *     vistoria.ativa                 verdadeiro: a vistoria periódica vale (a Configuração acima de 0 e o aviso Vistoria ligado); falso: a
+ *                                    caixa aparece desabilitada, com o motivo
+ *     vistoria.motivo                por que a vistoria não vale (null quando vale)
+ *     vistoria.dias                  a cada quantos dias (a Configuração; 0: desligada)
+ *     vistoria.rotulo                o rótulo da caixa
+ *     vistoria.explicacao            o que marcar a caixa faz
  *     servicos                       os serviços (de um relógio, ou de todos), do mais novo para o mais velho
  *     servicos[]                     um serviço
  *     servicos[].id                  o número do serviço (o id da gravação)
@@ -8996,6 +9059,8 @@ if ($recurso === "textos") {
     require __DIR__ . "/api/sugestao.php";
 } elseif ($recurso === "simulador") {
     require __DIR__ . "/api/simulador.php";
+} elseif ($recurso === "vistorias") {
+    require __DIR__ . "/api/vistorias.php";
 } elseif ($recurso === "unidades") {
     require __DIR__ . "/api/unidades.php";
 } elseif ($recurso === "servicos") {

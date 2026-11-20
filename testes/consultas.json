@@ -22,15 +22,15 @@
     },
     "por_pedido": {
         "GET ": {
-            "consultas": 674,
-            "identicas": 342
+            "consultas": 677,
+            "identicas": 345
         },
         "GET acessorios": {
             "consultas": 42,
             "identicas": 0
         },
         "GET agendas": {
-            "consultas": 249,
+            "consultas": 251,
             "identicas": 158
         },
         "GET ajuda": {
@@ -98,8 +98,8 @@
             "identicas": 3
         },
         "GET config": {
-            "consultas": 184,
-            "identicas": 28
+            "consultas": 195,
+            "identicas": 34
         },
         "GET conta": {
             "consultas": 46,
@@ -122,8 +122,8 @@
             "identicas": 0
         },
         "GET destinos": {
-            "consultas": 285,
-            "identicas": 176
+            "consultas": 282,
+            "identicas": 186
         },
         "GET documento": {
             "consultas": 23,
@@ -162,8 +162,8 @@
             "identicas": 8
         },
         "GET hoje": {
-            "consultas": 448,
-            "identicas": 120
+            "consultas": 459,
+            "identicas": 126
         },
         "GET hora_certa": {
             "consultas": 22,
@@ -190,7 +190,7 @@
             "identicas": 0
         },
         "GET manutencao": {
-            "consultas": 46,
+            "consultas": 48,
             "identicas": 5
         },
         "GET marcas": {
@@ -266,7 +266,7 @@
             "identicas": 0
         },
         "GET relatorios:custos": {
-            "consultas": 69,
+            "consultas": 70,
             "identicas": 0
         },
         "GET relatorios:desejos": {
@@ -282,7 +282,7 @@
             "identicas": 0
         },
         "GET relatorios:gasto_oficinas": {
-            "consultas": 47,
+            "consultas": 49,
             "identicas": 5
         },
         "GET relatorios:historico": {
@@ -290,11 +290,11 @@
             "identicas": 8
         },
         "GET relatorios:manutencao_oficinas": {
-            "consultas": 47,
+            "consultas": 49,
             "identicas": 5
         },
         "GET relatorios:manutencoes": {
-            "consultas": 48,
+            "consultas": 50,
             "identicas": 5
         },
         "GET relatorios:nao_existe": {
@@ -302,7 +302,7 @@
             "identicas": 0
         },
         "GET relatorios:passaporte": {
-            "consultas": 64,
+            "consultas": 65,
             "identicas": 7
         },
         "GET relatorios:plano": {
@@ -326,11 +326,11 @@
             "identicas": 0
         },
         "GET relatorios:saidas": {
-            "consultas": 43,
+            "consultas": 44,
             "identicas": 0
         },
         "GET relatorios:servicos": {
-            "consultas": 31,
+            "consultas": 34,
             "identicas": 0
         },
         "GET relatorios:timegrapher": {
@@ -350,20 +350,20 @@
             "identicas": 0
         },
         "GET roteiro": {
-            "consultas": 58,
+            "consultas": 57,
             "identicas": 2
         },
         "GET saidas": {
-            "consultas": 42,
+            "consultas": 43,
             "identicas": 0
         },
         "GET servicos": {
-            "consultas": 34,
+            "consultas": 36,
             "identicas": 0
         },
         "GET simulador": {
-            "consultas": 764,
-            "identicas": 398
+            "consultas": 749,
+            "identicas": 391
         },
         "GET sql": {
             "consultas": 23,
@@ -409,6 +409,10 @@
             "consultas": 33,
             "identicas": 1
         },
+        "GET vistorias": {
+            "consultas": 37,
+            "identicas": 0
+        },
         "GET winders": {
             "consultas": 79,
             "identicas": 5
@@ -422,7 +426,7 @@
             "identicas": 0
         },
         "POST agendas.salvar": {
-            "consultas": 105,
+            "consultas": 106,
             "identicas": 12
         },
         "POST arvore.excluir": {
@@ -590,7 +594,7 @@
             "identicas": 0
         },
         "POST destinos.salvar": {
-            "consultas": 115,
+            "consultas": 116,
             "identicas": 15
         },
         "POST documento_categorias.nova": {
@@ -682,8 +686,8 @@
             "identicas": 0
         },
         "POST manutencao.salvar": {
-            "consultas": 243,
-            "identicas": 16
+            "consultas": 254,
+            "identicas": 20
         },
         "POST manutencao.situacao": {
             "consultas": 49,
@@ -762,8 +766,8 @@
             "identicas": 0
         },
         "POST relogio.salvar": {
-            "consultas": 235,
-            "identicas": 13
+            "consultas": 239,
+            "identicas": 14
         },
         "POST reserva.excluir": {
             "consultas": 525,
@@ -790,52 +794,52 @@
             "identicas": 0
         },
         "POST rodizio.apagar_tudo": {
-            "consultas": 165,
-            "identicas": 34
+            "consultas": 175,
+            "identicas": 39
         },
         "POST rodizio.manual": {
-            "consultas": 323,
-            "identicas": 143
+            "consultas": 331,
+            "identicas": 149
         },
         "POST rodizio.modo": {
             "consultas": 34,
             "identicas": 3
         },
         "POST rodizio.periodo": {
-            "consultas": 250,
-            "identicas": 72
+            "consultas": 256,
+            "identicas": 76
         },
         "POST rodizio.periodo_livre": {
-            "consultas": 261,
-            "identicas": 74
+            "consultas": 267,
+            "identicas": 78
         },
         "POST rodizio.periodo_sortear": {
-            "consultas": 326,
-            "identicas": 91
+            "consultas": 332,
+            "identicas": 95
         },
         "POST rodizio.proxima_semana": {
-            "consultas": 138,
+            "consultas": 135,
             "identicas": 27
         },
         "POST rodizio.resortear": {
-            "consultas": 543,
-            "identicas": 168
+            "consultas": 539,
+            "identicas": 170
         },
         "POST rodizio.resortear_hoje": {
-            "consultas": 164,
-            "identicas": 25
+            "consultas": 152,
+            "identicas": 24
         },
         "POST rodizio.sem_relogio": {
-            "consultas": 35,
+            "consultas": 34,
             "identicas": 2
         },
         "POST rodizio.trocar_dia": {
-            "consultas": 321,
-            "identicas": 135
+            "consultas": 326,
+            "identicas": 138
         },
         "POST rodizio.usando": {
             "consultas": 285,
-            "identicas": 80
+            "identicas": 79
         },
         "POST saidas.excluir": {
             "consultas": 525,
@@ -866,8 +870,8 @@
             "identicas": 0
         },
         "POST simulador.aplicar": {
-            "consultas": 165,
-            "identicas": 36
+            "consultas": 175,
+            "identicas": 41
         },
         "POST sql.executar": {
             "consultas": 22,
@@ -910,11 +914,15 @@
             "identicas": 0
         },
         "POST usuarios.salvar": {
-            "consultas": 869,
+            "consultas": 872,
             "identicas": 19
         },
         "POST usuarios.senha": {
             "consultas": 23,
+            "identicas": 0
+        },
+        "POST vistorias.registrar": {
+            "consultas": 27,
             "identicas": 0
         },
         "POST winder_posicoes.excluir": {
@@ -942,11 +950,11 @@
             "identicas": 0
         },
         "cli cron.php": {
-            "consultas": 1809,
-            "identicas": 498
+            "consultas": 1831,
+            "identicas": 511
         },
         "cli instalar.php": {
-            "consultas": 31,
+            "consultas": 32,
             "identicas": 2
         }
     }
