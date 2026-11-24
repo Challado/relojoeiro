@@ -3,8 +3,9 @@
 // permissões de sempre: o rodízio e o relógio de ontem (o que vale e a escolha de cada nível), a situação do cron (o usuário
 // comum vê a da própria coleção, sem o registro das outras), os sorteios, a força da senha, o endereço e as rodadas do cron, os
 // parâmetros (só o master, com o rodízio e o relógio de ontem como eram), a preferência do dono, o servidor de e-mail (só o
-// master). E o recurso=opcoes entrega o sim/não com o texto e o booleano: o "0" é desligado. Pela API de verdade (um php -S
-// com a base SQLite nova e descartável).
+// master). E o recurso=opcoes entrega o sim/não com o texto e o booleano: o "0" é desligado. A lista inteira das opções em
+// recurso=config (as 39 da v66, pelas chaves) nos três perfis, e o recupera_ontem.origem com os três valores da v66. Pela API
+// de verdade (um php -S com a base SQLite nova e descartável).
 if (PHP_SAPI !== "cli") {
     http_response_code(404);
     exit;
@@ -107,9 +108,49 @@ try {
     $o_s = $item($op["sistema"]["opcoes"]["opcoes"] ?? $op["sistema"]["opcoes"]);
     exigir_compat($o_s["ligado"] === true && $o_s["efetivo_texto"] === "Ligado", "O sistema (padrão de fábrica, ligado) não vem ligado: " . json_encode($o_s));
 
+    // ---- a lista inteira das opções em recurso=config, como na v66 (as 39 de então; desde a v67, mais o rodízio ligado e o
+    // relógio de ontem), pelas chaves (a conta só deixaria passar uma opção trocada por outra), nos três perfis: o master
+    // dono (as três listas), um dono que não é master (a dele e a do dono; o sistema null) e um membro que não é dono (só a da
+    // coleção). Os grupos continuam os da página (a tela desenha por eles: as do rodízio e dos avisos ficam nas páginas delas)
+    $v66 = ["horario_manha", "horario_noite", "uso_inicio", "pulso_auto_inicio", "uso_fim", "pulso_auto_fim", "pulso_um_so", "sol_fim", "sol_auto_fim",
+        "semana_inicio", "escala_inicio", "escala_periodo", "semana_ultimo_dia", "trocar_hoje", "dia_sem_relogio", "max_sem_uso", "sorteio_casas",
+        "carga_limiar", "sol_limiar", "previsao_limite", "gasto_motor", "medicao_base", "medicao_janela_dias", "medicao_janela_leituras",
+        "medicao_meia_vida_dias", "encostado_dias", "vistoria_dias", "documentos_copia", "painel_modo", "destaque_hoje", "abas_vazias",
+        "sugestao_agora", "calibre_campos", "relojinho_modo", "hora_relogio", "proximos_por_pagina", "plano_por_pagina", "atualizar_segundos", "colunas_hoje"];
+    $todas = array_keys(OPCOES);
+    exigir_compat(count($v66) === 39 && array_diff($v66, $todas) === [], "As 39 opções da v66 deviam continuar no registro: " . implode(", ", array_diff($v66, $todas)));
+    exigir_compat(op_usuarios("salvar", ["login" => "membro", "senha" => "Senha@123", "senha_confirmacao" => "Senha@123", "email" => "membro@exemplo.com"], "dono")["ok"], "Não criou o membro.");
+    $col_dono = (int)sem_escopo(function () { return valor("SELECT c.id FROM colecao c JOIN usuario u ON u.id = c.dono_id WHERE u.login = 'dono' ORDER BY c.id LIMIT 1"); });
+    exigir_compat(!empty($api("dono", ["recurso" => "usuarios", "acao" => "dar_acesso", "login" => "membro", "colecao_id" => $col_dono], true)["ok"]), "Não deu ao membro o acesso à coleção do dono.");
+    $chaves = function ($lista) { return is_array($lista) ? array_column($lista["opcoes"] ?? [], "chave") : null; };
+    foreach ([["dono", [], true, true], ["comum", [], true, false], ["membro", ["colecao" => $col_dono], false, false]] as [$quem, $extra, $tem_dono, $tem_sistema]) {
+        $cfg = $api($quem, ["recurso" => "config"] + $extra);
+        $k_c = $chaves($cfg["opcoes"] ?? null);
+        exigir_compat($k_c === $todas, $quem . ": opcoes.opcoes devia trazer todas as opções, na ordem do registro: faltam " . implode(", ", array_diff($todas, (array)$k_c))
+            . "; sobram " . implode(", ", array_diff((array)$k_c, $todas)));
+        exigir_compat(array_diff($v66, $k_c) === [], $quem . ": faltam em opcoes.opcoes as da v66: " . implode(", ", array_diff($v66, $k_c)));
+        exigir_compat(array_column($cfg["opcoes"]["grupos"], "chave") === ["rotina", "limites", "telas"], $quem . ": os grupos de opcoes deviam ser os da página.");
+        exigir_compat($tem_dono ? $chaves($cfg["dono"]["opcoes"] ?? null) === $todas : (array_key_exists("opcoes", $cfg["dono"] ?? []) && $cfg["dono"]["opcoes"] === null),
+            $quem . ": dono.opcoes.opcoes devia " . ($tem_dono ? "trazer todas as opções" : "vir null") . ": " . json_encode($chaves($cfg["dono"]["opcoes"] ?? null)));
+        exigir_compat($tem_sistema ? $chaves($cfg["sistema"]["padroes"] ?? null) === $todas : (array_key_exists("padroes", $cfg["sistema"] ?? []) && $cfg["sistema"]["padroes"] === null),
+            $quem . ": sistema.padroes.opcoes devia " . ($tem_sistema ? "trazer todas as opções" : "vir null") . ": " . json_encode($chaves($cfg["sistema"]["padroes"] ?? null)));
+    }
+
+    // ---- recupera_ontem.origem (o contrato da v66: colecao, usuario ou sistema). Sem escolha em nenhum nível: sistema (o rodizio.origem,
+    // que documenta padrao, continua padrao); escolhido no sistema, no dono e na coleção, cada um a sua
+    $origens = function () use ($api) { $c = $api("dono", ["recurso" => "config"]); return [$c["recupera_ontem"]["origem"] ?? null, $c["recupera_ontem"]["sistema"] ?? null, $c["rodizio"]["origem"] ?? null]; };
+    exigir_compat($origens() === ["sistema", false, "usuario"], "Sem escolha, recupera_ontem.origem devia ser sistema (e o rodízio, escolhido pelo dono acima, usuario): " . json_encode($origens()));
+    $o_c = $api("comum", ["recurso" => "config"]);
+    exigir_compat($o_c["recupera_ontem"]["origem"] === "sistema" && $o_c["rodizio"]["origem"] === "padrao", "Sem escolha nenhuma, recupera_ontem.origem devia ser sistema e rodizio.origem, padrao: " . json_encode([$o_c["recupera_ontem"]["origem"], $o_c["rodizio"]["origem"]]));
+    foreach ([[["padroes[recupera_ontem]" => "1"], "config", "sistema", true], [["opcoes[recupera_ontem]" => "0"], "conta", "usuario", false], [["recupera_ontem" => "1"], "config", "colecao", true]] as [$campos, $rec, $origem, $ativo]) {
+        exigir_compat(!empty($api("dono", ["recurso" => $rec, "acao" => $rec === "config" ? "salvar" : "alterar"] + $campos, true)["ok"]), "Não gravou " . json_encode($campos));
+        $r = $api("dono", ["recurso" => "config"])["recupera_ontem"];
+        exigir_compat($r["origem"] === $origem && $r["ativo"] === $ativo, "Escolhido em " . json_encode($campos) . ", recupera_ontem devia vir de " . $origem . ": " . json_encode($r));
+    }
+
     $log = (string)@file_get_contents($pasta . "/servidor.log");
     exigir_compat(!preg_match('/PHP (Fatal|Warning|Notice|Deprecated)/', $log), "O servidor registrou erro de PHP:\n" . $log);
-    echo "A leitura de config, conta e usuarios entrega o que a v66 entregava, com as permissões; o \"0\" das opções é desligado.\n";
+    echo "A leitura de config, conta e usuarios entrega o que a v66 entregava, com as permissões (a lista inteira das opções, nos três perfis; o recupera_ontem.origem); o \"0\" das opções é desligado.\n";
     $saida = 0;
 } catch (Throwable $e) {
     fwrite(STDERR, "FALHOU: " . $e->getMessage() . "\n");

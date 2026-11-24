@@ -292,13 +292,15 @@ function opcoes_conferir_horario($nivel, $uid, $ok, $sistema_novo = [])
 
 // A lista que a API entrega de um nível (colecao, usuario ou sistema): cada opção com o texto, os valores possíveis, o que o
 // nível escolheu ("" herda), o que herda e de onde, e o que vale (efetivo, com a origem). Para a coleção do pedido, o usuário
-// do pedido ou o sistema. $grupos: só as opções destes assuntos (a página de cada um: OPCOES_PAGINAS); null, todas
-function opcoes_lista($nivel, $uid = null, $grupos = null)
+// do pedido ou o sistema. $grupos: só as opções destes assuntos (a página de cada um: OPCOES_PAGINAS); null, todas.
+// $todas: as opções de todos os assuntos, com os grupos só de $grupos (o recurso=config, como na v66: os clientes de antes
+// leem ali a lista inteira; a tela desenha por grupo, e as dos outros assuntos ficam de fora dela)
+function opcoes_lista($nivel, $uid = null, $grupos = null, $todas = false)
 {
     $tx = opcoes_textos();
     $lista = [];
     foreach (OPCOES as $chave => [$grupo, $tipo, $padrao, $min, $max, $valores]) {
-        if ($grupos !== null && !in_array($grupo, $grupos, true)) {
+        if ($grupos !== null && !$todas && !in_array($grupo, $grupos, true)) {
             continue;
         }
         // a lista de colunas: as do catálogo (as fixas e as cadastradas da árvore) e, sem escolha em nenhum nível, as que aparecem de início
@@ -357,15 +359,16 @@ function opcoes_lista($nivel, $uid = null, $grupos = null)
 const OPCOES_PAGINAS = ["configuracao.php" => ["rotina", "limites", "telas"], "rodizio.php" => ["rodizio"], "avisos.php" => ["avisos"]];
 
 // As opções de um conjunto de assuntos nos três níveis, como a API (recurso=opcoes) as entrega para a página deles: a coleção
-// do pedido, o dono dela (só o dono vê e muda as escolhas dele) e o sistema (só o master)
-function opcoes_niveis($grupos)
+// do pedido, o dono dela (só o dono vê e muda as escolhas dele) e o sistema (só o master). $todas: a lista inteira das opções
+// (com os grupos de $grupos), como o recurso=config entrega
+function opcoes_niveis($grupos, $todas = false)
 {
     $u = usuario_atual();
     $uid = (int)($u["id"] ?? 0);
     $dono = $uid > 0 && $uid === opcoes_dono_id();
-    return ["colecao" => opcoes_lista("colecao", null, $grupos),
-        "dono" => ["pode_mudar" => $dono, "opcoes" => $dono ? opcoes_lista("usuario", $uid, $grupos) : null],
-        "sistema" => ["pode_mudar" => usuario_master(), "opcoes" => usuario_master() ? opcoes_lista("sistema", null, $grupos) : null]];
+    return ["colecao" => opcoes_lista("colecao", null, $grupos, $todas),
+        "dono" => ["pode_mudar" => $dono, "opcoes" => $dono ? opcoes_lista("usuario", $uid, $grupos, $todas) : null],
+        "sistema" => ["pode_mudar" => usuario_master(), "opcoes" => usuario_master() ? opcoes_lista("sistema", null, $grupos, $todas) : null]];
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

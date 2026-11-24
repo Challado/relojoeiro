@@ -61,7 +61,7 @@ try {
     $dia = function ($n) use ($hoje) { return $hoje->modify(($n >= 0 ? "+" : "") . $n . " day")->format("Y-m-d"); };
 
     // ---- a herança: padrão desligado; sistema, usuário e coleção
-    exigir_recupera(recupera_ontem_configuracao() === ["ativo" => false, "colecao" => null, "usuario" => null, "sistema" => false, "origem" => "padrao"], "O padrão deixou de ser desligado e herdado (do padrão de fábrica).");
+    exigir_recupera(recupera_ontem_configuracao() === ["ativo" => false, "colecao" => null, "usuario" => null, "sistema" => false, "origem" => "sistema"], "O padrão deixou de ser desligado e herdado do sistema (o de fábrica; a origem do contrato é sistema, como na v66).");
     foreach ([["recupera_ontem" => "talvez"], ["recupera_ontem" => []]] as $ruim) {
         exigir_recupera(!op_config("salvar", $ruim)["ok"], "A coleção aceitou uma escolha inválida.");
         exigir_recupera(!op_conta("alterar", ["opcoes" => $ruim])["ok"], "A conta aceitou uma escolha inválida.");

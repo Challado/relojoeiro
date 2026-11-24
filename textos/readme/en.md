@@ -1,4 +1,4 @@
-<!-- origem: 91247f036f6368d4d725ec96ff48b727712f9ce2 -->
+<!-- origem: 68aa7e77b79d48ca8e8bc9a5acac4baa4a60daab -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -531,6 +531,13 @@ each record in the new form, with the same numbers (the watches, the documents a
 oldest user becomes the master and the owner of the collection and of the tree; the others, members of the collection.
 Telegram (`MSG_ENDPOINT`) becomes the first webhook destination, and Google Calendar, the first calendar. If it stops
 halfway, the same button redoes it from the copy.
+
+**The repair of v67 (v69).** An old version of v67 could mark itself as applied before removing all the old user
+columns (`rodizio_ativo`, `rodizio_retomado_em` and `recupera_ontem`). v69 only appears in a database in that state (the
+applied marker is the structure itself: none of the three columns), also after v68, and removes what was left without
+touching the preferences or the rotation resume times already migrated (choices made later stay as they are); it only counts
+as done with the structure checked, and applying it again changes nothing. In a database without those columns it does not
+even appear.
 
 `schema.sql` and each migration are **a single file for the four databases**: the structure (`CREATE TABLE`, `ALTER TABLE`) is
 written in MySQL's dialect, and [`banco.php`](banco.php) translates it to Postgres, SQLite and Firebird (`AUTO_INCREMENT`,

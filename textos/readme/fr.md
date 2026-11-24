@@ -1,4 +1,4 @@
-<!-- origem: 91247f036f6368d4d725ec96ff48b727712f9ce2 -->
+<!-- origem: 68aa7e77b79d48ca8e8bc9a5acac4baa4a60daab -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -554,6 +554,13 @@ remet chaque enregistrement sous la nouvelle forme, avec les mêmes numéros (le
 leur id habituel). L'utilisateur le plus ancien devient le master et le propriétaire de la collection et de l'arbre ; les
 autres, membres de la collection. Telegram (`MSG_ENDPOINT`) devient la première destination webhook, et Google Agenda, le
 premier agenda. Si elle s'arrête en cours, le même bouton la refait à partir de la copie.
+
+**La réparation de la v67 (v69).** Une ancienne version de la v67 pouvait se déclarer appliquée avant de retirer toutes
+les anciennes colonnes de l'utilisateur (`rodizio_ativo`, `rodizio_retomado_em` et `recupera_ontem`). La v69 n'apparaît que
+dans une base dans cet état (la marque d'application est la structure elle-même : aucune des trois colonnes), y compris après
+la v68, et retire ce qui restait sans toucher aux préférences ni aux reprises de la rotation déjà migrées (les choix faits
+ensuite restent tels quels) ; elle ne se considère faite qu'avec la structure vérifiée, et l'appliquer à nouveau ne change
+rien. Dans une base sans ces colonnes, elle n'apparaît même pas.
 
 Le `schema.sql` et chaque migration sont **un seul fichier pour les quatre bases** : la structure (`CREATE TABLE`,
 `ALTER TABLE`) est écrite dans le dialecte de MySQL, et le [`banco.php`](banco.php) la traduit pour Postgres, SQLite et

@@ -73,6 +73,8 @@ jobs:
         run: php testes/leitura_compat.php
       - name: Migração v67 parada em cada etapa e aplicada de novo (guarda os valores, tira as colunas e só então marca)
         run: php testes/migracao_v67.php
+      - name: Reparo da v67 marcada antes de terminar (a v69 aparece só onde sobram colunas antigas, tira-as sem mexer nas escolhas; com e sem a v68, e a base saudável)
+        run: php testes/reparo_v67.php
       - name: Trava do cron com a primeira consulta presa (o PID e a regra gravados antes; a rodada seguinte acha e mata a travada)
         run: php testes/cron_trava.php
 

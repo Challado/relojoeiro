@@ -4689,7 +4689,9 @@
  *     opcoes.grupos                  os grupos das opções, na ordem das telas
  *     opcoes.grupos[].chave          o identificador do grupo: rotina, limites ou telas
  *     opcoes.grupos[].texto          o nome do grupo, no idioma do pedido
- *     opcoes.opcoes                  as opções, uma por linha
+ *     opcoes.opcoes                  todas as opções das três hierarquias, uma por linha, como na v66: também as do rodízio e dos avisos,
+ *                                    que as telas mostram nas páginas delas (o grupo de cada uma diz o assunto; a página Configuração
+ *                                    desenha só as dos grupos listados em grupos)
  *     opcoes.opcoes[].chave          o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     opcoes.opcoes[].grupo          o grupo da opção
  *     opcoes.opcoes[].tipo           hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
@@ -4881,7 +4883,9 @@
  *     sistema.padroes.grupos         os grupos das opções, na ordem das telas
  *     sistema.padroes.grupos[].chave o identificador do grupo: rotina, limites ou telas
  *     sistema.padroes.grupos[].texto o nome do grupo, no idioma do pedido
- *     sistema.padroes.opcoes         as opções, uma por linha
+ *     sistema.padroes.opcoes         todas as opções das três hierarquias, uma por linha, como na v66: também as do rodízio e dos avisos,
+ *                                    que as telas mostram nas páginas delas (o grupo de cada uma diz o assunto; a página Configuração
+ *                                    desenha só as dos grupos listados em grupos)
  *     sistema.padroes.opcoes[].chave o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     sistema.padroes.opcoes[].grupo o grupo da opção
  *     sistema.padroes.opcoes[].tipo  hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
@@ -4934,7 +4938,9 @@
  *     dono.opcoes.grupos             os grupos das opções, na ordem das telas
  *     dono.opcoes.grupos[].chave     o identificador do grupo: rotina, limites ou telas
  *     dono.opcoes.grupos[].texto     o nome do grupo, no idioma do pedido
- *     dono.opcoes.opcoes             as opções, uma por linha
+ *     dono.opcoes.opcoes             todas as opções das três hierarquias, uma por linha, como na v66: também as do rodízio e dos avisos,
+ *                                    que as telas mostram nas páginas delas (o grupo de cada uma diz o assunto; a página Configuração
+ *                                    desenha só as dos grupos listados em grupos)
  *     dono.opcoes.opcoes[].chave     o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     dono.opcoes.opcoes[].grupo     o grupo da opção
  *     dono.opcoes.opcoes[].tipo      hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
@@ -4993,7 +4999,9 @@
  *     recupera_ontem.colecao         a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
  *     recupera_ontem.usuario         a escolha do dono da coleção: true ligado, false desligado, null herda o sistema
  *     recupera_ontem.sistema         o padrão geral (desligado quando o master não ligou)
- *     recupera_ontem.origem          de onde vem a escolha efetiva: colecao, usuario ou sistema
+ *     recupera_ontem.origem          de onde vem a escolha efetiva: colecao, usuario ou sistema (sem escolha em nenhum nível, sistema: vale
+ *                                    o padrão do sistema, que é o de fábrica quando o master não escolheu; o rodizio.origem, este sim,
+ *                                    separa o padrao)
  *     aleatorio                      de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico);
  *                                    sem os dois, o gerador seguro do PHP (random_int)
  *     aleatorio.fontes[]             as fontes, na ordem em que o sistema tenta: RANDOM.ORG, ANU QRNG, gerador seguro do PHP (random_int)

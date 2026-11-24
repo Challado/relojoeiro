@@ -1,4 +1,4 @@
-<!-- origem: 91247f036f6368d4d725ec96ff48b727712f9ce2 -->
+<!-- origem: 68aa7e77b79d48ca8e8bc9a5acac4baa4a60daab -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -413,6 +413,8 @@ curl -H "X-Api-Token: $TOKEN" --data-urlencode recurso=usuarios --data-urlencode
 更新代码后，如果有新的迁移（`migracao_v*.sql`），API 会返回 `503`，**设置**页面会显示应用它的按钮（只有 master 能应用）。cron 也会停止并记录原因，而不是只运行一半。在新安装中，`schema.sql` 已经包含所有迁移的结构，初始集合在创建第一个用户时从 `modelo.json` 载入。
 
 **v25 迁移（多人使用）**会重建整个数据库：先把所有内容的副本保存到 `relojoeiro-antes-da-v25.jsonl.gz`（在 `BACKUP_PASTA` 中，或在临时文件夹中），创建新结构，再以新形式、相同的编号写回每条记录（手表、文档和记录保留原来的 id）。最早的用户成为 master，以及收藏和树的所有者；其他人成为该收藏的成员。Telegram（`MSG_ENDPOINT`）成为第一个 webhook 推送目标，Google 日历成为第一个日历。如果中途停止，同一个按钮会从副本重新执行。
+
+**v67 的修复（v69）。** v67 的一个旧版本可能在删除用户的全部旧列（`rodizio_ativo`、`rodizio_retomado_em` 和 `recupera_ontem`）之前就把自己标记为已应用。v69 只会出现在处于这种状态的数据库中（已应用的标记就是结构本身：三列都不存在），在 v68 之后也一样，它删除剩下的部分，不改动已迁移的偏好和轮换恢复时间（之后做出的选择保持不变）；只有在检查结构之后才算完成，再次应用不会改变任何东西。在没有这些列的数据库中它根本不会出现。
 
 `schema.sql` 和每个迁移都是**四种数据库共用的一个文件**：结构（`CREATE TABLE`、`ALTER TABLE`）用 MySQL 方言书写，由 [`banco.php`](banco.php) 转换为 Postgres、SQLite 和 Firebird（`AUTO_INCREMENT`、`ENUM`、`TINYINT`、`DATETIME`、表内的 `INDEX`、`AFTER` 以及 `MODIFY COLUMN`，后者在 SQLite 上会重建表）。数据（`INSERT`、`UPDATE`）使用四种数据库通用的 SQL：不用 `GROUP_CONCAT`、`IF()` 或 `FIND_IN_SET`。`INSERT IGNORE`、`REPLACE INTO`、`NOW()`、`LEAST`、`GREATEST`、`LENGTH`、`DATE()`、`<=>`、`LIMIT`/`OFFSET`、不带 `FROM` 的 `SELECT`、多行 `INSERT` 和 `CONCAT` 都可以使用（`CONCAT` 不要带 NULL 参数：在 Postgres 中 NULL 会变成空文本，在 MySQL 中结果会变成 NULL）。迁移 v2 到 v8 早于这一做法，只用于升级旧的 MySQL 数据库：Postgres、SQLite 或 Firebird 数据库一创建就是当前版本。
 

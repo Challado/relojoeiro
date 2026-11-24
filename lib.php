@@ -1253,7 +1253,8 @@ function condicao_vale($expressao, $r, $momento)
 // ---------------------------------------------------------------------------------------------------------------------
 // Migrações: as mudanças de estrutura do banco depois da instalação, em arquivos migracao_vN.sql, aplicadas pela API
 // (recurso=migracoes, acao=aplicar). Cada uma: [arquivo, o que traz, a marca de que já foi aplicada: uma tabela ou
-// tabela.coluna]. Com alguma pendente, a API só responde as migrações (a conferência fica no api.php). O arquivo é um
+// tabela.coluna, uma linha (tabela.coluna=valor) ou php=<função> (a função diz se já está aplicada: a estrutura conferida
+// por ela; serve ao reparo, que só fica pendente onde o banco precisa dele); várias separadas por |, basta uma]. Com alguma pendente, a API só responde as migrações (a conferência fica no api.php). O arquivo é um
 // só para os quatro bancos: o DDL no dialeto do MySQL (o banco.php traduz) e os dados em SQL comum aos quatro.
 // ---------------------------------------------------------------------------------------------------------------------
 $MIGRACOES = [
@@ -1324,6 +1325,7 @@ $MIGRACOES = [
     "v66" => ["migracao_v66.sql", tk("a vistoria periódica: a Configuração ganha \"Vistoria: a cada quantos dias conferir cada relógio\" (0 desliga, e vem desligada); ligada, cada relógio ativo ganha o aviso Vistoria, que vence esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro) e se resolve com o lançamento Vistoria, pelo botão em Hoje é dia de ou pela página Vistorias, várias de uma vez; um serviço ou o fim de uma manutenção só contam como vistoria se você marcar"), "sistema.chave=migracao_v66", "migracao_v66_dados"],
     "v67" => ["migracao_v67.sql", tk("o rodízio ligado e o passar o relógio de ontem sem uso para hoje entram nas opções em três níveis, como as outras, e vão para a página Rodízio › Ajustes do rodízio (as abas Esta coleção, Minhas coleções e Sistema): o padrão do sistema sai dos parâmetros de operação, a preferência do dono sai das colunas do usuário (que saem do banco), e a retomada do rodízio fica em cada coleção"), "sistema.chave=migracao_v67", "migracao_v67_dados"],
     "v68" => ["migracao_v68.sql", tk("a próxima vistoria numa coluna própria da tabela dos relógios (Próxima vistoria, logo depois da Encostado, em Cadastros › Colunas): a vistoria sai da Próxima manutenção, do Em e do O que fazer, onde cobria a manutenção de verdade; a coluna aparece ou não como as outras (a lista Colunas da página Hoje), e some com a vistoria desligada"), "sistema.chave=migracao_v68", "migracao_v68_dados"],
+    "v69" => ["migracao_v69.sql", tk("o reparo da v67 que se deu por aplicada antes de terminar (a versão antiga dela gravava a marca com colunas antigas do usuário ainda no banco): tira as regras e as colunas que sobraram (rodizio_ativo, rodizio_retomado_em e recupera_ontem), sem mexer nas preferências nem nas retomadas já migradas, e só se dá por feita com a estrutura conferida; num banco sem essas colunas ela nem aparece"), "php=migracao_v69_feita", "migracao_v69_dados"],
 ];
 
 // O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
@@ -1362,6 +1364,53 @@ function migracao_v63_dados($nova = false)
         });
     }
     sis_set("migracao_v63", "1");
+}
+
+// O reparo da v67 (v69). A versão antiga da v67 copiava todos os dados (o padrão do sistema, a preferência de cada dono e a
+// retomada de cada coleção) e só depois tirava as regras e as colunas do usuário, numa leva só, e gravava a marca mesmo quando
+// a leva parava no meio: o banco ficava marcado, com colunas antigas, e nenhuma migração voltava a aparecer (nem depois da v68).
+// Pendente só onde a v67 está marcada e sobra alguma das três colunas (a marca php=: migracao_v69_feita confere a estrutura;
+// sem a marca da v67, as colunas são da v66 e quem as tira é a v67); aplicada, tira o que
+// sobrou da estrutura e nada mais: os dados já foram copiados antes da primeira coluna sair, e as preferências e as retomadas
+// gravadas depois (escolhas mais novas do usuário) ficam como estão. Sem a marca da v67 (a v67 não rodou), faz a v67 inteira,
+// que copia os dados antes de tirar as colunas. Aplicar de novo não muda nada
+const MIGRACAO_V67_COLUNAS = ["rodizio_ativo", "rodizio_retomado_em", "recupera_ontem"];
+
+function migracao_v69_feita()
+{
+    // sem a marca da v67, as colunas são da v66 e a v67 (que copia os dados antes de tirá-las) é quem cuida delas
+    if (!isset(migracoes_marcas_do_sistema()["migracao_v67"])) {
+        return true;
+    }
+    $GLOBALS["BANCO_ESTRUTURA"] = ($GLOBALS["BANCO_ESTRUTURA"] ?? 0) + 1;
+    foreach (MIGRACAO_V67_COLUNAS as $col) {
+        if (banco_tem_coluna("usuario", $col)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function migracao_v69_dados($nova = false)
+{
+    if ($nova) {
+        return;
+    }
+    if (sis("migracao_v67") !== "1") {
+        migracao_v67_dados(false);
+        return;
+    }
+    // as etapas de estrutura da v67 (as regras e as três colunas, cada uma só se ainda existe); as de dados ficam de fora
+    foreach (array_slice(migracao_v67_passos(), 4) as $passo) {
+        $passo();
+    }
+    // só feita com a estrutura conferida
+    $GLOBALS["BANCO_ESTRUTURA"] = ($GLOBALS["BANCO_ESTRUTURA"] ?? 0) + 1;
+    foreach (MIGRACAO_V67_COLUNAS as $col) {
+        if (banco_tem_coluna("usuario", $col)) {
+            throw new RuntimeException(t("O reparo da v67 não tirou a coluna usuario.{1}: aplique de novo.", [1 => $col]));
+        }
+    }
 }
 
 // O passo em PHP da v68: em cada árvore, a coluna do sistema Próxima vistoria (modelo.json), logo depois da Encostado (no fim,
@@ -2530,7 +2579,10 @@ function migracoes_pendentes()
             foreach (explode("|", $m[2]) as $uma) {
                 $linha = explode("=", $uma, 2);
                 $marca = explode(".", $linha[0]);
-                if (count($linha) === 2 && $marca === ["sistema", "chave"]) {
+                if (count($linha) === 2 && $linha[0] === "php") {
+                    // a marca conferida por uma função (o reparo: aplicada é a estrutura que já está como deve)
+                    $existe = (bool)call_user_func($linha[1]);
+                } elseif (count($linha) === 2 && $marca === ["sistema", "chave"]) {
                     // as marcas guardadas na tabela sistema: todas numa consulta só (eram uma por migração, a cada pedido)
                     $existe = isset(migracoes_marcas_do_sistema()[$linha[1]]);
                 } elseif (count($linha) === 2) {
@@ -5075,9 +5127,16 @@ function rodizio_ativo()
 
 // Passar o relógio de ontem para hoje (recupera_ontem, opcoes.php; padrão desligado). Ligado, o relógio do plano de ontem que
 // não foi ao pulso nem um pouquinho passa para hoje e os outros dias do plano andam um dia (plano_recuperar_ontem)
+// O contrato deste campo (recurso=config, recupera_ontem.origem, desde a v57) só tem colecao, usuario e sistema: sem escolha em
+// nenhum nível vale o padrão do sistema, que é o de fábrica quando o master não escolheu, e a origem é "sistema" (o
+// rodizio.origem, que sempre teve "padrao", continua com ele)
 function recupera_ontem_configuracao()
 {
-    return opcao_sim_nao_niveis("recupera_ontem");
+    $r = opcao_sim_nao_niveis("recupera_ontem");
+    if ($r["origem"] === "padrao") {
+        $r["origem"] = "sistema";
+    }
+    return $r;
 }
 
 function recupera_ontem_ativo()
