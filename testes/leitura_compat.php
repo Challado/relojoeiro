@@ -4,7 +4,8 @@
 // comum vê a da própria coleção, sem o registro das outras), os sorteios, a força da senha, o endereço e as rodadas do cron, os
 // parâmetros (só o master, com o rodízio e o relógio de ontem como eram), a preferência do dono, o servidor de e-mail (só o
 // master). E o recurso=opcoes entrega o sim/não com o texto e o booleano: o "0" é desligado. A lista inteira das opções em
-// recurso=config (as 39 da v66, pelas chaves) nos três perfis, e o recupera_ontem.origem com os três valores da v66. Pela API
+// recurso=config nos três perfis, pela lógica do cliente da v66 (percorre os grupos e mostra as opções de cada um: as 39 de
+// antes, cada uma uma vez) e pela da tela de agora (só os grupos da página), e o recupera_ontem.origem com os três valores da v66. Pela API
 // de verdade (um php -S com a base SQLite nova e descartável).
 if (PHP_SAPI !== "cli") {
     http_response_code(404);
@@ -123,17 +124,80 @@ try {
     $col_dono = (int)sem_escopo(function () { return valor("SELECT c.id FROM colecao c JOIN usuario u ON u.id = c.dono_id WHERE u.login = 'dono' ORDER BY c.id LIMIT 1"); });
     exigir_compat(!empty($api("dono", ["recurso" => "usuarios", "acao" => "dar_acesso", "login" => "membro", "colecao_id" => $col_dono], true)["ok"]), "Não deu ao membro o acesso à coleção do dono.");
     $chaves = function ($lista) { return is_array($lista) ? array_column($lista["opcoes"] ?? [], "chave") : null; };
+    // o que o cliente da v66 mostra: percorre lista.grupos e, em cada grupo, as opções cujo grupo é a chave dele (a lista plana
+    // inteira deixava passar as opções de um grupo que não vinha em grupos: o cliente não as mostrava)
+    $cliente_v66 = function ($lista) {
+        $vistas = [];
+        foreach ($lista["grupos"] as $g) {
+            foreach ($lista["opcoes"] as $o) {
+                if ($o["grupo"] === $g["chave"]) {
+                    $vistas[] = $o["chave"];
+                }
+            }
+        }
+        return $vistas;
+    };
+    // o que a tela de agora mostra (camposOpcoes, no api.js): só os grupos de grupos_pagina
+    $tela_atual = function ($lista) {
+        $vistas = [];
+        foreach ($lista["grupos"] as $g) {
+            if (in_array($g["chave"], $lista["grupos_pagina"], true)) {
+                foreach ($lista["opcoes"] as $o) {
+                    if ($o["grupo"] === $g["chave"]) {
+                        $vistas[] = $o["chave"];
+                    }
+                }
+            }
+        }
+        return $vistas;
+    };
+    $da_configuracao = array_keys(array_filter(OPCOES, function ($o) { return in_array($o[0], ["rotina", "limites", "telas"], true); }));
+    $confere_lista = function ($lista, $onde) use ($cliente_v66, $tela_atual, $todas, $v66, $da_configuracao) {
+        exigir_compat(array_column($lista["opcoes"], "chave") === $todas, $onde . ": devia trazer as " . count($todas) . " opções, na ordem do registro.");
+        // cada opção com um grupo que está em grupos, e cada grupo com o rótulo traduzido
+        $g_chaves = array_column($lista["grupos"], "chave");
+        $sem_grupo = array_values(array_filter($lista["opcoes"], function ($o) use ($g_chaves) { return !in_array($o["grupo"], $g_chaves, true); }));
+        exigir_compat($sem_grupo === [], $onde . ": opções com um grupo que não está em grupos (o cliente da v66 não as mostra): " . implode(", ", array_column($sem_grupo, "chave")));
+        exigir_compat($g_chaves === array_keys(opcoes_textos()["grupos"]) && count(array_unique($g_chaves)) === count($g_chaves), $onde . ": os grupos deviam ser os cinco assuntos, uma vez cada: " . json_encode($g_chaves));
+        foreach ($lista["grupos"] as $g) {
+            exigir_compat(trim((string)$g["texto"]) !== "" && $g["texto"] !== $g["chave"], $onde . ": o grupo " . $g["chave"] . " sem o rótulo.");
+        }
+        // o cliente da v66: as 39 de antes, cada uma exatamente uma vez
+        $vistas = $cliente_v66($lista);
+        $contagem = array_count_values($vistas);
+        $erradas = array_values(array_filter($v66, function ($k) use ($contagem) { return ($contagem[$k] ?? 0) !== 1; }));
+        exigir_compat($erradas === [], $onde . ": no cliente da v66, estas não aparecem exatamente uma vez: "
+            . implode(", ", array_map(function ($k) use ($contagem) { return $k . " (" . ($contagem[$k] ?? 0) . ")"; }, $erradas)));
+        exigir_compat(count($vistas) === count($todas) && count(array_unique($vistas)) === count($vistas), $onde . ": no cliente da v66, todas as opções uma vez cada: " . count($vistas));
+        // a tela de agora: só os assuntos da Configuração (as do rodízio e dos avisos ficam nas páginas delas)
+        exigir_compat($lista["grupos_pagina"] === ["rotina", "limites", "telas"], $onde . ": grupos_pagina devia ser os da Configuração: " . json_encode($lista["grupos_pagina"]));
+        exigir_compat($tela_atual($lista) === $da_configuracao, $onde . ": a tela de agora devia mostrar só as da Configuração: " . implode(", ", array_diff($tela_atual($lista), $da_configuracao)));
+    };
     foreach ([["dono", [], true, true], ["comum", [], true, false], ["membro", ["colecao" => $col_dono], false, false]] as [$quem, $extra, $tem_dono, $tem_sistema]) {
         $cfg = $api($quem, ["recurso" => "config"] + $extra);
-        $k_c = $chaves($cfg["opcoes"] ?? null);
-        exigir_compat($k_c === $todas, $quem . ": opcoes.opcoes devia trazer todas as opções, na ordem do registro: faltam " . implode(", ", array_diff($todas, (array)$k_c))
-            . "; sobram " . implode(", ", array_diff((array)$k_c, $todas)));
-        exigir_compat(array_diff($v66, $k_c) === [], $quem . ": faltam em opcoes.opcoes as da v66: " . implode(", ", array_diff($v66, $k_c)));
-        exigir_compat(array_column($cfg["opcoes"]["grupos"], "chave") === ["rotina", "limites", "telas"], $quem . ": os grupos de opcoes deviam ser os da página.");
-        exigir_compat($tem_dono ? $chaves($cfg["dono"]["opcoes"] ?? null) === $todas : (array_key_exists("opcoes", $cfg["dono"] ?? []) && $cfg["dono"]["opcoes"] === null),
-            $quem . ": dono.opcoes.opcoes devia " . ($tem_dono ? "trazer todas as opções" : "vir null") . ": " . json_encode($chaves($cfg["dono"]["opcoes"] ?? null)));
-        exigir_compat($tem_sistema ? $chaves($cfg["sistema"]["padroes"] ?? null) === $todas : (array_key_exists("padroes", $cfg["sistema"] ?? []) && $cfg["sistema"]["padroes"] === null),
-            $quem . ": sistema.padroes.opcoes devia " . ($tem_sistema ? "trazer todas as opções" : "vir null") . ": " . json_encode($chaves($cfg["sistema"]["padroes"] ?? null)));
+        $confere_lista($cfg["opcoes"], $quem . ", opcoes");
+        if ($tem_dono) {
+            $confere_lista($cfg["dono"]["opcoes"], $quem . ", dono.opcoes");
+        } else {
+            exigir_compat(array_key_exists("opcoes", $cfg["dono"] ?? []) && $cfg["dono"]["opcoes"] === null, $quem . ": dono.opcoes devia vir null.");
+        }
+        if ($tem_sistema) {
+            $confere_lista($cfg["sistema"]["padroes"], $quem . ", sistema.padroes");
+        } else {
+            exigir_compat(array_key_exists("padroes", $cfg["sistema"] ?? []) && $cfg["sistema"]["padroes"] === null, $quem . ": sistema.padroes devia vir null.");
+        }
+    }
+    // os rótulos no idioma do pedido
+    $cfg_en = $api("dono", ["recurso" => "config", "lingua" => "en"]);
+    $textos_pt = array_column($api("dono", ["recurso" => "config"])["opcoes"]["grupos"], "texto", "chave");
+    foreach ($cfg_en["opcoes"]["grupos"] as $g) {
+        exigir_compat($g["texto"] !== $textos_pt[$g["chave"]] || $g["chave"] === "avisos" && $g["texto"] !== "", "O grupo " . $g["chave"] . " não veio traduzido em inglês: " . $g["texto"]);
+    }
+    // as outras páginas (recurso=opcoes): só os grupos delas, e grupos_pagina igual
+    foreach (["rodizio", "avisos"] as $grp) {
+        $op = $api("dono", ["recurso" => "opcoes", "grupo" => $grp]);
+        exigir_compat(array_column($op["colecao"]["grupos"], "chave") === [$grp] && $op["colecao"]["grupos_pagina"] === [$grp]
+            && array_unique(array_column($op["colecao"]["opcoes"], "grupo")) === [$grp], "A página do assunto " . $grp . " devia ter só ele: " . json_encode([$op["colecao"]["grupos"], $op["colecao"]["grupos_pagina"]]));
     }
 
     // ---- recupera_ontem.origem (o contrato da v66: colecao, usuario ou sistema). Sem escolha em nenhum nível: sistema (o rodizio.origem,

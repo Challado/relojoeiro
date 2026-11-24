@@ -1368,10 +1368,13 @@ function colunasAplicar(tabela, colunas) {
 }
 
 // Os campos de uma lista de opções, em grupos; prefixo: o nome do conjunto na gravação (opcoes[<chave>], padroes[<chave>]);
-// vazio, o nome é a própria chave (a Configuração da coleção). Com um assunto só, sem o título dele (a página já é do assunto)
+// vazio, o nome é a própria chave (a Configuração da coleção). Com um assunto só, sem o título dele (a página já é do assunto).
+// Só os assuntos da página (grupos_pagina): o recurso=config manda os grupos de todas as opções, como na v66, e as do rodízio e
+// dos avisos ficam nas páginas delas
 function camposOpcoes(lista, prefixo) {
-  return lista.grupos.map(function (g) {
-    return (lista.grupos.length > 1 ? el("h3", {}, h(g.texto)) : "") + lista.opcoes.filter(function (o) { return o.grupo === g.chave; }).map(function (o) {
+  var grupos = lista.grupos.filter(function (g) { return !lista.grupos_pagina || lista.grupos_pagina.indexOf(g.chave) >= 0; });
+  return grupos.map(function (g) {
+    return (grupos.length > 1 ? el("h3", {}, h(g.texto)) : "") + lista.opcoes.filter(function (o) { return o.grupo === g.chave; }).map(function (o) {
       return campoOpcao(o, prefixo ? prefixo + "[" + o.chave + "]" : o.chave, "largo");
     }).join("");
   }).join("");

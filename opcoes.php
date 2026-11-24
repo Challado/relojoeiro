@@ -293,8 +293,10 @@ function opcoes_conferir_horario($nivel, $uid, $ok, $sistema_novo = [])
 // A lista que a API entrega de um nível (colecao, usuario ou sistema): cada opção com o texto, os valores possíveis, o que o
 // nível escolheu ("" herda), o que herda e de onde, e o que vale (efetivo, com a origem). Para a coleção do pedido, o usuário
 // do pedido ou o sistema. $grupos: só as opções destes assuntos (a página de cada um: OPCOES_PAGINAS); null, todas.
-// $todas: as opções de todos os assuntos, com os grupos só de $grupos (o recurso=config, como na v66: os clientes de antes
-// leem ali a lista inteira; a tela desenha por grupo, e as dos outros assuntos ficam de fora dela)
+// $todas: as opções de todos os assuntos, com os grupos de todos (o recurso=config, como na v66: o cliente de antes percorre os
+// grupos e mostra em cada um as opções dele, então toda opção tem o seu grupo na lista). grupos_pagina: os assuntos que a
+// página do pedido desenha ($grupos; null, todos): a tela de agora mostra só esses (camposOpcoes), e as dos outros assuntos
+// ficam nas páginas delas
 function opcoes_lista($nivel, $uid = null, $grupos = null, $todas = false)
 {
     $tx = opcoes_textos();
@@ -350,8 +352,9 @@ function opcoes_lista($nivel, $uid = null, $grupos = null, $todas = false)
             "efetivo" => $efetivo, "origem" => $proprio !== "" ? $nivel : $origem_h,
             "efetivo_texto" => $texto_de($efetivo), "herdado_texto" => $texto_de($herdado), "ligado" => $tipo === "sim_nao" ? $efetivo === "1" : null];
     }
-    $chaves_g = array_values(array_filter(array_keys($tx["grupos"]), function ($g) use ($grupos) { return $grupos === null || in_array($g, $grupos, true); }));
-    return ["grupos" => array_map(function ($g) use ($tx) { return ["chave" => $g, "texto" => $tx["grupos"][$g]]; }, $chaves_g), "opcoes" => $lista];
+    $da_pagina = array_values(array_filter(array_keys($tx["grupos"]), function ($g) use ($grupos) { return $grupos === null || in_array($g, $grupos, true); }));
+    $chaves_g = $todas ? array_keys($tx["grupos"]) : $da_pagina;
+    return ["grupos" => array_map(function ($g) use ($tx) { return ["chave" => $g, "texto" => $tx["grupos"][$g]]; }, $chaves_g), "grupos_pagina" => $da_pagina, "opcoes" => $lista];
 }
 
 // A página de cada assunto das opções: a Configuração (rotina, limites e telas), Rodízio › Ajustes do rodízio (rodizio) e

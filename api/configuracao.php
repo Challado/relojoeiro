@@ -20,11 +20,12 @@ foreach (linhas("SELECT chave, valor FROM config ORDER BY chave") as $c) {
 // o aviso Encostado ligado ou não (a caixa da Configuração liga e desliga o aviso do cadastro, o mesmo que a página Avisos)
 $valores_c["encostado_ativo"] = encostado_ativo() ? "1" : "0";
 $grupos_c = OPCOES_PAGINAS["configuracao.php"];
-// a lista inteira das opções, como na v66 (os clientes de antes leem aqui as do rodízio e dos avisos também), com os grupos
-// desta página: a tela desenha por grupo (camposOpcoes) e deixa de fora as dos outros assuntos, que têm a página delas
+// a lista inteira das opções e os grupos de todas, como na v66 (o cliente de antes percorre os grupos e mostra as opções de
+// cada um: as do rodízio e dos avisos também); grupos_pagina diz os desta página (rotina, limites e telas), os únicos que a
+// tela de agora desenha (camposOpcoes): as dos outros assuntos ficam nas páginas delas
 $niveis_c = opcoes_niveis($grupos_c, true);
 $saida = ["config" => (object)$valores_c,
-    // as opções das três hierarquias (sistema → usuário → coleção) dos assuntos desta página: cada uma com o que a coleção
+    // as opções das três hierarquias (sistema → usuário → coleção), todas, com grupos_pagina para a tela: cada uma com o que a coleção
     // escolheu (vazio herda), o que herda e de onde, e o que vale
     "opcoes" => $niveis_c["colecao"],
     // os idiomas (o menu Idioma padrão)

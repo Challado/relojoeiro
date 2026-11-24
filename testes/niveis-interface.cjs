@@ -43,7 +43,7 @@ function opcao(chave, grupo, tipo, escolha, herdado, origem, valores) {
 }
 function listaRodizio(escolhas, origem) {
   const e = (k) => escolhas[k] || '';
-  return {grupos: [{chave: 'rodizio', texto: 'Rodízio'}], opcoes: [
+  return {grupos: [{chave: 'rodizio', texto: 'Rodízio'}], grupos_pagina: ['rodizio'], opcoes: [
     opcao('rodizio_ativo', 'rodizio', 'sim_nao', e('rodizio_ativo'), '1', origem), opcao('recupera_ontem', 'rodizio', 'sim_nao', e('recupera_ontem'), '0', origem),
     opcao('semana_inicio', 'rodizio', 'enum', e('semana_inicio'), 'segunda', origem, ['segunda', 'domingo']),
     opcao('escala_inicio', 'rodizio', 'enum', e('escala_inicio'), 'amanha', origem, ['amanha', 'hoje']),

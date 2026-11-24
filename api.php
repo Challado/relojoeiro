@@ -4687,11 +4687,15 @@
  *                                    que a coleção escolheu; herdado: o do dono, senão o do sistema, senão o padrão de fábrica): os grupos
  *                                    (as telas agrupam por eles) e cada opção com o que este nível escolheu, o que herda e o que vale
  *     opcoes.grupos                  os grupos das opções, na ordem das telas
- *     opcoes.grupos[].chave          o identificador do grupo: rotina, limites ou telas
+ *     opcoes.grupos[].chave          o identificador do grupo: rotina, rodizio, limites, avisos ou telas
  *     opcoes.grupos[].texto          o nome do grupo, no idioma do pedido
- *     opcoes.opcoes                  todas as opções das três hierarquias, uma por linha, como na v66: também as do rodízio e dos avisos,
- *                                    que as telas mostram nas páginas delas (o grupo de cada uma diz o assunto; a página Configuração
- *                                    desenha só as dos grupos listados em grupos)
+ *     opcoes.grupos_pagina           os grupos que a página Configuração mostra (rotina, limites e telas), na ordem das telas; os outros
+ *                                    ficam nas páginas Ajustes do rodízio e Ajustes dos avisos
+ *     opcoes.grupos_pagina[]         o identificador de um grupo
+ *     opcoes.opcoes                  todas as opções das três hierarquias, uma por linha, como na v66, cada uma com o grupo dela em grupos
+ *                                    (quem percorre os grupos e mostra as opções de cada um vê todas): também as do rodízio e dos avisos,
+ *                                    que as telas de agora mostram nas páginas delas (a página Configuração desenha só os grupos de
+ *                                    grupos_pagina)
  *     opcoes.opcoes[].chave          o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     opcoes.opcoes[].grupo          o grupo da opção
  *     opcoes.opcoes[].tipo           hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
@@ -4881,11 +4885,16 @@
  *     sistema.padroes                só para o master (null para os outros): o padrão do sistema de cada opção da coleção, na mesma forma
  *                                    de opcoes (escolha: o que o master escolheu; herdado: o padrão de fábrica)
  *     sistema.padroes.grupos         os grupos das opções, na ordem das telas
- *     sistema.padroes.grupos[].chave o identificador do grupo: rotina, limites ou telas
+ *     sistema.padroes.grupos[].chave o identificador do grupo: rotina, rodizio, limites, avisos ou telas
  *     sistema.padroes.grupos[].texto o nome do grupo, no idioma do pedido
- *     sistema.padroes.opcoes         todas as opções das três hierarquias, uma por linha, como na v66: também as do rodízio e dos avisos,
- *                                    que as telas mostram nas páginas delas (o grupo de cada uma diz o assunto; a página Configuração
- *                                    desenha só as dos grupos listados em grupos)
+ *     sistema.padroes.grupos_pagina  os grupos que a página Configuração mostra (rotina, limites e telas), na ordem das telas; os outros
+ *                                    ficam nas páginas Ajustes do rodízio e Ajustes dos avisos
+ *     sistema.padroes.grupos_pagina[]
+ *                                    o identificador de um grupo
+ *     sistema.padroes.opcoes         todas as opções das três hierarquias, uma por linha, como na v66, cada uma com o grupo dela em grupos
+ *                                    (quem percorre os grupos e mostra as opções de cada um vê todas): também as do rodízio e dos avisos,
+ *                                    que as telas de agora mostram nas páginas delas (a página Configuração desenha só os grupos de
+ *                                    grupos_pagina)
  *     sistema.padroes.opcoes[].chave o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     sistema.padroes.opcoes[].grupo o grupo da opção
  *     sistema.padroes.opcoes[].tipo  hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
@@ -4936,11 +4945,15 @@
  *     dono.opcoes                    só para o dono da coleção (null para os outros): o padrão dele de cada opção da coleção, na mesma
  *                                    forma de opcoes (escolha: o que o dono escolheu; herdado: o do sistema, senão o padrão de fábrica)
  *     dono.opcoes.grupos             os grupos das opções, na ordem das telas
- *     dono.opcoes.grupos[].chave     o identificador do grupo: rotina, limites ou telas
+ *     dono.opcoes.grupos[].chave     o identificador do grupo: rotina, rodizio, limites, avisos ou telas
  *     dono.opcoes.grupos[].texto     o nome do grupo, no idioma do pedido
- *     dono.opcoes.opcoes             todas as opções das três hierarquias, uma por linha, como na v66: também as do rodízio e dos avisos,
- *                                    que as telas mostram nas páginas delas (o grupo de cada uma diz o assunto; a página Configuração
- *                                    desenha só as dos grupos listados em grupos)
+ *     dono.opcoes.grupos_pagina      os grupos que a página Configuração mostra (rotina, limites e telas), na ordem das telas; os outros
+ *                                    ficam nas páginas Ajustes do rodízio e Ajustes dos avisos
+ *     dono.opcoes.grupos_pagina[]    o identificador de um grupo
+ *     dono.opcoes.opcoes             todas as opções das três hierarquias, uma por linha, como na v66, cada uma com o grupo dela em grupos
+ *                                    (quem percorre os grupos e mostra as opções de cada um vê todas): também as do rodízio e dos avisos,
+ *                                    que as telas de agora mostram nas páginas delas (a página Configuração desenha só os grupos de
+ *                                    grupos_pagina)
  *     dono.opcoes.opcoes[].chave     o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     dono.opcoes.opcoes[].grupo     o grupo da opção
  *     dono.opcoes.opcoes[].tipo      hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
@@ -5057,6 +5070,8 @@
  *     colecao.grupos                 os grupos das opções, na ordem das telas
  *     colecao.grupos[].chave         o identificador do grupo: rotina, rodizio, limites, avisos ou telas
  *     colecao.grupos[].texto         o nome do grupo, no idioma do pedido
+ *     colecao.grupos_pagina          os grupos que a página do assunto mostra: os mesmos de grupos
+ *     colecao.grupos_pagina[]        o identificador de um grupo
  *     colecao.opcoes                 as opções, uma por linha
  *     colecao.opcoes[].chave         o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     colecao.opcoes[].grupo         o grupo da opção
@@ -5095,6 +5110,8 @@
  *     dono.opcoes.grupos             os grupos das opções, na ordem das telas
  *     dono.opcoes.grupos[].chave     o identificador do grupo: rotina, rodizio, limites, avisos ou telas
  *     dono.opcoes.grupos[].texto     o nome do grupo, no idioma do pedido
+ *     dono.opcoes.grupos_pagina      os grupos que a página do assunto mostra: os mesmos de grupos
+ *     dono.opcoes.grupos_pagina[]    o identificador de um grupo
  *     dono.opcoes.opcoes             as opções, uma por linha
  *     dono.opcoes.opcoes[].chave     o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     dono.opcoes.opcoes[].grupo     o grupo da opção
@@ -5134,6 +5151,8 @@
  *     sistema.opcoes.grupos          os grupos das opções, na ordem das telas
  *     sistema.opcoes.grupos[].chave  o identificador do grupo: rotina, rodizio, limites, avisos ou telas
  *     sistema.opcoes.grupos[].texto  o nome do grupo, no idioma do pedido
+ *     sistema.opcoes.grupos_pagina   os grupos que a página do assunto mostra: os mesmos de grupos
+ *     sistema.opcoes.grupos_pagina[] o identificador de um grupo
  *     sistema.opcoes.opcoes          as opções, uma por linha
  *     sistema.opcoes.opcoes[].chave  o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     sistema.opcoes.opcoes[].grupo  o grupo da opção
@@ -8157,8 +8176,10 @@
  *                                    ele escolheu como padrão das coleções de que é dono; herdado: o do sistema): os grupos (as telas
  *                                    agrupam por eles) e cada opção com o que este nível escolheu, o que herda e o que vale
  *     opcoes.grupos                  os grupos das opções, na ordem das telas
- *     opcoes.grupos[].chave          o identificador do grupo: rotina, limites ou telas
+ *     opcoes.grupos[].chave          o identificador do grupo: rotina, rodizio, limites, avisos ou telas
  *     opcoes.grupos[].texto          o nome do grupo, no idioma do pedido
+ *     opcoes.grupos_pagina           os grupos para mostrar: aqui, os mesmos de grupos (todas as opções)
+ *     opcoes.grupos_pagina[]         o identificador de um grupo
  *     opcoes.opcoes                  as opções, uma por linha
  *     opcoes.opcoes[].chave          o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     opcoes.opcoes[].grupo          o grupo da opção
