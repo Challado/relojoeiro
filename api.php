@@ -1288,9 +1288,9 @@
  *     config.atualizar_segundos      de quantos em quantos segundos as páginas (Hoje com o painel, Ficha, Plano, Totais e Histórico) leem
  *                                    tudo de novo sozinhas: 1 a 86400; 0, não leem; vazio: 60
  *     config.colunas_hoje            as colunas da tabela dos relógios da página Hoje e a ordem delas: as chaves separadas por vírgula
- *                                    (codigo, nome, marca, tipo, estado, carga, ultimo, uso, manut, em, fazer, encostado, compra, valor; a
- *                                    nome é fixa), vazio herda o dono da coleção e depois o sistema; sem escolha em nenhum nível, todas, na
- *                                    ordem de sempre
+ *                                    (codigo, nome, marca, tipo, estado, carga, ultimo, uso, manut, em, fazer, encostado, vistoria, compra,
+ *                                    valor; a nome é fixa), vazio herda o dono da coleção e depois o sistema; sem escolha em nenhum nível,
+ *                                    todas, na ordem de sempre
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
@@ -2489,11 +2489,14 @@
  *                                    Em repouso (o estado da leitura, no campo estado do lancar)
  *     avisos[].resolve.botao         o texto do botão ("Pôs no sol", "Tirou do carregador", "Informar leitura de carga", "Corda")
  *     avisos[].texto                 o motivo por extenso
- *     avisos_nomes[]                 os nomes dos avisos da manutenção (o filtro "O que fazer" da tabela; sem o Encostado, que tem a coluna
- *                                    dele)
+ *     avisos_nomes[]                 os nomes dos avisos da manutenção (o filtro "O que fazer" da tabela; sem o Encostado e a Vistoria, que
+ *                                    têm a coluna deles)
  *     encostado_ativo                true ou false: o aviso Encostado está ligado (a caixa Avisar quando um relógio fica encostado, da
  *                                    Configuração); false, a página esconde a coluna Encostado e o filtro, e nenhum relógio vem com
  *                                    encostado
+ *     vistoria_ativa                 true ou false: a vistoria vale (Avisos › Ajustes dos avisos, vistoria_dias acima de 0, e o aviso
+ *                                    Vistoria ligado); false, a página esconde a coluna Próxima vistoria e o filtro, e nenhum relógio vem
+ *                                    com vistoria
  *     fora_da_colecao                os relógios fora da coleção (desejados, vendidos, arquivados), fora da tabela: a página Desejos e o
  *                                    seletor da ficha
  *     fora_da_colecao[]              um relógio fora da coleção
@@ -2721,12 +2724,19 @@
  *     relogios[].leitura.valor       o valor
  *     relogios[].encostado           o aviso Encostado deste relógio (não entra na manutenção); null: sem data (nunca foi ao pulso e sem
  *                                    data da compra)
+ *     relogios[].vistoria            a próxima vistoria deste relógio (a coluna Próxima vistoria; não entra na manutenção, no Em nem no O
+ *                                    que fazer); null: sem vistoria (desligada, fora da coleção ou na manutenção)
+ *     relogios[].vistoria.data       a data (texto AAAA-MM-DD; hoje se já passou)
+ *     relogios[].vistoria.estado     atrasado (o dia da vistoria passou), em_breve (vence agora) ou ok
+ *     relogios[].vistoria.falta      quanto falta, por extenso ("10h 49min", "atrasado 2d")
+ *     relogios[].vistoria.momento    o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     relogios[].encostado.data      a data (texto AAAA-MM-DD; hoje se já passou)
  *     relogios[].encostado.estado    atrasado (passou do limite de dias sem ir ao pulso), em_breve (vence agora) ou ok (ainda dentro do
  *                                    prazo)
  *     relogios[].encostado.falta     quanto falta, por extenso ("12d", "atrasado 40d")
  *     relogios[].encostado.momento   o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
- *     relogios[].manutencao          o aviso de manutenção mais perto, sem o Encostado; null: nenhum
+ *     relogios[].manutencao          o aviso de manutenção mais perto (a Próxima manutenção, o Em e o O que fazer), sem o Encostado e a
+ *                                    Vistoria, que têm a coluna deles; null: nenhum
  *     relogios[].manutencao.data     a data (texto AAAA-MM-DD; hoje se já passou)
  *     relogios[].manutencao.falta    quanto falta, por extenso ("10h 49min", "atrasado 2d")
  *     relogios[].manutencao.momento  o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
@@ -2743,7 +2753,7 @@
  *     colunas[]                      uma coluna da tabela dos relógios
  *     colunas[].chave                a chave da coluna: a mesma do cabeçalho e das células (data-col) e a que a ordenação, o filtro e os
  *                                    totais usam (codigo, nome, marca, tipo, estado, carga, ultimo, uso, manut, em, fazer, encostado,
- *                                    compra, valor)
+ *                                    vistoria, compra, valor)
  *     colunas[].fixa                 (verdadeiro ou falso) a coluna que não se esconde: a Relógio
  *     colunas[].posicao              o lugar dela da esquerda para a direita (1, 2...); 0 quando está escondida
  *     colunas[].titulo               o nome da coluna, no idioma do pedido
@@ -4331,6 +4341,12 @@
  *     relogio.linha_do_tempo[].tipo  o identificador do tipo de lançamento que originou o trecho (pulso, sol, corda, carga...); null no
  *                                    repouso
  *     relogio.encostado              o aviso Encostado deste relógio (o quadro Agora; não entra nas próximas manutenções); null: sem data
+ *     relogio.vistoria               a próxima vistoria deste relógio (o quadro Agora; não entra nas próximas manutenções); null: sem
+ *                                    vistoria (desligada, fora da coleção ou na manutenção)
+ *     relogio.vistoria.data          a data (texto AAAA-MM-DD; hoje se já passou)
+ *     relogio.vistoria.estado        atrasado (o dia da vistoria passou), em_breve (vence agora) ou ok
+ *     relogio.vistoria.falta         quanto falta, por extenso ("10h 49min", "atrasado 2d")
+ *     relogio.vistoria.momento       o instante previsto (número inteiro: instante Unix (segundos desde 01/01/1970 UTC))
  *     relogio.encostado.data         a data (texto AAAA-MM-DD; hoje se já passou)
  *     relogio.encostado.estado       atrasado (passou do limite de dias sem ir ao pulso), em_breve (vence agora) ou ok (ainda dentro do
  *                                    prazo)
@@ -4676,11 +4692,14 @@
  *     opcoes.opcoes                  as opções, uma por linha
  *     opcoes.opcoes[].chave          o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     opcoes.opcoes[].grupo          o grupo da opção
- *     opcoes.opcoes[].tipo           hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     opcoes.opcoes[].tipo           hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
+ *                                    separados por vírgula, na ordem em que valem: a colunas_hoje, as chaves das colunas que aparecem; os
+ *                                    fixos sempre vão; vazio herda)
  *     opcoes.opcoes[].titulo         o nome da opção, no idioma do pedido
  *     opcoes.opcoes[].minimo         o menor valor aceito (inteiro e decimal; null nos outros tipos)
  *     opcoes.opcoes[].maximo         o maior valor aceito (inteiro e decimal; null nos outros tipos)
- *     opcoes.opcoes[].valores        os valores possíveis de um enum (null nos outros tipos)
+ *     opcoes.opcoes[].valores        os valores possíveis de um enum, de uma lista (na colunas_hoje, todas as colunas do cadastro) e do
+ *                                    sim/não (1 ligado, 0 desligado); null nos outros tipos
  *     opcoes.opcoes[].valores[].valor
  *                                    o valor, como se manda
  *     opcoes.opcoes[].valores[].texto
@@ -4693,6 +4712,11 @@
  *     opcoes.opcoes[].fixos[]        uma chave que não se esconde
  *     opcoes.opcoes[].origem_herdado de onde vem o herdado: usuario, sistema ou padrao
  *     opcoes.opcoes[].efetivo        o que vale neste nível (a escolha, senão o herdado)
+ *     opcoes.opcoes[].efetivo_texto  o que vale neste nível por extenso, no idioma do pedido (o texto do valor de um enum ou do sim/não:
+ *                                    "0" é Desligado; numa lista, os nomes separados por vírgula; nos outros tipos, o próprio valor)
+ *     opcoes.opcoes[].herdado_texto  o herdado por extenso, como o efetivo_texto
+ *     opcoes.opcoes[].ligado         só no sim/não: true quando o que vale é 1, false quando é 0 (o "0" é desligado, nunca verdadeiro);
+ *                                    null nos outros tipos
  *     opcoes.opcoes[].origem         de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     mostrar_ate                    quantos dias as listas mostram por página (o "Mostrar até" da Configuração, já com o padrão)
  *     atualizar_segundos             o intervalo de atualização das páginas, já com o padrão (a Configuração, atualizar_segundos: 1 a
@@ -4800,9 +4824,9 @@
  *     config.atualizar_segundos      de quantos em quantos segundos as páginas (Hoje com o painel, Ficha, Plano, Totais e Histórico) leem
  *                                    tudo de novo sozinhas: 1 a 86400; 0, não leem; vazio: 60
  *     config.colunas_hoje            as colunas da tabela dos relógios da página Hoje e a ordem delas: as chaves separadas por vírgula
- *                                    (codigo, nome, marca, tipo, estado, carga, ultimo, uso, manut, em, fazer, encostado, compra, valor; a
- *                                    nome é fixa), vazio herda o dono da coleção e depois o sistema; sem escolha em nenhum nível, todas, na
- *                                    ordem de sempre
+ *                                    (codigo, nome, marca, tipo, estado, carga, ultimo, uso, manut, em, fazer, encostado, vistoria, compra,
+ *                                    valor; a nome é fixa), vazio herda o dono da coleção e depois o sistema; sem escolha em nenhum nível,
+ *                                    todas, na ordem de sempre
  *     config.pulso_auto_fim          1 (ou vazio): o relógio sai do pulso sozinho no fim do horário de uso (o "fecha às" do tipo No pulso);
  *                                    0: só pelo Tirou
  *     config.pulso_auto_inicio       1 (ou vazio): o relógio do dia entra no pulso sozinho no início do horário de uso; 0: só pelo Pôs
@@ -4860,7 +4884,9 @@
  *     sistema.padroes.opcoes         as opções, uma por linha
  *     sistema.padroes.opcoes[].chave o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     sistema.padroes.opcoes[].grupo o grupo da opção
- *     sistema.padroes.opcoes[].tipo  hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     sistema.padroes.opcoes[].tipo  hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
+ *                                    separados por vírgula, na ordem em que valem: a colunas_hoje, as chaves das colunas que aparecem; os
+ *                                    fixos sempre vão; vazio herda)
  *     sistema.padroes.opcoes[].titulo
  *                                    o nome da opção, no idioma do pedido
  *     sistema.padroes.opcoes[].minimo
@@ -4868,7 +4894,8 @@
  *     sistema.padroes.opcoes[].maximo
  *                                    o maior valor aceito (inteiro e decimal; null nos outros tipos)
  *     sistema.padroes.opcoes[].valores
- *                                    os valores possíveis de um enum (null nos outros tipos)
+ *                                    os valores possíveis de um enum, de uma lista (na colunas_hoje, todas as colunas do cadastro) e do
+ *                                    sim/não (1 ligado, 0 desligado); null nos outros tipos
  *     sistema.padroes.opcoes[].valores[].valor
  *                                    o valor, como se manda
  *     sistema.padroes.opcoes[].valores[].texto
@@ -4887,6 +4914,14 @@
  *                                    de onde vem o herdado: usuario, sistema ou padrao
  *     sistema.padroes.opcoes[].efetivo
  *                                    o que vale neste nível (a escolha, senão o herdado)
+ *     sistema.padroes.opcoes[].efetivo_texto
+ *                                    o que vale neste nível por extenso, no idioma do pedido (o texto do valor de um enum ou do sim/não:
+ *                                    "0" é Desligado; numa lista, os nomes separados por vírgula; nos outros tipos, o próprio valor)
+ *     sistema.padroes.opcoes[].herdado_texto
+ *                                    o herdado por extenso, como o efetivo_texto
+ *     sistema.padroes.opcoes[].ligado
+ *                                    só no sim/não: true quando o que vale é 1, false quando é 0 (o "0" é desligado, nunca verdadeiro);
+ *                                    null nos outros tipos
  *     sistema.padroes.opcoes[].origem
  *                                    de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     dono                           o nível do dono (a aba Minhas coleções da Configuração): o padrão de quem é dono para as coleções
@@ -4902,11 +4937,14 @@
  *     dono.opcoes.opcoes             as opções, uma por linha
  *     dono.opcoes.opcoes[].chave     o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     dono.opcoes.opcoes[].grupo     o grupo da opção
- *     dono.opcoes.opcoes[].tipo      hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     dono.opcoes.opcoes[].tipo      hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
+ *                                    separados por vírgula, na ordem em que valem: a colunas_hoje, as chaves das colunas que aparecem; os
+ *                                    fixos sempre vão; vazio herda)
  *     dono.opcoes.opcoes[].titulo    o nome da opção, no idioma do pedido
  *     dono.opcoes.opcoes[].minimo    o menor valor aceito (inteiro e decimal; null nos outros tipos)
  *     dono.opcoes.opcoes[].maximo    o maior valor aceito (inteiro e decimal; null nos outros tipos)
- *     dono.opcoes.opcoes[].valores   os valores possíveis de um enum (null nos outros tipos)
+ *     dono.opcoes.opcoes[].valores   os valores possíveis de um enum, de uma lista (na colunas_hoje, todas as colunas do cadastro) e do
+ *                                    sim/não (1 ligado, 0 desligado); null nos outros tipos
  *     dono.opcoes.opcoes[].valores[].valor
  *                                    o valor, como se manda
  *     dono.opcoes.opcoes[].valores[].texto
@@ -4920,6 +4958,13 @@
  *     dono.opcoes.opcoes[].origem_herdado
  *                                    de onde vem o herdado: usuario, sistema ou padrao
  *     dono.opcoes.opcoes[].efetivo   o que vale neste nível (a escolha, senão o herdado)
+ *     dono.opcoes.opcoes[].efetivo_texto
+ *                                    o que vale neste nível por extenso, no idioma do pedido (o texto do valor de um enum ou do sim/não:
+ *                                    "0" é Desligado; numa lista, os nomes separados por vírgula; nos outros tipos, o próprio valor)
+ *     dono.opcoes.opcoes[].herdado_texto
+ *                                    o herdado por extenso, como o efetivo_texto
+ *     dono.opcoes.opcoes[].ligado    só no sim/não: true quando o que vale é 1, false quando é 0 (o "0" é desligado, nunca verdadeiro);
+ *                                    null nos outros tipos
  *     dono.opcoes.opcoes[].origem    de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     destinos[]                     o resumo dos destinos da coleção (a página Destinos tem o resto)
  *     destinos[].id                  o id
@@ -4935,6 +4980,69 @@
  *     agendas[].ativa                verdadeiro ou falso: o sistema mantém os eventos nela
  *     eventos[].destinos[]           os nomes dos destinos que recebem o evento
  *     eventos[].agendas[]            os nomes das agendas que recebem o evento
+ *     rodizio                        o estado efetivo do rodízio e a escolha em cada nível
+ *     rodizio.ativo                  verdadeiro: o rodízio está ligado nesta coleção; falso: o plano está pausado
+ *     rodizio.colecao                a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
+ *     rodizio.usuario                a escolha do dono da coleção: true ligado, false desligado, null herda o sistema; é a mesma para
+ *                                    membros e cron
+ *     rodizio.sistema                o padrão geral do rodízio (ligado quando não há escolha do master)
+ *     rodizio.origem                 de onde vem a escolha efetiva: colecao, usuario, sistema ou padrao
+ *     recupera_ontem                 passar o relógio de ontem sem uso para hoje: o estado efetivo e a escolha em cada nível
+ *     recupera_ontem.ativo           verdadeiro: o relógio do plano de ontem que não foi ao pulso nem um pouquinho passa para hoje, e os
+ *                                    outros dias do plano andam um dia
+ *     recupera_ontem.colecao         a escolha da coleção: true ligado, false desligado, null herda o usuário e depois o sistema
+ *     recupera_ontem.usuario         a escolha do dono da coleção: true ligado, false desligado, null herda o sistema
+ *     recupera_ontem.sistema         o padrão geral (desligado quando o master não ligou)
+ *     recupera_ontem.origem          de onde vem a escolha efetiva: colecao, usuario ou sistema
+ *     aleatorio                      de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico);
+ *                                    sem os dois, o gerador seguro do PHP (random_int)
+ *     aleatorio.fontes[]             as fontes, na ordem em que o sistema tenta: RANDOM.ORG, ANU QRNG, gerador seguro do PHP (random_int)
+ *     aleatorio.ultimo_lote          a fonte do último lote de números e quando ("RANDOM.ORG em AAAA-MM-DD HH:MM:SS"); null: nenhum ainda
+ *     aleatorio.fora_desde           desde quando os dois serviços estão sem responder (AAAA-MM-DD HH:MM:SS): por 10 minutos o sistema nem
+ *                                    tenta e usa o gerador do PHP; null: no ar (ou não se sabe)
+ *     cron_estado                    a situação do cron, como a Configuração mostra (o cron roda a cada minuto)
+ *     cron_estado.crontab            a linha do crontab que roda o sistema (com a pasta dele)
+ *     cron_estado.erro               o erro guardado da última execução com erro (null: sem erro; some na primeira execução sem erro)
+ *     cron_estado.minutos            há quantos minutos ele rodou pela última vez (null: nunca rodou)
+ *     cron_estado.situacao           nunca (ainda não rodou), parado (mais de 10 minutos sem rodar) ou rodando
+ *     cron_estado.texto              a frase da Configuração ("Cron rodando: última execução às 10:41."; parado e nunca trazem a linha do
+ *                                    crontab)
+ *     cron_estado.ultima             quando rodou pela última vez (AAAA-MM-DD HH:MM:SS, no fuso do sistema; null: nunca rodou)
+ *     sistema.url_sistema            o endereço do sistema, para os links das mensagens ({link}), do ICS e do Outlook (vazio: o do pedido)
+ *     sistema.cron_espera_rodadas    quantas rodadas do cron saem sem rodar, com a anterior travada, antes de a próxima matá-la (0 a 1440;
+ *                                    0, nunca mata; padrão 10; só o master muda)
+ *     sistema.parametros             só para o master (null para os outros): os parâmetros de operação do sistema inteiro, o que antes só
+ *                                    mudava no config.php; cada um vale o gravado aqui, senão a linha do config.php, senão o padrão
+ *     sistema.parametros[].chave     o nome do parâmetro no pedido (parametros[<chave>])
+ *     sistema.parametros[].nome      o nome
+ *     sistema.parametros[].descricao o que ele faz
+ *     sistema.parametros[].tipo      sim_nao (1 ou 0) ou inteiro (de minimo a maximo)
+ *     sistema.parametros[].valor     o valor que vale agora
+ *     sistema.parametros[].origem    de onde o valor vem: sistema (gravado aqui), config (a linha do config.php) ou padrao
+ *     sistema.parametros[].config_php
+ *                                    o nome da linha do config.php que ele substitui; null: nenhuma (só existe aqui)
+ *     sistema.parametros[].config_valor
+ *                                    o valor da linha do config.php; null: a linha não existe
+ *     sistema.parametros[].padrao    o valor sem o gravado e sem o config.php
+ *     sistema.parametros[].minimo    o menor valor aceito
+ *     sistema.parametros[].maximo    o maior valor aceito
+ *     dono.rodizio_ativo             o rodízio como padrão das coleções do dono: true, false ou null (herda o do sistema)
+ *     dono.recupera_ontem            passar o relógio de ontem para hoje como padrão das coleções do dono: true, false ou null (herda o do
+ *                                    sistema)
+ *     dono.rodizio_sistema           o que o rodízio herda do sistema quando o dono não escolhe: true (ligado) ou false
+ *     dono.recupera_ontem_sistema    o que o passar o relógio de ontem herda do sistema quando o dono não escolhe: true (ligado) ou false
+ *     senha_politica                 a força da senha (a Configuração, do sistema): o que toda senha nova precisa ter
+ *     senha_politica.regras          o mínimo de cada regra (0: não exige)
+ *     senha_politica.regras.tamanho  quantos caracteres, no mínimo
+ *     senha_politica.regras.maiusculas
+ *                                    quantas letras maiúsculas, no mínimo
+ *     senha_politica.regras.minusculas
+ *                                    quantas letras minúsculas, no mínimo
+ *     senha_politica.regras.numeros  quantos números, no mínimo
+ *     senha_politica.regras.simbolos quantos símbolos (o que não é letra, número nem espaço), no mínimo
+ *     senha_politica.texto           a regra por extenso, para a tela ("A senha precisa ter: 8 caracteres ou mais, 1 letra maiúscula...")
+ *     cron_estado.registro           o registro da última rodada com atividade (o master vê o do sistema inteiro; os outros, o da coleção);
+ *                                    null: nenhum
  *   recurso=opcoes
  *     colecao                        as opções do assunto na coleção do pedido (a aba Esta coleção): o que ela escolheu (vazio herda), o
  *                                    que herda e de onde, e o que vale
@@ -4944,11 +5052,14 @@
  *     colecao.opcoes                 as opções, uma por linha
  *     colecao.opcoes[].chave         o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     colecao.opcoes[].grupo         o grupo da opção
- *     colecao.opcoes[].tipo          hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     colecao.opcoes[].tipo          hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
+ *                                    separados por vírgula, na ordem em que valem: a colunas_hoje, as chaves das colunas que aparecem; os
+ *                                    fixos sempre vão; vazio herda)
  *     colecao.opcoes[].titulo        o nome da opção, no idioma do pedido
  *     colecao.opcoes[].minimo        o menor valor aceito (inteiro e decimal; null nos outros tipos)
  *     colecao.opcoes[].maximo        o maior valor aceito (inteiro e decimal; null nos outros tipos)
- *     colecao.opcoes[].valores       os valores possíveis de um enum (null nos outros tipos)
+ *     colecao.opcoes[].valores       os valores possíveis de um enum, de uma lista (na colunas_hoje, todas as colunas do cadastro) e do
+ *                                    sim/não (1 ligado, 0 desligado); null nos outros tipos
  *     colecao.opcoes[].valores[].valor
  *                                    o valor, como se manda
  *     colecao.opcoes[].valores[].texto
@@ -4962,6 +5073,11 @@
  *     colecao.opcoes[].origem_herdado
  *                                    de onde vem o herdado: usuario, sistema ou padrao
  *     colecao.opcoes[].efetivo       o que vale neste nível (a escolha, senão o herdado)
+ *     colecao.opcoes[].efetivo_texto o que vale neste nível por extenso, no idioma do pedido (o texto do valor de um enum ou do sim/não:
+ *                                    "0" é Desligado; numa lista, os nomes separados por vírgula; nos outros tipos, o próprio valor)
+ *     colecao.opcoes[].herdado_texto o herdado por extenso, como o efetivo_texto
+ *     colecao.opcoes[].ligado        só no sim/não: true quando o que vale é 1, false quando é 0 (o "0" é desligado, nunca verdadeiro);
+ *                                    null nos outros tipos
  *     colecao.opcoes[].origem        de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     dono                           o nível do dono (a aba Minhas coleções): o padrão de quem é dono para as coleções dele
  *     dono.pode_mudar                verdadeiro: quem pede é o dono da coleção do pedido (a tela mostra a aba Minhas coleções); falso: não
@@ -4974,11 +5090,14 @@
  *     dono.opcoes.opcoes             as opções, uma por linha
  *     dono.opcoes.opcoes[].chave     o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     dono.opcoes.opcoes[].grupo     o grupo da opção
- *     dono.opcoes.opcoes[].tipo      hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     dono.opcoes.opcoes[].tipo      hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
+ *                                    separados por vírgula, na ordem em que valem: a colunas_hoje, as chaves das colunas que aparecem; os
+ *                                    fixos sempre vão; vazio herda)
  *     dono.opcoes.opcoes[].titulo    o nome da opção, no idioma do pedido
  *     dono.opcoes.opcoes[].minimo    o menor valor aceito (inteiro e decimal; null nos outros tipos)
  *     dono.opcoes.opcoes[].maximo    o maior valor aceito (inteiro e decimal; null nos outros tipos)
- *     dono.opcoes.opcoes[].valores   os valores possíveis de um enum (null nos outros tipos)
+ *     dono.opcoes.opcoes[].valores   os valores possíveis de um enum, de uma lista (na colunas_hoje, todas as colunas do cadastro) e do
+ *                                    sim/não (1 ligado, 0 desligado); null nos outros tipos
  *     dono.opcoes.opcoes[].valores[].valor
  *                                    o valor, como se manda
  *     dono.opcoes.opcoes[].valores[].texto
@@ -4992,6 +5111,13 @@
  *     dono.opcoes.opcoes[].origem_herdado
  *                                    de onde vem o herdado: usuario, sistema ou padrao
  *     dono.opcoes.opcoes[].efetivo   o que vale neste nível (a escolha, senão o herdado)
+ *     dono.opcoes.opcoes[].efetivo_texto
+ *                                    o que vale neste nível por extenso, no idioma do pedido (o texto do valor de um enum ou do sim/não:
+ *                                    "0" é Desligado; numa lista, os nomes separados por vírgula; nos outros tipos, o próprio valor)
+ *     dono.opcoes.opcoes[].herdado_texto
+ *                                    o herdado por extenso, como o efetivo_texto
+ *     dono.opcoes.opcoes[].ligado    só no sim/não: true quando o que vale é 1, false quando é 0 (o "0" é desligado, nunca verdadeiro);
+ *                                    null nos outros tipos
  *     dono.opcoes.opcoes[].origem    de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     sistema                        o nível do sistema (a aba Sistema): o padrão do sistema inteiro
  *     sistema.pode_mudar             verdadeiro ou falso: quem pede pode mudar (só o master)
@@ -5003,12 +5129,15 @@
  *     sistema.opcoes.opcoes          as opções, uma por linha
  *     sistema.opcoes.opcoes[].chave  o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     sistema.opcoes.opcoes[].grupo  o grupo da opção
- *     sistema.opcoes.opcoes[].tipo   hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     sistema.opcoes.opcoes[].tipo   hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
+ *                                    separados por vírgula, na ordem em que valem: a colunas_hoje, as chaves das colunas que aparecem; os
+ *                                    fixos sempre vão; vazio herda)
  *     sistema.opcoes.opcoes[].titulo o nome da opção, no idioma do pedido
  *     sistema.opcoes.opcoes[].minimo o menor valor aceito (inteiro e decimal; null nos outros tipos)
  *     sistema.opcoes.opcoes[].maximo o maior valor aceito (inteiro e decimal; null nos outros tipos)
  *     sistema.opcoes.opcoes[].valores
- *                                    os valores possíveis de um enum (null nos outros tipos)
+ *                                    os valores possíveis de um enum, de uma lista (na colunas_hoje, todas as colunas do cadastro) e do
+ *                                    sim/não (1 ligado, 0 desligado); null nos outros tipos
  *     sistema.opcoes.opcoes[].valores[].valor
  *                                    o valor, como se manda
  *     sistema.opcoes.opcoes[].valores[].texto
@@ -5026,6 +5155,13 @@
  *                                    de onde vem o herdado: usuario, sistema ou padrao
  *     sistema.opcoes.opcoes[].efetivo
  *                                    o que vale neste nível (a escolha, senão o herdado)
+ *     sistema.opcoes.opcoes[].efetivo_texto
+ *                                    o que vale neste nível por extenso, no idioma do pedido (o texto do valor de um enum ou do sim/não:
+ *                                    "0" é Desligado; numa lista, os nomes separados por vírgula; nos outros tipos, o próprio valor)
+ *     sistema.opcoes.opcoes[].herdado_texto
+ *                                    o herdado por extenso, como o efetivo_texto
+ *     sistema.opcoes.opcoes[].ligado só no sim/não: true quando o que vale é 1, false quando é 0 (o "0" é desligado, nunca verdadeiro);
+ *                                    null nos outros tipos
  *     sistema.opcoes.opcoes[].origem de onde vem o que vale: colecao, usuario, sistema ou padrao
  *   recurso=sistema
  *     aleatorio                      de onde vêm os números dos sorteios: RANDOM.ORG (ruído atmosférico); fora do ar, ANU QRNG (quântico);
@@ -8018,11 +8154,14 @@
  *     opcoes.opcoes                  as opções, uma por linha
  *     opcoes.opcoes[].chave          o nome da opção, o mesmo do pedido (config/salvar, padroes[<chave>] e opcoes[<chave>])
  *     opcoes.opcoes[].grupo          o grupo da opção
- *     opcoes.opcoes[].tipo           hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal ou enum (um dos valores)
+ *     opcoes.opcoes[].tipo           hora (HH:MM), sim_nao (1 ou 0), inteiro, decimal, enum (um dos valores) ou lista (vários dos valores,
+ *                                    separados por vírgula, na ordem em que valem: a colunas_hoje, as chaves das colunas que aparecem; os
+ *                                    fixos sempre vão; vazio herda)
  *     opcoes.opcoes[].titulo         o nome da opção, no idioma do pedido
  *     opcoes.opcoes[].minimo         o menor valor aceito (inteiro e decimal; null nos outros tipos)
  *     opcoes.opcoes[].maximo         o maior valor aceito (inteiro e decimal; null nos outros tipos)
- *     opcoes.opcoes[].valores        os valores possíveis de um enum (null nos outros tipos)
+ *     opcoes.opcoes[].valores        os valores possíveis de um enum, de uma lista (na colunas_hoje, todas as colunas do cadastro) e do
+ *                                    sim/não (1 ligado, 0 desligado); null nos outros tipos
  *     opcoes.opcoes[].valores[].valor
  *                                    o valor, como se manda
  *     opcoes.opcoes[].valores[].texto
@@ -8035,6 +8174,11 @@
  *     opcoes.opcoes[].fixos[]        uma chave que não se esconde
  *     opcoes.opcoes[].origem_herdado de onde vem o herdado: usuario, sistema ou padrao
  *     opcoes.opcoes[].efetivo        o que vale neste nível (a escolha, senão o herdado)
+ *     opcoes.opcoes[].efetivo_texto  o que vale neste nível por extenso, no idioma do pedido (o texto do valor de um enum ou do sim/não:
+ *                                    "0" é Desligado; numa lista, os nomes separados por vírgula; nos outros tipos, o próprio valor)
+ *     opcoes.opcoes[].herdado_texto  o herdado por extenso, como o efetivo_texto
+ *     opcoes.opcoes[].ligado         só no sim/não: true quando o que vale é 1, false quando é 0 (o "0" é desligado, nunca verdadeiro);
+ *                                    null nos outros tipos
  *     opcoes.opcoes[].origem         de onde vem o que vale: colecao, usuario, sistema ou padrao
  *     usuario.nivel                  o modo da interface: basico (o dia a dia: as telas deixam de fora as páginas e as partes do avançado)
  *                                    ou avancado (tudo); o motor é o mesmo
@@ -8156,6 +8300,41 @@
  *     fusos[].deslocamento           a diferença para o UTC agora ("-03:00")
  *     linguas[].codigo               o código
  *     linguas[].nome                 o nome
+ *     rodizio_sistema                o padrão geral do rodízio, para a opção Herdar do sistema em Minha conta
+ *     recupera_ontem_sistema         o padrão geral de passar o relógio de ontem sem uso para hoje (verdadeiro quando o master ligou), para
+ *                                    a opção Herdar do sistema em Minha conta
+ *     usuario.rodizio_ativo          o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
+ *     usuario.recupera_ontem         o padrão do usuário para passar o relógio de ontem sem uso para hoje, nas coleções de que é dono: true
+ *                                    ligado, false desligado, null herda o sistema
+ *     email                          (só o master; null para os outros) a configuração do e-mail que o sistema leu do config.php, para o
+ *                                    quadro Servidor de e-mail
+ *     email.metodo                   smtp, mail ou null (o envio está desligado)
+ *     email.email_metodo             o EMAIL_METODO como está no config.php; null: não está lá
+ *     email.remetente                o remetente (EMAIL_REMETENTE, senão o SMTP_USUARIO); vazio: falta
+ *     email.smtp                     o SMTP: host, porta, seguranca (ssl, tls ou nada), usuario e senha (verdadeiro ou falso: se está
+ *                                    definida; a senha mesma nunca sai)
+ *     email.smtp.host                o servidor (SMTP_HOST)
+ *     email.smtp.porta               a porta (SMTP_PORTA; sem ela, 465 no ssl e 587 no resto)
+ *     email.smtp.seguranca           ssl, tls ou nada (SMTP_SEGURANCA)
+ *     email.smtp.usuario             o usuário (SMTP_USUARIO)
+ *     email.smtp.senha               verdadeiro ou falso: a SMTP_SENHA está definida
+ *     email.imap                     o IMAP da cópia em Enviados (host, porta, seguranca, usuario, senha e pasta); null: não configurado
+ *     email.imap.host                o servidor (IMAP_HOST)
+ *     email.imap.porta               a porta (IMAP_PORTA; sem ela, 993 no ssl e 143 no resto)
+ *     email.imap.seguranca           ssl, tls ou nada (IMAP_SEGURANCA)
+ *     email.imap.usuario             o usuário (IMAP_USUARIO, senão o SMTP_USUARIO)
+ *     email.imap.senha               verdadeiro ou falso: a senha do IMAP está definida
+ *     email.imap.pasta               a pasta Enviados (IMAP_PASTA_ENVIADOS, padrão Sent)
+ *     email.pop                      o POP, só para testar a conta (host, porta, seguranca, usuario e senha); null: não configurado
+ *     email.pop.host                 o servidor (POP_HOST)
+ *     email.pop.porta                a porta (POP_PORTA; sem ela, 995 no ssl e 110 no resto)
+ *     email.pop.seguranca            ssl, tls ou nada (POP_SEGURANCA)
+ *     email.pop.usuario              o usuário (POP_USUARIO)
+ *     email.pop.senha                verdadeiro ou falso: a POP_SENHA está definida
+ *     email.openssl                  verdadeiro ou falso: o PHP do servidor tem a extensão openssl (o ssl e o tls precisam dela)
+ *     email.mail                     verdadeiro ou falso: o mail() do PHP está ligado neste servidor
+ *     email.problemas[]              o que está errado ou faltando na configuração, achado sem conectar em nada (cada um, uma frase dizendo
+ *                                    o que corrigir no config.php)
  *   recurso=colecoes
  *     colecoes[]                     as coleções que você vê: as suas primeiro, depois pelo nome
  *     colecoes[].id                  o id
@@ -8311,6 +8490,9 @@
  *     colecoes[].papel               o papel de quem pede nela: dono, membro ou master
  *     colecoes[].no_id               a raiz da árvore de grupos que ela usa
  *     demo_dias                      os dias da conta de demonstração (DEMO_DIAS; 0: as contas novas já nascem oficiais)
+ *     usuarios[].rodizio_ativo       o padrão do usuário para as coleções de que é dono: true ligado, false desligado, null herda o sistema
+ *     usuarios[].recupera_ontem      o padrão do usuário para passar o relógio de ontem sem uso para hoje, nas coleções de que é dono: true
+ *                                    ligado, false desligado, null herda o sistema
  *   recurso=migracoes
  *     pendentes[]                    as migrações do banco que faltam aplicar (vazio: em dia)
  *     pendentes[].arquivo            o arquivo .sql

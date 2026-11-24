@@ -65,6 +65,16 @@ jobs:
         run: php testes/simulador.php
       - name: Vistoria periódica (desligada não avisa; da última vistoria, da compra ou do cadastro; a lista, o registrar de várias, o serviço e a manutenção só com vistoria=1, o passo da v66)
         run: php testes/vistoria.php
+      - name: Lote tudo ou nada com arquivos (o documento só no disco não some quando o lote é desfeito; gravado, sai)
+        run: php testes/lote_arquivos.php
+      - name: Configuração em três níveis numa transação só (a recusa não grava nada, nem a retomada) e nenhum sucesso para o que ficou de lado
+        run: php testes/config_niveis.php
+      - name: A leitura de config, conta e usuarios entrega o que a v66 entregava (com as permissões) e o "0" das opções é desligado
+        run: php testes/leitura_compat.php
+      - name: Migração v67 parada em cada etapa e aplicada de novo (guarda os valores, tira as colunas e só então marca)
+        run: php testes/migracao_v67.php
+      - name: Trava do cron com a primeira consulta presa (o PID e a regra gravados antes; a rodada seguinte acha e mata a travada)
+        run: php testes/cron_trava.php
 
   paridade:
     name: Paridade (SQLite, PostgreSQL, MariaDB)

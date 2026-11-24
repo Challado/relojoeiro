@@ -84,6 +84,14 @@
       if (comEncostado && f.encostado === "sem" && tr.dataset.encostadoEstado !== "") {
         ok = false;
       }
+      // a próxima vistoria: só com a coluna à mostra (a vistoria valendo); atrasadas, até hoje, nos próximos 7 ou 30 dias, ou sem data
+      if (f.vistoria && !tabela.classList.contains("sem-vistoria")) {
+        var vd = tr.dataset.vistoriaDia;
+        if (f.vistoria === "sem" ? vd !== "" : (!vd || (f.vistoria === "atrasada" ? tr.dataset.vistoriaEstado !== "atrasado"
+          : new Date(vd + "T00:00:00").getTime() > hoje.getTime() + Number(f.vistoria) * 86400000))) {
+          ok = false;
+        }
+      }
       // o tempo de uso total (segundos): nunca usado, até 1 hora, de 1 hora a 1 dia, de 1 a 7 dias, mais de 7 dias
       var uso = Number(tr.dataset.uso) || 0;
       if (f.uso === "nunca" && uso !== 0) {
@@ -151,7 +159,7 @@
         v = Number(tr.dataset[col]);
       } else if (col === "estado") {
         v = Number(tr.dataset.estado) * 100000 + Number(tr.dataset.codigo);
-      } else if (col === "carga" || col === "valor" || col === "em" || col === "encostado") {
+      } else if (col === "carga" || col === "valor" || col === "em" || col === "encostado" || col === "vistoria") {
         v = tr.dataset[col] === "" ? null : Number(tr.dataset[col]);
       } else if (col === "uso") {
         // o sem uso vai por último, como os outros vazios

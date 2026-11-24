@@ -14,8 +14,8 @@ putenv("RELOGIOS_TESTE_PASTA=" . $pasta);
 putenv("RELOGIOS_DB=sqlite");
 require dirname(__DIR__) . "/lib.php";
 
-// as 14 colunas de sempre, na ordem em que o modelo.json as cria no cadastro de colunas
-const DE_SEMPRE = ["codigo", "nome", "marca", "tipo", "estado", "carga", "ultimo", "uso", "manut", "em", "fazer", "encostado", "compra", "valor"];
+// as 15 colunas de sempre, na ordem em que o modelo.json as cria no cadastro de colunas
+const DE_SEMPRE = ["codigo", "nome", "marca", "tipo", "estado", "carga", "ultimo", "uso", "manut", "em", "fazer", "encostado", "vistoria", "compra", "valor"];
 
 function exigir_colunas($ok, $mensagem)
 {

@@ -1,4 +1,4 @@
-<!-- origem: a40413b72a85465d6b778080b45633eee4044944 -->
+<!-- origem: 91247f036f6368d4d725ec96ff48b727712f9ce2 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -216,16 +216,16 @@ curl -u user:password -G "http://server/relojoeiro/api.php" -d recurso=calcular 
 | `rodizio` | `usando` (I'm wearing this one today), `trocar_dia` (a day's watch), `periodo` (the watches of a period, in order: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (erases the period's days and the mode builds them again; only `de`: to the end of the plan; only `ate`: from tomorrow to it), `periodo_livre` (erases and leaves the days free, without a draw; the same dates), `manual` (the Manual rotation: `de`, `ate`, `dias[YYYY-MM-DD]` = the watch id, `auto` or `livre`), `apagar_tudo` (the whole schedule from tomorrow on goes away; `hoje=1`: from today on; the mode builds the plan again), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (change the mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `simulador` | `aplicar` (the scenario as it was simulated, `de`, `ate`, `semente` and `impressao`: saves only if the plan comes out the same as simulated) |
-| `vistorias` | `registrar` (`relogio_ids`, separated by commas, and `quando`, YYYY-MM-DD or YYYY-MM-DD HH:MM, up to now; empty: now): the inspection of each one, all or nothing, one per watch on the day |
+| `vistorias` | `registrar` (`relogio_ids`, separated by commas, and `quando`, YYYY-MM-DD or YYYY-MM-DD HH:MM, up to now; empty: now): the inspection of each one, all or nothing, one per watch on the day; `registradas` counts only the new ones (repeating returns 0) |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groups) and `relogios` (each watch's group) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (and `ordem` in the fields; the field with the value rules: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar` (the owner also `dono[<chave>]`: the default of their collections; the master also `padroes[<chave>]`: the system default, and `parametros[<chave>]`: the system's operating parameters), `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (`<chave>`: the collection; the owner also `dono[<chave>]`: the default of their collections; the master also `padroes[<chave>]`: the system default, and `parametros[<chave>]`: the system's operating parameters; all in one transaction, and a field that does not belong to this request refuses the whole request), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, e-mail or Web Push, with what it receives), `testar` (`qual=`: text, morning or night), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook or ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (with the `senha`, or with another system's `senha_hash`; the first user, with the token, is the master) and, master only: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, language, `nivel`: the interface mode, password), `token_criar`, `token_revogar`, `aparelho_lembrar` (the app on the phone: this device's key in a cookie, which gets in without the password), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (the own e-mail server; `proprio=0` goes back to the system's), `smtp_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, language, `nivel`: the interface mode, password, `opcoes[<chave>]`: the default for the collections they own; all in one transaction, and a field that does not belong to this request refuses the whole request), `token_criar`, `token_revogar`, `aparelho_lembrar` (the app on the phone: this device's key in a cookie, which gets in without the password), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (the own e-mail server; `proprio=0` goes back to the system's), `smtp_testar`, `excluir`; master only: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | without login: `criar_conta`, `esqueci_senha`, `nova_senha` |

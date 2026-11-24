@@ -5,7 +5,9 @@
 // dia, os atrasados sempre, ou todos; o estado pelo dia do calendário; o resumo); o registrar de várias (tudo ou nada, uma por
 // dia, o dia passado ao meio-dia, as recusas); o serviço e o fim da manutenção só contam como vistoria com vistoria=1 (e o
 // valor inválido é recusado); o aviso desligado na página Avisos também desliga; e o passo da v66 põe o tipo e o aviso numa
-// árvore que não tinha, no idioma da coleção, sem duplicar. Base SQLite nova e descartável.
+// árvore que não tinha, no idioma da coleção, sem duplicar. A contagem do registrar: só as novas (a primeira do dia conta 1, a
+// repetida 0, o lote só as novas). A vistoria tem a coluna dela na tabela da Hoje (Próxima vistoria) e não toma o lugar da
+// manutenção; o passo da v68 põe a coluna numa árvore que não tinha. Base SQLite nova e descartável.
 if (PHP_SAPI !== "cli") {
     http_response_code(404);
     exit;
@@ -75,6 +77,31 @@ try {
         && array_column($todos["relogios"], "estado") === ["atrasado", "proxima", "proxima"], "Todos: os três ativos, na ordem do vencimento: " . json_encode([$nomes($todos), $todos["resumo"]]));
     exigir_vistoria($nomes(vistorias_lista($dia(20))) === ["Antigo", "Recente"], "Até daqui a 20 dias: o atrasado e o que vence nesse dia.");
 
+    // ---- a tabela da Hoje: a vistoria tem a coluna dela (Próxima vistoria) e não toma o lugar da manutenção (a Próxima
+    // manutenção, o Em e o O que fazer); na v67, a vistoria atrasada do Antigo virava a "próxima manutenção" dele
+    $linha_a = tabela_linha(linha("SELECT * FROM relogio WHERE id = ?", [$ids["Antigo"]]), time());
+    $nome_v = (string)valor("SELECT nome FROM aviso WHERE identificador = 'vistoria'");
+    exigir_vistoria(($linha_a["manutencao"]["nome"] ?? null) !== $nome_v, "A vistoria ainda aparece como a próxima manutenção (O que fazer): " . json_encode($linha_a["manutencao"]));
+    exigir_vistoria(($linha_a["vistoria"]["estado"] ?? null) === "atrasado" && $linha_a["vistoria"]["data"] === $dia(0) && $linha_a["vistoria"]["momento"] > 0,
+        "A linha não traz a próxima vistoria (atrasada, mostrada como hoje): " . json_encode($linha_a["vistoria"]));
+    exigir_vistoria(tabela_variaveis($linha_a, linha("SELECT * FROM relogio WHERE id = ?", [$ids["Antigo"]]), time())["vistoria_data"] === dias_de(strtotime($dia(0) . " 00:00:00")),
+        "A variável vistoria_data (das colunas montadas e dos totais) não acompanha a coluna.");
+    $linha_o = tabela_linha(linha("SELECT * FROM relogio WHERE id = ?", [$ids["Na oficina"]]), time());
+    exigir_vistoria($linha_o["vistoria"] === null, "Na manutenção, o relógio não devia ter a próxima vistoria.");
+    // a coluna do sistema, logo depois da Encostado, e no catálogo da página
+    $chaves = array_column(colunas_todas(), "chave");
+    exigir_vistoria(array_search("vistoria", $chaves, true) === array_search("encostado", $chaves, true) + 1, "A coluna Próxima vistoria devia vir logo depois da Encostado: " . implode(",", $chaves));
+    exigir_vistoria(in_array("vistoria", colunas_padrao("hoje"), true), "A coluna Próxima vistoria devia aparecer de início.");
+    // o passo da v68: numa árvore sem a coluna, põe uma vez só, logo depois da Encostado
+    sql("DELETE FROM coluna WHERE identificador = 'vistoria'");
+    $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
+    exigir_vistoria(!in_array("vistoria", array_column(colunas_todas(), "chave"), true), "A coluna devia sumir para o teste da v68.");
+    migracao_v68_dados(false);
+    migracao_v68_dados(false);
+    $chaves = array_column(colunas_todas(), "chave");
+    exigir_vistoria(count(array_keys($chaves, "vistoria", true)) === 1 && array_search("vistoria", $chaves, true) === array_search("encostado", $chaves, true) + 1
+        && end($chaves) !== "vistoria", "O passo da v68 devia pôr a coluna uma vez só, logo depois da Encostado: " . implode(",", $chaves));
+
     // ---- o registrar: as recusas não gravam nada; tudo ou nada; uma por dia; o dia passado ao meio-dia
     $lancs = function () { return (int)valor("SELECT COUNT(*) FROM lancamento l JOIN lancamento_tipo t ON t.id = l.tipo_id WHERE t.identificador = 'vistoria'"); };
     foreach ([["relogio_ids" => ""], ["relogio_ids" => "x"], ["relogio_ids" => $ids["Antigo"] . ",999999"], ["relogio_ids" => $ids["Antigo"], "quando" => $dia(1)],
@@ -87,9 +114,21 @@ try {
     exigir_vistoria($reg["ok"] && $reg["registradas"] === 2 && $lancs() === 2, "Não registrou as duas vistorias: " . json_encode($reg));
     exigir_vistoria(valor("SELECT MAX(inicio) FROM lancamento") === $dia(-2) . " 12:00:00", "O dia passado devia ficar ao meio-dia dele.");
     exigir_vistoria($vence("Antigo") === $dia(28) && $vence("Recente") === $dia(28), "Depois da vistoria de anteontem, devia vencer em 28 dias.");
-    exigir_vistoria(op_vistorias("registrar", ["relogio_ids" => $ids["Antigo"], "quando" => $dia(-2)])["ok"] && $lancs() === 2, "A segunda vistoria do mesmo dia duplicou.");
+    // repetir a mesma: não duplica e devolve registradas = 0 (só conta a nova); repetir o lote também
+    $rep = op_vistorias("registrar", ["relogio_ids" => $ids["Antigo"], "quando" => $dia(-2)]);
+    exigir_vistoria($rep["ok"] && $rep["registradas"] === 0 && $lancs() === 2, "A segunda vistoria do mesmo dia duplicou ou contou como registrada: " . json_encode($rep));
+    $rep2 = op_vistorias("registrar", ["relogio_ids" => [$ids["Antigo"], $ids["Recente"]], "quando" => $dia(-2)]);
+    exigir_vistoria($rep2["ok"] && $rep2["registradas"] === 0 && $lancs() === 2, "Repetir o lote devia devolver registradas = 0: " . json_encode($rep2));
+    // a primeira do relógio no dia: registradas = 1
     $agora = op_vistorias("registrar", ["relogio_ids" => (string)$ids["Antigo"]]);
-    exigir_vistoria($agora["ok"] && $lancs() === 3 && $vence("Antigo") === $dia(30), "Sem quando, a vistoria devia ser agora: " . json_encode($agora));
+    exigir_vistoria($agora["ok"] && $agora["registradas"] === 1 && $lancs() === 3 && $vence("Antigo") === $dia(30), "Sem quando, a vistoria devia ser agora, com registradas = 1: " . json_encode($agora));
+    // num lote com uma já feita hoje e uma nova: registradas conta só a nova
+    $misto = op_vistorias("registrar", ["relogio_ids" => [$ids["Antigo"], $ids["Sem compra"]], "quando" => $dia(-5)]);
+    exigir_vistoria($misto["ok"] && $misto["registradas"] === 2 && $lancs() === 5, "Lote em outro dia: as duas são novas: " . json_encode($misto));
+    $misto2 = op_vistorias("registrar", ["relogio_ids" => [$ids["Antigo"], $ids["Sem compra"], $ids["Recente"]], "quando" => $dia(-5)]);
+    exigir_vistoria($misto2["ok"] && $misto2["registradas"] === 1 && $lancs() === 6, "Lote com duas já feitas e uma nova: registradas devia ser 1: " . json_encode($misto2));
+    sql("DELETE FROM lancamento WHERE inicio LIKE ?", [$dia(-5) . "%"]);
+    avisos_todos(true);
     exigir_vistoria(vistorias_lista(null)["relogios"][2]["ultima"] !== null, "A lista devia trazer a última vistoria.");
 
     // ---- o serviço: só conta como vistoria com vistoria=1, só no registro; o valor inválido é recusado

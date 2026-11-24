@@ -29,7 +29,7 @@ async function api(p, post) {
       await p.waitForSelector('#tabela-relogios tbody tr[data-id]');
       const ths = () => p.$$eval('#tabela-relogios thead tr:first-child th[data-col]', (hs) => hs.filter((h) => !h.hidden).map((h) => h.getAttribute('data-col')));
       const celulas = (sel) => p.$$eval(sel, (ts) => ts.filter((t) => !t.hidden).map((t) => t.getAttribute('data-col')));
-      const todas = ['codigo', 'nome', 'marca', 'tipo', 'estado', 'carga', 'ultimo', 'uso', 'manut', 'em', 'fazer', 'encostado', 'compra', 'valor'];
+      const todas = ['codigo', 'nome', 'marca', 'tipo', 'estado', 'carga', 'ultimo', 'uso', 'manut', 'em', 'fazer', 'encostado', 'vistoria', 'compra', 'valor'];
       // 1. sem escolha: todas, na ordem de sempre, com o Tempo de uso depois da Última vez usado
       exigir(JSON.stringify(await ths()) === JSON.stringify(todas), onde + 'sem escolha, todas as colunas na ordem de sempre: ' + JSON.stringify(await ths()));
       const textosUso = await p.$$eval('#tabela-relogios tbody tr[data-id] td[data-col=uso]', (ts) => ts.map((t) => t.textContent.replace(/ /g, ' ').trim()));
@@ -120,7 +120,7 @@ async function api(p, post) {
     // Minha conta e Sistema usam o mesmo campo pela lista da API (opcoes e padroes)
     const cfg = await api({ recurso: 'config', incluir: 'opcoes' });
     const op = (cfg.opcoes.opcoes || []).find((o) => o.chave === 'colunas_hoje');
-    exigir(op && op.tipo === 'lista' && op.valores.length === 14 && JSON.stringify(op.fixos) === '["nome"]', 'A API da configuração devia trazer a opção colunas_hoje como lista com os 14 itens e a fixa Relógio');
+    exigir(op && op.tipo === 'lista' && op.valores.length === 15 && JSON.stringify(op.fixos) === '["nome"]', 'A API da configuração devia trazer a opção colunas_hoje como lista com os 15 itens e a fixa Relógio');
   } finally {
     await api({ recurso: 'config', acao: 'salvar', colunas_hoje: '' }, true);
     await b.close();

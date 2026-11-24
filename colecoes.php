@@ -896,7 +896,7 @@ function conta_criar($login, $hash, $email, $expira_em, $lingua, $opcao)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Excluir: o banco apaga em cascata; os arquivos dos documentos (a pasta de cada relógio, em DOCUMENTOS_PASTA) saem junto,
-// na hora (o banco não apaga arquivo; a limpeza do cron fica de rede de segurança)
+// depois que o banco confirmar (apagar_pasta_depois: num lote desfeito, ficam), e a limpeza do cron fica de rede de segurança
 // ---------------------------------------------------------------------------------------------------------------------
 
 // As pastas dos documentos de relógios que saíram
@@ -908,9 +908,7 @@ function relogios_apagar_arquivos($ids)
         return 0;
     }
     foreach ($ids as $id) {
-        if (is_dir($pasta . "/r" . (int)$id)) {
-            $n += apagar_pasta($pasta . "/r" . (int)$id);
-        }
+        $n += apagar_pasta_depois($pasta . "/r" . (int)$id);
     }
     return $n;
 }
@@ -924,9 +922,7 @@ function calibres_apagar_arquivos($ids)
         return 0;
     }
     foreach ($ids as $id) {
-        if (is_dir($pasta . "/c" . (int)$id)) {
-            $n += apagar_pasta($pasta . "/c" . (int)$id);
-        }
+        $n += apagar_pasta_depois($pasta . "/c" . (int)$id);
     }
     return $n;
 }
@@ -940,9 +936,7 @@ function winders_apagar_arquivos($ids)
         return 0;
     }
     foreach ($ids as $id) {
-        if (is_dir($pasta . "/w" . (int)$id)) {
-            $n += apagar_pasta($pasta . "/w" . (int)$id);
-        }
+        $n += apagar_pasta_depois($pasta . "/w" . (int)$id);
     }
     return $n;
 }

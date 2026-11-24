@@ -351,6 +351,8 @@ function recarregarHoje() {
     opcoesDoFiltro("estado", d.estados);
     // o Encostado desligado em Avisos › Ajustes dos avisos: a coluna e o filtro somem (estilo.css, .sem-encostado; tabela.js ignora o filtro)
     document.getElementById("tabela-relogios").classList.toggle("sem-encostado", !d.encostado_ativo);
+    // a vistoria desligada (vistoria_dias em 0 ou o aviso Vistoria desligado): a coluna Próxima vistoria e o filtro somem (.sem-vistoria)
+    document.getElementById("tabela-relogios").classList.toggle("sem-vistoria", !d.vistoria_ativa);
     opcoesDoFiltro("fazer", d.avisos_nomes);
     var ano = String(new Date().getFullYear());
     // as colunas cadastradas que aparecem, para as células das linhas (a ordem delas fica com colunasAplicar)
@@ -360,6 +362,9 @@ function recarregarHoje() {
       var e = x.encostado;
       var atrasado = m && m.momento > 0 && m.momento * 1000 <= Date.now();
       var encAtrasado = e && e.estado !== "ok";
+      // a próxima vistoria (fora da manutenção: não toma o lugar dela na Próxima manutenção, no Em e no O que fazer)
+      var vi = x.vistoria;
+      var viAtrasada = vi && vi.estado === "atrasado";
       // as colunas cadastradas (Cadastros › Colunas) que aparecem: o valor cru no tr (a ordenação) e a célula com o texto já formatado
       var attrsCad = {};
       var celulasCad = "";
@@ -372,6 +377,7 @@ function recarregarHoje() {
       var attrsLinha = {"data-id": x.id, "data-aba": x.aba, "tabindex": "0", "data-codigo": x.id, "data-nome": x.nome, "data-marca": x.marca === null ? "" : x.marca, "data-tipo": x.tipo, "data-estado": x.estado_ordem, "data-estado-txt": x.estado_texto,
         "data-carga": x.carga === null ? "" : x.carga, "data-ultimo": x.ultimo, "data-uso": x.uso, "data-manut": m ? m.data : "", "data-em": m && m.momento > 0 ? m.momento : "", "data-fazer": m ? m.nome : "",
         "data-encostado": e && e.momento > 0 ? e.momento : "", "data-encostado-estado": !e ? "" : (e.estado === "ok" ? "prazo" : "sim"),
+        "data-vistoria": vi && vi.momento > 0 ? vi.momento : "", "data-vistoria-dia": vi ? vi.data : "", "data-vistoria-estado": vi ? vi.estado : "",
         "data-compra": x.compra.data || "", "data-valor": x.compra.valor === null ? "" : x.compra.valor,
         "class": ((x.de_hoje ? "de-hoje " : "") + (x.com_aviso ? "pendente " : "") + (x.disponivel ? "" : "indisponivel ") + (x.id === sel ? "selecionado" : "")).trim()};
       Object.keys(attrsCad).forEach(function (k) { attrsLinha[k] = attrsCad[k]; });
@@ -394,13 +400,14 @@ function recarregarHoje() {
         + el("td", {"data-col": "em", "class": "col-em" + (atrasado ? " atrasado" : ""), "data-rotulo": t("Em"), "data-momento": m && m.momento > 0 ? m.momento : null}, m ? h(m.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
         + el("td", {"data-col": "fazer", "class": m ? "fazer" : "", "data-rotulo": t("O que fazer")}, m ? h(m.nome) : "—")
         + el("td", {"data-col": "encostado", "class": "col-encostado" + (encAtrasado ? " atrasado" : ""), "data-rotulo": t("Encostado"), "data-momento": e && e.momento > 0 ? e.momento : null}, e ? h(e.falta).replace(/(\d[a-z]*) (?=\d)/g, "$1&nbsp;") : "—")
+        + el("td", {"data-col": "vistoria", "class": "col-vistoria" + (viAtrasada ? " atrasado" : ""), "data-rotulo": t("Próxima vistoria"), "title": vi ? vi.falta : null}, vi ? (vi.data === d.data ? t("hoje") : dataBr(vi.data)) : "—")
         + el("td", {"data-col": "compra", "data-rotulo": t("Comprado em")}, x.compra.data ? dataBr(x.compra.data) : "—")
         + el("td", {"data-col": "valor", "class": "col-valor", "data-rotulo": t("Valor")}, x.compra.valor !== null ? t("R$ ") + reais(x.compra.valor) : "—")
         + celulasCad);
     }).join("");
     // as colunas que valem (o motor de colunas: a opção colunas_hoje; api.js colunasAplicar, pelo tabela.js) e o que o painel Colunas mostra
     colunasHoje = {lista: d.colunas, escolha: d.colunas_escolha, herdado: d.colunas_herdado, origem: d.colunas_origem_herdado};
-    window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "14", "data-colspan-colunas": true}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""), d.colunas);
+    window.trocarLinhasDaTabela(linhas + (lista.length === 0 ? el("tr", {}, el("td", {"colspan": "15", "data-colspan-colunas": true}, t("Nenhum relógio cadastrado. Use o botão Novo relógio."))) : ""), d.colunas);
     // as abas por situação (em cima da tabela): a faixa e o que a aba escolhida mostra
     return mostrarAbas(d.abas || []);
   });

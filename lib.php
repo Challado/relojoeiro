@@ -1312,7 +1312,7 @@ $MIGRACOES = [
     "v54" => ["migracao_v54.sql", tk("os relatórios cadastrados: em Cadastros › Relatórios e pela API (recurso=relatorios), cada um com as colunas (uma expressão por relógio, o formato e a conta do rodapé), o filtro, a ordem, o agrupamento e quais relógios; eles aparecem no catálogo dos relatórios (Meus relatórios), com o CSV"), "relatorio"],
     "v55" => ["migracao_v55.sql", tk("o SQL pela API (recurso=sql, só o master: SELECT, INSERT, ALTER TABLE ... ADD COLUMN e, com a aprovação na Configuração do sistema, UPDATE e DELETE), com o registro de cada execução; e os parâmetros de operação do config.php (o cadastro aberto, os dias da demonstração e do convite, o tamanho dos documentos, a espera das telas, o lote, a cópia de segurança) também na Configuração › Sistema e pela API"), "sql_execucao"],
     "v56" => ["migracao_v56.sql", tk("o rodízio em três níveis: padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração"), "sistema.chave=migracao_v56", "migracao_v56_dados"],
-    "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem|sistema.chave=migracao_v67"],
+    "v57" => ["migracao_v57.sql", tk("passar o relógio de ontem para hoje: a opção em três níveis (padrão do sistema, preferência do usuário em Minha conta e escolha da coleção na Configuração)"), "usuario.recupera_ontem|usuario_opcao|sistema.chave=migracao_v67"],
     "v59" => ["migracao_v59.sql", tk("o menos usado: a forma de escolha (o relógio com menos dias de uso no total) e o critério Menos usado nas notas; a escala inteligente escolhe a forma e os critérios que usa no cálculo"), "modo_criterio", "migracao_v59_dados"],
     "v60" => ["migracao_v60.sql", tk("a coluna Tempo de uso na tabela dos relógios (o tempo no pulso somado, em dias, horas, minutos e segundos), com o formato de total Tempo e a variável tempo_de_uso; e a escolha das colunas da tabela da página Hoje, em três níveis (padrão do sistema, preferência do usuário e escolha da coleção)"), "sistema.chave=migracao_v60", "migracao_v60_dados"],
     "v61" => ["migracao_v61.sql", tk("o construtor de colunas da tabela dos relógios (Cadastros › Colunas): colunas suas, escolhendo o campo do banco, a função (soma, média, menor, maior, contagem) e o formato (casas decimais, moeda, tempo, data), ou escrevendo a expressão; elas entram na escolha das colunas da página Hoje"), "coluna"],
@@ -1323,6 +1323,7 @@ $MIGRACOES = [
     "v65" => ["migracao_v65.sql", tk("o relógio fora do sorteio do rodízio: a marca Entra no sorteio do rodízio, no cadastro do relógio. Desmarcada, o rodízio nunca escolhe o relógio sozinho (o plano, a escala, o Decida por mim, o Sortear este dia por e a Sugestão para agora), mas ele continua na coleção: a carga, os avisos, o Pôs no pulso, o Usando hoje e a escolha à mão de um dia. O Relógio ativo desmarcado continua tirando o relógio de tudo"), "relogio.sorteio"],
     "v66" => ["migracao_v66.sql", tk("a vistoria periódica: a Configuração ganha \"Vistoria: a cada quantos dias conferir cada relógio\" (0 desliga, e vem desligada); ligada, cada relógio ativo ganha o aviso Vistoria, que vence esses dias depois da última vistoria (sem nenhuma, da data da compra; sem ela, do cadastro) e se resolve com o lançamento Vistoria, pelo botão em Hoje é dia de ou pela página Vistorias, várias de uma vez; um serviço ou o fim de uma manutenção só contam como vistoria se você marcar"), "sistema.chave=migracao_v66", "migracao_v66_dados"],
     "v67" => ["migracao_v67.sql", tk("o rodízio ligado e o passar o relógio de ontem sem uso para hoje entram nas opções em três níveis, como as outras, e vão para a página Rodízio › Ajustes do rodízio (as abas Esta coleção, Minhas coleções e Sistema): o padrão do sistema sai dos parâmetros de operação, a preferência do dono sai das colunas do usuário (que saem do banco), e a retomada do rodízio fica em cada coleção"), "sistema.chave=migracao_v67", "migracao_v67_dados"],
+    "v68" => ["migracao_v68.sql", tk("a próxima vistoria numa coluna própria da tabela dos relógios (Próxima vistoria, logo depois da Encostado, em Cadastros › Colunas): a vistoria sai da Próxima manutenção, do Em e do O que fazer, onde cobria a manutenção de verdade; a coluna aparece ou não como as outras (a lista Colunas da página Hoje), e some com a vistoria desligada"), "sistema.chave=migracao_v68", "migracao_v68_dados"],
 ];
 
 // O menos usado nas árvores que já existiam: as fórmulas dias_de_uso e menos_usado (as do modelo.json, no idioma da árvore) e o
@@ -1361,6 +1362,38 @@ function migracao_v63_dados($nova = false)
         });
     }
     sis_set("migracao_v63", "1");
+}
+
+// O passo em PHP da v68: em cada árvore, a coluna do sistema Próxima vistoria (modelo.json), logo depois da Encostado (no fim,
+// se a árvore não tem a Encostado), só onde ela ainda não existe; aparece de início, como no modelo. Numa instalação nova a
+// árvore já nasce com ela. Aplicar de novo não muda nada
+function migracao_v68_dados($nova = false)
+{
+    if (!$nova) {
+        sem_escopo(function () {
+            $x = array_values(array_filter(modelo_ler()["colunas"] ?? [], function ($c) { return $c["identificador"] === "vistoria"; }))[0];
+            foreach (linhas("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id") as $raiz) {
+                $rid = (int)$raiz["id"];
+                if ((int)valor("SELECT COUNT(*) FROM coluna WHERE no_id = ? AND sistema = 1", [$rid]) === 0
+                    || (int)valor("SELECT COUNT(*) FROM coluna WHERE no_id = ? AND identificador = ? AND sistema = 1", [$rid, $x["identificador"]]) > 0) {
+                    continue;
+                }
+                // logo depois da Encostado: as que vêm depois dela descem uma casa
+                $depois = valor("SELECT ordem FROM coluna WHERE no_id = ? AND identificador = 'encostado' AND sistema = 1", [$rid]);
+                if ($depois === null) {
+                    $ordem = (int)valor("SELECT COALESCE(MAX(ordem), 0) FROM coluna WHERE no_id = ?", [$rid]) + 10;
+                } else {
+                    $ordem = (int)$depois + 1;
+                    sql("UPDATE coluna SET ordem = ordem + 1 WHERE no_id = ? AND ordem >= ?", [$rid, $ordem]);
+                }
+                sql("INSERT INTO coluna (no_id, identificador, nome, modo, tabela, campo, funcao, expressao, formato, casas, simbolo, padrao, ordem, sistema, fixa)
+                    VALUES (?, ?, ?, 'guiado', ?, ?, NULL, ?, ?, NULL, NULL, ?, ?, 1, ?)",
+                    [$rid, $x["identificador"], $x["nome"], $x["tabela"], $x["campo"], $x["expressao"], $x["formato"], (int)$x["padrao"], $ordem, (int)$x["fixa"]]);
+            }
+        });
+        $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
+    }
+    sis_set("migracao_v68", "1");
 }
 
 // O passo em PHP da v66: em cada árvore, o tipo de lançamento Vistoria e o aviso Vistoria (modelo.json), na raiz, no idioma
@@ -1410,43 +1443,99 @@ function migracao_v66_dados($nova = false)
 // fica na coleção); depois tira as colunas do usuário. Numa instalação nova ($nova), o schema.sql já não as tem: só a marca
 function migracao_v67_dados($nova = false)
 {
-    if (!$nova && banco_tem_coluna("usuario", "rodizio_ativo")) {
-        sem_escopo(function () {
-            foreach (["rodizio_ativo", "recupera_ontem"] as $k) {
-                $v = trim((string)sis("param_" . $k));
-                if (in_array($v, ["0", "1"], true) && trim((string)sis("padrao_" . $k)) === "") {
-                    sis_set("padrao_" . $k, $v);
-                }
+    if (!$nova) {
+        foreach (migracao_v67_passos() as $passo) {
+            $passo();
+        }
+        // a marca só depois de a estrutura estar como deve: sem as três colunas antigas do usuário
+        foreach (["rodizio_ativo", "rodizio_retomado_em", "recupera_ontem"] as $col) {
+            if (banco_tem_coluna("usuario", $col)) {
+                throw new RuntimeException(t("A migração v67 não tirou a coluna usuario.{1}: aplique de novo.", [1 => $col]));
             }
-            $retomada_sistema = (int)sis("rodizio_retomado_em");
-            sql("DELETE FROM sistema WHERE chave IN ('param_rodizio_ativo', 'param_recupera_ontem', 'rodizio_retomado_em')");
-            sis(null);
-            foreach (linhas("SELECT id, rodizio_ativo, recupera_ontem FROM usuario ORDER BY id") as $u) {
-                foreach (["rodizio_ativo", "recupera_ontem"] as $k) {
-                    if ($u[$k] !== null && $u[$k] !== "") {
-                        sql("DELETE FROM usuario_opcao WHERE usuario_id = ? AND chave = ?", [(int)$u["id"], $k]);
-                        sql("INSERT INTO usuario_opcao (usuario_id, chave, valor) VALUES (?, ?, ?)", [(int)$u["id"], $k, (string)(int)$u[$k]]);
-                    }
-                }
-            }
-            // a retomada: a coleção com escolha própria já guardava a dela; a que herdava usava a maior entre a dela, a do dono e
-            // (quando o dono também herdava) a do sistema
-            foreach (linhas("SELECT c.id, u.rodizio_ativo, u.rodizio_retomado_em FROM colecao c JOIN usuario u ON u.id = c.dono_id ORDER BY c.id") as $c) {
-                $escolha = (string)valor("SELECT valor FROM config WHERE colecao_id = ? AND chave = 'rodizio_ativo'", [(int)$c["id"]]);
-                if (in_array($escolha, ["0", "1"], true)) {
-                    continue;
-                }
-                $propria = (int)valor("SELECT valor FROM config WHERE colecao_id = ? AND chave = 'rodizio_retomado_em'", [(int)$c["id"]]);
-                $herdada = max((int)strtotime((string)($c["rodizio_retomado_em"] ?? "")), $c["rodizio_ativo"] === null ? $retomada_sistema : 0);
-                if ($herdada > $propria) {
-                    sql("REPLACE INTO config (colecao_id, chave, valor) VALUES (?, ?, ?)", [(int)$c["id"], "rodizio_retomado_em", (string)$herdada]);
-                }
-            }
-        });
-        banco_script("ALTER TABLE usuario DROP CONSTRAINT ck_usuario_rodizio;\nALTER TABLE usuario DROP CONSTRAINT ck_usuario_recupera_ontem;\n"
-            . "ALTER TABLE usuario DROP COLUMN rodizio_ativo;\nALTER TABLE usuario DROP COLUMN rodizio_retomado_em;\nALTER TABLE usuario DROP COLUMN recupera_ontem;");
+        }
     }
     sis_set("migracao_v67", "1");
+}
+
+// As etapas da v67, na ordem. Cada uma pode rodar de novo (a migração que parou no meio continua de onde estava, e a marca só
+// vem no fim): primeiro copia tudo (o padrão do sistema, a preferência de cada dono e a retomada de cada coleção que herda),
+// só depois apaga o que foi copiado e tira as regras e as colunas, uma a uma, cada uma só se ainda existe
+function migracao_v67_passos()
+{
+    return [
+        // 1. o padrão do sistema: o parâmetro de antes vira o padrão da opção (sem passar por cima de um padrão já escolhido)
+        function () {
+            sem_escopo(function () {
+                sis(null);
+                foreach (["rodizio_ativo", "recupera_ontem"] as $k) {
+                    $v = trim((string)sis("param_" . $k));
+                    if (in_array($v, ["0", "1"], true) && trim((string)sis("padrao_" . $k)) === "") {
+                        sis_set("padrao_" . $k, $v);
+                    }
+                }
+            });
+        },
+        // 2. a preferência de cada dono: das colunas do usuário (as que ainda existem) para usuario_opcao
+        function () {
+            sem_escopo(function () {
+                foreach (["rodizio_ativo", "recupera_ontem"] as $k) {
+                    if (!banco_tem_coluna("usuario", $k)) {
+                        continue;
+                    }
+                    foreach (linhas("SELECT id, " . $k . " AS v FROM usuario WHERE " . $k . " IS NOT NULL ORDER BY id") as $u) {
+                        sql("DELETE FROM usuario_opcao WHERE usuario_id = ? AND chave = ?", [(int)$u["id"], $k]);
+                        sql("INSERT INTO usuario_opcao (usuario_id, chave, valor) VALUES (?, ?, ?)", [(int)$u["id"], $k, (string)(int)$u["v"]]);
+                    }
+                }
+            });
+        },
+        // 3. a retomada: a coleção com escolha própria já guardava a dela; a que herdava usava a maior entre a dela, a do dono e
+        // (quando o dono também herdava) a do sistema. Só sobe (o máximo), então rodar de novo não muda nada
+        function () {
+            sem_escopo(function () {
+                $retomada_sistema = (int)sis("rodizio_retomado_em");
+                $com_coluna = banco_tem_coluna("usuario", "rodizio_retomado_em");
+                foreach (linhas("SELECT c.id, c.dono_id" . ($com_coluna ? ", u.rodizio_retomado_em" : "") . " FROM colecao c JOIN usuario u ON u.id = c.dono_id ORDER BY c.id") as $c) {
+                    $escolha = (string)valor("SELECT valor FROM config WHERE colecao_id = ? AND chave = 'rodizio_ativo'", [(int)$c["id"]]);
+                    if (in_array($escolha, ["0", "1"], true)) {
+                        continue;
+                    }
+                    $dono_herda = (string)valor("SELECT valor FROM usuario_opcao WHERE usuario_id = ? AND chave = 'rodizio_ativo'", [(int)$c["dono_id"]]) === "";
+                    $propria = (int)valor("SELECT valor FROM config WHERE colecao_id = ? AND chave = 'rodizio_retomado_em'", [(int)$c["id"]]);
+                    $herdada = max((int)strtotime((string)($c["rodizio_retomado_em"] ?? "")), $dono_herda ? $retomada_sistema : 0);
+                    if ($herdada > $propria) {
+                        sql("REPLACE INTO config (colecao_id, chave, valor) VALUES (?, ?, ?)", [(int)$c["id"], "rodizio_retomado_em", (string)$herdada]);
+                    }
+                }
+            });
+        },
+        // 4. o que foi copiado sai do sistema (os parâmetros de antes e a retomada do sistema, que agora fica em cada coleção)
+        function () {
+            sem_escopo(function () {
+                sql("DELETE FROM sistema WHERE chave IN ('param_rodizio_ativo', 'param_recupera_ontem', 'rodizio_retomado_em')");
+                sis(null);
+            });
+        },
+        // 5. as regras e as colunas antigas, uma a uma (a regra sai antes da coluna dela; a que já saiu é pulada)
+        function () {
+            banco_script("ALTER TABLE usuario DROP CONSTRAINT ck_usuario_rodizio;\nALTER TABLE usuario DROP CONSTRAINT ck_usuario_recupera_ontem;");
+        },
+        function () {
+            if (banco_tem_coluna("usuario", "rodizio_ativo")) {
+                banco_script("ALTER TABLE usuario DROP COLUMN rodizio_ativo;");
+            }
+        },
+        function () {
+            if (banco_tem_coluna("usuario", "rodizio_retomado_em")) {
+                banco_script("ALTER TABLE usuario DROP COLUMN rodizio_retomado_em;");
+            }
+        },
+        function () {
+            if (banco_tem_coluna("usuario", "recupera_ontem")) {
+                banco_script("ALTER TABLE usuario DROP COLUMN recupera_ontem;");
+            }
+        },
+    ];
 }
 
 function migracao_v62_dados($nova = false)
@@ -3863,6 +3952,7 @@ function tabela_linha($r, $agora, $extra = [])
             "momento" => $v["prox_momento"], "falta" => $v["prox_falta"]] : null,
         "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
             "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
+        "vistoria" => vistoria_da_linha($v, $hoje),
         "compra" => ["data" => $val["data_compra"] ?? null, "valor" => isset($val["valor_compra"]) ? (float)$val["valor_compra"] : null, "loja" => $val["loja"] ?? null,
             "garantia_ate" => $val["garantia_ate"] ?? null],
         "leitura" => $leitura ? ["inicio" => $leitura["inicio"], "valor" => (float)$leitura["valor"], "unidade" => $leitura["unidade"]] : null,
@@ -3918,6 +4008,7 @@ $VARIAVEIS_TABELA = [
     "manutencao_data" => [tk("a data da próxima manutenção (vazio: nenhuma prevista)"), ""],
     "manutencao_nome" => [tk("o que é a próxima manutenção (a coluna O que fazer: Carregar, Pôr no sol...)"), ""],
     "encostado_data" => [tk("a data em que ele passa (ou passou) do limite de dias sem ir ao pulso (vazio: sem data ou o aviso desligado)"), ""],
+    "vistoria_data" => [tk("a data da próxima vistoria (a coluna Próxima vistoria; vazio: a vistoria desligada ou o relógio sem ela)"), ""],
     "avisos" => [tk("quantos avisos o relógio tem agora (todos, não só o próximo)"), ""],
     "posse" => [tk("a posse: Na coleção ou Emprestado"), ""],
     "servicos" => [tk("quantos serviços e diagnósticos o relógio tem"), ""],
@@ -4027,7 +4118,8 @@ function tabela_variaveis($linha, $r, $agora)
         "em_uso" => $linha["em_uso"] ? 1 : 0, "carga" => $linha["carga"] === null ? null : (float)$linha["carga"],
         "ultimo_uso" => $linha["em_uso"] ? dias_de($agora) : ((int)$linha["ultimo"] > 0 ? dias_de((int)$linha["ultimo"]) : null),
         "manutencao_data" => $linha["manutencao"] ? $em_dias($linha["manutencao"]["data"]) : null, "manutencao_nome" => $linha["manutencao"]["nome"] ?? null,
-        "encostado_data" => $linha["encostado"] ? $em_dias($linha["encostado"]["data"]) : null, "avisos" => count(avisos_do_relogio($r, $agora)),
+        "encostado_data" => $linha["encostado"] ? $em_dias($linha["encostado"]["data"]) : null,
+        "vistoria_data" => !empty($linha["vistoria"]) ? $em_dias($linha["vistoria"]["data"]) : null, "avisos" => count(avisos_do_relogio($r, $agora)),
         "posse" => $linha["posse_texto"], "tempo_de_uso" => (int)$linha["uso"], "servicos" => count(servicos_das_contas()[(int)$r["id"]] ?? []), "custo_servicos" => (function ($ss) {
             $cs = array_values(array_filter(array_column($ss, "custo"), function ($c) { return $c !== null; }));
             return count($cs) > 0 ? round(array_sum($cs), 2) : null;
@@ -4766,21 +4858,21 @@ function vistorias_lista($ate)
 }
 
 // Registra a vistoria de um relógio (o lançamento Vistoria) no instante $quando (segundos, até agora), se o tipo vale para o
-// relógio; no mesmo dia, uma só (a segunda não duplica). Devolve [ok, a frase ou o erro]
+// relógio; no mesmo dia, uma só (a segunda não duplica). Devolve [ok, a frase ou o erro, nova: true só quando gravou agora]
 function vistoria_registrar($r, $quando)
 {
     $tl = lancamento_tipos_do_relogio($r)["vistoria"] ?? null;
     if ($tl === null || $tl["formato"] !== "instantaneo") {
-        return [false, t("{1}: o tipo de lançamento Vistoria não vale para ele (Cadastros › Tipos de lançamento).", [1 => $r["nome"]])];
+        return [false, t("{1}: o tipo de lançamento Vistoria não vale para ele (Cadastros › Tipos de lançamento).", [1 => $r["nome"]]), false];
     }
     $quando = min($quando, time());
     $dia = date("Y-m-d", $quando);
     if (valor("SELECT id FROM lancamento WHERE relogio_id = ? AND tipo_id = ? AND inicio >= ? AND inicio <= ?", [(int)$r["id"], (int)$tl["id"], $dia . " 00:00:00", $dia . " 23:59:59"]) !== null) {
-        return [true, t("{1}: já tinha a vistoria de {2}.", [1 => $r["nome"], 2 => data_txt($quando)])];
+        return [true, t("{1}: já tinha a vistoria de {2}.", [1 => $r["nome"], 2 => data_txt($quando)]), false];
     }
     sql("INSERT INTO lancamento (relogio_id, tipo_id, inicio, fim, valor, origem, criado) VALUES (?, ?, ?, NULL, NULL, 'manual', NOW())", [(int)$r["id"], (int)$tl["id"], date("Y-m-d H:i:s", $quando)]);
     $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-    return [true, t("{1}: vistoria de {2} registrada.", [1 => $r["nome"], 2 => data_txt($quando)])];
+    return [true, t("{1}: vistoria de {2} registrada.", [1 => $r["nome"], 2 => data_txt($quando)]), true];
 }
 
 // Todos os avisos: [identificador => [versões]]
@@ -7194,17 +7286,24 @@ function documento_categorias_lista($rid = null, $cid = null, $wid = null)
         . ") AS documentos FROM documento_categoria c ORDER BY c.ordem, c.id", $wid !== null ? [(int)$wid] : ($cid !== null ? [(int)$cid] : ($rid !== null ? [(int)$rid] : []))));
 }
 
-// Apaga os arquivos de um documento (o arquivo e a miniatura) da pasta
+// Apaga os arquivos de um documento (o arquivo e a miniatura) da pasta. Só depois que o banco confirmar
+// (banco_depois_de_confirmar): num lote desfeito, a linha do documento volta e o arquivo continua lá
 function documento_apagar_arquivos($d)
 {
     $pasta = documentos_pasta();
-    if ($pasta !== null) {
-        foreach ([$d["arquivo"], $d["miniatura"]] as $a) {
-            if ($a !== null && $a !== "" && strpos($a, "..") === false && is_file($pasta . "/" . $a)) {
+    if ($pasta === null) {
+        return;
+    }
+    $arquivos = array_values(array_filter([$d["arquivo"] ?? null, $d["miniatura"] ?? null], function ($a) {
+        return $a !== null && $a !== "" && strpos($a, "..") === false;
+    }));
+    banco_depois_de_confirmar(function () use ($pasta, $arquivos) {
+        foreach ($arquivos as $a) {
+            if (is_file($pasta . "/" . $a)) {
                 @unlink($pasta . "/" . $a);
             }
         }
-    }
+    });
 }
 
 // Como o relógio abre na página Hoje (a Configuração): "lado", no painel à direita da lista (o padrão), ou "flutuante",
@@ -9601,6 +9700,35 @@ function documento_copia_inteira($d, $ultimo = false)
     return strlen((string)valor("SELECT dados FROM documento_parte WHERE documento_id = ? AND parte = ?", [(int)$d["id"], $pedacos - 1])) === $resto;
 }
 
+// Quantos arquivos há numa pasta (com as de dentro)
+function pasta_contar_arquivos($pasta)
+{
+    $n = 0;
+    foreach (scandir($pasta) ?: [] as $x) {
+        if ($x === "." || $x === "..") {
+            continue;
+        }
+        $n += is_dir($pasta . "/" . $x) && !is_link($pasta . "/" . $x) ? pasta_contar_arquivos($pasta . "/" . $x) : 1;
+    }
+    return $n;
+}
+
+// Apaga a pasta de um relógio, calibre ou winder que saiu do banco, só depois que o banco confirmar
+// (banco_depois_de_confirmar). Devolve quantos arquivos saem (contados agora)
+function apagar_pasta_depois($caminho)
+{
+    if (!is_dir($caminho)) {
+        return 0;
+    }
+    $n = pasta_contar_arquivos($caminho);
+    banco_depois_de_confirmar(function () use ($caminho) {
+        if (is_dir($caminho)) {
+            apagar_pasta($caminho);
+        }
+    });
+    return $n;
+}
+
 // Apaga uma pasta e tudo o que há dentro
 function apagar_pasta($pasta)
 {
@@ -10450,12 +10578,16 @@ function visao_relogio($r, $agora)
         $situacao[] = t("Autonomia restante {1}", [1 => duracao_texto((float)$autonomia / 86400) !== "" ? duracao_texto((float)$autonomia / 86400) : t("esgotada")]);
     }
     $avisos = avisos_do_relogio($r, $agora);
-    // o Encostado não é manutenção: não entra na próxima manutenção nem no "o que fazer"; a tabela tem a coluna dele
+    // o Encostado e a Vistoria não são manutenção: não entram na próxima manutenção, no "Em" nem no "O que fazer" (a vistoria,
+    // que vence de tantos em tantos dias, cobria a manutenção de verdade); a tabela tem uma coluna para cada um
     $encostado = null;
+    $vistoria = null;
     $manut = [];
     foreach ($avisos as $a) {
         if ($a["identificador"] === "encostado") {
             $encostado = $a;
+        } elseif ($a["identificador"] === "vistoria") {
+            $vistoria = $a;
         } else {
             $manut[] = $a;
         }
@@ -10470,7 +10602,17 @@ function visao_relogio($r, $agora)
         "prox" => $prox, "prox_momento" => $prox ? (int)strtotime($prox["data"]) : 0,
         "prox_falta" => $prox ? $falta_de($prox) : "—",
         "encostado" => $encostado, "encostado_momento" => $encostado ? (int)strtotime($encostado["data"]) : 0,
-        "encostado_falta" => $encostado ? $falta_de($encostado) : "—"];
+        "encostado_falta" => $encostado ? $falta_de($encostado) : "—",
+        "vistoria" => $vistoria, "vistoria_momento" => $vistoria ? (int)strtotime($vistoria["data"]) : 0, "vistoria_falta" => $vistoria ? $falta_de($vistoria) : "—"];
+}
+
+// A próxima vistoria de um relógio (a coluna Próxima vistoria da tabela, a ficha), a partir da visão dele (visao_relogio): o dia
+// (AAAA-MM-DD; hoje se já passou), o instante, quanto falta e o estado do aviso; null sem vistoria (desligada, fora da coleção, na
+// manutenção)
+function vistoria_da_linha($v, $hoje)
+{
+    return $v["vistoria"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["vistoria"]["data"], 0, 10)), "momento" => $v["vistoria_momento"],
+        "falta" => $v["vistoria_falta"], "estado" => $v["vistoria"]["estado"]] : null;
 }
 
 // Os avisos de hoje ("Hoje é dia de"): os atrasados ou em breve dos relógios disponíveis, do mais urgente ao mais distante.
@@ -11912,6 +12054,30 @@ function parametros_sistema_lista()
             "padrao" => $padrao, "minimo" => $min, "maximo" => $max];
     }
     return $res;
+}
+
+// A lista dos parâmetros como o recurso=config entregava na v66, para os clientes de antes: os de agora e, no fim, o rodízio
+// e o relógio de ontem, que eram parâmetros e hoje são o padrão do sistema das opções (padroes[<chave>] no config/salvar; o
+// parametros[<chave>] de antes ainda vale): o valor que o sistema faz valer, e a origem (sistema: o master escolheu; padrao)
+function parametros_sistema_lista_compat()
+{
+    $res = parametros_sistema_lista();
+    $tx = opcoes_textos();
+    foreach (["rodizio_ativo", "recupera_ontem"] as $k) {
+        [$v, $origem] = opcao_do_sistema_ou_padrao($k);
+        $res[] = ["chave" => $k, "nome" => $tx["titulos"][$k], "descricao" => t("1: ligado; 0: desligado. É o padrão do sistema desta opção (padroes[{1}] no config/salvar), que o dono e cada coleção podem substituir.", [1 => $k]),
+            "tipo" => "sim_nao", "valor" => (int)$v, "origem" => $origem, "config_php" => null, "config_valor" => null,
+            "padrao" => (int)OPCOES[$k][2], "minimo" => 0, "maximo" => 1];
+    }
+    return $res;
+}
+
+// De onde vêm os números dos sorteios: as fontes, na ordem em que o sistema tenta, quando foi o último lote e desde quando os
+// serviços de fora falham (null: não falham)
+function aleatorio_resumo()
+{
+    return ["fontes" => ["RANDOM.ORG", "ANU QRNG", t("gerador seguro do PHP (random_int)")], "ultimo_lote" => sis("aleatorio_ultima") !== "" ? sis("aleatorio_ultima") : null,
+        "fora_desde" => sis("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)sis("aleatorio_fora")) : null];
 }
 
 // Confere os parâmetros que vieram (parametros[<chave>]: um número na faixa, ou vazio: volta a valer o config.php).

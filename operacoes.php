@@ -1506,12 +1506,14 @@ function op_relogio($acao, $d)
                 . (count($ignorados) > 0 ? t(" Não gravei: {1}. Ficou o que já estava.", [1 => implode("; ", $ignorados)]) : "");
         }
     } elseif ($acao === "excluir" && $atual) {
-        // os arquivos dos documentos saem da pasta, e a pasta do relógio (r<id>) inteira (as linhas saem com o relógio, pelo banco)
-        foreach (linhas("SELECT arquivo, miniatura FROM documento WHERE relogio_id = ?", [$id]) as $doc) {
-            documento_apagar_arquivos($doc);
-        }
+        // os arquivos dos documentos saem da pasta, e a pasta do relógio (r<id>) inteira (as linhas saem com o relógio, pelo banco),
+        // depois que a linha saiu e o banco confirmou: num lote desfeito, o relógio volta com os arquivos onde estavam
+        $docs_r = linhas("SELECT arquivo, miniatura FROM documento WHERE relogio_id = ?", [$id]);
         $n_aces = (int)valor("SELECT COUNT(*) FROM acessorio WHERE relogio_id = ?", [$id]);
         sql("DELETE FROM relogio WHERE id = ?", [$id]);
+        foreach ($docs_r as $doc) {
+            documento_apagar_arquivos($doc);
+        }
         relogios_apagar_arquivos([$id]);
         $msg = t("Relógio {1} excluído, com os valores, a foto, os documentos e os lançamentos dele.{2}", [1 => $atual["nome"], 2 => $n_aces > 0 ? " " . ($n_aces === 1 ? t("O acessório dele ficou solto.") : t("Os {1} acessórios dele ficaram soltos.", [1 => $n_aces])) : ""]);
         $id = 0;
@@ -1716,8 +1718,9 @@ function op_documentos($acao, $d)
         if (!$atual) {
             $erros[] = t("Documento não encontrado.");
         } elseif ($acao === "excluir") {
-            documento_apagar_arquivos($atual);
+            // a linha sai primeiro: se o banco recusar, o arquivo fica
             sql("DELETE FROM documento WHERE id = ?", [$id]);
+            documento_apagar_arquivos($atual);
             $msg = t("Documento {1} excluído.", [1 => $atual["titulo"]]);
         } else {
             if (!$cat) {
@@ -1960,11 +1963,13 @@ function op_winders($acao, $d)
             $msg = t("Combinado: o aviso de limite do {1} no {2} não aparece mais.", [1 => $r_l["nome"], 2 => $atual["nome"]]);
         }
     } elseif ($acao === "excluir" && $atual) {
-        // os arquivos dos documentos saem da pasta, e a pasta do winder (w<id>) inteira (as linhas saem com ele, pelo banco)
-        foreach (linhas("SELECT arquivo, miniatura FROM documento WHERE winder_id = ?", [$id]) as $doc) {
+        // os arquivos dos documentos saem da pasta, e a pasta do winder (w<id>) inteira (as linhas saem com ele, pelo banco),
+        // depois que a linha saiu e o banco confirmou
+        $docs_w = linhas("SELECT arquivo, miniatura FROM documento WHERE winder_id = ?", [$id]);
+        sql("DELETE FROM winder WHERE id = ?", [$id]);
+        foreach ($docs_w as $doc) {
             documento_apagar_arquivos($doc);
         }
-        sql("DELETE FROM winder WHERE id = ?", [$id]);
         winders_apagar_arquivos([$id]);
         $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
         $msg = t("Winder {1} excluído.", [1 => $atual["nome"]]);
@@ -4992,8 +4997,12 @@ function op_vistorias($acao, $d)
         return resultado($erros, "");
     }
     return banco_atomico(function () use ($rels, $quando) {
-        $frases = array_map(function ($r) use ($quando) { return vistoria_registrar($r, (int)$quando)[1]; }, $rels);
-        return resultado([], count($rels) === 1 ? $frases[0] : t("{1} vistorias registradas: {2}", [1 => count($rels), 2 => implode(" ", $frases)]), ["registradas" => count($rels)]);
+        // registradas: só as novas (a do mesmo dia que já existia não conta: repetir o pedido devolve 0)
+        $feitas = array_map(function ($r) use ($quando) { return vistoria_registrar($r, (int)$quando); }, $rels);
+        $frases = array_column($feitas, 1);
+        $novas = count(array_filter($feitas, function ($x) { return $x[2]; }));
+        return resultado([], count($rels) === 1 ? $frases[0] : ($novas === 1 ? t("1 vistoria registrada: {1}", [1 => implode(" ", $frases)])
+            : ($novas === 0 ? t("Nenhuma vistoria nova: {1}", [1 => implode(" ", $frases)]) : t("{1} vistorias registradas: {2}", [1 => $novas, 2 => implode(" ", $frases)]))), ["registradas" => $novas]);
     });
 }
 
@@ -5201,6 +5210,68 @@ function op_modos($acao, $d)
 //           por vírgula), dia_mes (1 a 31), intervalo_dias, relogio_id (0: nenhum)); o evento novo já vai por todos os destinos
 //           da coleção (e por nenhuma agenda): cada destino e cada agenda escolhe o que recebe. evento_excluir (evento_id ou id)
 // ---------------------------------------------------------------------------------------------------------------------
+// Os campos que vêm em todo pedido e não são de nenhuma ação: o recurso, a ação, o token, a coleção, o "vendo como", o idioma
+// da resposta e o formato
+const PEDIDO_CAMPOS_GERAIS = ["recurso", "acao", "token", "colecao", "como", "lingua", "formato"];
+
+// Confere que todo campo do pedido é um que a ação grava (os de $aceitos e os gerais): um campo que ela deixaria de lado sem
+// dizer recusa o pedido inteiro. $dica(chave) diz onde a chave vai, quando ela é de outro lugar (null: o erro genérico, com a
+// lista do que a ação aceita). Devolve os erros
+function pedido_campos_conferir($d, $aceitos, $dica, $acao_nome)
+{
+    $erros = [];
+    $fora = [];
+    foreach (array_keys($d) as $k) {
+        $k = (string)$k;
+        if (in_array($k, PEDIDO_CAMPOS_GERAIS, true) || in_array($k, $aceitos, true)) {
+            continue;
+        }
+        $e = $dica($k);
+        if ($e !== null) {
+            $erros[] = $e;
+        } else {
+            $fora[] = $k;
+        }
+    }
+    if (count($fora) > 0) {
+        $erros[] = t("{1}: {2} não é deste pedido, e nada foi gravado. Os campos que ele aceita: {3}.", [1 => $acao_nome, 2 => implode(", ", $fora), 3 => implode(", ", $aceitos)]);
+    }
+    return $erros;
+}
+
+// O config/salvar: o formato de antes que tem o mesmo sentido vira o de agora (parametros[rodizio_ativo|recupera_ontem], o padrão
+// do sistema na v66, é padroes[...]), e o campo que não é daqui (opcoes[...] é do conta/alterar; um nome desconhecido) recusa
+// tudo com o formato certo. Devolve [os dados, os erros]
+function config_salvar_normalizar($d)
+{
+    $erros = [];
+    if (isset($d["parametros"]) && is_array($d["parametros"])) {
+        foreach (["rodizio_ativo", "recupera_ontem"] as $k) {
+            if (array_key_exists($k, $d["parametros"])) {
+                $v = $d["parametros"][$k];
+                unset($d["parametros"][$k]);
+                if (isset($d["padroes"]) && is_array($d["padroes"]) && array_key_exists($k, $d["padroes"]) && (string)$d["padroes"][$k] !== (string)$v) {
+                    $erros[] = t("{1}: parametros[{1}] (o formato de antes) e padroes[{1}] vieram com valores diferentes; mande só padroes[{1}].", [1 => $k]);
+                } else {
+                    $d["padroes"] = (isset($d["padroes"]) && is_array($d["padroes"]) ? $d["padroes"] : []) + [$k => $v];
+                }
+            }
+        }
+        if (count($d["parametros"]) === 0) {
+            unset($d["parametros"]);
+        }
+    }
+    $aceitos = array_merge(array_keys(OPCOES), ["padroes", "dono", "parametros", "url_sistema", "cron_espera_rodadas", "idioma", "fuso", "encostado_ativo"],
+        array_map(function ($k) { return "senha_" . $k; }, array_keys(SENHA_REGRAS)));
+    $erros = array_merge($erros, pedido_campos_conferir($d, $aceitos, function ($k) {
+        if ($k === "opcoes") {
+            return t("opcoes[<chave>] é do conta/alterar (o padrão das coleções do dono). No config/salvar: <chave> muda esta coleção, dono[<chave>] o padrão das coleções do dono e padroes[<chave>] o do sistema (só o master). Nada foi gravado.");
+        }
+        return null;
+    }, "config/salvar"));
+    return [$d, $erros];
+}
+
 function op_config($acao, $d)
 {
     global $REPETICOES;
@@ -5210,18 +5281,18 @@ function op_config($acao, $d)
     $hoje = hoje_da_colecao();
     $hora_ok = "/^([01][0-9]|2[0-3]):[0-5][0-9]\$/";
     if ($acao === "salvar") {
+        // o formato de antes (v66): parametros[rodizio_ativo] e parametros[recupera_ontem] eram o padrão do sistema, que hoje é
+        // padroes[...]: valem como padroes; e nenhum campo fica de fora sem dizer (pedido_campos_conferir): o que não é daqui
+        // recusa o pedido inteiro, com o formato certo
+        [$d, $erros_formato] = config_salvar_normalizar($d);
+        if (count($erros_formato) > 0) {
+            return resultado($erros_formato, "");
+        }
         // as opções das três hierarquias (a tabela OPCOES, opcoes.php): um conferidor só; vazio herda do nível acima
         [$erros_o, $opcoes_ok] = opcoes_conferir(array_intersect_key($d, OPCOES));
         $erros = array_merge($erros, $erros_o);
-        // o horário de uso: o fim depois do início, com o que vale depois da mudança (a escolha do pedido ou o que a coleção herda)
-        if (count($erros_o) === 0 && (array_key_exists("uso_inicio", $opcoes_ok) || array_key_exists("uso_fim", $opcoes_ok))) {
-            $vale = function ($k) use ($opcoes_ok) {
-                return array_key_exists($k, $opcoes_ok) ? ($opcoes_ok[$k] !== "" ? $opcoes_ok[$k] : opcao_valor_herdado($k)) : cfg($k);
-            };
-            if ($vale("uso_fim") <= $vale("uso_inicio")) {
-                $erros[] = t("Relógio no pulso: duas horas HH:MM, o fim depois do início.");
-            }
-        }
+        // o horário de uso de cada coleção (o fim depois do início) se confere no fim, com os três níveis do pedido já gravados
+        // (opcoes_gravar_pedido): a escolha da coleção, o padrão do dono e o do sistema que vierem juntos contam todos
         // o padrão do sistema de cada opção (padroes[<chave>]; vazio: volta o padrão de fábrica): só o master
         $padroes_ok = [];
         if (array_key_exists("padroes", $d)) {
@@ -5249,16 +5320,16 @@ function op_config($acao, $d)
             } elseif (!is_array($d["dono"])) {
                 $erros[] = t("dono: os campos dono[<chave>], um para cada opção que muda.");
             } else {
-                $dono_pedido = [];
+                $dono_pedido = [$uid_d, []];
                 $opcoes_d = $d["dono"];
                 if (count($opcoes_d) > 0) {
                     [$erros_d, $dono_ok] = opcoes_conferir($opcoes_d);
                     $erros = array_merge($erros, $erros_d);
-                    $erro_hd = count($erros_d) === 0 ? opcoes_conferir_horario("usuario", $uid_d, $dono_ok) : null;
+                    $erro_hd = count($erros_d) === 0 ? opcoes_conferir_horario("usuario", $uid_d, $dono_ok, $padroes_ok) : null;
                     if ($erro_hd !== null) {
                         $erros[] = $erro_hd;
                     }
-                    $dono_pedido["opcoes"] = $opcoes_d;
+                    $dono_pedido = [$uid_d, $dono_ok];
                 }
             }
         }
@@ -5314,58 +5385,48 @@ function op_config($acao, $d)
         } elseif ($mexe_senha && $sp["maiusculas"] + $sp["minusculas"] + $sp["numeros"] + $sp["simbolos"] > $sp["tamanho"]) {
             $erros[] = t("Os mínimos de maiúsculas, minúsculas, números e símbolos, somados, passam do tamanho da senha.");
         }
-        // o padrão do sistema primeiro (refaz o que depende dele em cada coleção); uma coleção que ficaria com o horário de uso
-        // invertido recusa tudo
-        if (count($erros) === 0 && count($padroes_ok) > 0) {
+        // tudo numa transação só (opcoes_gravar_pedido): o padrão do sistema, o do dono, a escolha desta coleção e o resto do
+        // pedido; com tudo gravado, cada coleção afetada é conferida (o horário de uso) antes de confirmar, e uma inválida desfaz
+        // o pedido inteiro, nos três níveis, com o que depende deles (o "fecha às", o fim da escala, a retomada do rodízio)
+        if (count($erros) === 0) {
+            $resto = function () use ($d, $param_gravar) {
+                if (array_key_exists("url_sistema", $d) && usuario_master()) {
+                    sis_set("url_sistema", trim((string)$d["url_sistema"]));
+                }
+                if (array_key_exists("cron_espera_rodadas", $d) && usuario_master()) {
+                    sis_set("cron_espera_rodadas", trim((string)$d["cron_espera_rodadas"]));
+                }
+                foreach ($param_gravar as $k_p => $v_p) {
+                    sis_set("param_" . $k_p, $v_p);
+                }
+                // a força da senha é do sistema inteiro: só o master muda
+                foreach (array_keys(SENHA_REGRAS) as $k) {
+                    if (array_key_exists("senha_" . $k, $d) && usuario_master()) {
+                        sis_set("senha_" . $k, (string)(int)$d["senha_" . $k]);
+                    }
+                }
+                // o idioma padrão da coleção (o das telas de quem não escolheu o seu, e o das mensagens e das agendas)
+                if (array_key_exists("idioma", $d)) {
+                    cfg_set("idioma", (string)$d["idioma"]);
+                }
+                // o fuso da coleção, com o nome na caixa certa (vazio: o do sistema)
+                if (array_key_exists("fuso", $d)) {
+                    cfg_set("fuso", (string)(fuso_valido($d["fuso"]) ?? ""));
+                }
+                // a caixa "Avisar quando um relógio fica encostado": liga ou desliga o aviso Encostado do cadastro (todas as versões
+                // dele na árvore), o mesmo que a página Avisos faz; desligado, some o aviso, a coluna da Hoje e o filtro
+                if (array_key_exists("encostado_ativo", $d)) {
+                    sql("UPDATE aviso SET ativo = ? WHERE identificador = 'encostado'", [(string)$d["encostado_ativo"] === "1" ? 1 : 0]);
+                }
+                $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+            };
             try {
-                opcoes_sistema_gravar($padroes_ok);
+                opcoes_gravar_pedido($padroes_ok, $dono_pedido, $opcoes_ok, $resto, array_keys($opcoes_ok));
+                $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
+                $msg = t("Configuração salva.");
             } catch (OpcoesErro $e) {
                 $erros[] = $e->getMessage();
             }
-        }
-        // depois o padrão do dono, pela porta do conta/alterar (que refaz o que depende dele nas coleções dele)
-        if (count($erros) === 0 && $dono_pedido !== null && count($dono_pedido) > 0) {
-            $r_dono = op_conta("alterar", $dono_pedido);
-            if (!$r_dono["ok"]) {
-                $erros = array_merge($erros, $r_dono["erros"]);
-            }
-        }
-        if (count($erros) === 0) {
-            $foto_opcoes = opcoes_foto();
-            if (array_key_exists("url_sistema", $d) && usuario_master()) {
-                sis_set("url_sistema", trim((string)$d["url_sistema"]));
-            }
-            if (array_key_exists("cron_espera_rodadas", $d) && usuario_master()) {
-                sis_set("cron_espera_rodadas", trim((string)$d["cron_espera_rodadas"]));
-            }
-            foreach ($param_gravar as $k_p => $v_p) {
-                sis_set("param_" . $k_p, $v_p);
-            }
-            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-            // a força da senha é do sistema inteiro: só o master muda
-            foreach (array_keys(SENHA_REGRAS) as $k) {
-                if (array_key_exists("senha_" . $k, $d) && usuario_master()) {
-                    sis_set("senha_" . $k, (string)(int)$d["senha_" . $k]);
-                }
-            }
-            // as opções das três hierarquias que vieram: a escolha da coleção (vazio herda)
-            foreach ($opcoes_ok as $k => $v) {
-                cfg_set($k, $v);
-            }
-            // o fuso da coleção, com o nome na caixa certa (vazio: o do sistema)
-            if (array_key_exists("fuso", $d)) {
-                cfg_set("fuso", (string)(fuso_valido($d["fuso"]) ?? ""));
-            }
-            // a caixa "Avisar quando um relógio fica encostado": liga ou desliga o aviso Encostado do cadastro (todas as versões
-            // dele na árvore), o mesmo que a página Avisos faz; desligado, some o aviso, a coluna da Hoje e o filtro
-            if (array_key_exists("encostado_ativo", $d)) {
-                sql("UPDATE aviso SET ativo = ? WHERE identificador = 'encostado'", [(string)$d["encostado_ativo"] === "1" ? 1 : 0]);
-            }
-            // o que depende do valor que vale: o "fecha às" dos tipos No pulso e No sol, o fim da escala inteligente, a retomada
-            // do rodízio
-            opcoes_efeitos($foto_opcoes, array_keys($opcoes_ok));
-            $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
-            $msg = t("Configuração salva.");
         }
     } elseif ($acao === "evento_salvar") {
         $id = (int)($d["evento_id"] ?? ($d["id"] ?? 0));

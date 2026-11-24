@@ -1,4 +1,4 @@
-<!-- origem: a40413b72a85465d6b778080b45633eee4044944 -->
+<!-- origem: 91247f036f6368d4d725ec96ff48b727712f9ce2 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -221,16 +221,16 @@ curl -u utilisateur:motdepasse -G "http://serveur/relojoeiro/api.php" -d recurso
 | `rodizio` | `usando` (je porte celle-ci aujourd'hui), `trocar_dia` (la montre d'un jour), `periodo` (les montres d'une période, dans l'ordre : `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (efface les jours de la période et le mode les refait ; seulement `de` : jusqu'à la fin du plan ; seulement `ate` : de demain jusqu'à lui), `periodo_livre` (efface et laisse les jours libres, sans tirage ; les mêmes dates), `manual` (la Rotation manuelle : `de`, `ate`, `dias[AAAA-MM-JJ]` = l'id de la montre, `auto` ou `livre`), `apagar_tudo` (toute la programmation à partir de demain disparaît ; `hoje=1` : à partir d'aujourd'hui ; le mode reconstruit le plan), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (changer le mode) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `simulador` | `aplicar` (le scénario tel qu'il a été simulé, `de`, `ate`, `semente` et `impressao` : n'enregistre que si le plan sort comme simulé) |
-| `vistorias` | `registrar` (`relogio_ids`, séparés par des virgules, et `quando`, AAAA-MM-JJ ou AAAA-MM-JJ HH:MM, jusqu'à maintenant ; vide : maintenant) : l'inspection de chacune, tout ou rien, une par montre dans la journée |
+| `vistorias` | `registrar` (`relogio_ids`, séparés par des virgules, et `quando`, AAAA-MM-JJ ou AAAA-MM-JJ HH:MM, jusqu'à maintenant ; vide : maintenant) : l'inspection de chacune, tout ou rien, une par montre dans la journée ; `registradas` ne compte que les nouvelles (répéter renvoie 0) |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (groupes) et `relogios` (le groupe de chaque montre) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (et `ordem` dans les champs ; le champ avec les règles de valeur : `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar` (le propriétaire aussi `dono[<chave>]` : la valeur par défaut de ses collections ; le master aussi `padroes[<chave>]` : la valeur par défaut du système, et `parametros[<chave>]` : les paramètres de fonctionnement du système), `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (`<chave>` : la collection ; le propriétaire aussi `dono[<chave>]` : la valeur par défaut de ses collections ; le master aussi `padroes[<chave>]` : la valeur par défaut du système, et `parametros[<chave>]` : les paramètres de fonctionnement du système ; le tout dans une transaction, et un champ qui ne relève pas de cette requête refuse toute la requête), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, e-mail ou Web Push, avec ce qu'elle reçoit), `testar` (`qual=` : texte, matin ou soir), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook ou ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (avec le `senha`, ou avec le `senha_hash` d'un autre système ; le premier utilisateur, avec le jeton, est le master) et, seulement le master : `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (e-mail, langue, `nivel` : le mode de l'interface, mot de passe), `token_criar`, `token_revogar`, `aparelho_lembrar` (l'application sur le téléphone : la clé de cet appareil dans un cookie, qui entre sans le mot de passe), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (le serveur d'e-mail personnel ; `proprio=0` revient à celui du système), `smtp_testar`, `excluir` ; seulement le master : `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (e-mail, langue, `nivel` : le mode de l'interface, mot de passe, `opcoes[<chave>]` : la valeur par défaut des collections dont il est propriétaire ; le tout dans une transaction, et un champ qui ne relève pas de cette requête refuse toute la requête), `token_criar`, `token_revogar`, `aparelho_lembrar` (l'application sur le téléphone : la clé de cet appareil dans un cookie, qui entre sans le mot de passe), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (le serveur d'e-mail personnel ; `proprio=0` revient à celui du système), `smtp_testar`, `excluir` ; seulement le master : `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair` ; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar` ; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sans identifiant : `criar_conta`, `esqueci_senha`, `nova_senha` |

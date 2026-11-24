@@ -1,4 +1,4 @@
-<!-- origem: a40413b72a85465d6b778080b45633eee4044944 -->
+<!-- origem: 91247f036f6368d4d725ec96ff48b727712f9ce2 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -217,16 +217,16 @@ curl -u usuario:contraseña -G "http://servidor/relojoeiro/api.php" -d recurso=c
 | `rodizio` | `usando` (estoy usando este hoy), `trocar_dia` (el reloj de un día), `periodo` (los relojes de un período, en orden: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (borra los días del período y el modo los vuelve a montar; solo `de`: hasta el final del plan; solo `ate`: desde mañana hasta él), `periodo_livre` (borra y deja los días libres, sin sorteo; las mismas fechas), `manual` (la Rotación manual: `de`, `ate`, `dias[AAAA-MM-DD]` = el id del reloj, `auto` o `livre`), `apagar_tudo` (toda la programación de mañana en adelante se va; `hoje=1`: de hoy en adelante; el modo arma el plan de nuevo), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (cambiar el modo) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `simulador` | `aplicar` (el escenario como se simuló, `de`, `ate`, `semente` e `impressao`: guarda solo si el plan sale igual al simulado) |
-| `vistorias` | `registrar` (`relogio_ids`, separados por comas, y `quando`, AAAA-MM-DD o AAAA-MM-DD HH:MM, hasta ahora; vacío: ahora): la inspección de cada uno, todo o nada, una por reloj en el día |
+| `vistorias` | `registrar` (`relogio_ids`, separados por comas, y `quando`, AAAA-MM-DD o AAAA-MM-DD HH:MM, hasta ahora; vacío: ahora): la inspección de cada uno, todo o nada, una por reloj en el día; `registradas` cuenta solo las nuevas (repetir devuelve 0) |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (grupos) y `relogios` (el grupo de cada reloj) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (y `ordem` en los campos; el campo con las reglas del valor: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar` (el dueño también `dono[<chave>]`: el valor predeterminado de sus colecciones; el master también `padroes[<chave>]`: el valor predeterminado del sistema, y `parametros[<chave>]`: los parámetros de operación del sistema), `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (`<chave>`: la colección; el dueño también `dono[<chave>]`: el valor predeterminado de sus colecciones; el master también `padroes[<chave>]`: el valor predeterminado del sistema, y `parametros[<chave>]`: los parámetros de operación del sistema; todo en una transacción, y un campo que no es de esta solicitud rechaza la solicitud entera), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, correo o Web Push, con lo que recibe), `testar` (`qual=`: texto, mañana o noche), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook o ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (con la `senha`, o con el `senha_hash` de otro sistema; el primer usuario, con el token, es el master) y, solo el master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (correo, idioma, `nivel`: el modo de la interfaz, contraseña), `token_criar`, `token_revogar`, `aparelho_lembrar` (la aplicación en el celular: la clave de este aparato en una cookie, que entra sin la contraseña), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (el servidor de correo propio; `proprio=0` vuelve al del sistema), `smtp_testar`, `excluir`; solo el master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (correo, idioma, `nivel`: el modo de la interfaz, contraseña, `opcoes[<chave>]`: el valor predeterminado de las colecciones de las que es dueño; todo en una transacción, y un campo que no es de esta solicitud rechaza la solicitud entera), `token_criar`, `token_revogar`, `aparelho_lembrar` (la aplicación en el celular: la clave de este aparato en una cookie, que entra sin la contraseña), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (el servidor de correo propio; `proprio=0` vuelve al del sistema), `smtp_testar`, `excluir`; solo el master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | sin login: `criar_conta`, `esqueci_senha`, `nova_senha` |

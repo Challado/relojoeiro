@@ -273,7 +273,10 @@ function usuario_publico($u)
     return ["id" => (int)$u["id"], "login" => $u["login"], "email" => $u["email"] ?? null, "papel" => $u["papel"], "idioma" => $u["idioma"] ?? null, "fuso" => $u["fuso"] ?? null,
         "nivel" => ($u["nivel"] ?? "avancado") === "basico" ? "basico" : "avancado",
         "criado" => $u["criado"], "ultimo_acesso" => $u["ultimo_acesso"] ?? null, "expira_em" => $exp, "demo" => $exp !== null,
-        "dias_restantes" => $exp !== null ? max(0, (int)ceil((strtotime((string)$exp) - time()) / 86400)) : null, "bloqueado" => (int)($u["bloqueado"] ?? 0) === 1];
+        "dias_restantes" => $exp !== null ? max(0, (int)ceil((strtotime((string)$exp) - time()) / 86400)) : null, "bloqueado" => (int)($u["bloqueado"] ?? 0) === 1,
+        // como na v66: o padrão dele para as coleções de que é dono, no rodízio e no relógio de ontem (true, false ou null: herda
+        // o sistema); hoje são opcoes[rodizio_ativo] e opcoes[recupera_ontem] (recurso=conta, opcoes)
+        "rodizio_ativo" => usuario_preferencia_sim_nao((int)$u["id"], "rodizio_ativo"), "recupera_ontem" => usuario_preferencia_sim_nao((int)$u["id"], "recupera_ontem")];
 }
 
 function usuario_por_id($id)
@@ -670,6 +673,10 @@ function conta_consulta()
                 "aparelhos" => array_map(function ($p) { return ["id" => (int)$p["id"], "aparelho" => $p["aparelho"], "criada" => $p["criada"], "endpoint_hash" => $p["endpoint_hash"]]; },
                     linhas("SELECT id, aparelho, criada, endpoint_hash FROM push_inscricao WHERE usuario_id = ? ORDER BY criada", [$uid]))],
             "email_configurado" => email_conta($uid)["metodo"] !== null, "senha_politica" => senha_politica_api(),
+            // como na v66: o que o sistema faz valer no rodízio e no relógio de ontem, e (só o master; null para os outros) o
+            // servidor de e-mail do sistema, que hoje a página Sistema mostra (recurso=sistema, email)
+            "rodizio_sistema" => opcao_do_sistema_ou_padrao("rodizio_ativo")[0] === "1", "recupera_ontem_sistema" => opcao_do_sistema_ou_padrao("recupera_ontem")[0] === "1",
+            "email" => usuario_master() ? email_config_resumo() : null,
             // o SMTP próprio da pessoa (os e-mails dela saem por ele; sem ele, pelo do sistema), sem a senha
             "smtp" => smtp_proprio_api($uid),
             "demo_dias" => demo_dias(), "linguas" => array_map(function ($k) { return ["codigo" => $k, "nome" => LINGUAS[$k]["nome"]]; }, array_keys(LINGUAS)),
@@ -944,6 +951,35 @@ function op_conta($acao, $d)
     $msg = "";
     $extra = [];
     if ($acao === "alterar") {
+        // o formato de antes (v66): rodizio_ativo e recupera_ontem soltos eram a preferência do dono, que hoje é
+        // opcoes[rodizio_ativo] e opcoes[recupera_ontem]: valem como opcoes; e nenhum campo fica de fora sem dizer: o que não é
+        // daqui (uma opção solta, padroes[...], dono[...], um nome desconhecido) recusa o pedido inteiro, com o formato certo
+        foreach (["rodizio_ativo", "recupera_ontem"] as $k_v66) {
+            if (array_key_exists($k_v66, $d)) {
+                $v_v66 = $d[$k_v66];
+                unset($d[$k_v66]);
+                if (array_key_exists("opcoes", $d) && !is_array($d["opcoes"])) {
+                    continue;
+                }
+                if (isset($d["opcoes"][$k_v66]) && (string)$d["opcoes"][$k_v66] !== (string)$v_v66) {
+                    $erros[] = t("{1}: {1} (o formato de antes) e opcoes[{1}] vieram com valores diferentes; mande só opcoes[{1}].", [1 => $k_v66]);
+                } else {
+                    $d["opcoes"] = (isset($d["opcoes"]) && is_array($d["opcoes"]) ? $d["opcoes"] : []) + [$k_v66 => $v_v66];
+                }
+            }
+        }
+        $erros = array_merge($erros, pedido_campos_conferir($d, ["email", "idioma", "nivel", "fuso", "senha", "senha_atual", "senha_confirmacao", "opcoes"], function ($k) {
+            if (isset(OPCOES[$k])) {
+                return t("{1}: no conta/alterar, as opções vão em opcoes[{1}] (o padrão das suas coleções); a escolha de uma coleção é o config/salvar com {1}. Nada foi gravado.", [1 => $k]);
+            }
+            if ($k === "padroes" || $k === "dono" || $k === "parametros") {
+                return t("{1}[<chave>] é do config/salvar. No conta/alterar, o padrão das suas coleções vai em opcoes[<chave>]. Nada foi gravado.", [1 => $k]);
+            }
+            return null;
+        }, "conta/alterar"));
+        if (count($erros) > 0) {
+            return resultado($erros, "");
+        }
         $campos = [];
         // as opções da coleção: o padrão do dono (opcoes[<chave>]; vazio herda o sistema); vale nas coleções de que é dono que não
         // escolheram a sua
@@ -998,21 +1034,29 @@ function op_conta($acao, $d)
                 $campos["senha_hash"] = password_hash((string)$d["senha"], PASSWORD_DEFAULT);
             }
         }
+        // os campos da conta e o padrão das coleções do dono numa transação só: uma coleção que ficaria com o horário de uso
+        // invertido recusa tudo, e nada fica gravado pela metade
+        $gravar_conta = function () use ($campos, $uid) {
+            if (count($campos) > 0) {
+                sem_escopo(function () use ($campos, $uid) {
+                    sql("UPDATE usuario SET " . implode(", ", array_map(function ($k) { return $k . " = ?"; }, array_keys($campos))) . " WHERE id = ?", array_merge(array_values($campos), [$uid]));
+                    // a senha nova desfaz os aparelhos lembrados: cada um entra de novo com ela (e lembra, se quiser)
+                    if (isset($campos["senha_hash"])) {
+                        sql("DELETE FROM usuario_aparelho WHERE usuario_id = ?", [$uid]);
+                    }
+                });
+            }
+        };
         if (count($erros) === 0 && count($opcoes_u) > 0) {
             try {
-                opcoes_usuario_gravar($uid, $opcoes_u);
+                opcoes_gravar_pedido([], [$uid, $opcoes_u], [], $gravar_conta);
             } catch (OpcoesErro $e) {
                 $erros[] = $e->getMessage();
             }
+        } elseif (count($erros) === 0) {
+            $gravar_conta();
         }
         if (count($erros) === 0 && count($campos) > 0) {
-            sem_escopo(function () use ($campos, $uid) {
-                sql("UPDATE usuario SET " . implode(", ", array_map(function ($k) { return $k . " = ?"; }, array_keys($campos))) . " WHERE id = ?", array_merge(array_values($campos), [$uid]));
-                // a senha nova desfaz os aparelhos lembrados: cada um entra de novo com ela (e lembra, se quiser)
-                if (isset($campos["senha_hash"])) {
-                    sql("DELETE FROM usuario_aparelho WHERE usuario_id = ?", [$uid]);
-                }
-            });
             usuario_definir(array_merge($u, $campos));
             $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
             if (isset($campos["senha_hash"]) && aparelho_atual() !== null) {

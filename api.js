@@ -1148,6 +1148,78 @@ function parCampo(rotulo, controle, tipo, explica) {
   return el("label", {"class": "par-campo" + (tipo ? " " + tipo : "")}, el("span", {"class": "rotulo"}, h(rotulo) + (explica || "")) + el("span", {"class": "controle"}, controle));
 }
 
+// ---- os quadros das páginas de configuração (a Configuração e o Sistema): o resumo do cron e a arrumação dos cartões
+// Os cartões independentes em colunas pela altura real de cada um (a Configuração e o Sistema: as grades dentro de um
+// [data-quadros]), sem mudar a ordem dos elementos nem do foco: cada cartão ocupa as linhas de 4px da altura dele
+// (.config-colunas), e a conta é refeita quando um cartão muda de altura (um <details> aberto, o texto que cresce, a largura).
+// A página chama organizarQuadrosConfig() depois de montar; o testes/layout.cjs chama ajustarQuadrosConfig() antes de medir
+var observadorQuadrosConfig = null;
+var quadroAnimacaoConfig = null;
+var ajustarQuadrosConfig = null;
+
+function agendarQuadrosConfig() {
+  if (quadroAnimacaoConfig === null) {
+    quadroAnimacaoConfig = requestAnimationFrame(function () {
+      quadroAnimacaoConfig = null;
+      if (ajustarQuadrosConfig) { ajustarQuadrosConfig(); }
+    });
+  }
+}
+
+function organizarQuadrosConfig() {
+  if (observadorQuadrosConfig) { observadorQuadrosConfig.disconnect(); observadorQuadrosConfig = null; }
+  if (quadroAnimacaoConfig !== null) { cancelAnimationFrame(quadroAnimacaoConfig); quadroAnimacaoConfig = null; }
+  var grades = Array.from(document.querySelectorAll("[data-quadros] .config-grade, [data-quadros] .parametros-sistema"));
+  ajustarQuadrosConfig = null;
+  if (!grades.length) { return; }
+  var quadros = grades.reduce(function (todos, grade) { return todos.concat(Array.from(grade.children)); }, []);
+  ajustarQuadrosConfig = function () {
+    grades.forEach(function (grade) {
+      var filhos = Array.from(grade.children);
+      var alturas = filhos.map(function (q) { return q.getBoundingClientRect().height; });
+      grade.classList.add("config-colunas");
+      var estilo = getComputedStyle(grade);
+      var linha = parseFloat(estilo.gridAutoRows);
+      var intervalo = parseFloat(estilo.columnGap) || 0;
+      if (!linha) { grade.classList.remove("config-colunas"); return; }
+      filhos.forEach(function (q, i) {
+        var span = "span " + Math.ceil((alturas[i] + intervalo) / linha);
+        if (q.style.gridRowEnd !== span) { q.style.gridRowEnd = span; }
+      });
+    });
+  };
+  ajustarQuadrosConfig();
+  if (typeof ResizeObserver === "function") {
+    // O observador roda antes da pintura: adiar mais um quadro deixa o conteúdo aberto sobrepor o vizinho.
+    observadorQuadrosConfig = new ResizeObserver(function () {
+      if (ajustarQuadrosConfig) { ajustarQuadrosConfig(); }
+    });
+    quadros.forEach(function (q) { observadorQuadrosConfig.observe(q); });
+  }
+}
+
+addEventListener("resize", agendarQuadrosConfig);
+document.addEventListener("toggle", function (ev) {
+  if (ajustarQuadrosConfig && ev.target instanceof Element && ev.target.closest("[data-quadros]")) { ajustarQuadrosConfig(); }
+}, true);
+if (document.fonts) { document.fonts.ready.then(agendarQuadrosConfig); }
+
+// A situação do cron, como a API manda (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando, o erro (o master
+// vê o do sistema inteiro; os outros, o da coleção) e o registro da última rodada. A página Sistema (o master) e a Configuração
+// (quem não é master: o resumo da própria coleção) mostram o mesmo bloco
+function conteudoCron(ce) {
+  var cron = ce.situacao === "rodando" ? el("p", {"class": "nota"}, h(ce.texto))
+    : el("p", {"class": "alerta-cron"}, h(ce.texto.replace(ce.crontab, "")) + el("code", {}, h(ce.crontab)));
+  if (ce.erro) {
+    cron += el("div", {"class": "erro-cron"}, el("strong", {}, t("O cron está com erro")) + el("pre", {}, h(ce.erro)) + el("span", {"class": "nota"}, t("Some sozinho na primeira execução sem erro.")));
+  }
+  cron += el("p", {"class": "nota"}, t("{1}, com filtro de datas e busca.", {1: el("a", {"href": "execucoes.php", "target": "_blank", "rel": "noopener"}, t("Ver todas as execuções do cron"))}));
+  if (ce.registro) {
+    cron += el("details", {"class": "registro-cron"}, el("summary", {}, t("Registro da última rodada")) + el("pre", {}, h(ce.registro)));
+  }
+  return cron;
+}
+
 // As opções das três hierarquias (sistema → usuário → coleção), cada uma como um campo: a escolha deste nível (vazio herda), o
 // que herda e de onde. o: um item da lista opcoes da API; nome: o nome do campo na gravação; tipo: a classe do par (largo...);
 // explica: o ⓘ das explicações

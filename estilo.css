@@ -680,10 +680,11 @@ nav.paginas span.atual { background: var(--safira); color: #fff; border-color: v
 .modo-rodizio .bloco-5x2 label.check { flex-direction: row; align-items: center; gap: .3rem; padding-bottom: .35rem; }
 
 /* coluna "Em": quanto falta para a próxima manutenção */
-#tabela-relogios .col-em, #tabela-relogios .col-encostado { font-variant-numeric: tabular-nums; }
+#tabela-relogios .col-em, #tabela-relogios .col-encostado, #tabela-relogios .col-vistoria { font-variant-numeric: tabular-nums; }
 /* o aviso Encostado desligado na Configuração: a coluna e o filtro somem (hoje.js põe a classe) */
 #tabela-relogios.sem-encostado .col-encostado, #tabela-relogios.sem-encostado.em-cartoes thead th.col-encostado, #tabela-relogios.sem-encostado.em-cartoes tr.filtros td.col-encostado, #tabela-relogios.sem-encostado.em-cartoes tbody td.col-encostado { display: none; }
-#tabela-relogios td.col-em.atrasado, #tabela-relogios td.col-encostado.atrasado { color: #9b2c22; font-weight: 600; }
+#tabela-relogios td.col-em.atrasado, #tabela-relogios td.col-encostado.atrasado, #tabela-relogios td.col-vistoria.atrasado { color: #9b2c22; font-weight: 600; }
+#tabela-relogios.sem-vistoria .col-vistoria, #tabela-relogios.sem-vistoria.em-cartoes thead th.col-vistoria, #tabela-relogios.sem-vistoria.em-cartoes tr.filtros td.col-vistoria, #tabela-relogios.sem-vistoria.em-cartoes tbody td.col-vistoria { display: none; }
 
 /* ---------- quadro "Hoje": texto, informações do relógio do dia e a foto no canto direito ---------- */
 .hoje.com-relogio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 24rem) 12rem; gap: 1.5rem; align-items: start; }

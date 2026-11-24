@@ -1,4 +1,4 @@
-<!-- origem: a40413b72a85465d6b778080b45633eee4044944 -->
+<!-- origem: 91247f036f6368d4d725ec96ff48b727712f9ce2 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -212,16 +212,16 @@ curl -u upyogkarta:password -G "http://server/relojoeiro/api.php" -d recurso=cal
 | `rodizio` | `usando` (आज मैं यह पहन रहा हूँ), `trocar_dia` (किसी दिन की घड़ी), `periodo` (किसी अवधि की घड़ियाँ, क्रम से: `de`, `ate`, `relogio_ids[]`, `dias_cada`), `periodo_sortear` (अवधि के दिन हटाता है और मोड उन्हें फिर से बनाता है; केवल `de`: योजना के अंत तक; केवल `ate`: कल से उस तक), `periodo_livre` (मिटाकर दिनों को बिना ड्रॉ ख़ाली छोड़ता है; वही तारीख़ें), `manual` (मैनुअल रोटेशन: `de`, `ate`, `dias[YYYY-MM-DD]` = घड़ी का id, `auto` या `livre`), `apagar_tudo` (कल से आगे का पूरा कार्यक्रम हटता है; `hoje=1`: आज से आगे; मोड योजना दोबारा बनाता है), `resortear`, `resortear_hoje`, `proxima_semana`, `modo` (मोड बदलना) |
 | `modos` | `salvar`, `ativar`, `excluir` |
 | `simulador` | `aplicar` (परिदृश्य जैसा सिम्युलेट हुआ, `de`, `ate`, `semente` और `impressao`: सिर्फ़ तब सहेजता है जब योजना सिम्युलेट जैसी निकले) |
-| `vistorias` | `registrar` (`relogio_ids`, अल्पविराम से अलग, और `quando`, YYYY-MM-DD या YYYY-MM-DD HH:MM, अब तक; खाली: अभी): हर एक का निरीक्षण, सब या कुछ नहीं, दिन में हर घड़ी का एक |
+| `vistorias` | `registrar` (`relogio_ids`, अल्पविराम से अलग, और `quando`, YYYY-MM-DD या YYYY-MM-DD HH:MM, अब तक; खाली: अभी): हर एक का निरीक्षण, सब या कुछ नहीं, दिन में हर घड़ी का एक; `registradas` केवल नए गिनता है (दोहराने पर 0) |
 | `arvore` | `novo`, `renomear`, `mover`, `ordem`, `excluir` (समूह) और `relogios` (हर घड़ी का समूह) |
 | `campos`, `avisos`, `lancamento_tipos` | `novo`, `alterar`, `excluir` (और फ़ील्ड में `ordem`; मान के नियमों वाला फ़ील्ड: `opcoes`, `minimo`, `maximo`, `multiplo`) |
 | `formulas` | `nova`, `alterar`, `excluir` |
 | `criterios` | `conjunto_criar`, `conjunto_excluir`, `param_novo`, `param_excluir`, `param_pesos`, `sub_novo`, `sub_excluir`, `sub_medida`, `sub_mover`, `sub_pesos`, `faixas`, `ordem`, `restaurar` |
-| `config` | `salvar` (मालिक `dono[<chave>]` भी: अपने संग्रहों का डिफ़ॉल्ट; master `padroes[<chave>]` भी: सिस्टम का डिफ़ॉल्ट, और `parametros[<chave>]`: सिस्टम के संचालन पैरामीटर), `evento_salvar`, `evento_excluir` |
+| `config` | `salvar` (`<chave>`: संग्रह; मालिक `dono[<chave>]` भी: अपने संग्रहों का डिफ़ॉल्ट; master `padroes[<chave>]` भी: सिस्टम का डिफ़ॉल्ट, और `parametros[<chave>]`: सिस्टम के संचालन पैरामीटर; सब एक ट्रांज़ैक्शन में, और जो फ़ील्ड इस अनुरोध का नहीं है वह पूरे अनुरोध को अस्वीकार करता है), `evento_salvar`, `evento_excluir` |
 | `destinos` | `salvar` (webhook, ई-मेल या Web Push, वह जो पाता है उसके साथ), `testar` (`qual=`: पाठ, सुबह या रात), `excluir` |
 | `agendas` | `salvar` (Google, CalDAV, Outlook या ICS), `sincronizar`, `teste_criar`, `teste_remover`, `novo_link` (ICS), `outlook_conectar`, `excluir` |
 | `usuarios` | `salvar` (`senha` के साथ, या किसी दूसरे सिस्टम के `senha_hash` के साथ; पहला उपयोगकर्ता, टोकन से, master है) और, केवल master: `alterar`, `oficializar`, `prorrogar`, `voltar_demo`, `bloquear`, `transferir`, `dar_acesso`, `excluir` |
-| `conta` | `alterar` (ई-मेल, भाषा, `nivel`: इंटरफ़ेस का मोड, पासवर्ड), `token_criar`, `token_revogar`, `aparelho_lembrar` (फ़ोन पर ऐप: इस डिवाइस की कुंजी एक कुकी में, जो बिना पासवर्ड प्रवेश करती है), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (अपना ई-मेल सर्वर; `proprio=0` सिस्टम वाले पर लौटाता है), `smtp_testar`, `excluir`; केवल master: `email_testar`, `vapid_gerar` |
+| `conta` | `alterar` (ई-मेल, भाषा, `nivel`: इंटरफ़ेस का मोड, पासवर्ड, `opcoes[<chave>]`: उन संग्रहों का डिफ़ॉल्ट जिनका वह मालिक है; सब एक ट्रांज़ैक्शन में, और जो फ़ील्ड इस अनुरोध का नहीं है वह पूरे अनुरोध को अस्वीकार करता है), `token_criar`, `token_revogar`, `aparelho_lembrar` (फ़ोन पर ऐप: इस डिवाइस की कुंजी एक कुकी में, जो बिना पासवर्ड प्रवेश करती है), `aparelho_esquecer`, `push_inscrever`, `push_cancelar`, `push_testar`, `smtp_salvar` (अपना ई-मेल सर्वर; `proprio=0` सिस्टम वाले पर लौटाता है), `smtp_testar`, `excluir`; केवल master: `email_testar`, `vapid_gerar` |
 | `colecoes` | `criar`, `renomear`, `excluir`, `arvore_copiar`, `arvore_renomear`, `arvore_excluir` |
 | `acessos`, `convites`, `pedidos` | `remover`, `sair`; `convidar`, `aprovar`, `recusar`, `reenviar`, `cancelar`, `aceitar`; `pedir`, `aprovar`, `recusar`, `cancelar` |
 | `cadastro` | बिना लॉगिन: `criar_conta`, `esqueci_senha`, `nova_senha` |

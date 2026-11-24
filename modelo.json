@@ -4059,6 +4059,16 @@
             "padrao": 1
         },
         {
+            "identificador": "vistoria",
+            "nome": "Próxima vistoria",
+            "tabela": "relogio",
+            "campo": "vistoria_data",
+            "expressao": "vistoria_data",
+            "formato": "data",
+            "fixa": 0,
+            "padrao": 1
+        },
+        {
             "identificador": "compra",
             "nome": "Comprado em",
             "tabela": "campos",

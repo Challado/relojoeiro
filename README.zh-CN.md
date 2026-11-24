@@ -166,7 +166,7 @@ flowchart LR
 | `AGRUPADO(chave; conta; limite)` | 一张小表：键的每个值一行，再加合计行；`conta`（省略时为 `CONTA()`）在每一行只用该行的手表计算，在合计行用全部手表计算；`limite` 显示数量最多的几行，其余合并为"其他" |
 | `FAIXAS(x; 25; 50; 75; 100)` | 按区间的小表（"不超过 25"、"26 到 50"……），没有 `x` 的归入"无价值"，再加合计 |
 
-在这些函数里面，公式里能用的都能用（字段、公式、`SE`、`DIAS_DESDE`……），在每块手表上计算，还能用表格每一列显示的内容：`codigo`、`nome`、`marca`、`tipo`、`estado`、`disponivel`、`em_uso`、`carga`、`ultimo_uso`、`manutencao_data`、`manutencao_nome`、`encostado_data`、`avisos`（它有多少条提醒）、`posse` 和 `tempo_de_uso`（总佩戴时长，单位为秒）。在这些函数外面，只能用数字、文本和不需要手表的函数（`SE`、`MIN`、`ARREDONDA`、各种运算）。新函数 `MES(data)`、`ANO(data)` 和 `MES_ANO(data)` 用于按月和按年分组，在公式里也能用。示例：
+在这些函数里面，公式里能用的都能用（字段、公式、`SE`、`DIAS_DESDE`……），在每块手表上计算，还能用表格每一列显示的内容：`codigo`、`nome`、`marca`、`tipo`、`estado`、`disponivel`、`em_uso`、`carga`、`ultimo_uso`、`manutencao_data`、`manutencao_nome`、`encostado_data`、`vistoria_data`（下次检查）、`avisos`（它有多少条提醒）、`posse` 和 `tempo_de_uso`（总佩戴时长，单位为秒）。在这些函数外面，只能用数字、文本和不需要手表的函数（`SE`、`MIN`、`ARREDONDA`、各种运算）。新函数 `MES(data)`、`ANO(data)` 和 `MES_ANO(data)` 用于按月和按年分组，在公式里也能用。示例：
 
 | 合计 | 表达式 |
 |---|---|
@@ -618,6 +618,8 @@ v51 会在新增读数、修正、删除和时段变更后重建测量，并保�
 您可以修改，例如只用于某个分组），**检查** 记录在 定义 › 记录类型 中。在提醒页面关闭该提醒也会关闭检查。通过 API：
 `recurso=vistorias`（列表）、`recurso=vistorias`、`acao=registrar`（一次多个），以及保养和维修的 `vistoria=1`。
 
+每块手表的下次检查在“今天”页面的表格中有自己的列，**下次检查**（日期；逾期时显示为红色），并带有筛选（已逾期、截至今天、7 天、30 天、无日期）。它不计入**下次保养**、**剩余**和**要做的事**：每隔若干天到期的检查不会遮住真正的保养。该列和其他列一样可以显示或隐藏（**列**按钮），检查关闭时隐藏。手表详情在**现在**框中显示下次检查。记录时，响应只计算新的检查（`registradas`）：手表当天的第一次计为 1，重复同一请求返回 0，批量时只计算原本不存在的。
+
 ### 声明、实测与估计
 
 表的每项技术信息都有三个值，面板把三者放在一张小表里一起显示：**声明值**（厂家、机芯或档案中的值）、**最近一次测试**（最近一次测量）和**当前估计**（系统根据测量得出的结论）。三者不能互相代替：机芯的“40 小时”不是你这块表的储备，厂家的“200 米”也不能证明今天的密封。这张表出现在：
@@ -1028,7 +1030,7 @@ v51 会在新增读数、修正、删除和时段变更后重建测量，并保�
 
 **收藏的**选项（每个收藏有自己的设置）分在三个页面上，各管一个主题：**设置**（日常、阈值与计算、界面）、**轮换 › 轮换设置**（轮换、每周与排班、抽签）以及**提醒 › 提醒设置**（闲置和检查）。属于整个系统的内容在**系统**页面上（仅限 master）。括号中是每个选项在 API 中的名字（`recurso=config`，位于 `config` 键下），供需要自动化的人使用；新收藏的默认值写在每行末尾。
 
-**三级选项。** 收藏中每个不属于整个系统的选项（时间、限值、电池消耗、轮换、每周与排班、提醒、界面：共 41 个）都遵循**系统 → 用户 → 收藏**的层级：**master** 选择系统默认值（在每个页面的**系统**标签中），每个**所有者**选择自己收藏的默认值（在**我的收藏**标签中），每个**收藏**可以选择自己的。越具体的越优先；上一级只是默认值，从不锁定。空字段会**继承**（标签说明当前值来自哪里：用户、系统或出厂默认值）；列表中的第一个选项是**继承（…）**；时间和数字字段中，**继承**按钮会清空字段。这也适用于成员和 cron，它们跟随收藏的所有者。新收藏一开始就继承全部；已有的收藏保留原有的值，迁移 v58 会把与出厂默认值相同的值清空（v67 把“轮换开启”和昨天的手表纳入同一层级）。更改默认值会在每个继承它的收藏中重做依赖它的内容（手腕和晒太阳的“结束于”、智能排班的结束、轮换恢复的时间）；会让某个收藏的结束早于开始的佩戴时间会被拒绝，什么都不变。通过 API：`config/salvar` 加选项的键（收藏），`dono[<chave>]`（所有者；或 `conta/alterar` 加 `opcoes[<chave>]`）和 `padroes[<chave>]`（系统，仅限 master）；`recurso=opcoes&grupo=<grupo>` 返回一个主题的选项（`rotina`、`limites`、`telas`、`rodizio` 或 `avisos`），包括每一级的选择、哪些继承以及来自哪里，`recurso=config` 返回设置页面的选项。
+**三级选项。** 收藏中每个不属于整个系统的选项（时间、限值、电池消耗、轮换、每周与排班、提醒、界面：共 41 个）都遵循**系统 → 用户 → 收藏**的层级：**master** 选择系统默认值（在每个页面的**系统**标签中），每个**所有者**选择自己收藏的默认值（在**我的收藏**标签中），每个**收藏**可以选择自己的。越具体的越优先；上一级只是默认值，从不锁定。空字段会**继承**（标签说明当前值来自哪里：用户、系统或出厂默认值）；列表中的第一个选项是**继承（…）**；时间和数字字段中，**继承**按钮会清空字段。这也适用于成员和 cron，它们跟随收藏的所有者。新收藏一开始就继承全部；已有的收藏保留原有的值，迁移 v58 会把与出厂默认值相同的值清空（v67 把“轮换开启”和昨天的手表纳入同一层级）。更改默认值会在每个继承它的收藏中重做依赖它的内容（手腕和晒太阳的“结束于”、智能排班的结束、轮换恢复的时间）；会让某个收藏的结束早于开始的佩戴时间会被拒绝，什么都不变。通过 API：`config/salvar` 加选项的键（收藏），`dono[<chave>]`（所有者；或 `conta/alterar` 加 `opcoes[<chave>]`）和 `padroes[<chave>]`（系统，仅限 master）；`recurso=opcoes&grupo=<grupo>` 返回一个主题的选项（`rotina`、`limites`、`telas`、`rodizio` 或 `avisos`），包括每一级的选择、哪些继承以及来自哪里，`recurso=config` 返回设置页面的选项。三个级别可以放在同一个 `config/salvar` 中，全部在一个事务里：保存前，系统先算出每个受影响的收藏将生效的值（系统默认值影响全部收藏；所有者默认值影响其收藏），只要有一个会变得无效，整个请求就被拒绝，什么都不变（连轮换恢复的时间也不变）。请求不接受的字段会连同整个请求一起被拒绝，错误信息会说明正确的格式：`opcoes[<chave>]` 只属于 `conta/alterar`；`dono[<chave>]`、`padroes[<chave>]` 和 `parametros[<chave>]` 只属于 `config/salvar`。旧格式仍然有效：`conta/alterar` 中单独的 `rodizio_ativo` 和 `recupera_ontem`（等同于 `opcoes[...]`），以及 master 的 `config/salvar` 中的 `parametros[rodizio_ativo]` 和 `parametros[recupera_ontem]`（等同于 `padroes[...]`）。选项有六种类型：`hora`（HH:MM）、`sim_nao`（`1` 开启，`0` 关闭）、`inteiro`、`decimal`、`enum`（其中一个值）和 `lista`（多个值，用逗号分隔，按生效顺序；`colunas_hoje` 就是一个列表）；读取时，每个选项还带有生效值的文字（`efetivo_texto`：是/否的 `0` 为**关闭**），是/否选项还带有布尔值 `ligado`。
 
 **一次一级。** 三个页面都通过顶部的标签一次显示一级：**本收藏**（在本收藏中生效的值）、**我的收藏**（仅限当前打开收藏的所有者：他为自己拥有的收藏设定的默认值）和**系统**（仅限 master：系统默认值）。这样每个选项在屏幕上只出现一次，而不是收藏、所有者和系统的值上下排列。切换标签不会丢失已输入的内容，保存按钮会一次保存所有级别。既不是所有者也不是 master 的人只看到收藏这一级，没有标签。在菜单中，**设置 › 我的收藏**直接打开所有者的标签。**我的账户**只保留属于个人的内容（电子邮件、语言、时区、密码、自己的邮件服务器），并提供通往每个页面**我的收藏**标签的入口。
 
@@ -1236,7 +1238,7 @@ curl -H "X-Api-Token: 你的令牌" --data-urlencode recurso=usuarios --data-url
 | 901 到 1199 px（横放的平板、小笔记本） | 菜单在栏中；"在列表旁边"打开的手表从右侧滑入，背景变暗，而不是挤压列表 |
 | 1200 px 及以上（电脑） | 面板在列表旁边（或浮动窗口，取决于设置） |
 
-**所有设备上的信息都一样。** 手表表格始终有相同的列（默认全部 14 列：编号、手表、品牌、类型、状态、电量、上次佩戴、佩戴时长、下次保养、剩余、要做的事、闲置、购买日期和金额，或你自己选择的列：见**表格的列**）、每列的筛选，并可按任意列排序，在电脑、平板和手机上都是如此；不会因为空间不足而隐藏任何内容（唯一的例外是有意为之：在“提醒 › 提醒设置”中取消勾选**手表闲置时提醒**后，闲置列及其筛选在所有尺寸下都会消失）。当整个表格能放进它实际拥有的宽度时（无论旁边是否打开了面板），它就以表格显示，单元格中的文字只在需要时换行。放不下时，每块手表变成一张卡片，包含同样的字段，顺序相同，每个字段上方有列名（手机上两列，平板上五列），表头变成**排序**按钮，所有筛选都保留，名称在上方。切换依据的是真实数据（长名称或大数值都会计入），而不是屏幕宽度。**接下来的日子**在任何屏幕上也会显示安排中的所有日子。
+**所有设备上的信息都一样。** 手表表格始终有相同的列（默认全部 15 列：编号、手表、品牌、类型、状态、电量、上次佩戴、佩戴时长、下次保养、剩余、要做的事、闲置、下次检查、购买日期和金额，或你自己选择的列：见**表格的列**）、每列的筛选，并可按任意列排序，在电脑、平板和手机上都是如此；不会因为空间不足而隐藏任何内容（例外都是有意为之：在“提醒 › 提醒设置”中取消勾选**手表闲置时提醒**后，闲置列及其筛选在所有尺寸下都会消失；关闭检查后，下次检查列及其筛选也会消失）。当整个表格能放进它实际拥有的宽度时（无论旁边是否打开了面板），它就以表格显示，单元格中的文字只在需要时换行。放不下时，每块手表变成一张卡片，包含同样的字段，顺序相同，每个字段上方有列名（手机上两列，平板上五列），表头变成**排序**按钮，所有筛选都保留，名称在上方。切换依据的是真实数据（长名称或大数值都会计入），而不是屏幕宽度。**接下来的日子**在任何屏幕上也会显示安排中的所有日子。
 
 **表格的列。** “今天”页面手表表格上方的**列**按钮会打开一个包含所有列的列表：勾选想看的列，用 **▲** 和 **▼** 排序；**保存列**对整个收藏生效（表头、筛选、各行和表尾都遵循这个列表，隐藏的列会失去它原有的排序和筛选），**继承**则重新使用上一级的列表。**手表**列不能隐藏。同样的选择和其他选项一样分三个层级：**系统默认**（设置的“系统”标签）、**用户偏好**（设置的“我的收藏”标签，针对其拥有的收藏）和**收藏的选择**（设置，或“列”按钮）；最具体的优先，留空则继承，各层级都没有选择时显示原有的列，按原有顺序，再加上你标记为**无需选择即显示在表格中**的自建列（见**你自己的列**）。通过 API：选项 `colunas_hoje`（用逗号分隔的键，按你想要的顺序，例如 `nome,uso,marca`）可在 `config/salvar`、`conta/alterar`（`opcoes[colunas_hoje]`）和 master 的 `config/salvar`（`padroes[colunas_hoje]`）中设置；`recurso=hoje` 返回 `colunas`（全部列，生效的在前，含 `chave`、`titulo`、`visivel`、`posicao` 和 `fixa`）、`colunas_escolha`、`colunas_herdado` 和 `colunas_origem_herdado`。
 
@@ -1503,16 +1505,16 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
 | `simulador` | `aplicar`（按模拟时的方案，以及 `de`、`ate`、`semente` 和 `impressao`：只有计划与模拟一致时才保存） |
-| `vistorias` | `registrar`（`relogio_ids`，用逗号分隔，以及 `quando`，YYYY-MM-DD 或 YYYY-MM-DD HH:MM，最晚为现在；留空：现在）：每只的检查，全部或全不，同一天每只手表一次 |
+| `vistorias` | `registrar`（`relogio_ids`，用逗号分隔，以及 `quando`，YYYY-MM-DD 或 YYYY-MM-DD HH:MM，最晚为现在；留空：现在）：每只的检查，全部或全不，同一天每只手表一次；`registradas` 只计算新的（重复返回 0） |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
 | `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`；带取值规则的字段：`opcoes`、`minimo`、`maximo`、`multiplo`） |
 | `formulas` | `nova`、`alterar`、`excluir` |
 | `criterios` | `conjunto_criar`、`conjunto_excluir`、`param_novo`、`param_excluir`、`param_pesos`、`sub_novo`、`sub_excluir`、`sub_medida`、`sub_mover`、`sub_pesos`、`faixas`、`ordem`、`restaurar` |
-| `config` | `salvar`（所有者还可以用 `dono[<chave>]`：自己收藏的默认值；master 还可以用 `padroes[<chave>]`：系统默认值，以及 `parametros[<chave>]`：系统的运行参数）、`evento_salvar`、`evento_excluir` |
+| `config` | `salvar`（`<chave>`：收藏；所有者还可以用 `dono[<chave>]`：自己收藏的默认值；master 还可以用 `padroes[<chave>]`：系统默认值，以及 `parametros[<chave>]`：系统的运行参数；全部在一个事务中，不属于此请求的字段会使整个请求被拒绝）、`evento_salvar`、`evento_excluir` |
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
-| `conta` | `alterar`（电子邮件、语言、`nivel`：界面模式、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
+| `conta` | `alterar`（电子邮件、语言、`nivel`：界面模式、密码、`opcoes[<chave>]`：其拥有的收藏的默认值；全部在一个事务中，不属于此请求的字段会使整个请求被拒绝）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
 | `colecoes` | `criar`、`renomear`、`excluir`、`arvore_copiar`、`arvore_renomear`、`arvore_excluir` |
 | `acessos`、`convites`、`pedidos` | `remover`、`sair`；`convidar`、`aprovar`、`recusar`、`reenviar`、`cancelar`、`aceitar`；`pedir`、`aprovar`、`recusar`、`cancelar` |
 | `cadastro` | 无需登录：`criar_conta`、`esqueci_senha`、`nova_senha` |

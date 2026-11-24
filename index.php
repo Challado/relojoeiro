@@ -56,6 +56,7 @@ topo("Relógio de hoje", "index.php");
             <th class="col-em" data-col="em"><button type="button" data-ordena="em" data-tipo-ordem="num"><?= t("Em") ?> <span></span></button></th>
             <th data-col="fazer"><button type="button" data-ordena="fazer"><?= t("O que<br> fazer") ?> <span></span></button></th>
             <th class="col-encostado" data-col="encostado"><button type="button" data-ordena="encostado" data-tipo-ordem="num"><?= t("Encostado") ?> <span></span></button></th>
+            <th class="col-vistoria" data-col="vistoria"><button type="button" data-ordena="vistoria" data-tipo-ordem="num"><?= t("Próxima<br> vistoria") ?> <span></span></button></th>
             <th data-col="compra"><button type="button" data-ordena="compra"><?= t("Comprado<br> em") ?> <span></span></button></th>
             <th class="col-valor" data-col="valor"><button type="button" data-ordena="valor" data-tipo-ordem="num"><?= t("Valor") ?> <span></span></button></th>
           </tr>
@@ -72,6 +73,7 @@ topo("Relógio de hoje", "index.php");
             <td data-col="em" class="col-em"></td>
             <td data-col="fazer" data-rotulo="<?= te("O que fazer") ?>"><select data-filtro="fazer" aria-label="<?= te("Filtrar pelo que fazer") ?>"><option value=""><?= t("Todos") ?></option></select></td>
             <td data-col="encostado" class="col-encostado" data-rotulo="<?= te("Encostado") ?>"><select data-filtro="encostado" aria-label="<?= te("Filtrar por encostado") ?>"><option value=""><?= t("Todos") ?></option><option value="sim"><?= t("Encostados") ?></option><option value="prazo"><?= t("Dentro do prazo") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
+            <td data-col="vistoria" class="col-vistoria" data-rotulo="<?= te("Próxima vistoria") ?>"><select data-filtro="vistoria" aria-label="<?= te("Filtrar pela próxima vistoria") ?>"><option value=""><?= t("Todas") ?></option><option value="atrasada"><?= t("atrasadas") ?></option><option value="0"><?= t("até hoje") ?></option><option value="7"><?= t("7 dias") ?></option><option value="30"><?= t("30 dias") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
             <td data-col="compra" data-rotulo="<?= te("Comprado em") ?>"><select data-filtro="compra" aria-label="<?= te("Filtrar pela data da compra") ?>"><option value=""><?= t("Todas") ?></option><option value="30"><?= t("30 dias") ?></option><option value="90"><?= t("90 dias") ?></option><option value="ano"><?= t("este ano") ?></option><option value="sem"><?= t("sem data") ?></option></select></td>
             <td data-col="valor" data-rotulo="<?= te("Valor") ?>"><select data-filtro="valor" aria-label="<?= te("Filtrar pelo valor") ?>"><option value=""><?= t("Todos") ?></option><option value="ate500">≤ 500</option><option value="500a1500">500–1.500</option><option value="acima1500"><?= t("&gt; 1.500") ?></option><option value="sem"><?= t("sem valor") ?></option></select></td>
           </tr>
@@ -93,10 +95,11 @@ topo("Relógio de hoje", "index.php");
             <td class="col-em" data-col="em" data-coluna="em" data-rotulo="<?= te("Em") ?>"></td>
             <td data-col="fazer" data-coluna="fazer" data-rotulo="<?= te("O que fazer") ?>"></td>
             <td class="col-encostado" data-col="encostado" data-coluna="encostado" data-rotulo="<?= te("Encostado") ?>"></td>
+            <td class="col-vistoria" data-col="vistoria" data-coluna="vistoria" data-rotulo="<?= te("Próxima vistoria") ?>"></td>
             <td data-col="compra" data-coluna="compra" data-rotulo="<?= te("Comprado em") ?>"></td>
             <td class="col-valor" data-col="valor" data-coluna="valor" data-rotulo="<?= te("Valor") ?>"></td>
           </tr>
-          <tr class="totais-mais"><td colspan="14" data-colspan-colunas><a href="totais.php" class="botao leve" id="ver-totais"><?= t("Ver todos os totais") ?></a> <a href="cadastros.php?aba=totais" class="nota"><?= t("montar os totais") ?></a> <span class="nota" id="totais-recado"></span></td></tr>
+          <tr class="totais-mais"><td colspan="15" data-colspan-colunas><a href="totais.php" class="botao leve" id="ver-totais"><?= t("Ver todos os totais") ?></a> <a href="cadastros.php?aba=totais" class="nota"><?= t("montar os totais") ?></a> <span class="nota" id="totais-recado"></span></td></tr>
         </tfoot>
       </table>
       </div>

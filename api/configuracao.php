@@ -36,11 +36,29 @@ $saida = ["config" => (object)$valores_c,
     "sol_fim" => isset(lancamento_tipos()["sol"]) ? sol_fim_hora() : "", "sol_auto_fim" => sol_tira_sozinho(),
     // trocar o relógio de hoje no próprio dia (a caixa da Configuração; desligado, o padrão: a troca vale a partir de amanhã)
     "trocar_hoje" => trocar_hoje_permitido(),
-    // o padrão do sistema de cada opção destes assuntos (a aba Sistema: só o master vê e muda; os outros, null)
-    "sistema" => ["pode_mudar" => $niveis_c["sistema"]["pode_mudar"], "padroes" => $niveis_c["sistema"]["opcoes"]],
+    // o padrão do sistema de cada opção destes assuntos (a aba Sistema: só o master vê e muda; os outros, null); e, como na
+    // v66 (os clientes que já liam aqui), o endereço do sistema, as rodadas do cron e os parâmetros de operação (só o master)
+    "sistema" => ["pode_mudar" => $niveis_c["sistema"]["pode_mudar"], "padroes" => $niveis_c["sistema"]["opcoes"],
+        "url_sistema" => sis("url_sistema"), "cron_espera_rodadas" => cron_espera_rodadas(),
+        "parametros" => usuario_master() ? parametros_sistema_lista_compat() : null],
     // o nível do dono (a aba Minhas coleções): o padrão dele para as coleções de que é dono. Só o dono da coleção do pedido o vê
-    // e muda (pode_mudar); para os outros, opcoes vem null
-    "dono" => $niveis_c["dono"],
+    // e muda (pode_mudar); para os outros, opcoes vem null. Como na v66: o rodízio e o relógio de ontem do dono (true, false ou
+    // null: herda; null também para quem não é o dono) e o que o sistema faz valer nos dois
+    "dono" => $niveis_c["dono"] + (function () use ($niveis_c) {
+        $pode = $niveis_c["dono"]["pode_mudar"];
+        $uid = (int)(usuario_atual()["id"] ?? 0);
+        return ["rodizio_ativo" => $pode ? usuario_preferencia_sim_nao($uid, "rodizio_ativo") : null,
+            "recupera_ontem" => $pode ? usuario_preferencia_sim_nao($uid, "recupera_ontem") : null,
+            "rodizio_sistema" => opcao_do_sistema_ou_padrao("rodizio_ativo")[0] === "1", "recupera_ontem_sistema" => opcao_do_sistema_ou_padrao("recupera_ontem")[0] === "1"];
+    })(),
+    // como na v66 (as páginas novas leem recurso=opcoes e recurso=sistema; os clientes de antes, daqui): o rodízio e o relógio
+    // de ontem da coleção (o que vale, a escolha de cada nível e a origem), a situação do cron (o resumo que todo usuário vê da
+    // própria coleção), de onde vêm os números dos sorteios e a força da senha
+    "rodizio" => rodizio_configuracao(),
+    "recupera_ontem" => recupera_ontem_configuracao(),
+    "cron_estado" => cron_estado(),
+    "aleatorio" => aleatorio_resumo(),
+    "senha_politica" => senha_politica_api(),
     // o DOCUMENTOS_COPIA_BANCO do config.php não vale mais (a cópia é escolhida aqui, por coleção): definido, a página avisa
     "config_php_copia" => defined("DOCUMENTOS_COPIA_BANCO") ? (bool)DOCUMENTOS_COPIA_BANCO : null,
     "repeticoes" => $REPETICOES,

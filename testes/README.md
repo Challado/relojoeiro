@@ -11,17 +11,27 @@ pela API, do jeito que uma pessoa usa o sistema:
   agora, e as rodadas acontecem com alguns segundos de diferença, os horários e as contas que andam com o tempo têm uma
   pequena folga; e o hash das senhas, que tem um sal sorteado a cada cálculo, conta só pelo algoritmo. O resto tem de sair idêntico, inclusive o tipo de cada valor (`5` não é `"5"`).
 
-## Espaços vazios na Configuração
+## Espaços vazios na Configuração e no Sistema
 
-`testes/layout.cjs` mede os cartões e as opções do Sistema em cada largura. Reprova vãos internos maiores que seis
+`testes/layout.cjs` mede, em cada largura, as grades de cartões das páginas de configuração: as do formulário da Configuração
+(`#form-config`) e toda grade dentro de um `[data-quadros]`, o marcador que o organizador dos cartões do `api.js`
+(`organizarQuadrosConfig`) usa; a página Sistema marca a dela inteira, os cartões do endereço e das senhas, a área dos
+parâmetros e os cartões do cron, dos sorteios e do servidor de e-mail, que ficam fora do formulário. Antes de medir, o detector
+abre todos os `<details>` (o registro do cron expandido entra na conta). Reprova vãos internos maiores que seis
 vezes a fonte raiz (96 px com fonte de 16 px), ou três intervalos da grade, o que for maior. Também reprova a sobra no
 fim de uma coluna quando um cartão mais abaixo, em outra coluna, cabe nela e poderia subir além desse limite. A sobra
-natural ao lado de um único cartão alto é aceita. O próprio detector é testado com exemplos que devem falhar e exemplos
-compactos que devem passar; roda no job **Layout das telas** do CI, sem comparação de capturas fixas.
+natural ao lado de um único cartão alto é aceita. O próprio detector é testado com exemplos que devem falhar (também numa grade
+fora do `#form-config`, dentro de um `[data-quadros]`, e numa área de parâmetros com um campo alto) e exemplos
+compactos que devem passar; roda no job **Layout das telas** do CI, sem comparação de capturas fixas. Sem o organizador na
+página Sistema, a varredura acha o cartão do servidor de e-mail embaixo do cron aberto, com 609 px livres na outra coluna,
+em quatro larguras (1100, 1024, 800 e 768 px); com ele, nenhum.
 
 `testes/configuracao-interface.cjs` também verifica mudanças de largura, fonte e conteúdo: os cartões não se sobrepõem,
 não abrem vãos grandes e preservam a ordem dos campos. O registro do cron é aberto também com a animação adiada,
 para garantir que o crescimento do conteúdo seja acomodado antes da pintura, sem depender de um novo quadro.
+`testes/niveis-interface.cjs` faz o mesmo na página Sistema, com o `estilo.css` de verdade: o registro do cron comprido e
+aberto, parâmetros de descrição curta e longa, de 1440 a 390 px, e o registro fechado e aberto de novo com o
+`requestAnimationFrame` parado.
 
 ## Como rodar
 
@@ -56,6 +66,28 @@ no dia anterior, indisponível, hoje livre, o de hoje já no pulso) e o dia livr
 a herança nas coleções do mesmo dono (também para membros e cron), a pausa sem apagar programação ou histórico, as
 marcações manuais, as previsões e a retomada sem uso automático retroativo.
 Também roda no job de arquitetura do CI.
+
+`php testes/lote_arquivos.php` confere, pela API (um `php -S` com a base descartável), que os arquivos só saem da pasta depois que o
+banco confirma: o relógio excluído num lote atômico em que a operação seguinte falha volta com o documento (cuja única cópia está
+no disco) e a pasta dele; o lote que grava tira os dois; o mesmo para o winder, o calibre e o documento excluídos.
+
+`php testes/config_niveis.php` confere a configuração em três níveis numa transação só: o pedido recusado por horário inválido
+não muda nada (nem o rodízio do sistema, nem a retomada), o horário é conferido com os níveis juntos (o fim às 18h com o início às
+19h de outro nível é recusado), e nenhuma resposta de sucesso para o que ficou de lado (o `rodizio_ativo` e o `recupera_ontem`
+sozinhos e junto com outro campo, nos formatos de antes e de agora; o `opcoes[...]` no `config/salvar`; o `padroes[...]` no
+`conta/alterar`).
+
+`php testes/leitura_compat.php` confere que a leitura de `config`, `conta` e `usuarios` entrega o que a v66 entregava, com as
+permissões de antes, e que o `"0"` das opções vem como desligado (o texto e o booleano).
+
+`php testes/migracao_v67.php` para a migração v67 depois de cada uma das etapas e a aplica de novo: a reaplicação guarda os valores,
+tira as três colunas do usuário e só então grava a marca.
+
+`php testes/cron_trava.php` prende o banco com outro processo e confere que a rodada do cron grava o PID, o início e a regra na trava
+antes da primeira consulta, e que a rodada seguinte a acha e mata, como a regra configurada manda.
+
+`php testes/vistoria.php` também confere a contagem do registrar (a primeira do dia conta 1, a repetida 0, o lote só as novas) e a
+coluna Próxima vistoria (a vistoria fora da Próxima manutenção e do O que fazer; o passo da v68).
 
 Com os bancos no ar (MySQL/MariaDB, PostgreSQL e Firebird; o SQLite não precisa de servidor), um comando faz tudo:
 

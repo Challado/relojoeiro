@@ -106,17 +106,8 @@ function montarSistema(d, bk) {
   ajudaGrupo("pagina", t("Sistema"));
   var ex = function (chave, titulo, html) { return ajuda(chave, titulo, el("p", {}, html)); };
   var numero = function (nome, valor, min, max) { return el("input", {"type": "number", "min": min, "max": max, "name": nome, "value": valor}); };
-  // a situação do cron vem da API (cron_estado): nunca rodou, parado (mais de 10 minutos) ou rodando
-  var ce = d.cron_estado;
-  var cron = ce.situacao === "rodando" ? el("p", {"class": "nota"}, h(ce.texto))
-    : el("p", {"class": "alerta-cron"}, h(ce.texto.replace(ce.crontab, "")) + el("code", {}, h(ce.crontab)));
-  if (ce.erro) {
-    cron += el("div", {"class": "erro-cron"}, el("strong", {}, t("O cron está com erro")) + el("pre", {}, h(ce.erro)) + el("span", {"class": "nota"}, t("Some sozinho na primeira execução sem erro.")));
-  }
-  cron += el("p", {"class": "nota"}, t("{1}, com filtro de datas e busca.", {1: el("a", {"href": "execucoes.php", "target": "_blank", "rel": "noopener"}, t("Ver todas as execuções do cron"))}));
-  if (ce.registro) {
-    cron += el("details", {"class": "registro-cron"}, el("summary", {}, t("Registro da última rodada")) + el("pre", {}, h(ce.registro)));
-  }
+  // a situação do cron vem da API (cron_estado): o mesmo bloco da Configuração (api.js)
+  var cron = conteudoCron(d.cron_estado);
   var enderecos = cartao(t("Endereço e cron"), el("div", {"class": "campos"},
     parCampo(t("Endereço do sistema (a âncora {link})"), el("input", {"name": "url_sistema", "value": d.url_sistema, "placeholder": t("http://servidor/relogios")}), "largo")
     + parCampo(t("Rodadas do cron antes de matar a travada (0 nunca mata)"), numero("cron_espera_rodadas", String(d.cron_espera_rodadas), "0", "1440"), null,
@@ -163,6 +154,7 @@ function montarSistema(d, bk) {
             + el("input", {"type": "hidden", "name": "arquivo", "value": x.arquivo}) + el("button", {"class": "discreto"}, t("Restaurar")))));
       }).join("")), "largo")) : "")
     + (bk.pasta_ok ? el("form", {"data-recurso": "backup"}, el("input", {"type": "hidden", "name": "acao", "value": "fazer"}) + el("div", {"class": "botoes"}, el("button", {"class": "leve"}, t("Fazer uma cópia agora")))) : ""));
+  // data-quadros: os cartões e os parâmetros em colunas pela altura de cada um (organizarQuadrosConfig, do api.js)
   var res = el("div", {"class": "titulo-secao"}, el("h1", {}, t("Sistema")) + ajudaBotao())
     + el("form", {"data-recurso": "config", "id": "form-sistema"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
       + el("div", {"class": "config-grade"}, enderecos + senhas)
@@ -172,7 +164,8 @@ function montarSistema(d, bk) {
     + el("div", {"class": "config-grade"}, quadroCron + sorteios + quadroServidor(d))
     + copia
     + el("section", {"id": "sql", "class": "cartao-config"}, el("p", {"class": "nota"}, t("Lendo…")));
-  porHtml(document.getElementById("sistema"), res);
+  porHtml(document.getElementById("sistema"), el("div", {"data-quadros": ""}, res));
+  organizarQuadrosConfig();
   montarSql(null);
   if (window.location.hash) {
   var alvo = document.getElementById(window.location.hash.slice(1));

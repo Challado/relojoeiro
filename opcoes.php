@@ -160,6 +160,13 @@ function opcoes_do_usuario($uid)
     return $cache[$k];
 }
 
+// A escolha de um usuário numa opção sim/não (o padrão das coleções dele): true, false ou null (não escolheu: herda o sistema)
+function usuario_preferencia_sim_nao($uid, $chave)
+{
+    $v = opcoes_do_usuario((int)$uid)[$chave] ?? "";
+    return $v === "" ? null : $v === "1";
+}
+
 // O dono da coleção do pedido (0: sem coleção)
 function opcoes_dono_id()
 {
@@ -266,14 +273,19 @@ function opcoes_conferir($dados)
 
 // O horário de uso de um nível (usuario ou sistema) depois da mudança: o fim depois do início, com o que o nível escolheu ou herda.
 // Devolve o erro, ou null
-function opcoes_conferir_horario($nivel, $uid, $ok)
+function opcoes_conferir_horario($nivel, $uid, $ok, $sistema_novo = [])
 {
     if (!array_key_exists("uso_inicio", $ok) && !array_key_exists("uso_fim", $ok)) {
         return null;
     }
-    $vale = function ($k) use ($nivel, $uid, $ok) {
+    // o que o sistema faz valer, com o que o mesmo pedido muda nele (padroes[...])
+    $do_sistema = function ($k) use ($sistema_novo) {
+        $x = array_key_exists($k, $sistema_novo) ? $sistema_novo[$k] : opcao_do_sistema($k);
+        return $x !== "" ? $x : OPCOES[$k][2];
+    };
+    $vale = function ($k) use ($nivel, $uid, $ok, $do_sistema) {
         $x = array_key_exists($k, $ok) ? $ok[$k] : ($nivel === "usuario" ? (opcoes_do_usuario((int)$uid)[$k] ?? "") : opcao_do_sistema($k));
-        return $x !== "" ? $x : ($nivel === "usuario" ? opcao_do_sistema_ou_padrao($k)[0] : OPCOES[$k][2]);
+        return $x !== "" ? $x : ($nivel === "usuario" ? $do_sistema($k) : OPCOES[$k][2]);
     };
     return $vale("uso_fim") > $vale("uso_inicio") ? null : t("Relógio no pulso: duas horas HH:MM, o fim depois do início.");
 }
@@ -313,11 +325,28 @@ function opcoes_lista($nivel, $uid = null, $grupos = null)
         if ($tipo === "lista" && $herdado === "") {
             $herdado = $padrao_lista;
         }
+        // o sim/não também com a lista dos dois valores e o texto: "0" é desligado (um texto não vazio, que um cliente não
+        // pode ler como verdadeiro), e ligado traz o booleano
+        if ($tipo === "sim_nao") {
+            $valores = ["1", "0"];
+        }
+        $itens = $valores === null ? null : array_map(function ($v) use ($tx, $chave, $tipo) {
+            return ["valor" => $v, "texto" => $tipo === "sim_nao" ? ($v === "1" ? t("Ligado") : t("Desligado")) : ($tx["valores"][$chave][$v] ?? $v)];
+        }, $valores);
+        $texto_de = function ($v) use ($itens, $tipo) {
+            if ($v === "" || $itens === null) {
+                return $v;
+            }
+            $por = array_column($itens, "texto", "valor");
+            return $tipo === "lista" ? implode(", ", array_map(function ($c) use ($por) { return $por[$c] ?? $c; }, explode(",", $v))) : ($por[$v] ?? $v);
+        };
+        $efetivo = $proprio !== "" ? $proprio : $herdado;
         $lista[] = ["chave" => $chave, "grupo" => $grupo, "tipo" => $tipo, "titulo" => $tx["titulos"][$chave], "minimo" => $min, "maximo" => $max,
-            "valores" => $valores === null ? null : array_map(function ($v) use ($tx, $chave) { return ["valor" => $v, "texto" => $tx["valores"][$chave][$v] ?? $v]; }, $valores),
+            "valores" => $itens,
             "fixos" => $tipo === "lista" ? colunas_fixas(colunas_pagina_da_opcao($chave)) : null,
             "padrao" => $padrao, "escolha" => $proprio, "herdado" => $herdado, "origem_herdado" => $origem_h,
-            "efetivo" => $proprio !== "" ? $proprio : $herdado, "origem" => $proprio !== "" ? $nivel : $origem_h];
+            "efetivo" => $efetivo, "origem" => $proprio !== "" ? $nivel : $origem_h,
+            "efetivo_texto" => $texto_de($efetivo), "herdado_texto" => $texto_de($herdado), "ligado" => $tipo === "sim_nao" ? $efetivo === "1" : null];
     }
     $chaves_g = array_values(array_filter(array_keys($tx["grupos"]), function ($g) use ($grupos) { return $grupos === null || in_array($g, $grupos, true); }));
     return ["grupos" => array_map(function ($g) use ($tx) { return ["chave" => $g, "texto" => $tx["grupos"][$g]]; }, $chaves_g), "opcoes" => $lista];
@@ -409,78 +438,81 @@ function opcoes_colecoes_afetadas($uid)
     });
 }
 
-// O erro de uma mudança de nível que deixaria uma coleção com o que não pode (o horário de uso com o fim antes do início)
+// O erro de uma mudança que deixaria uma coleção com o que não pode (o horário de uso com o fim antes do início)
 class OpcoesErro extends RuntimeException
 {
 }
 
-// Grava uma mudança de nível e refaz o que depende dela em cada coleção afetada (a foto de antes e a de depois). $uid: o
-// usuário (o nível dele) ou null (o do sistema). $gravar roda uma vez, entre as fotos; $desfazer volta o que ficou na memória
-// quando a transação desfaz. Uma coleção que ficaria com o horário de uso invertido (a dela escolheu o início, o nível, o fim)
-// recusa tudo: nada muda e o OpcoesErro diz qual
-function opcoes_gravar_nivel($uid, $gravar, $desfazer)
+// Grava, numa transação só, o que um pedido muda nas três hierarquias: o padrão do sistema ($sistema: chave => valor; vazio
+// volta o padrão de fábrica), o do dono ($usuario: [o id, chave => valor]; vazio herda o sistema), a escolha da coleção do
+// pedido ($colecao: chave => valor; vazio herda) e o resto que o pedido grava na coleção ou no sistema ($extra, uma função, na
+// mesma transação). Antes de confirmar, com tudo gravado, confere o valor final de cada coleção afetada (todas, se o sistema
+// muda; as do dono, se o dono muda; a do pedido): uma que ficaria com o horário de uso invertido desfaz o pedido inteiro, nos
+// três níveis, com os efeitos (o "fecha às", o fim da escala, a retomada do rodízio) e a memória do que foi lido, e o
+// OpcoesErro diz quais. Só depois de todas conferidas, refaz o que depende do valor que vale em cada uma (opcoes_efeitos).
+// $forcar: as chaves da coleção do pedido cujo efeito se refaz mesmo sem a mudança
+function opcoes_gravar_pedido($sistema, $usuario, $colecao, $extra = null, $forcar = [])
 {
+    $sistema = $sistema ?? [];
+    [$uid, $valores_u] = $usuario ?? [0, []];
+    $colecao = $colecao ?? [];
+    $atual = colecao_atual();
+    $afetadas = count($sistema) > 0 ? opcoes_colecoes_afetadas(null) : (count($valores_u) > 0 ? opcoes_colecoes_afetadas((int)$uid) : []);
+    if ($atual !== null && (count($colecao) > 0 || $extra !== null) && !in_array((int)$atual, $afetadas, true)) {
+        $afetadas[] = (int)$atual;
+    }
     try {
-        banco_atomico(function () use ($uid, $gravar) {
+        banco_atomico(function () use ($sistema, $uid, $valores_u, $colecao, $extra, $forcar, $afetadas, $atual) {
             $fotos = [];
-            foreach (opcoes_colecoes_afetadas($uid) as $c) {
+            foreach ($afetadas as $c) {
                 $fotos[$c] = opcoes_na_colecao($c, function () { return opcoes_foto(); });
             }
-            $gravar();
-            $GLOBALS["OPCOES_VERSAO"] = ($GLOBALS["OPCOES_VERSAO"] ?? 0) + 1;
-            foreach ($fotos as $c => $antes) {
-                opcoes_na_colecao($c, function () use ($c, $antes) {
-                    if (cfg("uso_fim") <= cfg("uso_inicio")) {
-                        $nome = (string)valor("SELECT nome FROM colecao WHERE id = ?", [$c]);
-                        throw new OpcoesErro(t("A coleção {1} ficaria com o horário de uso invertido ({2} a {3}): o fim tem de ser depois do início.", [1 => $nome, 2 => cfg("uso_inicio"), 3 => cfg("uso_fim")]));
+            foreach ($sistema as $chave => $v) {
+                sis_set("padrao_" . $chave, $v);
+            }
+            foreach ($valores_u as $chave => $v) {
+                sem_escopo(function () use ($uid, $chave, $v) {
+                    sql("DELETE FROM usuario_opcao WHERE usuario_id = ? AND chave = ?", [(int)$uid, $chave]);
+                    if ($v !== "") {
+                        sql("INSERT INTO usuario_opcao (usuario_id, chave, valor) VALUES (?, ?, ?)", [(int)$uid, $chave, $v]);
                     }
-                    opcoes_efeitos($antes);
+                });
+            }
+            foreach ($colecao as $chave => $v) {
+                cfg_set($chave, $v);
+            }
+            if ($extra !== null) {
+                $extra();
+            }
+            $GLOBALS["OPCOES_VERSAO"] = ($GLOBALS["OPCOES_VERSAO"] ?? 0) + 1;
+            // todas conferidas antes de refazer qualquer efeito
+            $invertidas = [];
+            foreach (array_keys($fotos) as $c) {
+                opcoes_na_colecao($c, function () use ($c, &$invertidas) {
+                    if (cfg("uso_fim") <= cfg("uso_inicio")) {
+                        $nome = (string)sem_escopo(function () use ($c) { return valor("SELECT nome FROM colecao WHERE id = ?", [$c]); });
+                        $invertidas[] = t("A coleção {1} ficaria com o horário de uso invertido ({2} a {3}): o fim tem de ser depois do início.", [1 => $nome, 2 => cfg("uso_inicio"), 3 => cfg("uso_fim")]);
+                    }
+                });
+            }
+            if (count($invertidas) > 0) {
+                throw new OpcoesErro(implode(" ", array_slice($invertidas, 0, 5)) . (count($invertidas) > 5 ? " " . t("E mais {1}.", [1 => count($invertidas) - 5]) : "") . " " . t("Nada foi gravado."));
+            }
+            foreach ($fotos as $c => $antes) {
+                opcoes_na_colecao($c, function () use ($antes, $c, $atual, $forcar) {
+                    opcoes_efeitos($antes, (int)$c === (int)$atual ? $forcar : []);
                 });
             }
         });
     } catch (Throwable $e) {
-        $desfazer();
+        // o banco voltou; a memória do que foi lido dentro da transação (o sistema, as coleções, os níveis) também
+        sis(null);
+        cfg_cru(null);
         $GLOBALS["OPCOES_VERSAO"] = ($GLOBALS["OPCOES_VERSAO"] ?? 0) + 1;
+        $GLOBALS["FORMULAS_VERSAO"] = ($GLOBALS["FORMULAS_VERSAO"] ?? 0) + 1;
         throw $e;
+    } finally {
+        $GLOBALS["OPCOES_VERSAO"] = ($GLOBALS["OPCOES_VERSAO"] ?? 0) + 1;
     }
 }
 
-// O nível do usuário: chave => valor (vazio apaga a escolha: herda o sistema). Já conferido por opcoes_conferir()
-function opcoes_usuario_gravar($uid, $valores)
-{
-    if (count($valores) === 0) {
-        return;
-    }
-    opcoes_gravar_nivel((int)$uid, function () use ($uid, $valores) {
-        foreach ($valores as $chave => $v) {
-            sem_escopo(function () use ($uid, $chave, $v) {
-                sql("DELETE FROM usuario_opcao WHERE usuario_id = ? AND chave = ?", [(int)$uid, $chave]);
-                if ($v !== "") {
-                    sql("INSERT INTO usuario_opcao (usuario_id, chave, valor) VALUES (?, ?, ?)", [(int)$uid, $chave, $v]);
-                }
-            });
-        }
-    }, function () {
-    });
-}
-
-// O nível do sistema: chave => valor (vazio apaga a escolha: vale o padrão de fábrica). Já conferido por opcoes_conferir()
-function opcoes_sistema_gravar($valores)
-{
-    if (count($valores) === 0) {
-        return;
-    }
-    $antes = [];
-    foreach ($valores as $chave => $v) {
-        $antes[$chave] = opcao_do_sistema($chave);
-    }
-    opcoes_gravar_nivel(null, function () use ($valores) {
-        foreach ($valores as $chave => $v) {
-            sis_set("padrao_" . $chave, $v);
-        }
-    }, function () use ($antes) {
-        foreach ($antes as $chave => $v) {
-            sis("padrao_" . $chave, $v);
-        }
-    });
-}

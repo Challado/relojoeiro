@@ -315,7 +315,9 @@ function examinar(seletorRaiz) {
   }
   // Cartões independentes: uma linha da grade não pode deixar uma coluna vazia até o cartão vizinho terminar.
   // O fim mais baixo da coluna é natural; o defeito é um vão interno em que o próximo cartão poderia começar antes.
-  for (const grade of raiz.querySelectorAll('#form-config .config-grade, #form-config .parametros-sistema')) {
+  // As grades de cartões das páginas de configuração: a Configuração (#form-config) e o Sistema (os cartões, os parâmetros e o
+  // cron, fora do formulário): toda grade dentro de um [data-quadros], o marcador do organizador do api.js
+  for (const grade of raiz.querySelectorAll('#form-config .config-grade, #form-config .parametros-sistema, [data-quadros] .config-grade, [data-quadros] .parametros-sistema')) {
     const rg = grade.getBoundingClientRect();
     const cs = getComputedStyle(grade);
     const topo = rg.top + parseFloat(cs.paddingTop || 0) + parseFloat(cs.borderTopWidth || 0);
@@ -531,11 +533,15 @@ async function conferirDetector(b) {
     const cartoes = '<section class="cartao-config" style="height:160px">A</section><section class="cartao-config" style="height:720px">B</section><section class="cartao-config" style="height:140px">C</section><section class="cartao-config" style="height:180px">D</section>';
     const compactos = [160, 720, 140, 180].map(h => '<section class="cartao-config" style="height:' + h + 'px;grid-row-end:span ' + Math.ceil((h + 16) / 4) + '">Cartão</section>').join('');
     const colunaLonga = [500, 300, 500, 100, 750, 100, 100].map(h => '<section class="cartao-config" style="height:' + h + 'px">Cartão</section>').join('');
-    await p.setContent('<style>.config-grade{width:536px;margin-bottom:20px;gap:16px}.cartao-config{break-inside:avoid;margin:0 0 16px}#linhas,#compacta{display:grid;grid-template-columns:1fr 1fr;align-items:start}#linhas section,#compacta section{margin:0}#compacta{grid-auto-rows:4px;row-gap:0;grid-auto-flow:dense}#colunas{width:836px;columns:3;column-gap:16px;column-fill:auto;height:1000px}#unica{display:grid;grid-template-columns:1fr}</style><form id="form-config"><div class="config-grade" id="linhas">' + cartoes + '</div><div class="config-grade" id="colunas">' + colunaLonga + '</div><div class="config-grade" id="compacta">' + compactos + '</div><div class="config-grade" id="unica">' + cartoes + '</div></form>');
+    await p.setContent('<style>.config-grade{width:536px;margin-bottom:20px;gap:16px}.cartao-config{break-inside:avoid;margin:0 0 16px}#linhas,#compacta{display:grid;grid-template-columns:1fr 1fr;align-items:start}#linhas section,#compacta section,#sistema-grade section{margin:0}#compacta{grid-auto-rows:4px;row-gap:0;grid-auto-flow:dense}#colunas{width:836px;columns:3;column-gap:16px;column-fill:auto;height:1000px}#unica{display:grid;grid-template-columns:1fr}</style><form id="form-config"><div class="config-grade" id="linhas">' + cartoes + '</div><div class="config-grade" id="colunas">' + colunaLonga + '</div><div class="config-grade" id="compacta">' + compactos + '</div><div class="config-grade" id="unica">' + cartoes + '</div></form>'
+      // a página Sistema: as grades fora do formulário, dentro do [data-quadros] (os cartões e os parâmetros, com um campo alto)
+      + '<div data-quadros><div class="config-grade" id="sistema-grade" style="display:grid;grid-template-columns:1fr 1fr;align-items:start">' + cartoes + '</div><div class="campos parametros-sistema" id="sistema-par" style="display:grid;grid-template-columns:1fr 1fr;column-gap:16px;width:536px;align-items:start">'
+      + [60, 400, 60, 60].map(h => '<label class="par-campo" style="display:block;height:' + h + 'px">Parâmetro</label>').join('') + '</div></div>');
     const espacos = (await p.evaluate(examinar)).filter(x => x.tipo === 'espaco-aproveitavel');
     if (!espacos.some(x => x.quem.includes('#linhas')) || !espacos.some(x => x.quem.includes('#colunas'))
+      || !espacos.some(x => x.quem.includes('#sistema-grade')) || !espacos.some(x => x.quem.includes('#sistema-par'))
       || espacos.some(x => /#compacta|#unica/.test(x.quem))) {
-      throw new Error('O detector deve pegar vãos internos e sobras que comportam outro cartão, aceitando a distribuição compacta e a coluna única.');
+      throw new Error('O detector deve pegar vãos internos e sobras que comportam outro cartão (também nas grades da página Sistema, fora do #form-config), aceitando a distribuição compacta e a coluna única: ' + JSON.stringify(espacos.map(x => x.quem)));
     }
     // o ⓘ de ajuda: embaixo do campo e sozinho numa linha são soltos; colado ao texto do rótulo (o campo desce) não
     const bi = '<button type="button" class="ajuda-i" data-ajuda="x" aria-label="Explicação" style="width:20px;height:20px;padding:0">ⓘ</button>';

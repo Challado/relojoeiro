@@ -9,10 +9,11 @@ const {chromium} = require(process.env.PLAYWRIGHT || require('child_process').ex
 const raiz = path.join(__dirname, '..');
 const apiJs = fs.readFileSync(path.join(raiz, 'api.js'), 'utf8');
 // os ajudantes das opções em três níveis (campoOpcao, camposOpcoes, abasNiveis, painelNiveis, formAcao...), os mesmos do api.js
-const ajudantes = apiJs.slice(apiJs.indexOf('function origemOpcao'), apiJs.indexOf('// Uma senha nova com a confirmação'))
+const ajudantes = apiJs.slice(apiJs.indexOf('// ---- os quadros das páginas de configuração'), apiJs.indexOf('// Uma senha nova com a confirmação'))
   + apiJs.slice(apiJs.indexOf('// um botão que grava uma ação pela API'), apiJs.indexOf('var aoGravar = function'));
 // a regra dos níveis (o quadro dos outros níveis some) é a do estilo.css de verdade
-const estiloNiveis = fs.readFileSync(path.join(raiz, 'estilo.css'), 'utf8').split('\n').filter((l) => l.includes('data-nivel-visto')).join('\n');
+const estiloTodo = fs.readFileSync(path.join(raiz, 'estilo.css'), 'utf8');
+const estiloNiveis = estiloTodo.split('\n').filter((l) => l.includes('data-nivel-visto')).join('\n');
 const base = `
 var LINGUA="pt-BR", TEXTOS={}, ESTRITO=false;
 function t(s,p) { var r=s; Object.keys(p||{}).forEach(k=>r=r.split('{'+k+'}').join(p[k])); return r; }
@@ -67,7 +68,7 @@ function sistema() {
     email_para: 'master@exemplo.invalid'};
 }
 async function abrir(page, pagina, fixture) {
-  await page.route('http://relojoeiro.test/**', (r) => r.fulfill({contentType: 'text/html', body: '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><style>' + estiloNiveis
+  await page.route('http://relojoeiro.test/**', (r) => r.fulfill({contentType: 'text/html', body: '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + (fixture.estiloTodo ? estiloTodo : estiloNiveis)
     + '.barra-salvar{position:sticky;bottom:0}</style><body><main id="' + pagina + '"></main></body></html>'}));
   await page.goto('http://relojoeiro.test/' + pagina + '.php' + (fixture.busca || ''));
   await page.evaluate((f) => {
@@ -167,8 +168,47 @@ const visiveis = (page, seletor) => page.locator(seletor).evaluateAll((es) => es
     const ps = (await page.evaluate(() => fixture.posts))[0];
     assert.equal(ps.recurso, 'config'); assert.equal(ps['parametros[cadastro_aberto]'], '0'); assert.equal(ps.cron_espera_rodadas, '5'); assert.equal(ps['parametros[convite_dias]'], '');
     total++;
-    assert.deepEqual(erros, []);
+    // ---- Sistema com o estilo.css de verdade: os cartões e os parâmetros sem vão grande nem um por cima do outro, com o registro
+    // do cron aberto (comprido) e os parâmetros de descrição curta e longa, do computador largo ao celular. Sem o organizador dos
+    // quadros na página Sistema, o cartão que vem depois do Cron aberto ficava embaixo dele, com um vão de centenas de pixels
+    // embaixo do vizinho curto
+    f = sistema();
+    f.cron_estado.registro = Array.from({length: 70}, (_, i) => 'linha ' + (i + 1) + ' da rodada do cron').join('\n');
+    f.parametros = f.parametros.concat(Array.from({length: 9}, (_, i) => ({chave: 'p' + i, nome: 'Parâmetro ' + i, descricao: i % 3 === 0 ? 'Uma descrição comprida '.repeat(14) : 'curta',
+      tipo: 'inteiro', valor: 1, origem: 'padrao', config_php: null, config_valor: null, padrao: 1, minimo: 0, maximo: 9})));
+    f = {sistema: f, lidos: [], posts: [], estiloTodo: true};
     await ctx.close();
+    for (const largura of [1440, 1100, 820, 390]) {
+      const c2 = await browser.newContext({viewport: {width: largura, height: 900}});
+      const p2 = await c2.newPage();
+      p2.setDefaultTimeout(5000);
+      p2.on('pageerror', (e) => erros.push(e.message));
+      await abrir(p2, 'sistema', f);
+      await p2.locator('#sistema [name=url_sistema]').waitFor();
+      await p2.evaluate(() => document.querySelectorAll('#sistema details').forEach((d) => { d.open = true; }));
+      const semVao = () => p2.waitForFunction(() => [...document.querySelectorAll('#sistema .config-grade, #sistema .parametros-sistema')].every((g) => {
+        const rs = [...g.children].filter((e) => e.offsetParent !== null).map((e) => e.getBoundingClientRect());
+        return rs.every((r, i) => {
+          if (rs.some((o, j) => j !== i && Math.min(r.right, o.right) - Math.max(r.left, o.left) > 2 && Math.min(r.bottom, o.bottom) - Math.max(r.top, o.top) > 2)) { return false; }
+          const acima = rs.filter((o, j) => j !== i && o.bottom <= r.top + 1 && Math.min(r.right, o.right) - Math.max(r.left, o.left) > Math.min(r.width, o.width) * .8);
+          return !acima.length || r.top - Math.max(...acima.map((o) => o.bottom)) <= 96;
+        });
+      }), null, {polling: 50, timeout: 5000}).catch(async () => {
+        throw new Error('Sistema em ' + largura + 'px: um vão grande (ou um quadro por cima do outro) entre os cartões ou os parâmetros: '
+          + JSON.stringify(await p2.evaluate(() => [...document.querySelectorAll('#sistema .config-grade, #sistema .parametros-sistema')].map((g) => [...g.children]
+            .map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.bottom)]; })))));
+      });
+      await semVao();
+      // fechar e abrir de novo o registro (o quadro muda de altura depois de arrumado) e o requestAnimationFrame adiado (aba em
+      // segundo plano ou CI ocupado): a arrumação acompanha
+      await p2.evaluate(() => { window.requestAnimationFrame = () => 0; document.querySelectorAll('#sistema details').forEach((d) => { d.open = false; }); });
+      await semVao();
+      await p2.evaluate(() => document.querySelectorAll('#sistema details').forEach((d) => { d.open = true; }));
+      await semVao();
+      await c2.close();
+    }
+    total++;
+    assert.deepEqual(erros, []);
     console.log(total + ' cenários de componente passaram (Ajustes do rodízio e Sistema; Chromium, sem rede/banco).');
   } finally {
     await browser.close();

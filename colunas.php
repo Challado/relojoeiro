@@ -267,7 +267,7 @@ function coluna_formato_sugerido($tabela, $campo, $funcao)
 {
     if ($tabela === "relogio") {
         $v = $GLOBALS["VARIAVEIS_TABELA"][$campo] ?? null;
-        if (in_array($campo, ["ultimo_uso", "manutencao_data", "encostado_data"], true)) {
+        if (in_array($campo, ["ultimo_uso", "manutencao_data", "encostado_data", "vistoria_data"], true)) {
             return "data";
         }
         if (in_array($campo, ["codigo", "nome", "marca", "tipo", "estado", "manutencao_nome", "posse"], true)) {

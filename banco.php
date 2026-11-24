@@ -1176,17 +1176,19 @@ function banco_confirma()
 {
     if (banco_tipo() === "firebird") {
         banco_fb_transacao("confirma");
-        $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
-        return;
+    } else {
+        banco_direto("COMMIT");
     }
-    banco_direto("COMMIT");
     $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
+    banco_depois_rodar();
 }
 
 function banco_desfaz()
 {
     // o que foi lido dentro da transação desfeita não vale mais
     banco_anotar_escrita("", true);
+    // o que esperava a confirmação (apagar arquivos da pasta) não acontece: o banco voltou a ter as linhas que apontam para eles
+    $GLOBALS["BANCO_DEPOIS"] = [];
     if (banco_tipo() === "firebird") {
         banco_fb_transacao("desfaz");
         $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
@@ -1194,6 +1196,33 @@ function banco_desfaz()
     }
     banco_direto("ROLLBACK");
     $GLOBALS["BANCO_TRANSACAO_ATIVA"] = false;
+}
+
+// O que só pode acontecer depois que o banco confirmar, porque não se desfaz (apagar um arquivo da pasta dos documentos):
+// dentro de uma transação (um lote tudo ou nada, uma operação atômica), espera o COMMIT e some no ROLLBACK; fora dela, roda
+// na hora. Quem chama apaga as linhas do banco antes: o arquivo só sai quando a linha que aponta para ele já saiu de vez
+function banco_depois_de_confirmar($f)
+{
+    if (!empty($GLOBALS["BANCO_TRANSACAO_ATIVA"])) {
+        $GLOBALS["BANCO_DEPOIS"][] = $f;
+        return;
+    }
+    $f();
+}
+
+// Roda a fila do banco_depois_de_confirmar (depois do COMMIT), na ordem; um item que falha não impede os outros e o erro vai
+// para o registro do PHP (a confirmação já aconteceu: o pedido continua certo, e a limpeza do cron recolhe o que sobrar)
+function banco_depois_rodar()
+{
+    $fila = $GLOBALS["BANCO_DEPOIS"] ?? [];
+    $GLOBALS["BANCO_DEPOIS"] = [];
+    foreach ($fila as $f) {
+        try {
+            $f();
+        } catch (Throwable $e) {
+            error_log("relojoeiro: a limpeza depois da confirmação falhou: " . $e->getMessage());
+        }
+    }
 }
 
 // O bloco participa da transação do chamador; só quem abriu confirma ou desfaz.

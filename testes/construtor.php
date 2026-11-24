@@ -14,8 +14,8 @@ putenv("RELOGIOS_TESTE_PASTA=" . $pasta);
 putenv("RELOGIOS_DB=sqlite");
 require dirname(__DIR__) . "/lib.php";
 
-// as 14 colunas de sempre, na ordem em que o modelo.json as cria no cadastro de colunas
-const DE_SEMPRE = ["codigo", "nome", "marca", "tipo", "estado", "carga", "ultimo", "uso", "manut", "em", "fazer", "encostado", "compra", "valor"];
+// as 15 colunas de sempre, na ordem em que o modelo.json as cria no cadastro de colunas
+const DE_SEMPRE = ["codigo", "nome", "marca", "tipo", "estado", "carga", "ultimo", "uso", "manut", "em", "fazer", "encostado", "vistoria", "compra", "valor"];
 
 function exigir_cons($ok, $mensagem)
 {
@@ -40,7 +40,7 @@ try {
         sql("INSERT INTO timegrapher (relogio_id, quando, marcha, origem, criado) VALUES (?, ?, ?, 'manual', NOW())", [$a, $q, $marcha]);
     }
     exigir_cons(colunas_tabela_existe(), "A tabela coluna devia existir na base nova.");
-    exigir_cons(count(colunas_cadastradas()) === 0 && colunas_catalogo("hoje") === DE_SEMPRE && colunas_padrao("hoje") === DE_SEMPRE, "Sem colunas montadas o catálogo é o das 14 de sempre, criadas no cadastro pelo modelo.");
+    exigir_cons(count(colunas_cadastradas()) === 0 && colunas_catalogo("hoje") === DE_SEMPRE && colunas_padrao("hoje") === DE_SEMPRE, "Sem colunas montadas o catálogo é o das 15 de sempre, criadas no cadastro pelo modelo.");
 
     // ---- o modo guiado: a fonte, o campo e a função viram a expressão; o formato combina com o que ela dá
     $g = op_colunas("salvar", ["id" => 0, "nome" => "Marcha média", "modo" => "guiado", "tabela" => "timegrapher", "campo" => "marcha", "funcao" => "media"]);
@@ -116,12 +116,12 @@ try {
     exigir_cons($lb["colunas_extras"]["c_marcha_media"]["texto"] === "—" && $lb["colunas_extras"]["c_marcha_media"]["valor"] === null, "O relógio sem medição: vazio.");
     exigir_cons(!isset(tabela_linha($rel, time(), ["sem_colunas" => true])["colunas_extras"]["c_marcha_media"]), "Os totais pedem a linha sem as colunas cadastradas.");
 
-    // ---- as colunas de sempre moram no cadastro (sistema = 1, do modelo.json): 14, na ordem, a Relógio fixa; só mudam de lugar e de aparecer de início
+    // ---- as colunas de sempre moram no cadastro (sistema = 1, do modelo.json): 15, na ordem, a Relógio fixa; só mudam de lugar e de aparecer de início
     $sis = array_values(array_filter(colunas_todas(), function ($c) { return $c["sistema"]; }));
-    exigir_cons(array_column($sis, "chave") === DE_SEMPRE && count($sis) === 14, "As 14 colunas de sempre nascem no cadastro, na ordem de sempre.");
+    exigir_cons(array_column($sis, "chave") === DE_SEMPRE && count($sis) === 15, "As 15 colunas de sempre nascem no cadastro, na ordem de sempre.");
     exigir_cons(array_column(array_filter($sis, function ($c) { return $c["fixa"]; }), "chave") === ["nome"] && colunas_fixas("hoje") === ["nome"], "A Relógio é a fixa.");
-    exigir_cons((int)valor("SELECT COUNT(*) FROM coluna WHERE sistema = 1") === 14 && (int)valor("SELECT MIN(ordem) FROM coluna WHERE sistema = 1") === 10 && (int)valor("SELECT MAX(ordem) FROM coluna WHERE sistema = 1") === 140, "Estão gravadas na tabela, de 10 a 140.");
-    exigir_cons((int)valor("SELECT MIN(ordem) FROM coluna WHERE sistema = 0") > 140, "As que a pessoa monta vêm depois.");
+    exigir_cons((int)valor("SELECT COUNT(*) FROM coluna WHERE sistema = 1") === 15 && (int)valor("SELECT MIN(ordem) FROM coluna WHERE sistema = 1") === 10 && (int)valor("SELECT MAX(ordem) FROM coluna WHERE sistema = 1") === 150, "Estão gravadas na tabela, de 10 a 150.");
+    exigir_cons((int)valor("SELECT MIN(ordem) FROM coluna WHERE sistema = 0") > 150, "As que a pessoa monta vêm depois.");
     exigir_cons(colunas_titulos("hoje")["uso"] === "Tempo de uso", "O título da do sistema vem do dicionário (no idioma do pedido).");
     $idm = fn($k) => (int)valor("SELECT id FROM coluna WHERE sistema = 1 AND identificador = ?", [$k]);
     $recusa_s = function ($acao, $pedido, $parte, $rotulo) {
@@ -181,7 +181,7 @@ try {
     exigir_cons(op_colunas("excluir", ["id" => $col["id"]])["ok"], "Não excluiu.");
     exigir_cons(!in_array("c_marcha_media", colunas_catalogo("hoje"), true) && colunas_efetivas("hoje") === ["nome", "c_custo_da_medicao", "uso"], "A coluna excluída sai da escolha: " . json_encode(colunas_efetivas("hoje")));
     exigir_cons(!op_colunas("excluir", ["id" => $col["id"]])["ok"], "Excluir de novo.");
-    // ---- a migração v62 numa árvore que já tinha colunas montadas e não tinha as de sistema: as 14 entram na frente (de 10 a 140), as montadas
+    // ---- a migração v62 numa árvore que já tinha colunas montadas e não tinha as de sistema: as 15 entram na frente (de 10 a 150), as montadas
     // vão para depois (a ordem sobe 1000), e rodar de novo não duplica
     sem_escopo(function () {
         $raiz = (int)valor("SELECT id FROM no WHERE pai_id IS NULL ORDER BY id LIMIT 1");
@@ -194,8 +194,8 @@ try {
     migracao_v62_dados(false);
     migracao_v62_dados(false);
     $GLOBALS["COLUNAS_VERSAO"] = ($GLOBALS["COLUNAS_VERSAO"] ?? 0) + 1;
-    exigir_cons((int)valor("SELECT COUNT(*) FROM coluna WHERE sistema = 1") === 14, "A v62 cria as 14 uma vez só (rodar de novo não duplica).");
-    exigir_cons(array_slice(array_column(colunas_todas(), "chave"), 0, 14) === DE_SEMPRE && array_column(colunas_cadastradas(), "chave") === $montadas_antes, "As 14 vêm na frente e as montadas, na mesma ordem de antes, depois.");
+    exigir_cons((int)valor("SELECT COUNT(*) FROM coluna WHERE sistema = 1") === 15, "A v62 cria as 15 uma vez só (rodar de novo não duplica).");
+    exigir_cons(array_slice(array_column(colunas_todas(), "chave"), 0, 15) === DE_SEMPRE && array_column(colunas_cadastradas(), "chave") === $montadas_antes, "As 15 vêm na frente e as montadas, na mesma ordem de antes, depois.");
     exigir_cons((int)valor("SELECT MIN(ordem) FROM coluna WHERE sistema = 0") > 1000, "As montadas sobem 1000.");
 
     echo "O construtor de colunas confere: guiado e expert, as recusas, o formato (casas e moeda), o catálogo e a escolha da página Hoje, o valor na linha, a ordem e a exclusão.\n";

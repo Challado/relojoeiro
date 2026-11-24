@@ -138,57 +138,7 @@ function recarregarIdiomaConfig(lingua, mensagem, posicaoAnterior) {
   window.location.reload();
 }
 
-// Distribui cartões e opções do sistema pela altura real, sem mudar a ordem dos elementos e do foco.
-var observadorQuadrosConfig = null;
-var quadroAnimacaoConfig = null;
-var ajustarQuadrosConfig = null;
-
-function agendarQuadrosConfig() {
-  if (quadroAnimacaoConfig === null) {
-    quadroAnimacaoConfig = requestAnimationFrame(function () {
-      quadroAnimacaoConfig = null;
-      if (ajustarQuadrosConfig) { ajustarQuadrosConfig(); }
-    });
-  }
-}
-
-function organizarQuadrosConfig() {
-  if (observadorQuadrosConfig) { observadorQuadrosConfig.disconnect(); observadorQuadrosConfig = null; }
-  if (quadroAnimacaoConfig !== null) { cancelAnimationFrame(quadroAnimacaoConfig); quadroAnimacaoConfig = null; }
-  var grades = Array.from(document.querySelectorAll("#form-config .config-grade, #form-config .parametros-sistema"));
-  ajustarQuadrosConfig = null;
-  if (!grades.length) { return; }
-  var quadros = grades.reduce(function (todos, grade) { return todos.concat(Array.from(grade.children)); }, []);
-  ajustarQuadrosConfig = function () {
-    grades.forEach(function (grade) {
-      var filhos = Array.from(grade.children);
-      var alturas = filhos.map(function (q) { return q.getBoundingClientRect().height; });
-      grade.classList.add("config-colunas");
-      var estilo = getComputedStyle(grade);
-      var linha = parseFloat(estilo.gridAutoRows);
-      var intervalo = parseFloat(estilo.columnGap) || 0;
-      if (!linha) { grade.classList.remove("config-colunas"); return; }
-      filhos.forEach(function (q, i) {
-        var span = "span " + Math.ceil((alturas[i] + intervalo) / linha);
-        if (q.style.gridRowEnd !== span) { q.style.gridRowEnd = span; }
-      });
-    });
-  };
-  ajustarQuadrosConfig();
-  if (typeof ResizeObserver === "function") {
-    // O observador roda antes da pintura: adiar mais um quadro deixa o conteúdo aberto sobrepor o vizinho.
-    observadorQuadrosConfig = new ResizeObserver(function () {
-      if (ajustarQuadrosConfig) { ajustarQuadrosConfig(); }
-    });
-    quadros.forEach(function (q) { observadorQuadrosConfig.observe(q); });
-  }
-}
-
-addEventListener("resize", agendarQuadrosConfig);
-document.addEventListener("toggle", function (ev) {
-  if (ajustarQuadrosConfig && ev.target instanceof Element && ev.target.closest("#form-config")) { ajustarQuadrosConfig(); }
-}, true);
-if (document.fonts) { document.fonts.ready.then(agendarQuadrosConfig); }
+// os cartões e as opções em colunas pela altura real: o organizarQuadrosConfig do api.js (o mesmo da página Sistema)
 
 // Os níveis da página: as opções das três hierarquias desta página (a Rotina do dia, os Limites e contas e as Telas; as do
 // rodízio ficam em Rodízio › Ajustes do rodízio, e as dos avisos, na página Avisos) existem na coleção, no dono (o padrão dele
@@ -349,15 +299,17 @@ function recarregarConfig(aplicadas, manterPosicao) {
         var alertas = cartao(t("Avisos, lembretes e mensagens"), el("div", {"class": "campos"},
           el("p", {}, t("{1} lembretes · {2} destinos · {3} agendas", {1: d.eventos.length, 2: d.destinos.length, 3: d.agendas.length}))),
           el("p", {"class": "nota"}, t("Os avisos dos relógios, os lembretes (os eventos personalizados) e para onde eles vão ficam juntos na página {1}.", {1: el("a", {"href": "avisos.php"}, t("Avisos"))})));
+        // a situação do cron (o resumo da coleção): quem não é master vê aqui; o master, na página Sistema, com o do sistema inteiro
+        var cronCol = !d.sistema.pode_mudar && d.cron_estado ? cartao(t("Cron"), conteudoCron(d.cron_estado)) : "";
         // o padrão do dono para as coleções dele (só o dono desta coleção): cada opção desta página, gravada em dono[<chave>] pelo
         // config/salvar
         var meus = temDono ? cartao(t("Minhas coleções"), el("div", {"class": "campos parametros-sistema"}, camposOpcoes(d.dono.opcoes, "dono"))) : "";
         if (comNiveis) {
-          rotina = noNivel(rotina, "colecao"); limites = noNivel(limites, "colecao"); tela = noNivel(tela, "colecao"); alertas = noNivel(alertas, "colecao");
+          rotina = noNivel(rotina, "colecao"); limites = noNivel(limites, "colecao"); tela = noNivel(tela, "colecao"); alertas = noNivel(alertas, "colecao"); cronCol = noNivel(cronCol, "colecao");
           meus = noNivel(meus, "dono"); padroes = noNivel(padroes, "sistema");
         }
-        res += el("form", {"data-recurso": "config", "id": "form-config"}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
-          + el("div", {"class": "config-grade"}, rotina + limites + tela + alertas)
+        res += el("form", {"data-recurso": "config", "id": "form-config", "data-quadros": ""}, el("input", {"type": "hidden", "name": "acao", "value": "salvar"})
+          + el("div", {"class": "config-grade"}, rotina + limites + tela + alertas + cronCol)
           + meus + padroes
           // salvar: uma barra presa no pé da tela enquanto a página rola, com o botão sempre no mesmo lugar
           + el("div", {"class": "barra-salvar"}, el("span", {"class": "nota"}, t("As mudanças desta página valem depois de salvar.")) + el("button", {}, t("Salvar configuração"))));

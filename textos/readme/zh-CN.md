@@ -1,4 +1,4 @@
-<!-- origem: a40413b72a85465d6b778080b45633eee4044944 -->
+<!-- origem: 91247f036f6368d4d725ec96ff48b727712f9ce2 -->
 <!-- parte 1 -->
 # ⌚ Relojoeiro — Relógios 2
 
@@ -187,16 +187,16 @@ curl -u 用户:密码 -G "http://服务器/relojoeiro/api.php" -d recurso=calcul
 | `rodizio` | `usando`（我今天戴的是这块）、`trocar_dia`（某一天的手表）、`periodo`（一个时段的手表，按顺序：`de`、`ate`、`relogio_ids[]`、`dias_cada`）、`periodo_sortear`（删除时段内的日子，由模式重新安排；只填 `de`：到计划结束；只填 `ate`：从明天到它）、`periodo_livre`（清除并让这些天保持空闲，不抽选；日期规则相同）、`manual`（手动轮换：`de`、`ate`、`dias[YYYY-MM-DD]` = 手表 id、`auto` 或 `livre`）、`apagar_tudo`（清除从明天起的全部安排；`hoje=1`：从今天起；模式会重新生成计划）、`resortear`、`resortear_hoje`、`proxima_semana`、`modo`（更换模式） |
 | `modos` | `salvar`、`ativar`、`excluir` |
 | `simulador` | `aplicar`（按模拟时的方案，以及 `de`、`ate`、`semente` 和 `impressao`：只有计划与模拟一致时才保存） |
-| `vistorias` | `registrar`（`relogio_ids`，用逗号分隔，以及 `quando`，YYYY-MM-DD 或 YYYY-MM-DD HH:MM，最晚为现在；留空：现在）：每只的检查，全部或全不，同一天每只手表一次 |
+| `vistorias` | `registrar`（`relogio_ids`，用逗号分隔，以及 `quando`，YYYY-MM-DD 或 YYYY-MM-DD HH:MM，最晚为现在；留空：现在）：每只的检查，全部或全不，同一天每只手表一次；`registradas` 只计算新的（重复返回 0） |
 | `arvore` | `novo`、`renomear`、`mover`、`ordem`、`excluir`（分组）以及 `relogios`（每块手表的分组） |
 | `campos`、`avisos`、`lancamento_tipos` | `novo`、`alterar`、`excluir`（字段还有 `ordem`；带取值规则的字段：`opcoes`、`minimo`、`maximo`、`multiplo`） |
 | `formulas` | `nova`、`alterar`、`excluir` |
 | `criterios` | `conjunto_criar`、`conjunto_excluir`、`param_novo`、`param_excluir`、`param_pesos`、`sub_novo`、`sub_excluir`、`sub_medida`、`sub_mover`、`sub_pesos`、`faixas`、`ordem`、`restaurar` |
-| `config` | `salvar`（所有者还可以用 `dono[<chave>]`：自己收藏的默认值；master 还可以用 `padroes[<chave>]`：系统默认值，以及 `parametros[<chave>]`：系统的运行参数）、`evento_salvar`、`evento_excluir` |
+| `config` | `salvar`（`<chave>`：收藏；所有者还可以用 `dono[<chave>]`：自己收藏的默认值；master 还可以用 `padroes[<chave>]`：系统默认值，以及 `parametros[<chave>]`：系统的运行参数；全部在一个事务中，不属于此请求的字段会使整个请求被拒绝）、`evento_salvar`、`evento_excluir` |
 | `destinos` | `salvar`（webhook、电子邮件或 Web Push，含接收内容）、`testar`（`qual=`：文本、早上或晚上）、`excluir` |
 | `agendas` | `salvar`（Google、CalDAV、Outlook 或 ICS）、`sincronizar`、`teste_criar`、`teste_remover`、`novo_link`（ICS）、`outlook_conectar`、`excluir` |
 | `usuarios` | `salvar`（带 `senha`，或带其他系统的 `senha_hash`；第一个用户使用令牌创建，是 master），以及仅限 master：`alterar`、`oficializar`、`prorrogar`、`voltar_demo`、`bloquear`、`transferir`、`dar_acesso`、`excluir` |
-| `conta` | `alterar`（电子邮件、语言、`nivel`：界面模式、密码）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
+| `conta` | `alterar`（电子邮件、语言、`nivel`：界面模式、密码、`opcoes[<chave>]`：其拥有的收藏的默认值；全部在一个事务中，不属于此请求的字段会使整个请求被拒绝）、`token_criar`、`token_revogar`、`aparelho_lembrar`（手机上的应用：此设备的密钥存入 cookie，无需密码进入）、`aparelho_esquecer`、`push_inscrever`、`push_cancelar`、`push_testar`、`smtp_salvar`（自己的邮件服务器；`proprio=0` 恢复使用系统的）、`smtp_testar`、`excluir`；仅限 master：`email_testar`、`vapid_gerar` |
 | `colecoes` | `criar`、`renomear`、`excluir`、`arvore_copiar`、`arvore_renomear`、`arvore_excluir` |
 | `acessos`、`convites`、`pedidos` | `remover`、`sair`；`convidar`、`aprovar`、`recusar`、`reenviar`、`cancelar`、`aceitar`；`pedir`、`aprovar`、`recusar`、`cancelar` |
 | `cadastro` | 无需登录：`criar_conta`、`esqueci_senha`、`nova_senha` |

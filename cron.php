@@ -109,8 +109,9 @@ register_shutdown_function(function () use (&$log, $falar, $inicio) {
 try {
     require_once __DIR__ . "/lib.php";
 
-    // a trava: uma rodada por vez (cron_trava_caminho). A rodada que pega a trava grava nela o número do processo (PID), quando
-    // começou e quantas rodadas a próxima espera (cron_espera_rodadas). A do minuto seguinte, achando a trava segura e o PID
+    // a trava: uma rodada por vez (cron_trava_caminho). A rodada que pega a trava grava nela, antes de qualquer consulta ao
+    // banco, o número do processo (PID), quando começou e quantas rodadas a próxima espera (a regra que a rodada anterior leu;
+    // depois, a que esta lê do banco: cron_espera_rodadas). Assim, mesmo que a primeira consulta trave, a do minuto seguinte, achando a trava segura e o PID
     // ainda vivo, sai sem rodar e sem tocar no banco (ele pode ser o que está lento), e anota o pulo ao lado da trava
     // (<trava>.pulos); com os pulos chegando ao limite, ela mata a travada, pega a trava e roda no lugar dela, com o erro no
     // registro. Sem conseguir abrir a trava, não roda (para não se sobrepor a outra) e registra o erro. O sistema solta a
@@ -122,6 +123,12 @@ try {
         exit;
     }
     $pulos_caminho = $trava_caminho . ".pulos";
+    // a regra de quantas rodadas esperar, como a última rodada a leu do banco (fica na trava): vale enquanto esta não consegue
+    // ler a sua, para quem achar a trava segura saber o que fazer mesmo que a primeira consulta desta trave
+    $limite_sabido = function ($conteudo) {
+        $x = json_decode((string)$conteudo, true);
+        return is_array($x) && isset($x["limite"]) && is_int($x["limite"]) ? $x["limite"] : null;
+    };
     if (!flock($trava, LOCK_EX | LOCK_NB)) {
         $dono = json_decode((string)stream_get_contents($trava), true);
         $pid_dono = is_array($dono) ? (int)($dono["pid"] ?? 0) : 0;
@@ -160,12 +167,20 @@ try {
             $GLOBALS["CRON_MATOU"] .= ". " . t("Não consegui apagar o arquivo dos pulos do cron ({1})", [1 => $pulos_caminho]);
         }
     }
-    ftruncate($trava, 0);
+    // com a trava na mão, antes de qualquer consulta ao banco (que pode travar): o número deste processo, quando começou e a
+    // regra que a rodada anterior leu (sem nenhuma, a de fábrica, 10); depois, a regra lida agora do banco
     rewind($trava);
-    fwrite($trava, json_encode(["pid" => getmypid(), "inicio" => date("Y-m-d H:i:s"), "limite" => cron_espera_rodadas()]));
-    fflush($trava);
+    $limite_antes = $limite_sabido(stream_get_contents($trava)) ?? 10;
+    $gravar_trava = function ($limite) use ($trava, $inicio) {
+        ftruncate($trava, 0);
+        rewind($trava);
+        fwrite($trava, json_encode(["pid" => getmypid(), "inicio" => date("Y-m-d H:i:s", (int)$inicio), "limite" => $limite]));
+        fflush($trava);
+    };
+    $gravar_trava($limite_antes);
     $GLOBALS["CRON_TRAVA_ARQUIVO"] = $trava_caminho;
     $GLOBALS["CRON_TRAVA"] = $trava;
+    $gravar_trava(cron_espera_rodadas());
 
     $hoje = new DateTimeImmutable("today");
     $agora = date("H:i");

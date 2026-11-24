@@ -134,6 +134,7 @@ if ((int)($_REQUEST["relogio"] ?? 0) > 0 && !$r) {
             })()],
         "encostado" => $v["encostado"] ? ["data" => max($hoje->format("Y-m-d"), substr($v["encostado"]["data"], 0, 10)),
             "momento" => $v["encostado_momento"], "falta" => $v["encostado_falta"], "estado" => $v["encostado"]["estado"]] : null,
+        "vistoria" => vistoria_da_linha($v, $hoje),
         "manutencoes" => manutencoes_da_ficha($v["avisos"], $hoje->format("Y-m-d")),
         "previsao" => previsao_energia($r, $agora), "tipos" => $tipos, "leituras" => $leituras, "precisao" => ($pr_f = precisao_do_relogio($r, $agora)),
         // o timegrapher (o quadro Timegrapher, na seção Precisão e marcha): nos que medem a marcha, ou já têm medição; null nos outros

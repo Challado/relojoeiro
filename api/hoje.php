@@ -85,8 +85,8 @@ foreach (linhas("SELECT * FROM modo ORDER BY ordem, id") as $m) {
 $ini_s = semana_fim($hoje)->modify("+1 day");
 $avisos_nomes = [];
 foreach (avisos_todos() as $ident => $versoes) {
-    // o Encostado tem a coluna dele; não entra no filtro "O que fazer" (a manutenção)
-    if ($ident === "encostado") {
+    // o Encostado e a Vistoria têm a coluna deles; não entram no filtro "O que fazer" (a manutenção)
+    if ($ident === "encostado" || $ident === "vistoria") {
         continue;
     }
     $avisos_nomes[] = $versoes[0]["nome"];
@@ -101,6 +101,9 @@ $saida = ["data" => $hoje->format("Y-m-d"), "agora" => $agora, "uso_inicio" => c
     "avisos" => $avisos_h,
     // a caixa da Configuração: desligada, a página esconde a coluna Encostado e o filtro (e nenhum relógio vem com encostado)
     "encostado_ativo" => encostado_ativo(),
+    // a vistoria valendo (Avisos › Ajustes dos avisos, vistoria_dias, e o aviso Vistoria ligado): desligada, a página esconde a
+    // coluna Próxima vistoria e o filtro dela
+    "vistoria_ativa" => vistoria_motivo_desligada() === null,
     // os estados da tabela, na ordem (o filtro Estado): em uso, cada sessão que não é o pulso, em repouso e indisponível
     "estados" => array_merge([t("Em uso")], array_column(linhas("SELECT nome FROM lancamento_tipo WHERE formato = 'sessao' AND identificador <> 'pulso' ORDER BY ordem, id"), "nome"),
         [t("Em repouso"), t("Inativo"), t("Emprestado")]),

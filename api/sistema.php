@@ -16,8 +16,7 @@ $saida = ["url_sistema" => sis("url_sistema"), "cron_espera_rodadas" => cron_esp
     "parametros" => parametros_sistema_lista(),
     "senha_politica" => senha_politica_api(),
     "cron_estado" => cron_estado(),
-    "aleatorio" => ["fontes" => ["RANDOM.ORG", "ANU QRNG", t("gerador seguro do PHP (random_int)")], "ultimo_lote" => sis("aleatorio_ultima") !== "" ? sis("aleatorio_ultima") : null,
-        "fora_desde" => sis("aleatorio_fora") !== "" ? date("Y-m-d H:i:s", (int)sis("aleatorio_fora")) : null],
+    "aleatorio" => aleatorio_resumo(),
     // o servidor de e-mail do config.php (as senhas só como definida ou não, os problemas achados) e para quem vai o e-mail de
     // teste, de início (o e-mail do master)
     "email" => email_config_resumo(), "email_para" => (string)(usuario_atual()["email"] ?? "")];
